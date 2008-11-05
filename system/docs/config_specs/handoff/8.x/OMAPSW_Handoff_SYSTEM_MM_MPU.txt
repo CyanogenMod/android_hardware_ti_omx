@@ -1,0 +1,146 @@
+#   ============================================================================
+#   Change List Handoff
+#   ============================================================================
+
+Author             : Richard Gong
+Date                : 07/20/06
+Dest                : Keith Deacon, Sonia Ahuja
+Target Release : 8.7
+
+#   ----------------------------------------------------------------------------
+#   Config spec
+#   ----------------------------------------------------------------------------
+element /vobs/wtbu/OMAPSW_MPU/linux/system/... LINUX-MMSYSTEM_RLS_2.12
+element /vobs/wtbu/OMAPSW_MPU/linux/... LINUX-MMROOT_RLS_2.06
+
+
+#   ----------------------------------------------------------------------------
+#   Defects fixed
+#   ----------------------------------------------------------------------------
+OMAPS00085219 --- AMR decoder component fails playback 3 out of 10 times
+OMAPS00078133 --- Support for PSW Algos in DASF Architecture for non-VTC applications
+
+#   ----------------------------------------------------------------------------
+#   Highlights
+#   ----------------------------------------------------------------------------
+- Audio Manager support Tee Device Node, Acoustic Device Node and Audio Mixing
+- LCML support SRC for both decoder and encoder components
+- All system components in this release were built using GNU Make version 3.79.1 
+ 
+
+#   ----------------------------------------------------------------------------
+#   New SRs
+#   ----------------------------------------------------------------------------
+None
+
+#   ----------------------------------------------------------------------------
+#   Important Remarks
+#   ----------------------------------------------------------------------------
+
+    1- internal modules interface change:
+    -----------------------------------------
+    None
+
+    2- Information to be included in the release notes:
+    ---------------------------------------------------
+    None
+
+    3- Issues/Concerns:
+    -------------------
+    The following are known issues:
+	- None
+
+    4- Misc:
+    --------
+    None
+
+#   ----------------------------------------------------------------------------
+#   Change list
+#   ----------------------------------------------------------------------------
+
+
+# New Files
+==========================================================================================================
+#Audio Manager
+-------------------
+None
+
+#Clock Source
+-------------------
+None
+
+#LCML
+--------------------------------------------------------------------
+None
+
+#OMX Core
+-------------------
+None
+
+#Resource Manager
+-------------------
+None
+
+#Resource Manager Proxy
+------------------------------
+None
+
+#Changed files
+==================================================================================================
+#Audio Manager
+-------------------
+\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\inc\acdnalg.h ("SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932")
+\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\inc\AudioManager.h ("SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932")
+\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\inc\AudioManagerAPI.h ("SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932")
+\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\src\AudioManager.c ("SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932")
+
+#Clock Source
+-------------------
+\OMAPSW_MPU\linux\system\src\openmax_il\clock_source\inc\OMX_Clock.h ("SR11603")
+\OMAPSW_MPU\linux\system\src\openmax_il\clock_source\src\OMX_Clock.c ("SR11603")
+
+#LCML
+-------------------
+\OMAPSW_MPU\linux\system\src\openmax_il\lcml\inc\LCML_DspCodec.h ("SR11648,SR14062,SR11603")
+\OMAPSW_MPU\linux\system\src\openmax_il\lcml\inc\LCML_Types.h ("SR11648,SR14062,SR11603")
+\OMAPSW_MPU\linux\system\src\openmax_il\lcml\src\LCML_DspCodec.c ("SR11648,SR14062,SR11603")
+
+#OMX Core
+-------------------
+Changed	\OMAPSW_MPU\linux\system\src\openmax_il\omx_core\src\OMX_Core.c ("SR11603")		
+
+#Resource Manager
+-------------------
+None
+
+#Resource Manager Proxy
+------------------------------
+\OMAPSW_MPU\linux\system\src\openmax_il\resource_manager_proxy\inc\ResourceManagerProxyAPI.h ("SR11603")
+
+
+# Removed Files
+==========================================================================================================
+
+#Audio Manager
+-------------------
+None
+
+#Clock Source
+-------------------
+None
+
+#LCML
+-------------------
+None
+
+#OMX Core
+-------------------
+None
+
+#Resource Manager
+-------------------
+None
+
+#Resource Manager Proxy
+------------------------------
+None

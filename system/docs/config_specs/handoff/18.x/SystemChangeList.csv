@@ -1,0 +1,12 @@
+#Change list for the component \OMAPSW_MPU\linux\system,,,,
+Action,Element type,Element Path,Branch,CR
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\inc\AudioManager.h,\main\system-mm-linux_rel_2.x\24,"(""SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\src\AudioManager.c,\main\system-mm-linux_rel_2.x\39,"(""SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\audio_manager\tests\Makefile,\main\system-mm-linux_rel_2.x\3,"(""SR10364,SR10365,SR10366,SR11832,SR11833,SR11834,SR11930,SR11959,SR11931,SR11932"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\clock_source\src\Makefile,\main\system-mm-linux_rel_2.x\3,"(""SR11603"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\lcml\inc\LCML_DspCodec.h,\main\system-mm-linux_rel_2.x\13,"(""SR11603"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\lcml\inc\LCML_Types.h,\main\system-mm-linux_rel_2.x\10,"(""SR11648,SR14062,SR11603"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\lcml\src\LCML_DspCodec.c,\main\system-mm-linux_rel_2.x\34,"(""SR11648,SR14062,SR11603"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\resource_manager\activity_monitor_stub\inc\Resource_Activity_Monitor.h,\main\system-mm-linux_rel_2.x\3,"(""SR10367"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\resource_manager\activity_monitor_stub\src\Resource_Activity_Monitor.c,\main\system-mm-linux_rel_2.x\3,"(""SR10367"")"
+Changed,text_file,\OMAPSW_MPU\linux\system\src\openmax_il\resource_manager\inc\ResourceManagerAPI.h,\main\system-mm-linux_rel_2.x\5,"(""SR14062"")"
