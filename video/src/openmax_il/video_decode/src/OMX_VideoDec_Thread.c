@@ -320,7 +320,10 @@ void* OMX_VidDec_Thread (void* pThreadData)
                 }
                 if ((FD_ISSET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds))){
                     VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
-                    eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);     
+                    if(pComponentPrivate->bDynamicConfigurationInProgress){
+                         continue;
+                    }
+                   eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);     
                     if (eError != OMX_ErrorNone) {
                         VIDDECODER_EPRINT ("%d :: Error while handling filled input buffer\n",__LINE__);
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -346,6 +349,9 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     pComponentPrivate->nInputBCountDsp--;
                 }
                 if (FD_ISSET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
+                     if(pComponentPrivate->bDynamicConfigurationInProgress){
+                          continue;
+                     }
                     VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
                     eError = VIDDEC_HandleFreeOutputBufferFromApp(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {

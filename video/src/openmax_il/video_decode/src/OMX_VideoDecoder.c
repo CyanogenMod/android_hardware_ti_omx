@@ -248,6 +248,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     char EnvChangeValue[VIDDEC_MAX_NAMESIZE];
     char* EnvChangeValueu = NULL;
 #endif
+#ifdef ANDROID
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: TI Video Decoder", __FUNCTION__);
+#endif
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     

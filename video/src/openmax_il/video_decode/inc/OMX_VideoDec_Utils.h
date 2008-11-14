@@ -28,6 +28,11 @@
     #define VIDDEC_FLAGGED_EOS
 #endif
 
+#ifdef ANDROID
+/* Log for Android system*/
+#include <utils/Log.h>
+#endif
+
 #ifdef UNDER_CE
     #include <windows.h>
     #include <oaf_osal.h>
@@ -915,7 +920,8 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL bLCMLHalted;
     OMX_BOOL bMult16Size;
     OMX_BOOL bFirstHeader;
-	VIDDEC_SAVE_BUFFER eFirstBuffer;
+    OMX_BOOL bDynamicConfigurationInProgress;
+    VIDDEC_SAVE_BUFFER eFirstBuffer;
 #ifndef UNDER_CE
     OMX_BOOL bLCMLOut;
 #endif
@@ -1192,6 +1198,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
         sem_init (&((_semaphore_).sSemaphore), 0, 0);   \
         (_semaphore_).bInitialized = OMX_TRUE;   \
         (_semaphore_).bEnabled = OMX_FALSE;      \
+        (_semaphore_).bSignaled = OMX_FALSE;		\
     }
 
 #define VIDDEC_PTHREAD_SEMAPHORE_DESTROY(_semaphore_) \

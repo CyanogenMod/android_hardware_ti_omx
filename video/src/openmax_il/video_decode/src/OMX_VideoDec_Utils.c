@@ -1145,6 +1145,10 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 #ifdef KHRONOS_1_1
             pComponentPrivate->eMBErrorReport.bEnabled            = OMX_FALSE;
 #endif
+           pComponentPrivate->eFirstBuffer.bSaveFirstBuffer    = OMX_FALSE;
+           pComponentPrivate->eFirstBuffer.pFirstBufferSaved   = NULL;
+           pComponentPrivate->eFirstBuffer.nFilledLen          = 0;
+           pComponentPrivate->bDynamicConfigurationInProgress	= OMX_FALSE;
         break;
 
 case VIDDEC_INIT_IDLEEXECUTING:
@@ -1163,9 +1167,6 @@ case VIDDEC_INIT_IDLEEXECUTING:
             pComponentPrivate->bBuffFound                       = OMX_FALSE;
             pComponentPrivate->bFlushOut                        = OMX_FALSE;
             pComponentPrivate->bFirstHeader                     = OMX_FALSE;
-			pComponentPrivate->eFirstBuffer.bSaveFirstBuffer    = OMX_FALSE;
-			pComponentPrivate->eFirstBuffer.pFirstBufferSaved   = NULL;
-			pComponentPrivate->eFirstBuffer.nFilledLen          = 0;
         break;
 
         case VIDDEC_INIT_H263:
@@ -1795,12 +1796,16 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
                                                     pComponentPrivate->pHandle->pApplicationPrivate,
                                                     OMX_EventCmdComplete,
                                                     OMX_CommandPortDisable,
-                                                    VIDDEC_INPUT_PORT,
+                                                    VIDDEC_OUTPUT_PORT,
                                                     NULL);
         }
     }
 #endif
-    goto EXIT;
+
+        if(pComponentPrivate->bDynamicConfigurationInProgress){
+           pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
+        }
+	
 EXIT:
     VIDDECODER_DPRINT("---EXITING(0x%x)\n",eError);
     return eError;
@@ -4934,8 +4939,9 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 		}
 
 		if(bOutPortSettingsChanged || bInPortSettingsChanged){
-			if(bOutPortSettingsChanged && bInPortSettingsChanged){
-            	pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                  pComponentPrivate->bDynamicConfigurationInProgress = OMX_TRUE;
+                  if(bOutPortSettingsChanged && bInPortSettingsChanged){
+                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                 	pComponentPrivate->pHandle->pApplicationPrivate,
                                                 	OMX_EventPortSettingsChanged,
                                                 	VIDDEC_BOTH_PORT,
@@ -8162,7 +8168,6 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         VIDDECODER_DPRINT("LCML_ControlCodec called EMMCodecControlDestroy 0x%x\n",pLcmlHandle);
         if (eError != OMX_ErrorNone) {
             VIDDECODER_EPRINT("Occurred in Codec Destroy...\n");
-			/*__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: Occurred in Codec Destroy...", __FUNCTION__);					*/
             eError = OMX_ErrorHardware;
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
