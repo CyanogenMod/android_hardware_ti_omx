@@ -65,15 +65,20 @@
 /* Log for Android system*/
 #include <utils/Log.h>
 
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#define ANDROID
+
 #define EXIT_COMPONENT_THRD  10
+
 
 /* ======================================================================= */
 /**
  * @def    AAC_DEC__XXX_VER    Component version
  */
 /* ======================================================================= */
-#define AACDEC_MAJOR_VER 0xF1
-#define AACDEC_MINOR_VER 0xF2
+#define AACDEC_MAJOR_VER 0x1
+#define AACDEC_MINOR_VER 0x1
 /* ======================================================================= */
 /**
  * @def    NOT_USED_AACDEC    Defines a value for "don't care" parameters
@@ -111,7 +116,7 @@
 /* ======================================================================= */
 #define OMX_AACDEC_NUM_DLLS (2)
 
-#define AACDEC_BUFHEADER_VERSION 0x0
+#define AACDEC_BUFHEADER_VERSION 0x1
 /* ======================================================================= */
 /**
  ** Default timeout used to come out of blocking calls*
@@ -213,9 +218,9 @@
 
 #else /* for Linux */
 #ifdef  AACDEC_DEBUG
-#define AACDEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+#define AACDEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ",__FUNCTION__, __LINE__);\
+	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
 #define AACDEC_BUFPRINT printf
 #define AACDEC_MEMPRINT printf
@@ -245,8 +250,8 @@
 #endif
 
 #define AACDEC_EPRINT(...)  __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	ERROR",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
 #endif
 
@@ -258,9 +263,9 @@
 #define AACD_OMX_MALLOC(_pStruct_, _sName_)                         \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
+        AACDEC_EPRINT("***********************************\n");            \
+        AACDEC_EPRINT("%d :: Malloc Failed\n",__LINE__);                   \
+        AACDEC_EPRINT("***********************************\n");            \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
@@ -275,9 +280,9 @@
 #define AACDEC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
+        AACDEC_EPRINT("***********************************\n");        \
+        AACDEC_EPRINT("%d :: Malloc Failed\n",__LINE__);               \
+        AACDEC_EPRINT("***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
@@ -291,9 +296,9 @@
 /* ======================================================================= */
 #define AACDEC_OMX_ERROR_EXIT(_e_, _c_, _s_)                            \
     _e_ = _c_;                                                          \
-    printf("\n**************** OMX ERROR ************************\n");  \
-    printf("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);  \
-    printf("\n**************** OMX ERROR ************************\n");  \
+    AACDEC_EPRINT("\n**************** OMX ERROR ************************\n");  \
+    AACDEC_EPRINT("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);  \
+    AACDEC_EPRINT("\n**************** OMX ERROR ************************\n");  \
     goto EXIT;
 
 /* ======================================================================= */
@@ -330,7 +335,7 @@
     memset((_s_), 0x0, sizeof(_name_));         \
     (_s_)->nSize = sizeof(_name_);              \
     (_s_)->nVersion.s.nVersionMajor = 0x1;      \
-    (_s_)->nVersion.s.nVersionMinor = 0x0;      \
+    (_s_)->nVersion.s.nVersionMinor = 0x1;      \
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
@@ -357,7 +362,7 @@
 #define DSP_CACHE_ALIGNMENT 256 /* For Cache alignment*/
 
 #define AACDEC_APP_ID  100
-#define MAX_NUM_OF_BUFS_AACDEC 12
+#define MAX_NUM_OF_BUFS_AACDEC 15
 #define PARAMETRIC_STEREO_AACDEC 1
 #define NON_PARAMETRIC_STEREO_AACDEC 0
 /* ======================================================================= */
@@ -381,14 +386,14 @@
  *
  */
 /* ======================================================================= */
-#define AACD_NUM_INPUT_BUFFERS 1
+#define AACD_NUM_INPUT_BUFFERS 5
 /* ======================================================================= */
 /**
  * @def    AACD_NUM_OUTPUT_BUFFERS   Default number of output buffers
  *
  */
 /* ======================================================================= */
-#define AACD_NUM_OUTPUT_BUFFERS 2
+#define AACD_NUM_OUTPUT_BUFFERS 9
 
 /* ======================================================================= */
 /**
@@ -396,7 +401,7 @@
  *
  */
 /* ======================================================================= */
-#define AACD_INPUT_BUFFER_SIZE 2000
+#define AACD_INPUT_BUFFER_SIZE 1536
 /* ======================================================================= */
 /**
  * @def    AACD_OUTPUT_BUFFER_SIZE   Default output buffer size
@@ -685,6 +690,19 @@ struct AAC_DEC_BUFFERLIST{
 };
 
 typedef struct AAC_DEC_BUFFERLIST AACDEC_BUFFERLIST;
+
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+        ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)
+        OMX_BOOL iIsOMXComponentMultiThreaded;
+        OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+        OMX_BOOL iOMXComponentSupportsPartialFrames;
+        OMX_BOOL iOMXComponentNeedsNALStartCode;
+        OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
+
 /* ======================================================================= */
 /** AACDEC_COMPONENT_PRIVATE: This is the major and main structure of the
  * component which contains all type of information of buffers, ports etc
@@ -935,6 +953,9 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_U8 first_buff;
     /** First Time Stamp sent **/
     OMX_S64 first_TS;
+
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
+    OMX_BOOL bConfigData;
 
 } AACDEC_COMPONENT_PRIVATE;
 

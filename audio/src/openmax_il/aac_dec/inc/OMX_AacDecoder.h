@@ -81,7 +81,7 @@
 /* #define AACDEC_SWATDETAILS*/
 
 #define AACDEC_APP_ID  100
-#define MAX_NUM_OF_BUFS_AACDEC 8
+#define MAX_NUM_OF_BUFS_AACDEC 15
 #define PARAMETRIC_STEREO_AACDEC 1
 #define NON_PARAMETRIC_STEREO_AACDEC 0
 /* ======================================================================= */
@@ -105,7 +105,7 @@
  *
  */
 /* ======================================================================= */
-#define AACD_NUM_INPUT_BUFFERS 1
+#define AACD_NUM_INPUT_BUFFERS 4
 /* ======================================================================= */
 /**
  * @def    AACD_NUM_OUTPUT_BUFFERS   Default number of output buffers
@@ -114,15 +114,13 @@
 /* ======================================================================= */
 #define AACD_NUM_OUTPUT_BUFFERS 2
 
-/*#define AACD_INPUT_BUFFER_SIZE 4096*/
-/*#define AACD_INPUT_BUFFER_SIZE 2000*/
 /* ======================================================================= */
 /**
  * @def    AACD_INPUT_BUFFER_SIZE   Default input buffer size
  *
  */
 /* ======================================================================= */
-#define AACD_INPUT_BUFFER_SIZE 4096
+#define AACD_INPUT_BUFFER_SIZE 1536
 /* ======================================================================= */
 /**
  * @def    AACD_OUTPUT_BUFFER_SIZE   Default output buffer size
@@ -167,7 +165,7 @@
  * @def    AACDec macros for MONO,STEREO_INTERLEAVED,STEREO_NONINTERLEAVED
  */
 /* ======================================================================= */
-/*#define AACDEC_SWATPRINT                   1*/
+
 #define AACD_STEREO_INTERLEAVED_STREAM     2
 #define AACD_STEREO_NONINTERLEAVED_STREAM  3
 /* ======================================================================= */

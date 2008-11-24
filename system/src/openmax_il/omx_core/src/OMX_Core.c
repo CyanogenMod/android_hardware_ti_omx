@@ -73,11 +73,11 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.G726.encode", NULL},
     {"OMX.TI.G726.decode", NULL},
     {"OMX.TI.GSMFR.encode", NULL},
-    {"OMX.TI.GSMFR.decode", NULL},
-    {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},
+    {"OMX.TI.GSMFR.decode", NULL}, */
+/*    {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},  */
     {"OMX.TI.AMR.decode", "audio_decoder.amrnb"},	
-    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"},
-    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},	*/
+/*    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"}, */
+    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},	
 
     /* Audio components */
     {"OMX.TI.MP3.decode", "audio_decoder.mp3"},	

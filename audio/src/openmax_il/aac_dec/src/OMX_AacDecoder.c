@@ -202,7 +202,7 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 /*-------------------------------------------------------------------*/
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip = NULL, *pPortDef_op = NULL;
@@ -247,6 +247,18 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleAudioDecode);
 #endif  
 
+
+#ifdef ANDROID /* leave this now, we may need them later. */
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
+#endif
+
+
     AACD_OMX_MALLOC(pCompPort, AUDIODEC_PORT_TYPE);
     pComponentPrivate->pCompPort[INPUT_PORT_AACDEC] =  pCompPort;
 
@@ -272,7 +284,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CONF_INIT_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
     AACD_OMX_MALLOC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
-    pComponentPrivate->sPortParam->nPorts = 0x2;
+    pComponentPrivate->sPortParam->nPorts = NUM_OF_PORTS_AACDEC;
     pComponentPrivate->sPortParam->nStartPortNumber = 0x0;
 
     pComponentPrivate->aacParams = NULL;
@@ -299,11 +311,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bEnableCommandParam = 0;
     pComponentPrivate->nUnhandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
-    pComponentPrivate->SendAfterEOS = 0;    
+    pComponentPrivate->SendAfterEOS = 1;    
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
     pComponentPrivate->first_buff = 0;
     pComponentPrivate->first_TS = 0;
+    pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data */
+
+#ifdef ANDROID
+/* force to use frame mode always because opencore does not call SetConfig */
+    pComponentPrivate->framemode = 1;
+#endif
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -324,7 +342,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bEnableCommandPending = 0;
 
     pComponentPrivate->SBR = 0;
-    pComponentPrivate->RAW = 0;
+    pComponentPrivate->RAW = 0; /* doesn't do anything, consider deleting */
     pComponentPrivate->numPendingBuffers = 0;
     pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
@@ -408,8 +426,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pCompPort[INPUT_PORT_AACDEC]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pCompPort[OUTPUT_PORT_AACDEC]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
 
-	pComponentPrivate->bPreempted = OMX_FALSE; 
-	
+    pComponentPrivate->bPreempted = OMX_FALSE; 
+
     /* Set input port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[INPUT_PORT_AACDEC]->pPortFormat;
     OMX_CONF_INIT_STRUCT(pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
@@ -427,11 +445,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     /* AAC format defaults */
     OMX_CONF_INIT_STRUCT(aac_ip, OMX_AUDIO_PARAM_AACPROFILETYPE);
     aac_ip->nPortIndex = INPUT_PORT_AACDEC;
-    aac_ip->nSampleRate = 44100;
-    aac_ip->nChannels = 2;
+    aac_ip->nSampleRate = AACD_SAMPLING_FREQUENCY;
+    aac_ip->nChannels = STEREO_INTERLEAVED_STREAM_AACDEC;
     aac_ip->eChannelMode = OMX_AUDIO_ChannelModeStereo;
     aac_ip->eAACProfile = OMX_AUDIO_AACObjectLC;
     aac_ip->eAACStreamFormat = OMX_AUDIO_AACStreamFormatMP2ADTS;
+
+#ifdef ANDROID
+/* the default mode of operation for android */
+    aac_ip->eAACStreamFormat = OMX_AUDIO_AACStreamFormatRAW;
+#endif
 
     /* PCM format defaults */
     OMX_CONF_INIT_STRUCT(aac_op, OMX_AUDIO_PARAM_PCMMODETYPE);
@@ -439,8 +462,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     aac_op->ePCMMode = OMX_AUDIO_PCMModeLinear; 
     aac_op->nPortIndex = OUTPUT_PORT_AACDEC;
     aac_op->nBitPerSample = 16;
-    aac_op->nChannels = 2;
-    aac_op->nSamplingRate = 44100;
+    aac_op->nChannels = STEREO_INTERLEAVED_STREAM_AACDEC;
+    aac_op->nSamplingRate = AACD_SAMPLING_FREQUENCY;
     aac_op->bInterleaved = OMX_TRUE;
     
     pComponentPrivate->bPortDefsAllocated = 1;
@@ -458,7 +481,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
 
 #ifdef RESOURCE_MANAGER_ENABLED
-    /*eError = RMProxy_Initalize();*/
 	eError = RMProxy_NewInitalize();
     if (eError != OMX_ErrorNone) {
         AACDEC_DPRINT ("%d ::Error returned from loading ResourceManagerProxy\thread\n", __LINE__);
@@ -666,7 +688,8 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+    AACDEC_DPRINT ("%d :: Entering OMX_GetParameter\n", __LINE__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: line=%d", __FUNCTION__, __LINE__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE  *pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
@@ -675,7 +698,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     AACDEC_OMX_CONF_CHECK_CMD(hComp,1,1)
         pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
     AACDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, ComponentParameterStructure, 1)
-    if (pParameterStructure == NULL) {
+    if (ComponentParameterStructure == NULL) {
         eError = OMX_ErrorBadParameter;
         AACDEC_DPRINT("%d :: OMX_ErrorBadPortIndex from GetParameter",__LINE__);
         goto EXIT;
@@ -695,10 +718,12 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 
     switch(nParamIndex){
     case OMX_IndexParamAudioInit:
+        AACDEC_DPRINT("%d :: SetParameter OMX_IndexParamAudioInit \n",__LINE__);
         memcpy(ComponentParameterStructure, pComponentPrivate->sPortParam, sizeof(OMX_PORT_PARAM_TYPE));
         break;
 
     case OMX_IndexParamPortDefinition:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamPortDefinition\n", __LINE__);
         if(((OMX_PARAM_PORTDEFINITIONTYPE *)(ComponentParameterStructure))->nPortIndex ==
            pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->nPortIndex) {
             memcpy(ComponentParameterStructure, pComponentPrivate->pPortDef[INPUT_PORT_AACDEC], sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
@@ -712,6 +737,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamAudioPortFormat:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamAudioPortFormat\n", __LINE__);
         if(((OMX_AUDIO_PARAM_PORTFORMATTYPE *)(ComponentParameterStructure))->nPortIndex ==
            pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->nPortIndex) {
             if(((OMX_AUDIO_PARAM_PORTFORMATTYPE *)(ComponentParameterStructure))->nIndex >
@@ -739,6 +765,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamAudioAac:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamAudioAac\n", __LINE__);
         if(((OMX_AUDIO_PARAM_AACPROFILETYPE *)(ComponentParameterStructure))->nPortIndex ==
            pComponentPrivate->aacParams->nPortIndex) {
             memcpy(ComponentParameterStructure, pComponentPrivate->aacParams, sizeof(OMX_AUDIO_PARAM_AACPROFILETYPE));
@@ -753,10 +780,12 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
             
     case OMX_IndexParamAudioPcm:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamAudioPcm\n", __LINE__);
         memcpy(ComponentParameterStructure,pComponentPrivate->pcmParams,sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         break;
             
     case OMX_IndexParamCompBufferSupplier:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamCompBufferSupplier\n", __LINE__);
         if(((OMX_PARAM_BUFFERSUPPLIERTYPE *)(ComponentParameterStructure))->nPortIndex == OMX_DirInput) {
             AACDEC_DPRINT(":: GetParameter OMX_IndexParamCompBufferSupplier \n");
         }
@@ -767,22 +796,46 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             AACDEC_DPRINT(":: OMX_ErrorBadPortIndex from GetParameter");
             eError = OMX_ErrorBadPortIndex;
         } 
-        
         break;
 
     case OMX_IndexParamVideoInit:
-        break;
-
     case OMX_IndexParamImageInit:
-        break;
-
     case OMX_IndexParamOtherInit:
+#ifdef ANDROID
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamVideoInit\n", __LINE__);
+        AACDEC_DPRINT ("%d :: Entering OMX_IndexParamImageInit/OtherInit\n", __LINE__);
+	memcpy(ComponentParameterStructure,pComponentPrivate->sPortParam,sizeof(OMX_PORT_PARAM_TYPE));
+        __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IndexParamOtherInit", __FUNCTION__);
+        eError = OMX_ErrorNone;
+#else
+	eError = OMX_ErrorUnsupportedIndex;
+#endif
         break;
             
 
     case OMX_IndexParamPriorityMgmt:
+	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamPriorityMgmt\n", __LINE__);
         memcpy(ComponentParameterStructure, pComponentPrivate->pPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
+
+#ifdef ANDROID
+    case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+    {
+	AACDEC_DPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
+        PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+        if (NULL == pCap_flags)
+        {
+            AACDEC_EPRINT ("%d :: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+            eError =  OMX_ErrorBadParameter;
+            goto EXIT;
+        }
+        AACDEC_DPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+        memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
+	eError = OMX_ErrorNone;
+    }
+    break;
+#endif
+
 
     default:
         eError = OMX_ErrorUnsupportedIndex;
@@ -1391,13 +1444,14 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                                       OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     int ret=0;
     pPortDef = ((AACDEC_COMPONENT_PRIVATE*)pComponentPrivate)->pPortDef[INPUT_PORT_AACDEC];
+
 
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
@@ -1458,7 +1512,7 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->nEmptyThisBufferCount++;
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1479,7 +1533,7 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
                                      OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;

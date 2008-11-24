@@ -1834,6 +1834,9 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         if (pComponentPrivate->bFlushOutputPortCommandPending) {
             OMX_SendCommand( pComponentPrivate->pHandle, OMX_CommandFlush, 1, NULL);
         }
+        if (!(pBufHeader->nFilledLen > 0)){
+            pComponentPrivate->bIsEOFSent = OMX_TRUE;
+        }
     }
     else {
         MP3DEC_EPRINT(": BufferHeader %p, Buffer %p Unknown ..........\n",pBufHeader, pBufHeader->pBuffer);
@@ -2158,6 +2161,19 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     }else if(event == EMMCodecProcessingStoped) {
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->curState = OMX_StateIdle;
+            if (!(pLcmlHdr->pBufHdr->nFilledLen > 0)){
+                if (pComponentPrivate->bIsEOFSent){
+                    MP3DEC_DPRINT ("Adding EOS flag TEST!!!!!!!!!! \n \n \n");
+                    pLcmlHdr->pBufHdr->nFlags |= OMX_BUFFERFLAG_EOS;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                              pComponentPrivate->pHandle->pApplicationPrivate,
+                                              OMX_EventBufferFlag,
+                                              1,
+                                              OMX_BUFFERFLAG_EOS, NULL);
+                    pComponentPrivate->bIsEOFSent = 0;
+                }
+            }
+
 #ifdef RESOURCE_MANAGER_ENABLED
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                               RMProxy_StateSet,

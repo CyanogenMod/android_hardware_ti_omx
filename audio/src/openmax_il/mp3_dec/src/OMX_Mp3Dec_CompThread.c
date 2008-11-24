@@ -133,10 +133,10 @@ void* MP3DEC_ComponentThread (void* pThreadData)
         status = select (fdmax+1, &rfds, NULL, NULL, &tv);
 #endif
 
-        if (pComponentPrivate->bExitCompThrd == 1) {
+     /*   if (pComponentPrivate->bExitCompThrd == 1) {
             MP3DEC_DPRINT(":: Comp Thrd Exiting here...\n");
             goto EXIT;
-        }
+        }*/
 
 
 

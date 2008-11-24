@@ -71,8 +71,8 @@
 #include <utils/Log.h>
 
 
-#define MP3DEC_MAJOR_VER 0xF1/* Major number of the component */
-#define MP3DEC_MINOR_VER 0xF2 /* Mnor number of the component */
+#define MP3DEC_MAJOR_VER 0x1/* Major number of the component */
+#define MP3DEC_MINOR_VER 0x1 /* Mnor number of the component */
 #define NOT_USED 10 /* Value not used */
 #define NORMAL_BUFFER 0 /* Marks a buffer as normal buffer */
 #define OMX_MP3DEC_DEFAULT_SEGMENT (0) /* default segment ID of the component */

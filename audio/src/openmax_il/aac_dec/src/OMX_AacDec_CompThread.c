@@ -144,14 +144,8 @@ void* AACDEC_ComponentThread (void* pThreadData)
 
         if (0 == status) {
             AACDEC_DPRINT("\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
-
-            if (pComponentPrivate->bExitCompThrd == 1) {
-                printf("%d :: Comp Thrd Exiting here...\n",__LINE__);
-                goto EXIT;
-            }
-
-
-        } else if (-1 == status) {
+        } 
+        else if (-1 == status) {
             AACDEC_DPRINT ("%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                     pHandle->pApplicationPrivate,

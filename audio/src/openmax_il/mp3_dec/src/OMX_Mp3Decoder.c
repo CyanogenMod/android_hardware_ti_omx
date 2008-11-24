@@ -2339,7 +2339,7 @@ static OMX_ERRORTYPE UseBuffer (
 
     MP3DEC_DPRINT("pBufferHeader = %p\n",pBufferHeader);
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
