@@ -59,6 +59,13 @@
 /*#include <ResourceManagerProxyAPI.h> */
 #endif
 
+/* Log for Android system*/
+#include <utils/Log.h>
+
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+
+
 /* ======================================================================= */
 /**
  * @def    EXTRA_BUFFBYTES                Num of Extra Bytes to be allocated
@@ -85,7 +92,7 @@
  * @def    NUM_NBAMRDEC_OUTPUT_BUFFERS              Number of Output Buffers
  */
 /* ======================================================================= */
-#define NUM_NBAMRDEC_OUTPUT_BUFFERS 1
+#define NUM_NBAMRDEC_OUTPUT_BUFFERS 2
 
 /* ======================================================================= */
 /**
@@ -101,7 +108,6 @@
  */
 /* ======================================================================= */
 #define OUTPUT_NBAMRDEC_BUFFER_SIZE 320
-
 /* ======================================================================= */
 /**
  * @def    INPUT_NBAMRDEC_BUFFER_SIZE_MIME       Mime Input Buffer Size
@@ -185,7 +191,7 @@
  * @def    MAX_NUM_OF_BUFS                      Max Num of Bufs Allowed
  */
 /* ======================================================================= */
-#define MAX_NUM_OF_BUFS 10
+#define MAX_NUM_OF_BUFS 12
 
 /* ======================================================================= */
 /**
@@ -205,10 +211,14 @@
 
 #ifndef UNDER_CE
 
-#define AMRDEC_EPRINT(...)	fprintf(stderr,__VA_ARGS__)
+#define AMRDEC_EPRINT(...)	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ERROR	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
 #ifdef  AMRDEC_DEBUG
-        #define AMRDEC_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
+        #define AMRDEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 #else
         #define AMRDEC_DPRINT(...)
 #endif
@@ -221,7 +231,9 @@
 
 
 #ifdef  AMRDEC_DEBUG_MCP
-        #define AMRDEC_MCP_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
+        #define AMRDEC_MCP_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: MCP	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 #else
         #define AMRDEC_MCP_DPRINT(...)
 #endif
@@ -476,6 +488,17 @@ struct _NBAMRDEC_BUFFERLIST{
 	#endif
 #endif
 
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+        ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)
+        OMX_BOOL iIsOMXComponentMultiThreaded;
+        OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+        OMX_BOOL iOMXComponentSupportsPartialFrames;
+        OMX_BOOL iOMXComponentNeedsNALStartCode;
+        OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
 
 /* =================================================================================== */
 /*
@@ -775,6 +798,8 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
 
     OMX_BOOL bPreempted;
     OMX_BOOL bFrameLost;
+
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
 
 } AMRDEC_COMPONENT_PRIVATE;
 

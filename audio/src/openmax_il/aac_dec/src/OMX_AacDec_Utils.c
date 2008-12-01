@@ -896,8 +896,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     AACDEC_STATEPRINT("****************** Component State Set to Idle\n\n");
                     pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
-                    /*rm_error = RMProxy_SendCommand(pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, NULL);*/
-					rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
+                    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
 #endif
                     AACDEC_DPRINT ("%d :: The component is stopped\n",__LINE__);
                     pComponentPrivate->cbInfo.EventHandler( pHandle,
@@ -1022,6 +1021,9 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pValues1[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
                     pValues1[2] = sizeof(MPEG4AACDEC_UALGParams);
 
+/*  if running under Android (file mode), these values are not available during this state transition.
+    We will have to set the codec config parameters after receiving the first buffer that carries
+    the config data */
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlAlgCtrl,(void *)pValues1);
                     if(eError != OMX_ErrorNone) {
@@ -1642,13 +1644,68 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     }
                 }
                 
-          /*      if(pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC){
-			pComponentPrivate->nProfile = EProfileLC;
-                } 
-                else if (pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC){
-			pComponentPrivate->nProfile = EProfileLC;
-                } 
-          */
+                
+#ifdef ANDROID
+/*we will parse the config data here when we know how, then set the codec params per case*/
+
+                if (pComponentPrivate->bConfigData){
+                    AACDEC_DPRINT ("!!!ignoring first buffer/frame for ANDROID %d\n",__LINE__);
+                    /* @TODO: save buffer like vid_dec does incase needed later */
+                    /* @TODO: parse buffer for codec config info */
+                    pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                                               pBufHeader);
+                    pComponentPrivate->bConfigData = 0;
+                    goto EXIT;
+                }
+
+/* lets pretend this is the data we got from the parser
+   YOU MAY also change these values to test until the data is actually parsed above */
+                pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
+                pComponentPrivate->aacParams->nSampleRate = 44100;
+                pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
+
+/* were also going to force the codec to use RAW since we don't send the config data onwards */
+                pComponentPrivate->AACDEC_UALGParam->bRawFormat = 1;
+
+/* dasf mode should always be false (for now) for Android */
+                pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
+
+                switch(pComponentPrivate->aacParams->eAACProfile){
+                    case OMX_AUDIO_AACObjectSSR:
+                        pComponentPrivate->nProfile = EProfileSSR;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
+                        break;
+                    case OMX_AUDIO_AACObjectLTP:
+                        pComponentPrivate->nProfile = EProfileLTP;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
+                        break;
+                    case OMX_AUDIO_AACObjectMain:
+                        pComponentPrivate->nProfile = EProfileMain;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
+                        break;
+                    case OMX_AUDIO_AACObjectHE_PS:
+                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
+                        pComponentPrivate->parameteric_stereo = PARAMETRIC_STEREO_AACDEC;
+                        break;
+                    case OMX_AUDIO_AACObjectHE:
+                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
+                    case OMX_AUDIO_AACObjectLC:
+                    default: /* we will use LC profile as the default */
+                        pComponentPrivate->nProfile = EProfileLC;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
+                        break;
+                }
+#else
+
                 if(pComponentPrivate->parameteric_stereo == PARAMETRIC_STEREO_AACDEC){
                     if(pComponentPrivate->dasfmode == 1){
                         pComponentPrivate->AACDEC_UALGParam->lOutputFormat    = EAUDIO_BLOCK;
@@ -1673,25 +1730,20 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pComponentPrivate->AACDEC_UALGParam->lOutputFormat    = EAUDIO_INTERLEAVED;
                     }
                     pComponentPrivate->AACDEC_UALGParam->iEnablePS        = 0;
-                    pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->aacParams->eAACProfile;
+                    pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->nProfile;
                     pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
 
-#ifdef ANDROID
-/*force the codec to use RAW processing when running under Androud framework*/
-                    pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 1; 
-#else
-/*otherwise we will assume the framework sets the stream format correctly for the data being sent */
+
                     pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 0;
                     if(pComponentPrivate->aacParams->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
                         pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 1;
                     }
-#endif
                     pComponentPrivate->AACDEC_UALGParam->DownSampleSbr    = 0;
                     if(pComponentPrivate->SBR ){
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr    = 1;
                     }
                 }
-
+#endif
                 pValues1[0] = IUALG_CMD_SETSTATUS;
                 pValues1[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
                 pValues1[2] = sizeof(MPEG4AACDEC_UALGParams);
@@ -1723,11 +1775,15 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
                 AACDEC_DPRINT ("%d :: bLastBuffer Is Set Here....\n",__LINE__);
                 pLcmlHdr->pIpParam->bLastBuffer = 1;
-				pComponentPrivate->bIsEOFSent = 1;
+                pComponentPrivate->bIsEOFSent = 1;
                 pBufHeader->nFlags = 0;
-                //pComponentPrivate->SendAfterEOS = 1;
             }
-
+/**/
+            if(pBufHeader->nFilledLen <= 0){  /* if no data present, assume its the end of the stream */
+		pLcmlHdr->pIpParam->bLastBuffer = 1;
+                pComponentPrivate->bIsEOFSent = 1;
+            }
+/**/
             /* Store time stamp information */
             pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
             /*Store tick count information*/
@@ -1739,7 +1795,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 				if(pComponentPrivate->first_buff == 0){
 					pComponentPrivate->first_TS = pBufHeader->nTimeStamp;
 					pComponentPrivate->first_buff = 1;
-                                        AACDEC_DPRINT ("try ignore first bytes of first buffer\n");
 				}
 		        }
 		
@@ -1751,28 +1806,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     if(!pComponentPrivate->bDspStoppedWhileExecuting) {
                         AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
                         AACDEC_DPRINT ("Calling LCML_QueueBuffer Line %d\n",__LINE__);
-#if 1
-                        if (pComponentPrivate->bConfigData){
-                        /*  copy buffer to temp, memset buffer to zeros, copy buffer less first two bytes back to buffer */
-                            /*OMX_U8* ptemp = malloc(pBufHeader->nFilledLen);
-                            int numConfigBytes = 2;
-                            if(ptemp != NULL){ */
-                                AACDEC_DPRINT ("!!!ignoring first buffer/frame for ANDROID %d\n",__LINE__);
-                              /*  memcpy(ptemp, pBufHeader->pBuffer, pBufHeader->nFilledLen);
-                                memset(pBufHeader->pBuffer, 0x0, pBufHeader->nFilledLen);
-                                memcpy(pBufHeader->pBuffer, ptemp+numConfigBytes, pBufHeader->nFilledLen-numConfigBytes);
-                                pBufHeader->nFilledLen -= numConfigBytes;
-                                free(ptemp);  */
-                                /* @TODO: save buffer like vid_dec does incase needed later */
-                                pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   pBufHeader);
-                          //  }
-                            pComponentPrivate->bConfigData = 0;
-                            goto EXIT;
-                        }
-
-#endif
                         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                   EMMCodecInputBuffer,
                                                   pBufHeader->pBuffer,
@@ -2262,8 +2295,8 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->curState = OMX_StateIdle;
+
 #ifdef RESOURCE_MANAGER_ENABLED
-            /*rm_error = RMProxy_SendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, NULL);*/
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
 #endif
             if (pComponentPrivate->bPreempted == 0) {

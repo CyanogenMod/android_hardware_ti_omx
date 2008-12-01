@@ -190,7 +190,7 @@
  */
 /* ======================================================================= */
 
-#define AACDEC_DEBUG 
+#undef AACDEC_DEBUG 
 #define _ERROR_PROPAGATION__
 
 #ifdef UNDER_CE

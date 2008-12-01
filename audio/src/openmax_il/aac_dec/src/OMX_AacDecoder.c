@@ -508,7 +508,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         AACDEC_OMX_FREE(pTemp);
     }
     AACDEC_DPRINT ("%d :: Exiting OMX_ComponentInit\n", __LINE__);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -531,7 +530,6 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                   OMX_COMMANDTYPE Cmd,
                                   OMX_U32 nParam,OMX_PTR pCmdData)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nRet;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)phandle;
@@ -658,7 +656,6 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
     /* add for acoustic control */
  EXIT:
     AACDEC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -689,7 +686,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_PTR ComponentParameterStructure)
 {
     AACDEC_DPRINT ("%d :: Entering OMX_GetParameter\n", __LINE__);
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: line=%d", __FUNCTION__, __LINE__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE  *pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
@@ -805,7 +801,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 	AACDEC_DPRINT ("%d :: Entering OMX_IndexParamVideoInit\n", __LINE__);
         AACDEC_DPRINT ("%d :: Entering OMX_IndexParamImageInit/OtherInit\n", __LINE__);
 	memcpy(ComponentParameterStructure,pComponentPrivate->sPortParam,sizeof(OMX_PORT_PARAM_TYPE));
-        __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IndexParamOtherInit", __FUNCTION__);
         eError = OMX_ErrorNone;
 #else
 	eError = OMX_ErrorUnsupportedIndex;
@@ -843,7 +838,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     }
  EXIT:
     AACDEC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -873,7 +867,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR pCompParam)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle= (OMX_COMPONENTTYPE*)hComp;
     AACDEC_COMPONENT_PRIVATE  *pComponentPrivate;
@@ -1038,7 +1031,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
     }
  EXIT:
     AACDEC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1059,7 +1051,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_INDEXTYPE nConfigIndex,
                                 OMX_PTR ComponentConfigStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
@@ -1185,7 +1176,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     }
  EXIT:
     AACDEC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1213,7 +1203,6 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
                                    OMX_CALLBACKTYPE* pCallBacks,
                                    OMX_PTR pAppData)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1233,7 +1222,6 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     pComponentPrivate->curState = OMX_StateLoaded;
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1266,8 +1254,6 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
                                           OMX_VERSIONTYPE* pSpecVersion,
                                           OMX_UUIDTYPE* pComponentUUID)
 {
-
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *) pHandle->pComponentPrivate;
@@ -1292,7 +1278,6 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
 
     AACDEC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
  EXIT:   
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1320,7 +1305,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
                                 OMX_INDEXTYPE nConfigIndex,
                                 OMX_PTR ComponentConfigStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1368,7 +1352,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     AACDEC_OMX_FREE(streamInfo);
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1392,7 +1375,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 /* ================================================================================ * */
 static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
 
@@ -1417,7 +1399,6 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
     eError = OMX_ErrorNone;
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1444,7 +1425,6 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                                       OMX_BUFFERHEADERTYPE* pBuffer)
 {
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -1512,7 +1492,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->nEmptyThisBufferCount++;
 
  EXIT:
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1533,7 +1512,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
                                      OMX_BUFFERHEADERTYPE* pBuffer)
 {
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -1616,7 +1594,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->nFillThisBufferCount++;
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1639,7 +1616,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
 /* ================================================================================ * */
 static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_ERRORTYPE eError1 = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
@@ -1708,7 +1684,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     AACDEC_DPRINT("::*********** ComponentDeinit is Done************** \n");
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1742,11 +1717,9 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
                                              OMX_U32 nTunneledPort,
                                              OMX_TUNNELSETUPTYPE* pTunnelSetup)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = OMX_ErrorNotImplemented;
     return eError;
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
 }
 
 
@@ -1780,7 +1753,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                    OMX_IN OMX_PTR pAppPrivate,
                    OMX_IN OMX_U32 nSizeBytes)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -1899,7 +1871,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         AACDEC_OMX_FREE(pBufferHeader->pBuffer);
         AACDEC_OMX_FREE(pBufferHeader);
     }
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -1926,7 +1897,6 @@ static OMX_ERRORTYPE FreeBuffer(
             OMX_IN  OMX_U32 nPortIndex,
             OMX_IN  OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_U8* buff;
@@ -2091,8 +2061,6 @@ static OMX_ERRORTYPE FreeBuffer(
         SendCommand (pComponentPrivate->pHandle,OMX_CommandPortDisable,
                      pComponentPrivate->bDisableCommandParam,NULL);
     }
-
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -2131,7 +2099,6 @@ static OMX_ERRORTYPE UseBuffer (
             OMX_IN OMX_U32 nSizeBytes,
             OMX_IN OMX_U8* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2226,7 +2193,6 @@ static OMX_ERRORTYPE UseBuffer (
                      pComponentPrivate->bEnableCommandParam,NULL);
     }
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -2244,9 +2210,7 @@ static OMX_ERRORTYPE GetExtensionIndex(
             OMX_IN  OMX_STRING cParameterName,
             OMX_OUT OMX_INDEXTYPE* pIndexType) 
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-
 
     if (!(strcmp(cParameterName,"OMX.TI.index.config.aacdecHeaderInfo"))) {
         *pIndexType = OMX_IndexCustomAacDecHeaderInfoConfig;
@@ -2263,7 +2227,6 @@ static OMX_ERRORTYPE GetExtensionIndex(
         AACDEC_EPRINT("%d::OMX_ErrorBadParameter from GetExtensionIndex\n",__LINE__);
     }
 
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 
@@ -2281,7 +2244,6 @@ static OMX_ERRORTYPE ComponentRoleEnum(
       OMX_OUT OMX_U8 *cRole,
       OMX_IN OMX_U32 nIndex)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
    
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2295,7 +2257,6 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     else {
         eError = OMX_ErrorNoMore;
     }
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return eError;
 }
 

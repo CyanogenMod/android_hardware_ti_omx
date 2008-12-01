@@ -76,6 +76,9 @@
 #include "OMX_AmrDecoder.h"
 #include "OMX_AmrDec_Utils.h"
 
+/* Log for Android system*/
+#include <utils/Log.h>
+
 #ifdef NBAMRDEC_DEBUGMEM
 
 
@@ -211,6 +214,7 @@ AM_COMMANDDATATYPE cmd_data;
 /*-------------------------------------------------------------------*/
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
+	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip, *pPortDef_op;
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_AUDIO_PARAM_AMRTYPE *amr_ip;
@@ -274,42 +278,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c\n", __LINE__);
 //    amr_ip = (OMX_AUDIO_PARAM_AMRTYPE *)newmalloc(sizeof(OMX_AUDIO_PARAM_AMRTYPE));
 	NBAMR_DEC_OMX_MALLOC(amr_ip , OMX_AUDIO_PARAM_AMRTYPE); 
-    // AMRDEC_MEMPRINT("%d:[ALLOC] %p\n",__LINE__,amr_ip);
-    // AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c\n", __LINE__);
-    // if(NULL == amr_ip) {
-        // AMRDEC_EPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // /* Free previously allocated memory before bailing */
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }
-	// memset(amr_ip, 0x0, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c\n", __LINE__);
     //amr_op = (OMX_AUDIO_PARAM_PCMMODETYPE *)newmalloc(sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
 	NBAMR_DEC_OMX_MALLOC(amr_op , OMX_AUDIO_PARAM_PCMMODETYPE);
-    // AMRDEC_MEMPRINT("%d:[ALLOC] %p\n",__LINE__,amr_op);
-    // AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c\n", __LINE__);
-    // if(NULL == amr_op) {
-        // AMRDEC_EPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // /* Free previously allocated memory before bailing */
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-
-		// if (amr_ip) {
-			// newfree(amr_ip);
-			// amr_ip = NULL;
-		// }
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }
-	// memset(amr_op, 0x0, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
 
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c\n", __LINE__);
 
@@ -328,65 +299,23 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleLLMM |
                                            PERF_ModuleAudioDecode);
 #endif
+
+#if 1 /* currently using default values until more is understood */
+		pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; /* experiment with this */
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_FALSE; /* experiment with this */
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_TRUE; /* used only for H.264, leave this as false */
+		pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* experiment with this */
+#endif
+
 	//pComponentPrivate->pInputBufferList = newmalloc(sizeof(NBAMRDEC_BUFFERLIST));
 	NBAMR_DEC_OMX_MALLOC(pComponentPrivate->pInputBufferList, NBAMRDEC_BUFFERLIST); 
-	// if (pComponentPrivate->pInputBufferList == NULL) {
-        // AMRDEC_DPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // /* Free previously allocated memory before bailing */
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-
-		// if (amr_ip) {
-			// newfree(amr_ip);
-			// amr_ip = NULL;
-		// }
-
-		// if (amr_op) {
-			// newfree(amr_op);
-			// amr_op = NULL;
-		// }
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }
-	// memset(pComponentPrivate->pInputBufferList, 0x0, sizeof(NBAMRDEC_BUFFERLIST));
 	pComponentPrivate->pInputBufferList->numBuffers = 0; /* initialize number of buffers */
 	//pComponentPrivate->pOutputBufferList = newmalloc(sizeof(NBAMRDEC_BUFFERLIST));
 	NBAMR_DEC_OMX_MALLOC(pComponentPrivate->pOutputBufferList, NBAMRDEC_BUFFERLIST); 
     
-	// if (pComponentPrivate->pOutputBufferList == NULL ) {
-        // AMRDEC_DPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // /* Free previously allocated memory before bailing */
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-
-		// if (amr_ip) {
-			// newfree(amr_ip);
-			// amr_ip = NULL;
-		// }
-
-		// if (amr_op) {
-			// newfree(amr_op);
-			// amr_op = NULL;
-		// }
-
-		// if (pComponentPrivate->pInputBufferList) {
-			// newfree(pComponentPrivate->pInputBufferList);
-			// pComponentPrivate->pInputBufferList = NULL;
-		// }
-
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }    
-    
-	// memset(pComponentPrivate->pOutputBufferList, 0x0, sizeof(NBAMRDEC_BUFFERLIST));
-
-    //pComponentPrivate->pPriorityMgmt = newmalloc(sizeof(OMX_PRIORITYMGMTTYPE));
 	NBAMR_DEC_OMX_MALLOC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE); 
          
 	pComponentPrivate->pOutputBufferList->numBuffers = 0; /* initialize number of buffers */
@@ -541,86 +470,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
     pComponentPrivate->InIdle_goingtoloaded = 0;
 #endif
-    /* Removing sleep() calls. Initialization.*/
-    // pPortDef_ip = (OMX_PARAM_PORTDEFINITIONTYPE *)
-                 // newmalloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
 	NBAMR_DEC_OMX_MALLOC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
-    //AMRDEC_MEMPRINT("%d:[ALLOC] %p\n",__LINE__,pPortDef_ip);
-    // if (pPortDef_ip == NULL) {
-        // AMRDEC_EPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-
-        // if (amr_ip) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,amr_ip);
-            // newfree(amr_ip);
-            // amr_ip = NULL;
-        // }
-
-        // if (amr_op) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,amr_op);
-            // newfree(amr_op);
-            // amr_op = NULL;
-        // }
-
-        // if (pComponentPrivate->pInputBufferList) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pInputBufferList);
-            // newfree(pComponentPrivate->pInputBufferList);
-            // pComponentPrivate->pInputBufferList = NULL;
-        // }
-
-        // if (pComponentPrivate->pOutputBufferList) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pOutputBufferList);
-            // newfree(pComponentPrivate->pOutputBufferList);
-            // pComponentPrivate->pOutputBufferList = NULL;
-        // }
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }
-
-	// memset(pPortDef_ip, 0x0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
-	// pPortDef_op = (OMX_PARAM_PORTDEFINITIONTYPE *)
-                 // newmalloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
 	NBAMR_DEC_OMX_MALLOC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
-    // AMRDEC_MEMPRINT("%d:[ALLOC] %p\n",__LINE__,pPortDef_op);
-    // if (pPortDef_op == NULL) {
-        // AMRDEC_EPRINT("%d ::OMX_AmrDecoder.c :: newmalloc failed\n",__LINE__);
-        // /* Free previously allocated memory before bailing */
-        // if (pHandle->pComponentPrivate) {
-            // AMRDEC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            // newfree(pHandle->pComponentPrivate);
-            // pHandle->pComponentPrivate = NULL;
-        // }
-
-		// if (amr_ip) {
-			// newfree(amr_ip);
-			// amr_ip = NULL;
-		// }
-
-		// if (amr_op) {
-			// newfree(amr_op);
-			// amr_op = NULL;
-		// }
-
-		// if (pComponentPrivate->pInputBufferList) {
-			// newfree(pComponentPrivate->pInputBufferList);
-			// pComponentPrivate->pInputBufferList = NULL;
-		// }
-
-		// if (pComponentPrivate->pOutputBufferList) {
-			// newfree(pComponentPrivate->pOutputBufferList);
-			// pComponentPrivate->pOutputBufferList = NULL;
-		// }
-
-        // error = OMX_ErrorInsufficientResources;
-        // goto EXIT;
-    // }
-
-	// memset(pPortDef_op, 0x0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c ::pPortDef_ip = 0x%p\n", __LINE__,pPortDef_ip);
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c ::pPortDef_op = 0x%p\n", __LINE__,pPortDef_op);
 
@@ -697,6 +548,7 @@ error = NBAMRDEC_StartComponentThread(pHandle);
 
 EXIT:
     AMRDEC_DPRINT ("%d ::OMX_AmrDecoder.c ::OMX_ComponentInit - returning %d\n", __LINE__,error);
+	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT", __FUNCTION__);
     return error;
 }
 
@@ -969,7 +821,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
 {
-
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AMRDEC_COMPONENT_PRIVATE  *pComponentPrivate;
 	OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
@@ -1120,7 +971,23 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 
          case OMX_IndexParamOtherInit:
                 break;
-             
+
+		case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+		{
+		AMRDEC_DPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
+			PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+			if (NULL == pCap_flags)
+			{
+				AMRDEC_DPRINT ("%d :: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+				eError =  OMX_ErrorBadParameter;
+				goto EXIT;
+			}
+			AMRDEC_DPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+			memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
+		eError = OMX_ErrorNone;
+		}
+				break;
+
         default:
             eError = OMX_ErrorUnsupportedIndex;
         
@@ -1954,6 +1821,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_BUFFERHEADERTYPE *pBufferHeader;
+	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: ALLOCATE BUFFER", __FUNCTION__);
 
     pComponentPrivate = (AMRDEC_COMPONENT_PRIVATE *)
             (((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);

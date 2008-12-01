@@ -75,6 +75,9 @@
 #include <ResourceManagerProxyAPI.h>
 #endif
 
+/* Log for Android system*/
+#include <utils/Log.h>
+
 #ifdef NBAMRDEC_DEBUGMEM
 extern void * mymalloc(int line, char *s, int size);
 int myfree(void *dp, int line, char *s);
@@ -252,6 +255,7 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     arr[0] = STREAM_COUNT;
     arr[1] = NBAMRDEC_INPUT_PORT;
     arr[2] = NBAMRDEC_DMM;
+	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN %d", __FUNCTION__, pComponentPrivate->pOutputBufferList->numBuffers);
     if (pComponentPrivate->pInputBufferList->numBuffers) {
         arr[3] = pComponentPrivate->pInputBufferList->numBuffers;
     }
@@ -269,11 +273,13 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     else {
         AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: Setting up create phase params for FILE mode\n",__LINE__);
         arr[5] = NBAMRDEC_DMM;
-        if (pComponentPrivate->pOutputBufferList->numBuffers) {
+		__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: OUT : %d", __FUNCTION__, pComponentPrivate->pOutputBufferList->numBuffers);
+
+		if (pComponentPrivate->pOutputBufferList->numBuffers) {
             arr[6] = pComponentPrivate->pOutputBufferList->numBuffers;
         }
         else {
-            arr[6] = 1;
+            arr[6] = 2;
         }
 
     }
@@ -1807,7 +1813,8 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->bBypassDSP = 0;
             if ( pComponentPrivate->nHoldLength == 0 ) 
             {
-                if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE) 
+#if 0
+				if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE) 
                 {
                     AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
 taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
@@ -1834,6 +1841,16 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     }
                     pBufHeader->nFilledLen=nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
                 }
+				
+#endif
+				if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE)
+								{
+									AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
+											taBuf_FromApp - reading NBAMRDEC_PADMIMEMODE\
+											nFilledLen %d nAllocLen %d\n",__LINE__, pBufHeader->nFilledLen, pBufHeader->nAllocLen);
+									frameLength=INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
+									nFrames=pBufHeader->nAllocLen / frameLength; /*to get the corresponding header in the LCML */
+								}
                 else if (pComponentPrivate->mimemode == NBAMRDEC_IF2)
                 {
                     AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDataBuf_FromApp - reading NBAMRDEC_IF2MODE\n", __LINE__);
@@ -2179,8 +2196,8 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle, 
                                                 EMMCodecInputBuffer, 
                                                 (OMX_U8*)pBufHeader->pBuffer, 
-                                                INPUT_NBAMRDEC_BUFFER_SIZE_MIME*nFrames, 
-                                                INPUT_NBAMRDEC_BUFFER_SIZE_MIME*nFrames, 
+                                                pBufHeader->nAllocLen,  
+                                                pBufHeader->nFilledLen, 
                                                 (OMX_U8*)pLcmlHdr->pBufferParam, 
                                                 sizeof(NBAMRDEC_ParamStruct), 
                                                 NULL);
