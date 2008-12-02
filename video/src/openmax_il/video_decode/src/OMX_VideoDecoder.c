@@ -629,7 +629,9 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
 			/*Workaround version to handle pv app */
 			/*After ports is been flush*/
 
-			if (nParam1 == VIDDEC_INPUT_PORT && pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE) {
+			if (nParam1 == VIDDEC_INPUT_PORT && 
+                    pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE &&
+                    pComponentPrivate->bInPortSettingsChanged == OMX_TRUE) {
 				VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sDynConfigMutex);
 			}
 #endif

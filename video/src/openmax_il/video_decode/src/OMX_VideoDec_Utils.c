@@ -1667,10 +1667,11 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
 OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-	static OMX_BOOL bFirstTimeToUnLoadCodec = OMX_TRUE;
+    static OMX_BOOL bFirstTimeToUnLoadCodec = OMX_TRUE; /*Needed when port disable is been call for input & output ports*/
     VIDDECODER_DPRINT("+++ENTERING\n");
     VIDDECODER_DPRINT("pComponentPrivate 0x%x nParam1 0x%x\n",pComponentPrivate, nParam1);
 
+    /* Protect VIDDEC_UnloadCodec() to be called twice while doing Dynamic port configuration*/
 	if(pComponentPrivate->bDynamicConfigurationInProgress && bFirstTimeToUnLoadCodec){
 		OMX_DPRINT("%s: VIDDEC_UnloadCodec", __FUNCTION__);
 		eError = VIDDEC_UnloadCodec(pComponentPrivate);
@@ -1816,6 +1817,7 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
     }
 #endif
 
+        /* Reset values to initial state*/
 	if(pComponentPrivate->bDynamicConfigurationInProgress){
 		if(pComponentPrivate->bOutPortSettingsChanged == OMX_FALSE && pComponentPrivate->bInPortSettingsChanged == OMX_FALSE){
 			pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
@@ -2019,7 +2021,10 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
 
 
-		if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE){
+            if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && 
+                    pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE &&
+                    pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE &&
+                    pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE){
 			OMX_DPRINT("%s: BSC VIDDEC_INPUT_PORT", __FUNCTION__);
 			eError = VIDDEC_LoadCodec(pComponentPrivate);
 			if(eError != OMX_ErrorNone){
@@ -2041,7 +2046,10 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sOutSemaphore);
         }
 
-		if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE){
+        if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && 
+                pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE &&
+                pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE &&
+                pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE){
 			OMX_DPRINT("%s: BSC VIDDEC_OUTPUT_PORT", __FUNCTION__);
 			eError = VIDDEC_LoadCodec(pComponentPrivate);
 			if(eError != OMX_ErrorNone){
@@ -4866,7 +4874,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     OMX_U32 nOutMinBufferSize = 0;
 	OMX_BOOL bInPortSettingsChanged = OMX_FALSE;
 	OMX_BOOL bOutPortSettingsChanged = OMX_FALSE;
-	OMX_BOOL bMoreThanOneInputBuffer = OMX_FALSE;
 	
 	OMX_DPRINT("%s: IN", __FUNCTION__);
     if(!pComponentPrivate) {
@@ -4980,12 +4987,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 		if(bOutPortSettingsChanged || bInPortSettingsChanged){
 			OMX_DPRINT("%s: bDynamicConfigurationInProgress = OMX_TRUE", __FUNCTION__);
 			pComponentPrivate->bDynamicConfigurationInProgress = OMX_TRUE;
-			if(pComponentPrivate->pInPortDef->nBufferCountActual > 1){
-				bMoreThanOneInputBuffer = OMX_TRUE;
-				OMX_DPRINT("%s: bMoreThanOneInputBuffer = OMX_TRUE;", __FUNCTION__);
-			}
-			
-			if((bOutPortSettingsChanged && bInPortSettingsChanged) || bMoreThanOneInputBuffer){
+
+			if(bOutPortSettingsChanged && bInPortSettingsChanged){
 				OMX_DPRINT("%s: sending OMX_EventPortSettingsChanged to both ports", __FUNCTION__);	
 
 
@@ -5738,19 +5741,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 
                 VIDDEC_BUFFERPRINT("Sending Filled eBufferOwner 0x%x f%x\n", pBufferPrivate->eBufferOwner, pComponentPrivate->frameCounter);
 
-#ifdef ANDROID
 
-					if(pComponentPrivate->eFirstBuffer.bSaveFirstBuffer == OMX_TRUE){
-						eError = VIDDEC_CopyBuffer(pComponentPrivate, pBuffHead);
-						if(eError != OMX_ErrorNone){
-							VIDDECODER_EPRINT("VIDDEC_HandleDataBuf_FromApp: VIDDEC_CopyBuffer()= 0x%x\n", eError);
-							if(eError == OMX_ErrorInsufficientResources){
-								goto EXIT;
-							}
-						}
-						
-					}
-#endif
 #ifdef __PERF_INSTRUMENTATION__
 			        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
 			                          pBuffHead->pBuffer,
@@ -5769,7 +5760,19 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                                               pBuffHead);
 					goto EXIT;
             	}
-				
+#ifdef ANDROID
+
+                    if(pComponentPrivate->eFirstBuffer.bSaveFirstBuffer == OMX_TRUE){
+                        eError = VIDDEC_CopyBuffer(pComponentPrivate, pBuffHead);
+                        if(eError != OMX_ErrorNone){
+                            VIDDECODER_EPRINT("VIDDEC_HandleDataBuf_FromApp: VIDDEC_CopyBuffer()= 0x%x\n", eError);
+                            if(eError == OMX_ErrorInsufficientResources){
+                                goto EXIT;
+                            }
+                        }
+                        
+                    }
+#endif
 				OMX_DPRINT("%s:%d: LCML_QueueBuffer(INPUT)", __FUNCTION__, __LINE__);
 				pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
