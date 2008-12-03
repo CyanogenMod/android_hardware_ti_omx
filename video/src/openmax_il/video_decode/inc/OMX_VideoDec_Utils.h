@@ -960,6 +960,11 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BUFFERHEADERTYPE pBufferTemp;
     OMX_U32 pRCVExtendedHeader;
     OMX_U32 nMemUsage[VIDDEC_MEMLEVELS];
+    
+    /* Used to handle config buffer fragmentation on AVC*/
+    OMX_BOOL bConfigBufferCompleteAVC;
+    OMX_PTR pInternalConfigBufferAVC;
+    OMX_U32 nInternalConfigBufferFilledAVC;
 
 } VIDDEC_COMPONENT_PRIVATE;
 

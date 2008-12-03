@@ -4535,6 +4535,38 @@ EXIT:
 #endif
 
 #ifdef VIDDEC_ACTIVATEPARSER
+/*  ==========================================================================*/
+/*  func    VIDDEC_ScanConfigBufferAVC                                            */
+/*                                                                            */
+/*  desc    Use to scan buffer for certain patter. Used to know if ConfigBuffers are together                             */
+/*  ==========================================================================*/
+static OMX_U32 VIDDEC_ScanConfigBufferAVC(OMX_BUFFERHEADERTYPE* pBuffHead,  OMX_U32 pattern){
+    OMX_U32 nBitPosition = 0;
+    OMX_U32 nInBytePosition = 0;
+    OMX_U32 nPatternCounter = 0;
+    OMX_U32 nTotalInBytes = pBuffHead->nFilledLen;
+    OMX_U8* nBitStream = (OMX_U8*)pBuffHead->pBuffer;
+    
+    while (nInBytePosition < nTotalInBytes - 3){
+         if (VIDDEC_GetBits(&nBitPosition, 24, nBitStream, OMX_FALSE) != pattern) {
+              nBitPosition += 8;
+              nInBytePosition++;
+         }
+         else {
+             /*Pattern found; add count*/
+             nPatternCounter++;
+             nBitPosition += 24;
+             nInBytePosition += 3;
+         }
+    }
+    return nPatternCounter;
+}
+
+/*  ==========================================================================*/
+/*  func    VIDDEC_ParseVideo_H264                                             */
+/*                                                                            */
+/*  desc                                                                      */
+/*  ==========================================================================*/
 OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                                      OMX_BUFFERHEADERTYPE* pBuffHead,OMX_S32* nWidth,
                                      OMX_S32* nHeight, OMX_S32* nCropWidth,
@@ -4557,6 +4589,9 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     OMX_U8* nRbspByte = NULL;
 
     OMX_U8 *pDataBuf;
+    
+    /* counter used for fragmentation of Config Buffer Code */
+   static OMX_U32 nConfigBufferCounter;
 
     nTotalInBytes = pBuffHead->nFilledLen;
     nBitStream = (OMX_U8*)pBuffHead->pBuffer;/* + (OMX_U8*)pBuffHead->nOffset;*/
@@ -4565,6 +4600,89 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     sParserParam = (VIDDEC_AVC_ParserParam *)malloc(sizeof(VIDDEC_AVC_ParserParam));
 
     if (nType == 0) {
+        /* Start of Handle fragmentation of Config Buffer  Code*/
+        /*Scan for 2 "0x000001", requiered on buffer to parser properly*/
+        nConfigBufferCounter += VIDDEC_ScanConfigBufferAVC(pBuffHead, 0x000001);
+        if(nConfigBufferCounter < 2){ /*If less of 2 we need to store the data internally to later assembly the complete ConfigBuffer*/
+            /*Set flag to False, the Config Buffer is not complete */
+            pComponentPrivate->bConfigBufferCompleteAVC = OMX_FALSE;
+            /* Malloc Buffer if is not created yet, use Port  buffer size*/
+            if(pComponentPrivate->pInternalConfigBufferAVC == NULL){
+                pComponentPrivate->pInternalConfigBufferAVC = malloc(pComponentPrivate->pInPortDef->nBufferSize);
+                if(pComponentPrivate->pInternalConfigBufferAVC == NULL){
+                    eError = OMX_ErrorInsufficientResources;    
+                    goto EXIT;
+                }
+            }
+            /* Check if memcpy is safe*/
+            if(pComponentPrivate->pInPortDef->nBufferSize >= pComponentPrivate->nInternalConfigBufferFilledAVC + pBuffHead->nFilledLen){
+                /*Append current buffer data to Internal Config Buffer */
+                if(memcpy((OMX_U8*)(pComponentPrivate->pInternalConfigBufferAVC + pComponentPrivate->nInternalConfigBufferFilledAVC),
+                        pBuffHead->pBuffer,
+                        pBuffHead->nFilledLen) == NULL) {
+                          eError = OMX_ErrorInsufficientResources;    
+                          goto EXIT;
+                }
+            }
+            else{
+                eError =OMX_ErrorInsufficientResources;    
+                goto EXIT;
+            }
+            /*Update Filled length of Internal Buffer*/
+            pComponentPrivate->nInternalConfigBufferFilledAVC += pBuffHead->nFilledLen;
+            /* Exit with out error*/
+            eError = OMX_ErrorNone;
+            goto EXIT;
+        }
+        else{  /* We have all the requiered data*/
+             pComponentPrivate->bConfigBufferCompleteAVC = OMX_TRUE;
+             /* If we have already Config data of previous buffer, we assembly the final ConfigBuffer*/
+             if(pComponentPrivate->pInternalConfigBufferAVC != NULL){
+                  /*Check if memcpy is safe*/
+                 if(pComponentPrivate->pInPortDef->nBufferSize >= 
+                     pComponentPrivate->nInternalConfigBufferFilledAVC + pBuffHead->nFilledLen){
+                     /*The current data of the Buffer has to be placed at the end of buffer*/
+                     if(memcpy((OMX_U8*)(pBuffHead->pBuffer + pComponentPrivate->nInternalConfigBufferFilledAVC),
+                         pBuffHead->pBuffer,
+                         pBuffHead->nFilledLen) == NULL){ 
+                           eError = OMX_ErrorInsufficientResources;    
+                           goto EXIT;
+                    }
+                     /*The data internally stored has to be put at the begining of the buffer*/
+                     if(memcpy(pBuffHead->pBuffer,
+                         pComponentPrivate->pInternalConfigBufferAVC,
+                         pComponentPrivate->nInternalConfigBufferFilledAVC) == NULL){ 
+                           eError = OMX_ErrorInsufficientResources;
+                           goto EXIT;
+                     }
+                }
+                else{
+                    eError = OMX_ErrorInsufficientResources;
+                    goto EXIT;
+                 }
+              
+                 /*Update filled length of current buffer */
+                 pBuffHead->nFilledLen = pComponentPrivate->nInternalConfigBufferFilledAVC + pBuffHead->nFilledLen;
+                 /*Free Internal Buffer used to temporarly hold the data*/
+                 free(pComponentPrivate->pInternalConfigBufferAVC);
+                 /* Reset Internal Variables*/
+                 pComponentPrivate->pInternalConfigBufferAVC = NULL;
+                 pComponentPrivate->nInternalConfigBufferFilledAVC = 0;
+                 nConfigBufferCounter = 0;
+                 /* Update Buffer Variables before parsing */
+                 nTotalInBytes = pBuffHead->nFilledLen;
+                 free(nRbspByte);
+                 nRbspByte = (OMX_U8*)malloc(nTotalInBytes);
+                 if(nRbspByte == NULL){
+                     eError = OMX_ErrorInsufficientResources;    
+                     goto EXIT;
+                 }
+                 memset(nRbspByte, 0x0, nTotalInBytes);
+                 /*Buffer ready to be parse =) */
+            }
+        }
+         /* End of Handle fragmentation Config Buffer Code*/
+        
         do{
             for (; (!nStartFlag) && (nInBytePosition < nTotalInBytes - 3); )
             {
@@ -4887,11 +5005,23 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
 
         if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-			/*TODO: Fix OMX or OpenCore parser if require*/
-			eError = OMX_ErrorNone; /*Disable parser*/
-			goto EXIT;
             eError = VIDDEC_ParseVideo_H264( pComponentPrivate, pBuffHead, &nWidth, &nHeight,
                 &nCropWidth, &nCropHeight, pComponentPrivate->H264BitStreamFormat);
+            
+            /* Start Code to handle fragmentation of ConfigBuffer for AVC*/
+            if(pComponentPrivate->bConfigBufferCompleteAVC == OMX_FALSE){
+                /* We have received some part of the config Buffer.
+                 * Send EmptyThisBuffer of the buffer we have just received to Client
+                 */
+                pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
+                    pComponentPrivate->pHandle->pApplicationPrivate,
+                    pBuffHead);
+                /* Exit with out error to avoid sending again EmptyBufferDone in upper function*/
+                eError = OMX_ErrorNone;
+                goto EXIT;
+            }
+            /*End Code to handle fragmentation of ConfigBuffer for AVC*/
+            
             VIDDEC_BUFFERPRINT(" %x C(%d-%d) I(%d-%d) - %x \n", (unsigned int)pBuffHead, (unsigned int)nWidth,
                 (unsigned int)nHeight, (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
                 (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,eError);
@@ -5155,6 +5285,13 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     goto EXIT;
                 }
                 else {
+                    /* We have received only one part of the Config Buffer, we need to wait for more buffers. ONLY FOR AVC*/
+                    if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC &&
+                        pComponentPrivate->bConfigBufferCompleteAVC == FALSE){
+                        /* Set bFirstHeader flag to false so next buffer enters to ParseHeade again*/ 
+                        pComponentPrivate->bFirstHeader = OMX_FALSE;
+                        goto EXIT;
+                    }
                     eError = OMX_ErrorNone;
                 }
             }
