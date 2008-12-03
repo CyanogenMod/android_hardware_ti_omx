@@ -249,8 +249,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     char* EnvChangeValueu = NULL;
 #endif
 #ifdef ANDROID
-	/* print to logcat to verify that we are running a TI OMX codec*/
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: TI Video Decoder", __FUNCTION__);
+    /* print to logcat to verify that we are running a TI OMX codec*/
+    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: TI Video Decoder", __FUNCTION__);
 #endif
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
@@ -626,14 +626,14 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
                 goto EXIT;
             }
 #ifdef ANDROID
-			/*Workaround version to handle pv app */
-			/*After ports is been flush*/
+            /*Workaround version to handle pv app */
+            /*After ports is been flush*/
 
-			if (nParam1 == VIDDEC_INPUT_PORT && 
+            if (nParam1 == VIDDEC_INPUT_PORT && 
                     pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE &&
                     pComponentPrivate->bInPortSettingsChanged == OMX_TRUE) {
-				VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sDynConfigMutex);
-			}
+                VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sDynConfigMutex);
+            }
 #endif
             break;
         case OMX_CommandPortEnable:
@@ -1179,7 +1179,7 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 else if (((OMX_PARAM_PORTDEFINITIONTYPE*)(ComponentParameterStructure))->nPortIndex == 
                         pComponentPrivate->pOutPortDef->nPortIndex) {
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)ComponentParameterStructure;
-	                OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
+                    OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
                     memcpy(pPortDefParam, pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 } 
                 else {
@@ -1203,42 +1203,42 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 if (pPortFormat->nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
                     switch (pPortFormat->nIndex) {
                         case VIDDEC_DEFAULT_INPUT_INDEX_H263:
-							OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingH263", __FUNCTION__);
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_H263;
-							pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingH263;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
+                            OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingH263", __FUNCTION__);
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_H263;
+                            pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingH263;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
                             break;
                         case VIDDEC_DEFAULT_INPUT_INDEX_H264:
-							OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingAVC", __FUNCTION__);
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_H264;
+                            OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingAVC", __FUNCTION__);
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_H264;
                             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingAVC;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingAVC;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingAVC;
                             break;
                         case VIDDEC_DEFAULT_INPUT_INDEX_MPEG2:
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_MPEG2;
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_MPEG2;
                             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingMPEG2;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG2;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG2;
                             break;
                         case VIDDEC_DEFAULT_INPUT_INDEX_MPEG4:
-							OMX_DPRINT("%s: eCompressionFormat = VIDDEC_DEFAULT_INPUT_INDEX_MPEG4", __FUNCTION__);
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_MPEG4;
+                            OMX_DPRINT("%s: eCompressionFormat = VIDDEC_DEFAULT_INPUT_INDEX_MPEG4", __FUNCTION__);
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_MPEG4;
                             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingMPEG4;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG4;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG4;
                             break;
                         case VIDDEC_DEFAULT_INPUT_INDEX_WMV9:
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_WMV9;
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_WMV9;
                             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingWMV;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingWMV;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingWMV;
                             break;
 #ifdef VIDDEC_SPARK_CODE
                         case VIDDEC_DEFAULT_INPUT_INDEX_SPARK:
-							pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_SPARK;
+                            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_SPARK;
                             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingUnused;
-            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingUnused;
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingUnused;
                             break;
 #endif
                         default:
-                        	OMX_DPRINT("%s: Input Index= %d; OMX_ErrorNoMore", __FUNCTION__, pPortFormat->nIndex);
+                            OMX_DPRINT("%s: Input Index= %d; OMX_ErrorNoMore", __FUNCTION__, pPortFormat->nIndex);
                             eError = OMX_ErrorNoMore;
                             break;
                     }
@@ -1250,10 +1250,10 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 else if (pPortFormat->nPortIndex == pComponentPrivate->pOutPortFormat->nPortIndex) {
                     switch (pPortFormat->nIndex) {
                         case VIDDEC_DEFAULT_OUTPUT_INDEX_PLANAR420:
-						    pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT420;
+                            pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT420;
                             break;
                         case VIDDEC_DEFAULT_OUTPUT_INDEX_INTERLEAVED422:
-				            pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT422;
+                            pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT422;
                             break;
                         default:
                             eError = OMX_ErrorNoMore;
@@ -1427,28 +1427,28 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 if (pPortFormat->nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
                     if(pPortFormat->eColorFormat == OMX_COLOR_FormatUnused) {
                         switch (pPortFormat->eCompressionFormat) {
-							case OMX_VIDEO_CodingH263:
-	            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
-	                            break;
-	                        case OMX_VIDEO_CodingAVC:
-	            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingAVC;
-								OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingAVC", __FUNCTION__);
-	                            break;
-	                        case OMX_VIDEO_CodingMPEG2:
-	            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG2;
-	                            break;
-	                        case OMX_VIDEO_CodingMPEG4:
-								OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingMPEG4", __FUNCTION__);
-	            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG4;
-	                            break;
-	                        case OMX_VIDEO_CodingWMV:
-	            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingWMV;
-	                            break;
+                            case OMX_VIDEO_CodingH263:
+                                pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
+                                break;
+                            case OMX_VIDEO_CodingAVC:
+                                pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingAVC;
+                                OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingAVC", __FUNCTION__);
+                                break;
+                            case OMX_VIDEO_CodingMPEG2:
+                                pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG2;
+                                break;
+                            case OMX_VIDEO_CodingMPEG4:
+                                OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingMPEG4", __FUNCTION__);
+                                pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG4;
+                                break;
+                            case OMX_VIDEO_CodingWMV:
+                                pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingWMV;
+                                break;
 
 #ifdef VIDDEC_SPARK_CODE
                             case OMX_VIDEO_CodingUnused:
                                 if (pComponentPrivate->bIsSparkInput) {
-		            				pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingUnused;
+                                    pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingUnused;
                                 }
                                 else {
                                     eError = OMX_ErrorNoMore;
@@ -1471,10 +1471,10 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     if(pPortFormat->eCompressionFormat == OMX_VIDEO_CodingUnused) {
                         switch (pPortFormat->eColorFormat) {
                             case OMX_COLOR_FormatYUV420Planar:
-								pComponentPrivate->pOutPortDef->format.video.eColorFormat = VIDDEC_COLORFORMAT420;
+                                pComponentPrivate->pOutPortDef->format.video.eColorFormat = VIDDEC_COLORFORMAT420;
                                 break;
                             case OMX_COLOR_FormatCbYCrY:
-								pComponentPrivate->pOutPortDef->format.video.eColorFormat = VIDDEC_COLORFORMAT422;
+                                pComponentPrivate->pOutPortDef->format.video.eColorFormat = VIDDEC_COLORFORMAT422;
                                 break;
                             default:
                                 eError = OMX_ErrorNoMore;
@@ -1512,12 +1512,12 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 OMX_PARAM_PORTDEFINITIONTYPE* pComponentParam = (OMX_PARAM_PORTDEFINITIONTYPE*)pCompParam;
                 if (pComponentParam->nPortIndex == pComponentPrivate->pInPortDef->nPortIndex) {
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
-	                OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pInPortDef;
+                    OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pInPortDef;
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 }
                 else if (pComponentParam->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
-	                OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
+                    OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 }
                 else {
@@ -2084,7 +2084,7 @@ static OMX_ERRORTYPE VIDDEC_SetConfig (OMX_HANDLETYPE hComp,
                     ((VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->pPortDef[VIDDEC_INPUT_PORT] = pPortDef;
                     memcpy(pPortDef, pComponentConfig, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                     free(pPortDef);
-                } 
+                }
                 else if (pComponentConfig->nPortIndex == VIDDEC_OUTPUT_PORT) {
                     OMX_MALLOC_STRUCT(pPortDef, OMX_PARAM_PORTDEFINITIONTYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
                     if (pPortDef == NULL) {
@@ -2486,7 +2486,7 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
         (pComponentPrivate->bFirstHeader == OMX_FALSE) && 
         (pBuffHead->nFilledLen > pBuffHead->nAllocLen)) {
         OMX_DPRINT("%s: bFirstHeader: nFilledLen= %d <- nAllocLen= %d", __FUNCTION__, pBuffHead->nFilledLen, pBuffHead->nAllocLen);
-		
+
         pBuffHead->nFilledLen = pBuffHead->nAllocLen;
     }
     
@@ -2498,7 +2498,7 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     /*pBuffHead->nFlags = 0;*/
     VIDDEC_BUFFERPRINT("Writing pBuffer 0x%x OldeBufferOwner %d eBufferOwner %d nFilledLen %d\n",
         (int*)pBuffHead, ret,(int*)pBufferPrivate->eBufferOwner,(int*)pBuffHead->nFilledLen);
-	OMX_DPRINT("%s: Writing pBuffer 0x%x OldeBufferOwner %d eBufferOwner %d nFilledLen %d\n",
+    OMX_DPRINT("%s: Writing pBuffer 0x%x OldeBufferOwner %d eBufferOwner %d nFilledLen %d\n",
         __FUNCTION__, (int*)pBuffHead, ret,(int*)pBufferPrivate->eBufferOwner,(int*)pBuffHead->nFilledLen);
     ret = write (pComponentPrivate->free_outBuf_Q[1], &(pBuffHead), sizeof (pBuffHead));
     if (ret == -1) {
