@@ -12,13 +12,19 @@ LOCAL_SRC_FILES:= \
 LOCAL_C_INCLUDES += \
 	$(TI_OMX_INCLUDES) \
 	$(TI_BRIDGE_TOP)/api/inc		\
-	$(TI_OMX_SYSTEM)/lcml/inc	
+	$(TI_OMX_SYSTEM)/lcml/inc	\
+	$(TI_OMX_SYSTEM)/perf/inc
 
 LOCAL_SHARED_LIBRARIES := \
 	libdl 		\
 	libbridge	\
-	libOMX_Core
+	libOMX_Core \
 
+
+ifeq ($(PERF_INSTRUMENTATION),1)
+LOCAL_SHARED_LIBRARIES += \
+	libPERF
+endif
 
 LOCAL_CFLAGS := $(TI_OMX_CFLAGS)
 
