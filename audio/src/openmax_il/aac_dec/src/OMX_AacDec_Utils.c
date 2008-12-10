@@ -1580,6 +1580,10 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     char *pArgs = "damedesuStr";
     OMX_U32 pValues[4];
     OMX_U32 pValues1[4];
+    int iObjectType = 0;
+    int iSampleRateIndex = 0;
+    OMX_U32 nBitPosition = 0;
+    OMX_U8* pHeaderStream = (OMX_U8*)pBufHeader->pBuffer;
 
     pBufHeader->pPlatformPrivate  = pComponentPrivate;
     eError = AACDEC_GetBufferDirection(pBufHeader, &eDir);
@@ -1649,41 +1653,45 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 /*we will parse the config data here when we know how, then set the codec params per case*/
 
                 if (pComponentPrivate->bConfigData){
-                    AACDEC_DPRINT ("!!!ignoring first buffer/frame for ANDROID %d\n",__LINE__);
-                    /* @TODO: save buffer like vid_dec does incase needed later */
-                    /* @TODO: parse buffer for codec config info */
+                    iObjectType = AACDEC_GetBits(&nBitPosition, 5, pHeaderStream, OMX_TRUE);
+                    if(iObjectType == OBJECTTYPE_LC)
+                    {
+                        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
+                    }
+                    else if (iObjectType == OBJECTTYPE_HE)
+                    {
+                        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
+                    }
+                    else if (iObjectType == OBJECTTYPE_HE2)
+                    {
+                        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
+                    }
+                    iSampleRateIndex = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
+                    pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = iSampleRateIndex;
+                    __android_log_print (ANDROID_LOG_VERBOSE, __FILE__,"Parsing AudioSpecificConfig() %d\n",__FUNCTION__, __LINE__);
+                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: profile=%d", __FUNCTION__, iObjectType);                    
+                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: iSampleRateIndex=%d", __FUNCTION__, iSampleRateIndex);                    
+                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: nFilledLen=%d", __FUNCTION__, pBufHeader->nFilledLen);
+                    
+                    // we are done with this config buffer, let the application know
                     pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pBufHeader);
+
+                    // should also send PortSettingsChanged event here ?
+                    
                     pComponentPrivate->bConfigData = 0;
                     goto EXIT;
                 }
 
-/* lets pretend this is the data we got from the parser
-   YOU MAY also change these values to test until the data is actually parsed above */
-                pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
-                pComponentPrivate->aacParams->nSampleRate = 44100;
-                pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
-
-/* were also going to force the codec to use RAW since we don't send the config data onwards */
                 pComponentPrivate->AACDEC_UALGParam->bRawFormat = 1;
 
-/* dasf mode should always be false (for now) for Android */
+/* dasf mode should always be false (for now) under Android */
                 pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
 
                 switch(pComponentPrivate->aacParams->eAACProfile){
-                    case OMX_AUDIO_AACObjectSSR:
-                        pComponentPrivate->nProfile = EProfileSSR;
-                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
-                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
-                        break;
                     case OMX_AUDIO_AACObjectLTP:
                         pComponentPrivate->nProfile = EProfileLTP;
-                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
-                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
-                        break;
-                    case OMX_AUDIO_AACObjectMain:
-                        pComponentPrivate->nProfile = EProfileMain;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
                         break;
@@ -1698,12 +1706,14 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                     case OMX_AUDIO_AACObjectLC:
-                    default: /* we will use LC profile as the default */
+                    default: /* we will use LC profile as the default, SSR and Main Profiles are not supported */
+                        __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN Switch::ObjectLC", __FUNCTION__);
                         pComponentPrivate->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
                         break;
                 }
+
 #else
 
                 if(pComponentPrivate->parameteric_stereo == PARAMETRIC_STEREO_AACDEC){
@@ -3316,6 +3326,44 @@ int myfree(void *dp, int line, char *s)
 }
 #endif
 
+
+/*  =========================================================================*/
+/*  func    GetBits                                                          */
+/*                                                                           */
+/*  desc    Gets aBits number of bits from position aPosition of one buffer  */
+/*            and returns the value in a TUint value.                        */
+/*  =========================================================================*/
+OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition)
+{
+    OMX_U32 nOutput;
+    OMX_U32 nNumBitsRead = 0;
+    OMX_U32 nBytePosition = 0;
+    OMX_U8  nBitPosition =  0;
+    nBytePosition = *nPosition / 8;
+    nBitPosition =  *nPosition % 8;
+
+    if (bIcreasePosition)
+        *nPosition += nBits;
+    nOutput = ((OMX_U32)pBuffer[nBytePosition] << (24+nBitPosition) );
+    nNumBitsRead = nNumBitsRead + (8 - nBitPosition);
+    if (nNumBitsRead < nBits)
+    {
+        nOutput = nOutput | ( pBuffer[nBytePosition + 1] << (16+nBitPosition));
+        nNumBitsRead = nNumBitsRead + 8;
+    }
+    if (nNumBitsRead < nBits)
+    {
+        nOutput = nOutput | ( pBuffer[nBytePosition + 2] << (8+nBitPosition));
+        nNumBitsRead = nNumBitsRead + 8;
+    }
+    if (nNumBitsRead < nBits)
+    {
+        nOutput = nOutput | ( pBuffer[nBytePosition + 3] << (nBitPosition));
+        nNumBitsRead = nNumBitsRead + 8;
+    }
+    nOutput = nOutput >> (32 - nBits) ;
+    return nOutput;
+}
 /*
 void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {

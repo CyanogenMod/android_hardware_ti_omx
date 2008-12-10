@@ -68,6 +68,9 @@
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #define ANDROID
+#define OBJECTTYPE_LC 2
+#define OBJECTTYPE_HE 5
+#define OBJECTTYPE_HE2 29
 
 #define EXIT_COMPONENT_THRD  10
 
@@ -1286,4 +1289,13 @@ OMX_U32 AACDEC_IsValid(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuf
 /*=======================================================================*/
 int AACDec_GetSampleRateIndexL( const int aRate);
 void* AACDEC_ComponentThread (void* pThreadData);
+
+/*  =========================================================================*/
+/*  func    GetBits                                                          */
+/*                                                                           */
+/*  desc    Gets aBits number of bits from position aPosition of one buffer  */
+/*            and returns the value in a TUint value.                        */
+/*  =========================================================================*/
+OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition);
+
 #endif
