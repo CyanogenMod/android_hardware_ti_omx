@@ -63,8 +63,13 @@ endif
 
 #call to audio
 include $(TI_OMX_AUDIO)/aac_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/aac_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/mp3_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/nbamr_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/nbamr_enc/src/Android.mk
+include $(TI_OMX_AUDIO)/wbamr_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/wbamr_enc/src/Android.mk
+
 
 #call to video
 include $(TI_OMX_VIDEO)/video_decode/Android.mk
