@@ -47,7 +47,7 @@
     #include <sys/types.h>
     #include <malloc.h>
     #include <memory.h>
-    #include <wait.h>
+    #include <sys/wait.h>
     #include <sys/types.h>
     #include <sys/stat.h>
     #include <fcntl.h>
@@ -1381,4 +1381,3 @@ OMX_S32 VIDDEC_UVLC_dec(OMX_U32 *nPosition, OMX_U8* pBuffer);
 
 #endif
 #endif
-

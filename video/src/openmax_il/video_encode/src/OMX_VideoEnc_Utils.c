@@ -58,7 +58,7 @@
 #else
     #include <unistd.h>
     #include <sys/types.h>
-    #include <wait.h>
+    #include <sys/wait.h>
     #include <sys/types.h>
     #include <sys/select.h>
     #include <sys/stat.h>
@@ -3762,5 +3762,3 @@ void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData)
 
 }
 #endif
-
-
