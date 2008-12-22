@@ -2959,7 +2959,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     else {
                         pDynParams->ulDisplayWidth = 0;
                     }
-					pDynParams->ulDecodeHeader = 0;
+                    pDynParams->ulDecodeHeader = 0;
                     pDynParams->ulFrameSkipMode = 0;
                     pDynParams->ulPPType = 0;
                     pDynParams->ulPpNone = 0;
@@ -5179,8 +5179,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4  ||
             pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-            if(!( pComponentPrivate->pInPortDef->format.video.nFrameWidth > 730 ||
-                pComponentPrivate->pInPortDef->format.video.nFrameHeight > 730)) {
+            if(( pComponentPrivate->pInPortDef->format.video.nFrameWidth != 864 ||
+                pComponentPrivate->pInPortDef->format.video.nFrameHeight != 864)) {
                 VIDDEC_ParseVideo_MPEG4( &nWidth, &nHeight, pBuffHead);
             }
             else {
@@ -5252,7 +5252,10 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             }
             pComponentPrivate->pInPortDef->format.video.nFrameWidth = nWidth;
             pComponentPrivate->pInPortDef->format.video.nFrameHeight = nHeight;
+#ifndef ANDROID
+            /*OpenCORE doesn't support dynamic input port configuration*/
             bInPortSettingsChanged = OMX_TRUE;
+#endif
         }
         if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
             pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
@@ -5553,7 +5556,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && pComponentPrivate->ProcessMode == 1)) &&
             pComponentPrivate->bParserEnabled) {
             if (pComponentPrivate->bFirstHeader == OMX_FALSE) {
-            pComponentPrivate->bFirstHeader = OMX_TRUE;
+                pComponentPrivate->bFirstHeader = OMX_TRUE;
                 eError = VIDDEC_ParseHeader( pComponentPrivate, pBuffHead);
                 if(eError != OMX_ErrorNone)
                 {
@@ -8135,15 +8138,26 @@ OMX_ERRORTYPE VIDDEC_CopyBuffer(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_DPRINT("%s: pBuffer=%p", __FUNCTION__, pBuffHead->pBuffer);
     OMX_PTR pTemp = NULL;
     pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
-    OMX_MALLOC_STRUCT_SIZED(pTemp, OMX_U8, pBuffHead->nFilledLen, NULL);
-    memcpy(pTemp, pBuffHead->pBuffer, pBuffHead->nFilledLen); /*copy somewere actual buffer*/
-    memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer to the beganing of pBuffer.*/
-    memcpy(pBuffHead->pBuffer+((OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen), (OMX_U8 *)pTemp, pBuffHead->nFilledLen); /* copy back actual buffer after first buffer*/
-    pBuffHead->nFilledLen += (OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen; /*Add first buffer size*/
+    if(pBuffHead->nFilledLen > pComponentPrivate->eFirstBuffer.nFilledLen){
+        OMX_MALLOC_STRUCT_SIZED(pTemp, OMX_U8, pBuffHead->nFilledLen, NULL);
+        memcpy(pTemp, pBuffHead->pBuffer, pBuffHead->nFilledLen); /*copy somewere actual buffer*/
+        memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer to the beganing of pBuffer.*/
+        memcpy(pBuffHead->pBuffer+((OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen), (OMX_U8 *)pTemp, pBuffHead->nFilledLen); /* copy back actual buffer after first buffer*/
+        pBuffHead->nFilledLen += (OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen; /*Add first buffer size*/
 
-    free(pTemp);
-    free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
-    pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+        free(pTemp);
+        free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
+        pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+    }
+    /*The first buffer has more information than the second, so the first buffer will be send to codec*/
+    /*We are loosing the second fame. TODO: Fix this*/
+    else{
+        /*copy first buffer data to the actual buffer*/
+        memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer*/
+        pBuffHead->nFilledLen = pComponentPrivate->eFirstBuffer.nFilledLen; /*Update buffer size*/
+        free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
+        pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+    }
 
 EXIT:
     OMX_DPRINT("%s: OUT", __FUNCTION__);
