@@ -305,12 +305,12 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_PADDING_HALF                           VIDDEC_PADDING_FULL / 2
 
 #define VIDDEC_CLEARFLAGS                             0
-#define VIDDEC_BOTH_PORT                              VIDDEC_MINUS
 #define H264VDEC_SN_MAX_NALUNITS                      1200
 
 #define VIDDEC_RM_FREC_MPEG4_QCIF                     30
 #define VIDDEC_RM_FREC_MPEG4_CIF                      80
 #define VIDDEC_RM_FREC_MPEG4_VGA                      165
+#define VIDDEC_RM_FREC_MPEG4_720P                     401
 
 #define VIDDEC_RM_FREC_MPEG2_QCIF                     30
 #define VIDDEC_RM_FREC_MPEG2_CIF                      80
@@ -349,6 +349,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_VGA_WIDTH                              640
 #define VIDDEC_VGA_HEIGHT                             480
 
+#define VIDDEC_D1MAX_WIDTH                            720
+#define VIDDEC_D1MAX_HEIGHT                           576
 #define VIDDEC_WMV_PROFILE_ID0                          0
 #define VIDDEC_WMV_PROFILE_ID1                          1
 #define VIDDEC_WMV_PROFILE_ID2                          2
@@ -359,8 +361,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_WMV_PROFILE_ID7                          7
 #define VIDDEC_WMV_PROFILE_ID8                          8
 
-#define VIDDEC_MAX_QUEUE_SIZE                         128
-
+#define VIDDEC_MAX_QUEUE_SIZE                           256
+#define VIDDEC_WMV_BUFFER_OFFSET                        255 - 4
 #define VIDDEC_WMV_ELEMSTREAM                           0
 #define VIDDEC_WMV_RCVSTREAM                            1
 
@@ -384,6 +386,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
  #endif
 #endif
 
+#define OMX_BUFFERFLAG_CODECCONFIG 0x00000080
 /*#define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 6*/
 typedef struct VIDDEC_CUSTOM_PARAM
 {
@@ -867,6 +870,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U32 bTransPause;
     OMX_U32 ProcessMode;
     OMX_U32 H264BitStreamFormat;
+    OMX_BOOL MPEG4Codec_IsTI;
  #ifdef VIDDEC_FLAGGED_EOS
     OMX_BOOL bUseFlaggedEos;
     OMX_BUFFERHEADERTYPE pTempBuffHead;
@@ -893,9 +897,16 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U8 cMBErrorIndexIn;
     OMX_U8 cMBErrorIndexOut;
 #endif
+    OMX_U8 nInMarkBufIndex;                          /* for OMX_MARKTYPE */
+    OMX_U8 nOutMarkBufIndex;                         /* for OMX_MARKTYPE */
+    OMX_MARKTYPE arrMarkBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for OMX_MARKTYPE */
+
+    OMX_U8 nInCmdMarkBufIndex;                          /* for OMX_MARKTYPE */
+    OMX_U8 nOutCmdMarkBufIndex;                         /* for OMX_MARKTYPE */
+    OMX_MARKTYPE arrCmdMarkBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for OMX_MARKTYPE */
     OMX_U8 nInBufIndex;                          /* for time stamps */
     OMX_U8 nOutBufIndex;                         /* for time stamps */
-    OMX_U64 arrBufIndex[MAX_PRIVATE_BUFFERS]; /* for time stamps */
+    OMX_U64 arrBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for time stamps */
     OMX_MARKTYPE           MTbuffMark;
     VIDDEC_QUEUE_TYPE      qBuffMark;
     VIDDEC_QUEUE_TYPE      qCmdMarkData;
@@ -960,6 +971,10 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BUFFERHEADERTYPE pBufferTemp;
     OMX_U32 pRCVExtendedHeader;
     OMX_U32 nMemUsage[VIDDEC_MEMLEVELS];
+    OMX_U32 nDisplayWidth;
+    OMX_U8* pCodecData; /* codec-specific data coming from the demuxer */
+    OMX_U32 nCodecDataSize;
+	OMX_BOOL bVC1Fix;
     
     /* Used to handle config buffer fragmentation on AVC*/
     OMX_BOOL bConfigBufferCompleteAVC;

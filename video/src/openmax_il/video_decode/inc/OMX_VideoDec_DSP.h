@@ -57,6 +57,7 @@
 #ifndef UNDER_CE
     #define H264_DEC_NODE_DLL  "/lib/dsp/h264vdec_sn.dll64P" 
     #define MP4_DEC_NODE_DLL   "/lib/dsp/mp4vdec_sn.dll64P"
+    #define MP4720P_DEC_NODE_DLL   "/lib/dsp/mpeg4aridec_sn.dll64P"
     #define MP2_DEC_NODE_DLL   "/lib/dsp/mp2vdec_sn.dll64P"
     #define WMV_DEC_NODE_DLL   "/lib/dsp/wmv9dec_sn.dll64P"
     #define RINGIO_NODE_DLL    "/lib/dsp/ringio.dll64P"
@@ -79,6 +80,13 @@
 #define CEILING_1000X(x) ((OMX_U32)(x) + (1000-(OMX_U32)(x)%1000))
 
 #define STRING_UUID_LENGHT 37
+/* DIVX_1.0_ARICENT_uuid */
+#define STRING_MP4D720PSOCKET_TI_UUID "E7FDD4D8_4F0B_4325_A430_E5729975F54A"
+static const struct DSP_UUID MP4D720PSOCKET_TI_UUID = {
+    0xe7fdd4d8, 0x4f0b, 0x4325, 0xa4, 0x30, {
+    0xe5, 0x72, 0x99, 0x75, 0xf5, 0x4a
+    }
+};
 /* MP4VDSOCKET_TI_UUID = 7E4B8541_47A1_11D6_B156_00B0D017674B */
 #define STRING_MP4DSOCKET_TI_UUID "7E4B8541_47A1_11D6_B156_00B0D017674B"
 static const struct DSP_UUID MP4DSOCKET_TI_UUID = {
@@ -138,6 +146,7 @@ typedef struct WMV9DEC_SNCreatePhArg {
     OMX_U16 unOutputStreamID;
     OMX_U16 unOutputBufferType;
     OMX_U16 unOutputNumBufsPerStream;  
+    OMX_U16 unReserved;
 
     OMX_U32 ulMaxWidth;
     OMX_U32 ulMaxHeight;
@@ -216,6 +225,7 @@ typedef struct MP2VDEC_SNCreatePhArg
     OMX_U16     unOutputStreamID;
     OMX_U16     unOutputBufferType;
     OMX_U16     unOutputNumBufsPerStream;
+    OMX_U16     unReserved;
     
     OMX_U32     ulMaxWidth; 
     OMX_U32     ulMaxHeight;
@@ -255,6 +265,7 @@ typedef struct MP4VD_GPP_SN_Obj_CreatePhase {
     OMX_U16 unOutputStreamID;
     OMX_U16 unOutputBufferType;
     OMX_U16 unOutputNumBufsPerStream;
+    OMX_U16 unReserved;
 
     OMX_U32 ulMaxWidth; 
     OMX_U32 ulMaxHeight;
@@ -296,6 +307,7 @@ typedef struct H264VDEC_SNCreatePhArg {
    OMX_U16 unOutputStreamID;
    OMX_U16 unOutputBufferType;
    OMX_U16 unOutputNumBufsPerStream;  
+   OMX_U16 unReserved;
 
    OMX_U32 ulMaxWidth;
    OMX_U32 ulMaxHeight;

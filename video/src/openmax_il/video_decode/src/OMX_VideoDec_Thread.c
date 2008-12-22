@@ -259,6 +259,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                         OMX_VidDec_Return(pComponentPrivate);
                         OMX_VidDec_Return(pComponentPrivate);
                         VIDDEC_Handle_InvalidState( pComponentPrivate);
+                        break;
                     }
                 } 
                 else if (eCmd == OMX_CommandPortDisable) {
@@ -287,11 +288,11 @@ void* OMX_VidDec_Thread (void* pThreadData)
                 }
                 else if (eCmd == OMX_CommandMarkBuffer)    {
                     read(pComponentPrivate->cmdDataPipe[VIDDEC_PIPE_READ], &pCmdData, sizeof(pCmdData));
-                    eError = VIDDEC_Queue_Add(&pComponentPrivate->qCmdMarkData, pCmdData, VIDDEC_QUEUE_OMX_MARKTYPE);
-                    if(eError != OMX_ErrorNone)
-                    {
-                        VIDDECODER_EPRINT("Error in queue resources\n");
-                    }
+                    pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nInCmdMarkBufIndex].hMarkTargetComponent = ((OMX_MARKTYPE*)(pCmdData))->hMarkTargetComponent;
+                    pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nInCmdMarkBufIndex].pMarkData = ((OMX_MARKTYPE*)(pCmdData))->pMarkData;
+                    pComponentPrivate->nInCmdMarkBufIndex++;
+                    pComponentPrivate->nInCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+
                 }
 #ifndef UNDER_CE
     bFlag = OMX_FALSE;
