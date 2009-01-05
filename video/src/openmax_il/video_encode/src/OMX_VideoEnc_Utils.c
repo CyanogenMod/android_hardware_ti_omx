@@ -56,6 +56,7 @@
     #include <stdlib.h>
     #include <pthread.h>
 #else
+    #include <wchar.h>
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/wait.h>

@@ -57,7 +57,7 @@
 #include <omx_core.h>
 
 #else
-
+#include <wchar.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>

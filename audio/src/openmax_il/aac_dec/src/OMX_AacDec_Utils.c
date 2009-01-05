@@ -60,6 +60,7 @@
 #include <omx_core.h>
 #include <stdlib.h>
 #else
+#include <wchar.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>

@@ -56,6 +56,7 @@
 #include <oaf_osal.h>
 #include <omx_core.h>
 #else
+#include <wchar.h>
 #include <dbapi.h>
 #include <unistd.h>
 #include <sys/time.h>

@@ -53,6 +53,7 @@
 #ifdef UNDER_CE
 #include <windows.h>
 #else
+#include <wchar.h>
 #include <unistd.h>
 #include <dbapi.h>
 #include <string.h>

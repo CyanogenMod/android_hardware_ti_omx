@@ -42,6 +42,7 @@
     #include <windows.h>
     #include <oaf_osal.h>
 #else
+    #include <wchar.h>
     #include <unistd.h>
     #include <sys/time.h>
     #include <sys/types.h>

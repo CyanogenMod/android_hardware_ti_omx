@@ -43,6 +43,7 @@
     #include <sys/select.h>
     #include <signal.h>
     #include <pthread.h>
+    #include <wchar.h>
     #include <unistd.h>
     #include <sys/types.h>
     #include <malloc.h>

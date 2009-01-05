@@ -55,6 +55,7 @@
 #include <oaf_osal.h>
 #include <omx_core.h>
 #else
+#include <wchar.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
