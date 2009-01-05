@@ -1943,6 +1943,9 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                   OMX_CommandFlush,
                                   1,NULL);
         }
+        if (!(pBufHeader->nFilledLen > 0)){
+            pComponentPrivate->bIsEOFSent = OMX_TRUE;
+        }
     }
     else {
         AACDEC_DPRINT ("%d : BufferHeader %p, Buffer %p Unknown ..........\n",__LINE__,pBufHeader, pBufHeader->pBuffer);
@@ -2305,6 +2308,19 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->curState = OMX_StateIdle;
+
+		if (!(pLcmlHdr->pBufHdr->nFilledLen > 0)){
+			if (pComponentPrivate->bIsEOFSent){
+				AACDEC_DPRINT ("Adding EOS flag for PV\n");
+				pLcmlHdr->pBufHdr->nFlags |= OMX_BUFFERFLAG_EOS;
+				pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+										  pComponentPrivate->pHandle->pApplicationPrivate,
+										  OMX_EventBufferFlag,
+										  1,
+										  OMX_BUFFERFLAG_EOS, NULL);
+				pComponentPrivate->bIsEOFSent = 0;
+			}
+		}
 
 #ifdef RESOURCE_MANAGER_ENABLED
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
