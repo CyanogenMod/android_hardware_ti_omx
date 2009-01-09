@@ -57,7 +57,6 @@
     #include <omx_core.h>
 #else
 	#define _XOPEN_SOURCE 600
-    #include <wchar.h>
     #include <unistd.h>
     #include <sys/select.h>
     #include <errno.h>

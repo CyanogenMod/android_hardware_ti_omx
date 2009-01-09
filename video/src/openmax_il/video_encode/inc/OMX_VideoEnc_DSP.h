@@ -181,6 +181,8 @@ typedef struct H264VE_GPP_SN_Obj_CreatePhase {
     unsigned short usBuffTypeInStream2;
     unsigned short usMaxBuffsInStream2;
 
+    unsigned short usReserved1;
+
     unsigned int   ulWidth;
     unsigned int   ulHeight;
     unsigned int   ulTargetBitRate;
@@ -198,6 +200,8 @@ typedef struct H264VE_GPP_SN_Obj_CreatePhase {
     unsigned char  ucQPIFrame;
     unsigned char  ucProfile;
     unsigned char  ucLevel;
+
+	unsigned short usNalCallback;
 
 	unsigned int   ulEncodingPreset;
 	unsigned int   ulRcAlgo;
@@ -297,7 +301,11 @@ typedef struct H264VE_GPP_SN_UALGInputParams
 /* H264 Encoder DSP s/n run-time output parameters */
 typedef struct H264VE_GPP_SN_UALGOutputParams {
     OMX_U32   ulBitstreamSize;
-    OMX_S8    cFrameType;
+	OMX_S32   lFrameType;
+	OMX_U32   ulNALUnitsPerFrame;	/*Number of total NAL units per frame*/
+	OMX_U32   ulNALUnitsSizes[1618];
+	OMX_U32   ulFrameIndex;			/*Gives the number of the input frame wich NAL unit belongs*/
+	OMX_U32   ulNALUnitIndex;		/*Number of current NAL unit inside the frame*/
 } H264VE_GPP_SN_UALGOutputParams;
 
 /* MPEG4/H263 Encoder DSP s/n create phase arguments */

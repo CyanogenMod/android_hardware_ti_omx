@@ -64,6 +64,7 @@
     #include <oaf_debug.h>
     #include <pthread.h>
 #endif
+#include "OMX_TI_Common.h"
 
 /* this is the max of VIDENC_MAX_NUM_OF_IN_BUFFERS and VIDENC_MAX_NUM_OF_OUT_BUFFERS */
 #define VIDENC_MAX_NUM_OF_BUFFERS     5
@@ -78,12 +79,7 @@
     #define GPP_PRIVATE_NODE_HEAP
 #endif
 
-#if 1
-    #define VIDENC_NUM_CUSTOM_INDEXES 22
-    #define __NAL_IMPLEMENTATION__
-#else
-    #define VIDENC_NUM_CUSTOM_INDEXES 20
-#endif
+#define VIDENC_NUM_CUSTOM_INDEXES 23
 
 #if 1
     #define __KHRONOS_CONF__
@@ -100,7 +96,7 @@
 #ifndef __KHRONOS_CONF_1_1__
     #define OMX_BUFFERFLAG_SYNCFRAME 0x00000040 
 #endif
-#define OMX_CFRAMETYPE_H264 1
+#define OMX_LFRAMETYPE_H264 1
 #define OMX_CFRAMETYPE_MPEG4 1
 /*Select Timeout */
 #define  VIDENC_TIMEOUT_SEC 120;
@@ -377,14 +373,6 @@ typedef struct VIDENC_CUSTOM_DEFINITION
     OMX_INDEXTYPE nCustomIndex;
 } VIDENC_CUSTOM_DEFINITION;
 
-#ifdef __NAL_IMPLEMENTATION__ 
-/*Structures for NAL Support*/
-typedef struct VIDENC_NAL_NODE {
-    OMX_U32 Size;
-    struct VIDENC_NAL_NODE* pNext;
-}VIDENC_NAL_NODE;
-#endif
-
 typedef struct OMX_CONF_CIRCULAR_BUFFER_NODE {
     OMX_HANDLETYPE hMarkTargetComponent;
     OMX_PTR pMarkData;
@@ -410,9 +398,10 @@ typedef enum VIDENC_CUSTOM_INDEX {
     VideoEncodeCustomConfigIndexQPI,
     VideoEncodeCustomConfigIndexAIRRate,
     VideoEncodeCustomConfigIndexTargetBitRate,
-    VideoEncodeCustomConfigIndexNAL,
-    VideoEncodeCustomConfigIndexNALnd,
-    /*ASO*/
+    /*Segment mode Metadata*/
+	VideoEncodeCustomConfigIndexMVDataEnable,
+	VideoEncodeCustomConfigIndexResyncDataEnable,
+	/*ASO*/
     VideoEncodeCustomConfigIndexNumSliceASO,
     VideoEncodeCustomConfigIndexAsoSliceOrder,
     /*FMO*/
@@ -422,15 +411,13 @@ typedef enum VIDENC_CUSTOM_INDEX {
     VideoEncodeCustomConfigIndexSliceGroupChangeRate,
     VideoEncodeCustomConfigIndexSliceGroupChangeCycle,
     VideoEncodeCustomConfigIndexSliceGroupParams,
-	/*Segment mode information*/
-	VideoEncodeCustomConfigIndexMVDataEnable,
-	VideoEncodeCustomConfigIndexResyncDataEnable,
 	/*others*/
 	VideoEncodeCustomConfigIndexMIRRate,
     VideoEncodeCustomConfigIndexMaxMVperMB,
     VideoEncodeCustomConfigIndexIntra4x4EnableIdc,
     /*only for H264*/
-    VideoEncodeCustomParamIndexEncodingPreset
+    VideoEncodeCustomParamIndexEncodingPreset,
+	VideoEncodeCustomParamIndexNALFormat
 } VIDENC_CUSTOM_INDEX;
 
 typedef enum VIDENC_BUFFER_OWNER {
@@ -439,6 +426,12 @@ typedef enum VIDENC_BUFFER_OWNER {
     VIDENC_BUFFER_WITH_DSP,
     VIDENC_BUFFER_WITH_TUNNELEDCOMP 
 } VIDENC_BUFFER_OWNER;
+
+typedef enum VIDENC_AVC_NAL_FORMAT {
+	VIDENC_AVC_NAL_UNIT = 0,	/*Default, one buffer per frame, no NAL mode*/
+	VIDENC_AVC_NAL_SLICE,		/*One NAL unit per buffer, one or more NAL units conforms a Frame*/
+	VIDENC_AVC_NAL_FRAME		/*One frame per buffer, one or more NAL units inside the buffer*/
+}VIDENC_AVC_NAL_FORMAT;
 
 typedef struct VIDENC_BUFFER_PRIVATE {
 	OMX_PTR pMetaData;/*pointer to metadata structure, this structure is used when MPEG4 segment mode is enabled  */
@@ -475,6 +468,22 @@ typedef struct VIDEOENC_PORT_TYPE {
 	OMX_VIDEO_PARAM_BITRATETYPE* pBitRateType;
     VIDENC_BUFFER_PRIVATE* pBufferPrivate[VIDENC_MAX_NUM_OF_BUFFERS];
 } VIDEOENC_PORT_TYPE;
+
+typedef enum OMX_EXTRADATATYPE {
+	OMX_ExtraDataNone = 0,
+	OMX_ExtraDataQuantization
+} OMX_EXTRADATATYPE;
+
+typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2 {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_EXTRADATATYPE eType;
+	OMX_U32 nDataSize;
+	OMX_U8 data[1];
+} OMX_OTHER_EXTRADATATYPE_1_1_2;
+
+
 
 /**
  * The VIDENC_COMPONENT_PRIVATE data structure is used to store component's 
@@ -544,12 +553,6 @@ typedef struct VIDENC_COMPONENT_PRIVATE{
     OMX_BOOL bHandlingFatalError;
     OMX_BOOL bUnresponsiveDsp;
     VIDENC_NODE*  pMemoryListHead;
-#ifdef __NAL_IMPLEMENTATION__    
-    VIDENC_NAL_NODE* pNALListHead;
-    OMX_BOOL bNAL;
-    OMX_U32 nNALCounter;
-    OMX_U32* pNAL_nd;
-#endif
     OMX_CONF_CIRCULAR_BUFFER sCircularBuffer;
 
 #ifdef __KHRONOS_CONF__
@@ -589,6 +592,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE{
     OMX_U8 InIdle_goingtoloaded;
 #endif
 	unsigned int nEncodingPreset;
+	VIDENC_AVC_NAL_FORMAT AVCNALFormat;
 	OMX_BOOL bMVDataEnable;
 	OMX_BOOL bResyncDataEnable;
 	IH264VENC_Intra4x4Params intra4x4EnableIdc;
@@ -597,6 +601,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE{
 	RMPROXY_CALLBACKTYPE cRMCallBack;
 	#endif
 	OMX_BOOL bPreempted;
+	OMX_VIDEO_CODINGTYPE compressionFormats[3];
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
@@ -606,7 +611,7 @@ typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
 #ifndef UNDER_CE
     OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComp);
 #endif
-OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, TUsnCodecEvent eEvent);
+OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, TUsnCodecEvent eEvent, void* argsCb []);
 
 OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSet(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1);
 

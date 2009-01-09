@@ -50,7 +50,6 @@
 #ifdef UNDER_CE
     #include <windows.h>
 #else
-    #include <wchar.h>
     #include <unistd.h>
     #include <sys/time.h>
     #include <sys/types.h>
