@@ -1,4 +1,6 @@
 
+ifdef HARDWARE_OMX
+
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -81,3 +83,4 @@ include $(TI_OMX_VIDEO)/video_encode/Android.mk
 include $(TI_OMX_IMAGE)/jpeg_enc/Android.mk
 include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
 
+endif
