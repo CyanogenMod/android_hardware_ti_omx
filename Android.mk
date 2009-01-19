@@ -44,7 +44,6 @@ TI_OMX_COMP_SHARED_LIBRARIES += \
 endif
 
 TI_OMX_COMP_C_INCLUDES := \
-	kernel/include/linux \
 	$(TI_OMX_INCLUDES) \
 	$(TI_BRIDGE_TOP)/api/inc \
 	$(TI_OMX_SYSTEM)/lcml/inc \
