@@ -252,6 +252,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     ((AMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
 	pComponentPrivate = pHandle->pComponentPrivate;
 
+#ifdef ANDROID /* leave this now, we may need them later. */
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_FALSE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
+#endif
+
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERF = PERF_Create(PERF_FOURCC('N','B','E','_'),
                                            PERF_ModuleLLMM | PERF_ModuleAudioDecode);
@@ -305,10 +315,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	OMX_NBCONF_INIT_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT] = pPortDef_ip;
 
+    
+    /* Let's set defaults for IF2 conditions on Android and see what happens */
     pPortDef_ip->nPortIndex                         = NBAMRENC_INPUT_PORT;
     pPortDef_ip->eDir                               = OMX_DirInput;
-    pPortDef_ip->nBufferCountActual                 = NBAMRENC_NUM_INPUT_BUFFERS;
-    pPortDef_ip->nBufferCountMin                    = NBAMRENC_NUM_INPUT_BUFFERS;
+    pPortDef_ip->nBufferCountActual                 = 5; //NBAMRENC_NUM_INPUT_BUFFERS;
+    pPortDef_ip->nBufferCountMin                    = 5; //NBAMRENC_NUM_INPUT_BUFFERS;
     pPortDef_ip->nBufferSize                        = NBAMRENC_INPUT_FRAME_SIZE;
     pPortDef_ip->bEnabled                           = OMX_TRUE;
     pPortDef_ip->bPopulated                         = OMX_FALSE;
@@ -325,8 +337,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pPortDef_op->nPortIndex                         = NBAMRENC_OUTPUT_PORT;
     pPortDef_op->eDir                               = OMX_DirOutput;
-    pPortDef_op->nBufferCountMin                    = NBAMRENC_NUM_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferCountActual                 = NBAMRENC_NUM_OUTPUT_BUFFERS;
+    pPortDef_op->nBufferCountMin                    = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
+    pPortDef_op->nBufferCountActual                 = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
     pPortDef_op->nBufferSize                        = NBAMRENC_OUTPUT_FRAME_SIZE;
     pPortDef_op->bEnabled                           = OMX_TRUE;
     pPortDef_op->bPopulated                         = OMX_FALSE;
@@ -348,10 +360,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pComponentPrivate->bPreempted = OMX_FALSE;
   
     amr_ip->nPortIndex = NBAMRENC_INPUT_PORT; 
-    amr_ip->nChannels = 2; 
+/*ck*/    amr_ip->nChannels = 1;  //was 2 
     amr_ip->eNumData= OMX_NumericalDataSigned; 
     amr_ip->nBitPerSample = 16;  
-    amr_ip->nSamplingRate = 44100;           
+/*ck*/    amr_ip->nSamplingRate = 8000; //44100;           
     amr_ip->ePCMMode = OMX_AUDIO_PCMModeLinear; 
     amr_ip->bInterleaved = OMX_TRUE; /*For Encoders Only*/
     strcpy((char *)pComponentPrivate->componentRole.cRole, "audio_encoder.amrnb");  
@@ -497,7 +509,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
 
 #ifdef RESOURCE_MANAGER_ENABLED
-	/* eError = RMProxy_Initalize(); */
 	eError = RMProxy_NewInitalize();
 
 	AMRENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
@@ -971,7 +982,25 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 					AMRENC_DPRINT(":: OMX_ErrorBadPortIndex from GetParameter");
 					eError = OMX_ErrorBadPortIndex;
 				}
-                break;                
+                break;      
+
+#ifdef ANDROID
+    case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+    {
+	AMRENC_DPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
+        PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+        if (NULL == pCap_flags)
+        {
+            AMRENC_DPRINT ("%d :: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+            eError =  OMX_ErrorBadParameter;
+            goto EXIT;
+        }
+        AMRENC_DPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+        memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
+	eError = OMX_ErrorNone;
+    }
+    break;
+#endif          
 
     	case OMX_IndexParamVideoInit:
                 break;
@@ -1065,30 +1094,39 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                     {
                              case OMX_AUDIO_AMRBandModeNB7:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR122;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR122 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB6:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR102;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR102 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB5:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR795;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR795 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB4:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR74;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR74 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB3:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR67;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR67 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB2:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR59;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR59 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB1:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR515;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR515 \n",__LINE__);
                                   break;
                              case OMX_AUDIO_AMRBandModeNB0:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_475;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode = SN_AUDIO_BR475 \n",__LINE__);
                                   break;
                              default:
                                   pCompAmrParam->eAMRBandMode = SN_AUDIO_BR122;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode =DEFAULT!! SN_AUDIO_BR122 \n",__LINE__);
                                   break;
                     }
                     memcpy(((AMRENC_COMPONENT_PRIVATE *)
@@ -1098,13 +1136,16 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 					}
                     else if(pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatFSF){
                            pComponentPrivate->frameMode = NBAMRENC_MIMEMODE;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRFrameFormate = FSF \n",__LINE__);
                          }
 					else {
   						   pComponentPrivate->frameMode = NBAMRENC_IF2;
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRFrameFormate = IF2 \n",__LINE__);
 					}
-/*					if(pCompAmrParam->eAMRDTXMode == OMX_AUDIO_AMRDTXasEFR) {
-                            pComponentPrivate->efrMode = 1;
-                    }  */
+					if(pCompAmrParam->eAMRDTXMode == OMX_AUDIO_AMRDTXasEFR) {
+AMRENC_DPRINT("%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRDTXMode = XasEFR\n",__LINE__);
+                       /*     pComponentPrivate->efrMode = 1; */
+                    }  
                 }
 				else {
 					AMRENC_EPRINT("%d :: OMX_ErrorBadPortIndex from SetParameter",__LINE__);

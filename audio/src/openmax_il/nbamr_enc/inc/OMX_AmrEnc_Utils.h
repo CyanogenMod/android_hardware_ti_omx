@@ -84,13 +84,13 @@
  * @def    AMRENC_DEBUG   Turns debug messaging on and off
  */
 /* ======================================================================= */
-#undef AMRENC_DEBUG
+#define AMRENC_DEBUG
 /* ======================================================================= */
 /**
  * @def    AMRENC_MEMCHECK   Turns memory messaging on and off
  */
 /* ======================================================================= */
-#undef AMRENC_MEMCHECK
+#define AMRENC_MEMCHECK
 
 /* ======================================================================= */
 /**
@@ -100,7 +100,7 @@
  */
 /* ======================================================================= */
 #undef NBAMRENC_DEBUGMEM
-/*#define NBAMRENC_DEBUGMEM*/
+#define NBAMRENC_DEBUGMEM
 
 /* ======================================================================= */
 /**
@@ -110,7 +110,7 @@
 #ifndef UNDER_CE
 		#define AMRENC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
 #else
-		#define AMRENC_EPRINT	printf
+		#define AMRENC_EPRINT
 #endif
 #ifndef UNDER_CE
 /* ======================================================================= */
@@ -131,7 +131,7 @@
 #ifdef  AMRENC_MEMCHECK
         #define AMRENC_MEMPRINT(...)    fprintf(stderr,__VA_ARGS__)
 #else
-        #define AMRENC_MEMPRINT(...)
+        #define AMRENC_MEMPRINT(...)	printf
 #endif
 
 #else   /*UNDER_CE*/
@@ -241,6 +241,12 @@
         ptr = NULL; \
     }
 	
+
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#ifndef ANDROID
+    #define ANDROID
+#endif
 /* ======================================================================= */
 /**
  * @def EXTRA_BYTES   	 Extra bytes For Cache alignment
@@ -504,6 +510,18 @@ enum NBAMRENC_MimeMode {
 /* ======================================================================= */
 #define _ERROR_PROPAGATION__
 
+
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+        ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)
+        OMX_BOOL iIsOMXComponentMultiThreaded;
+        OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+        OMX_BOOL iOMXComponentSupportsPartialFrames;
+        OMX_BOOL iOMXComponentNeedsNALStartCode;
+        OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
 /* ======================================================================= */
 /** NBAMRENC_COMP_PORT_TYPE  Port types
  *
@@ -912,6 +930,7 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     OMX_U32 teeMode;
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
     
 } AMRENC_COMPONENT_PRIVATE;
 
