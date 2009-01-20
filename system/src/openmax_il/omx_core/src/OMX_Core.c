@@ -47,8 +47,8 @@ char compName[60][200];
 
 char *tComponentName[MAXCOMP][2] = {
     /*video and image components */
- /*   {"OMX.TI.JPEG.decode", "image_decoder.jpeg" },
-    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"}, */
+    {"OMX.TI.JPEG.decode", "image_decoder.jpeg" },
+    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"}, 
     {"OMX.TI.Video.Decoder", "video_decoder.h263"},
     {"OMX.TI.Video.Decoder", "video_decoder.avc"},
     {"OMX.TI.Video.Decoder", "video_decoder.mpeg2"},
@@ -56,9 +56,9 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.Video.Decoder", "video_decoder.wmv"},
     {"OMX.TI.Video.encoder", "video_encoder.mpeg4"},
     {"OMX.TI.Video.encoder", "video_encoder.h263"},
-    {"OMX.TI.Video.encoder", "video_encoder.avc"},/*
+    {"OMX.TI.Video.encoder", "video_encoder.avc"},
     {"OMX.TI.VPP", "iv_renderer.yuv.overlay"},
-    {"OMX.TI.Camera", "camera.yuv"}, */
+    {"OMX.TI.Camera", "camera.yuv"}, 
 
     /* Speech components */
   /*  {"OMX.TI.G729.encode", NULL},
@@ -73,19 +73,19 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.G726.decode", NULL},
     {"OMX.TI.GSMFR.encode", NULL},
     {"OMX.TI.GSMFR.decode", NULL}, */
-/*    {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},  */
+    {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},
     {"OMX.TI.AMR.decode", "audio_decoder.amrnb"},	
-/*    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"}, */
+    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"},
     {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},	
 
     /* Audio components */
     {"OMX.TI.MP3.decode", "audio_decoder.mp3"},	
-/*    {"OMX.TI.AAC.encode", "audio_encoder.aac"}, */
+    {"OMX.TI.AAC.encode", "audio_encoder.aac"}, 
     {"OMX.TI.AAC.decode", "audio_decoder.aac"},	
 /*    {"OMX.TI.PCM.encode", NULL},
-    {"OMX.TI.PCM.decode", NULL},
+    {"OMX.TI.PCM.decode", NULL}, */
     {"OMX.TI.WMA.decode", "audio_decoder.wma"},	
-    {"OMX.TI.RAG.decode", "audio_decoder.ra"},	
+/*    {"OMX.TI.RAG.decode", "audio_decoder.ra"},	
     {"OMX.TI.IMAADPCM.decode", NULL},	
     {"OMX.TI.IMAADPCM.encode", NULL},	*/
 
