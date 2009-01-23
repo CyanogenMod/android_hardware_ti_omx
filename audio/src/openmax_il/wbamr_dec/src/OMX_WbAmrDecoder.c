@@ -497,9 +497,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* PCM format defaults - These values are required to pass StdAudioDecoderTest*/
     amr_op->nPortIndex = OMX_DirOutput;
-    amr_op->nChannels = 2; 
+    amr_op->nChannels = 1; 
     amr_op->eNumData= OMX_NumericalDataSigned;
-    amr_op->nSamplingRate = 44100;           
+    amr_op->nSamplingRate = 16000;           
     amr_op->nBitPerSample = 16;
     amr_op->ePCMMode = OMX_AUDIO_PCMModeLinear;
 
