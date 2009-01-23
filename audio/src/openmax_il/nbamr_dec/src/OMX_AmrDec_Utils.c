@@ -1814,7 +1814,7 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->bBypassDSP = 0;
             if ( pComponentPrivate->nHoldLength == 0 ) 
             {
-#if 0
+#if 1
 				if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE) 
                 {
                     AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
