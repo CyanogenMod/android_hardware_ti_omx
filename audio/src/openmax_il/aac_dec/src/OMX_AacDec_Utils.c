@@ -604,6 +604,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 NULL);
         goto EXIT;
     }
+    
     ret = read (pComponentPrivate->cmdDataPipe[0], &commandData, sizeof (commandData));
     if (ret == -1) {
         AACDEC_DPRINT ("%d :: Error in Reading from the Data pipe\n", __LINE__);
@@ -642,10 +643,14 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                        Application\n",__LINE__);
         }
         else {
+
+
             switch(commandedState) {
             case OMX_StateIdle:
+
                 AACDEC_DPRINT("%d: HandleCommand: Cmd Idle \n",__LINE__);
-                if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) {
+
+                if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) { 
                     LCML_CALLBACKTYPE cb;
                     LCML_DSP *pLcmlDsp;
                     char *p = "damedesuStr";
@@ -699,18 +704,22 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         !pComponentPrivate->pPortDef[OUTPUT_PORT_AACDEC]->bEnabled) {
                         outputPortFlag = 1;
                     }
-
+		
                     if (!(inputPortFlag && outputPortFlag)) {
                         pComponentPrivate->InLoaded_readytoidle = 1;
+
+	
+
+
 #ifndef UNDER_CE
-                        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
+			pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
                         pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
                         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
 #else
-                        OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
+		        OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
 #endif
                     }
-
+	
                     pLcmlHandle = (OMX_HANDLETYPE) AACDEC_GetLCMLHandle(pComponentPrivate);
                     if (pLcmlHandle == NULL) {
                         AACDEC_EPRINT(":: LCML Handle is NULL........exiting..\n");
@@ -722,8 +731,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                 OMX_TI_ErrorSevere,
                                                                 NULL);
                         goto EXIT;
-                    }
-
+                    } 
                     pLcmlDsp = (((LCML_DSP_INTERFACE*)pLcmlHandle)->dspCodec);
                     eError = AACDEC_Fill_LCMLInitParams(pHandle, pLcmlDsp, arr);
                     if(eError != OMX_ErrorNone) {
@@ -737,7 +745,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                 NULL);
                         goto EXIT;
                     }
-
+ 
                     pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
                     cb.LCML_Callback = (void *) AACDEC_LCML_Callback;
 
@@ -836,11 +844,12 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                            pComponentPrivate->curState,
                                                            NULL);
 #endif
-
+ 
                 } else if (pComponentPrivate->curState == OMX_StateExecuting) {
+
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
-#endif
+#endif 
                     AACDEC_DPRINT("%d :: In HandleCommand: Stopping the codec\n",__LINE__);
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
@@ -865,7 +874,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         break;
                     }
 #endif
-                } else if (pComponentPrivate->curState == OMX_StatePause) {
+                } else if (pComponentPrivate->curState == OMX_StatePause) { 
                     char *pArgs = "damedesuStr";
 #ifdef HASHINGENABLE
                     /*Hashing Change*/
@@ -906,7 +915,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             OMX_CommandStateSet,
                                                             pComponentPrivate->curState,
                                                             NULL);
-                } else {
+                } else { 
                     AACDEC_DPRINT("%d: Comp: Sending ErrorNotification: Invalid State\n",__LINE__);
                     pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                            pHandle->pApplicationPrivate,
@@ -918,6 +927,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 break;
 
             case OMX_StateExecuting:
+
                 AACDEC_DPRINT("%d: HandleCommand: Cmd Executing \n",__LINE__);
                 if (pComponentPrivate->curState == OMX_StateIdle) {
                     char *pArgs = "damedesuStr";
@@ -1135,7 +1145,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         NULL);
                 break;
 
-            case OMX_StateLoaded:
+            case OMX_StateLoaded: 
                 AACDEC_DPRINT("%d: HandleCommand: Cmd Loaded\n",__LINE__);
                 if (pComponentPrivate->curState == OMX_StateWaitForResources ){
                     AACDEC_STATEPRINT("****************** Component State Set to Loaded\n\n");
@@ -1604,7 +1614,8 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             goto EXIT;
         }
         AACDEC_DPRINT  ("%d:::pBufHeader->nFilledLen = %d\n",__LINE__, pBufHeader->nFilledLen);
-        if (pBufHeader->nFilledLen > 0 || pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
+
+        if (pBufHeader->nFilledLen > 0 || (pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
             pComponentPrivate->bBypassDSP = 0;
             AACDEC_DPRINT  ("%d:::Calling LCML_QueueBuffer\n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
@@ -1783,18 +1794,18 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 pComponentPrivate->SendAfterEOS = 0;
             }
 
-            if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
+            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
                 AACDEC_DPRINT ("%d :: bLastBuffer Is Set Here....\n",__LINE__);
                 pLcmlHdr->pIpParam->bLastBuffer = 1;
                 pComponentPrivate->bIsEOFSent = 1;
                 pBufHeader->nFlags = 0;
             }
-/**/
-            if(pBufHeader->nFilledLen <= 0){  /* if no data present, assume its the end of the stream */
+/*
+            if(pBufHeader->nFilledLen <= 0){  /* if no data present, assume its the end of the stream 
 		pLcmlHdr->pIpParam->bLastBuffer = 1;
                 pComponentPrivate->bIsEOFSent = 1;
             }
-/**/
+*/
             /* Store time stamp information */
             pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
             /*Store tick count information*/
@@ -1944,9 +1955,10 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                   OMX_CommandFlush,
                                   1,NULL);
         }
-        if (!(pBufHeader->nFilledLen > 0)){
+    /*    if (!(pBufHeader->nFilledLen > 0)){
             pComponentPrivate->bIsEOFSent = OMX_TRUE;
         }
+*/
     }
     else {
         AACDEC_DPRINT ("%d : BufferHeader %p, Buffer %p Unknown ..........\n",__LINE__,pBufHeader, pBufHeader->pBuffer);
@@ -2263,12 +2275,13 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 				pComponentPrivate->lcml_nOpBuf--;
 				pComponentPrivate->app_nBuf++;
 				pComponentPrivate->nFillBufferDoneCount++;
+
             }
         }
     } else if(event == EMMCodecProcessingStoped) {
-
         /* If there are any buffers still marked as pending they must have
            been queued after the socket node was stopped */
+
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
             if (pComponentPrivate->pInputBufferList->bBufferPending[i]) {
 #ifdef __PERF_INSTRUMENTATION__
@@ -2278,17 +2291,16 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                   PERF_ModuleHLMM);
 #endif
 
+                AACDEC_ClearPending(pComponentPrivate, pComponentPrivate->pInputBufferList->pBufHdr[i], OMX_DirInput, __LINE__);
                 pComponentPrivate->cbInfo.EmptyBufferDone (
                                                            pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            pComponentPrivate->pInputBufferList->pBufHdr[i]
                                                            );
-                AACDEC_ClearPending(pComponentPrivate, pComponentPrivate->pInputBufferList->pBufHdr[i], OMX_DirInput, __LINE__);
             }
         }
 
-        for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
-
+      for (i=0; i < (pComponentPrivate->nFillThisBufferCount - pComponentPrivate->nFillBufferDoneCount) ; i++) {
             if (pComponentPrivate->pOutputBufferList->bBufferPending[i]) {
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -2297,19 +2309,19 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                   PERF_ModuleHLMM);
 #endif
 
+                AACDEC_ClearPending(pComponentPrivate, pComponentPrivate->pOutputBufferList->pBufHdr[i], OMX_DirOutput, __LINE__);
                 pComponentPrivate->cbInfo.FillBufferDone (
                                                           pComponentPrivate->pHandle,
                                                           pComponentPrivate->pHandle->pApplicationPrivate,
                                                           pComponentPrivate->pOutputBufferList->pBufHdr[i]
                                                           );
 
-                AACDEC_ClearPending(pComponentPrivate, pComponentPrivate->pOutputBufferList->pBufHdr[i], OMX_DirOutput, __LINE__);
             }
         }
 
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->curState = OMX_StateIdle;
-
+/*
 		if (!(pLcmlHdr->pBufHdr->nFilledLen > 0)){
 			if (pComponentPrivate->bIsEOFSent){
 				AACDEC_DPRINT ("Adding EOS flag for PV\n");
@@ -2322,6 +2334,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 				pComponentPrivate->bIsEOFSent = 0;
 			}
 		}
+*/
 
 #ifdef RESOURCE_MANAGER_ENABLED
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);

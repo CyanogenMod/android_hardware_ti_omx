@@ -489,7 +489,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
  EXIT:
     if(OMX_ErrorNone != eError) {
-        printf("%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
+        MP3DEC_EPRINT("%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
         MP3D_OMX_FREE(pPortDef_ip);
         MP3D_OMX_FREE(pPortDef_op);
         MP3D_OMX_FREE(mp3_ip);
@@ -1139,6 +1139,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         break;
     case OMX_IndexCustomMp3DecHeaderInfoConfig:
         configData = (TI_OMX_DSP_DEFINITION*)ComponentConfigStructure;
+
+
         if (configData == NULL) {
             eError = OMX_ErrorBadParameter;
             MP3DEC_EPRINT("%d :: OMX_ErrorBadParameter from SetConfig\n",__LINE__);
@@ -1704,7 +1706,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 
 
     MP3DEC_DPRINT("ComponentDeInit\n");
-
     MP3D_OMX_CONF_CHECK_CMD(pComponent,1,1)
         pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
     MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate,1,1)
@@ -1733,8 +1734,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     }
 #endif
 
-
-
     pComponentPrivate->bExitCompThrd = 1;
     /* @TODO: check that this fix is not causing power management issues */
     /* Fix for CSR OMAPS00184865 start*/
@@ -1746,8 +1745,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
             MP3DEC_EPRINT(":: First Error in ComponentDeinit: From pthread_join\n");
             eError = OMX_ErrorHardware;
         }
-    }
-
+    } 
     eError1 = MP3DEC_FreeCompResources(pHandle);
     if (OMX_ErrorNone != eError1) {
         if (OMX_ErrorNone == eError) {
@@ -1982,7 +1980,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
  EXIT:
     if(OMX_ErrorNone != eError) {
-        printf("%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
+        MP3DEC_EPRINT("%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
         MP3D_OMX_FREE(pBufferHeader->pBuffer);
         MP3D_OMX_FREE(pBufferHeader);
     }

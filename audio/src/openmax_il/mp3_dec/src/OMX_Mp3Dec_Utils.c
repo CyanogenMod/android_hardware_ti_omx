@@ -1160,6 +1160,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     /* Send StateChangeNotification to application */
                     pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
                 }
+
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy,(void *)pArgs);
 #ifdef UNDER_CE
@@ -1562,6 +1563,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
 OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                            MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
+int count = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_DIRTYPE eDir;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
@@ -1580,6 +1582,8 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         goto EXIT;
     }
 
+
+
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
         LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
@@ -1593,8 +1597,8 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         }
 
         MP3DEC_DPRINT(":: pBufHeader->nFilledLen = %ld\n",pBufHeader->nFilledLen);
-
-        if ((pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags == OMX_BUFFERFLAG_EOS)) {
+ 
+        if ((pBufHeader->nFilledLen > 0) || ((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) {
             pComponentPrivate->bBypassDSP = 0;
             MP3DEC_DPRINT (":: HandleDataBuf_FromApp Function\n");
             MP3DEC_DPRINT (":::Calling LCML_QueueBuffer\n");
@@ -1681,13 +1685,16 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             }
 
             pLcmlHdr->pIpParam->bLastBuffer = 0;
-            if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
-                MP3DEC_DPRINT(":: bLastBuffer Is Set Here....\n");
-                pLcmlHdr->pIpParam->bLastBuffer = 1;
-                pComponentPrivate->bIsEOFSent = 1;
-                pComponentPrivate->SendAfterEOS = 1;
-                pBufHeader->nFlags = 0;
-            }
+
+            	if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+
+		        MP3DEC_DPRINT(":: bLastBuffer Is Set Here....\n");
+		        pLcmlHdr->pIpParam->bLastBuffer = 1;
+		        pComponentPrivate->bIsEOFSent = 1;
+		        pComponentPrivate->SendAfterEOS = 1;
+		        pBufHeader->nFlags = 0;
+           	}
+		
 
             /* Store time stamp information */
             pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
@@ -1696,7 +1703,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->IpBufindex++;
             pComponentPrivate->IpBufindex %= pPortDefIn->nBufferCountActual;
             
-            if(!pComponentPrivate->frameMode){
+	    if(!pComponentPrivate->frameMode){
                 if(pComponentPrivate->first_buff == 0){
                     pComponentPrivate->first_buff = 1;
                     pComponentPrivate->first_TS = pBufHeader->nTimeStamp;
@@ -1835,9 +1842,11 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         if (pComponentPrivate->bFlushOutputPortCommandPending) {
             OMX_SendCommand( pComponentPrivate->pHandle, OMX_CommandFlush, 1, NULL);
         }
+/*
         if (!(pBufHeader->nFilledLen > 0)){
             pComponentPrivate->bIsEOFSent = OMX_TRUE;
         }
+*/
     }
     else {
         MP3DEC_EPRINT(": BufferHeader %p, Buffer %p Unknown ..........\n",pBufHeader, pBufHeader->pBuffer);
@@ -2108,7 +2117,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 }
                 pComponentPrivate->num_Reclaimed_Op_Buff++;
 
-                if (pComponentPrivate->bIsEOFSent){
+                if (pComponentPrivate->bIsEOFSent){ 		
                     MP3DEC_DPRINT ("Adding EOS flag to the output buffer\n");
                     pLcmlHdr->pBufHdr->nFlags |= OMX_BUFFERFLAG_EOS;
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2159,11 +2168,13 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
             }
         }
-    }else if(event == EMMCodecProcessingStoped) {
+    }else if(event == EMMCodecProcessingStoped) { 
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->curState = OMX_StateIdle;
+/*
             if (!(pLcmlHdr->pBufHdr->nFilledLen > 0)){
-                if (pComponentPrivate->bIsEOFSent){
+                if (pComponentPrivate->bIsEOFSent){ 
+
                     MP3DEC_DPRINT ("Adding EOS flag TEST!!!!!!!!!! \n \n \n");
                     pLcmlHdr->pBufHdr->nFlags |= OMX_BUFFERFLAG_EOS;
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2174,7 +2185,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     pComponentPrivate->bIsEOFSent = 0;
                 }
             }
-
+*/
 #ifdef RESOURCE_MANAGER_ENABLED
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                               RMProxy_StateSet,
@@ -2206,7 +2217,8 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     else if(event == EMMCodecAlgCtrlAck) {
         MP3DEC_DPRINT ("GOT MESSAGE USN_DSPACK_ALGCTRL \n");
     }
-    else if (event == EMMCodecDspError) {
+    else if (event == EMMCodecDspError) { 
+
         MP3DEC_DPRINT(":: commandedState  = %p\n",args[0]);
         MP3DEC_DPRINT(":: arg4 = %p\n",args[4]);
         MP3DEC_DPRINT(":: arg5 = %p\n",args[5]);
@@ -2228,7 +2240,8 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
         MP3DEC_DPRINT(":: --------- EMMCodecDspError Here\n");
         if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
-#ifndef UNDER_CE        
+#ifndef UNDER_CE       
+ 
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,                  
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                    OMX_EventBufferFlag,
@@ -2327,6 +2340,8 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }
 
     } else if (event == EMMCodecStrmCtrlAck) {
+ 
+
         MP3DEC_DPRINT(":: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n");
         if (args[1] == (void *)USN_STRMCMD_FLUSH) {
             pHandle = pComponentPrivate->pHandle; 
@@ -2359,6 +2374,9 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 }
             }
             else if ( args[2] == (void *)EMMCodecOuputBuffer) { 
+
+  
+
                 if (args[0] == (void *)USN_ERR_NONE ) {                      
                     MP3DEC_DPRINT("Flushing output port %d\n",__LINE__);
                     for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
@@ -2390,7 +2408,8 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             }
         }
     }
-    else if (event == EMMCodecProcessingPaused) {
+    else if (event == EMMCodecProcessingPaused) { 
+
         pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
         pComponentPrivate->nUnhandledFillThisBuffers = 0;
         pComponentPrivate->curState = OMX_StatePause;
@@ -2401,6 +2420,8 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     }
 #ifdef _ERROR_PROPAGATION__
     else if (event == EMMCodecInitError){
+ 
+
         /* Cheking for MMU_fault */
         if((args[4] == (void*)USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) {
             MP3DEC_EPRINT("%d :: UTIL: MMU_Fault \n",__LINE__);
@@ -2416,6 +2437,9 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }   
     }
     else if (event == EMMCodecInternalError){
+
+ 
+
         /* Cheking for MMU_fault */
         if((args[4] == (void*)USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) {
             MP3DEC_EPRINT("%d :: UTIL: MMU_Fault \n",__LINE__);
@@ -2434,6 +2458,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 #endif
  EXIT:
     MP3DEC_DPRINT (":: Exiting the LCML_Callback() \n");
+ 
     return eError;
 }
 
@@ -2692,6 +2717,7 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     MP3D_OMX_FREE(pComponentPrivate->strmAttr); 
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT];
+	
     for(i=0; i<nIpBuf; i++) {
         MP3DEC_MEMPRINT(":: Freeing: pTemp_lcml->pIpParam = %p\n",pTemp_lcml->pIpParam);
         tempt = (char*)pTemp_lcml->pIpParam;
@@ -2704,6 +2730,8 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
         pTemp_lcml++;
     }
 
+
+    
     MP3DEC_MEMPRINT(":: Freeing pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT] = %p\n",
                     pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
     MP3D_OMX_FREE(pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
@@ -2740,6 +2768,7 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     MP3D_OMX_FREE(pComponentPrivate->ptAlgDynParams);
     
     MP3DEC_DPRINT ("Exiting Successfully MP3DEC_CleanupInitParams()\n");
+
 }
 
 

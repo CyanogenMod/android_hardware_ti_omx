@@ -134,10 +134,10 @@ void* MP3DEC_ComponentThread (void* pThreadData)
         status = select (fdmax+1, &rfds, NULL, NULL, &tv);
 #endif
 
-     /*   if (pComponentPrivate->bExitCompThrd == 1) {
+        if (pComponentPrivate->bExitCompThrd == 1) {
             MP3DEC_DPRINT(":: Comp Thrd Exiting here...\n");
             goto EXIT;
-        }*/
+        }
 
 
 
@@ -186,7 +186,9 @@ void* MP3DEC_ComponentThread (void* pThreadData)
             nRet = MP3DEC_HandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
                 MP3DEC_DPRINT ("Exiting from Component thread\n");
+                printf ("Exiting from Component thread\n");
                 MP3DEC_CleanupInitParams(pHandle);
+                printf("****************** Component State Set to Loaded\n\n");
                 MP3DEC_STATEPRINT("****************** Component State Set to Loaded\n\n");
 
                 pComponentPrivate->curState = OMX_StateLoaded;
@@ -220,5 +222,6 @@ EXIT:
 #endif
 
     MP3DEC_DPRINT (":: Exiting ComponentThread \n");
+    printf (":: Exiting ComponentThread \n");
     return (void*)OMX_ErrorNone;
 }
