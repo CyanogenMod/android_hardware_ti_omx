@@ -90,7 +90,7 @@
  * @def    AMRENC_MEMCHECK   Turns memory messaging on and off
  */
 /* ======================================================================= */
-#define AMRENC_MEMCHECK
+#undef AMRENC_MEMCHECK
 
 /* ======================================================================= */
 /**
@@ -100,7 +100,6 @@
  */
 /* ======================================================================= */
 #undef NBAMRENC_DEBUGMEM
-#define NBAMRENC_DEBUGMEM
 
 /* ======================================================================= */
 /**
@@ -338,7 +337,7 @@
  * @def    NBAMRENC_MAX_NUM_OF_BUFS   Maximum number of buffers
  */
 /* ======================================================================= */
-#define NBAMRENC_MAX_NUM_OF_BUFS 10
+#define NBAMRENC_MAX_NUM_OF_BUFS 15
 /* ======================================================================= */
 /**
  * @def    NBAMRENC_NUM_OF_PORTS   Number of ports
@@ -350,8 +349,8 @@
  * @def    NBAMRENC_XXX_VER    Component version
  */
 /* ======================================================================= */
-#define NBAMRENC_MAJOR_VER 0xF1
-#define NBAMRENC_MINOR_VER 0xF2
+#define NBAMRENC_MAJOR_VER 0x1
+#define NBAMRENC_MINOR_VER 0x1
 /* ======================================================================= */
 /**
  * @def    NBAMRENC_NOT_USED    Defines a value for "don't care" parameters

@@ -1621,14 +1621,14 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_DIRTYPE eDir;
-    NBAMRENC_LCML_BUFHEADERTYPE *pLcmlHdr;
+    NBAMRENC_LCML_BUFHEADERTYPE *pLcmlHdr = NULL;
     LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)
                                               pComponentPrivate->pLcmlHandle;
 	OMX_U32 frameLength, remainingBytes;
-	OMX_U8* pExtraData;
+	OMX_U8* pExtraData = NULL;
     OMX_U8 nFrames=0,i;
-    LCML_DSP_INTERFACE * phandle;
-    OMX_U8* pBufParmsTemp;
+    LCML_DSP_INTERFACE * phandle = NULL;
+    OMX_U8* pBufParmsTemp = NULL;
 
     /* NBAMRENC_BUFDATA* OutputFrames; */
     AMRENC_DPRINT ("%d :: Entering NBAMRENC_HandleDataBufFromApp Function\n",__LINE__);
@@ -1650,20 +1650,19 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                         pComponentPrivate->nHoldLength = pBufHeader->nFilledLen - frameLength*nFrames;
                                         if (pComponentPrivate->nHoldLength > 0) {/* something need to be hold in pHoldBuffer */
                                                 if (pComponentPrivate->pHoldBuffer == NULL) {
-														NBAMRENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, NBAMRENC_INPUT_FRAME_SIZE,OMX_U8);/*glen*/
-                                
+                                                   NBAMRENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, NBAMRENC_INPUT_FRAME_SIZE,OMX_U8);
                                                 }
                                                 
                                                 /* Copy the extra data into pHoldBuffer. Size will be nHoldLength. */
                                                 pExtraData = pBufHeader->pBuffer + frameLength*nFrames;
                                                 
-												if(pComponentPrivate->nHoldLength <= NBAMRENC_INPUT_FRAME_SIZE) {
-													memcpy(pComponentPrivate->pHoldBuffer, pExtraData,  pComponentPrivate->nHoldLength);
-												}
-												else {
-													AMRENC_EPRINT ("%d :: Error: pHoldLenght is bigger than the input frame size\n", __LINE__);
-                									goto EXIT;
-												}
+						if(pComponentPrivate->nHoldLength <= NBAMRENC_INPUT_FRAME_SIZE) {
+						    memcpy(pComponentPrivate->pHoldBuffer, pExtraData,  pComponentPrivate->nHoldLength);
+						}
+						else {
+						    AMRENC_EPRINT ("%d :: Error: pHoldLenght is bigger than the input frame size\n", __LINE__);
+                				    goto EXIT;
+						}
                                                 
                                                 pBufHeader->nFilledLen-=pComponentPrivate->nHoldLength;
                                         }
@@ -1674,20 +1673,19 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                 pComponentPrivate->nHoldLength = pBufHeader->nFilledLen;
                                                 /* save the data into pHoldBuffer */
                                                 if (pComponentPrivate->pHoldBuffer == NULL) {
-														NBAMRENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, NBAMRENC_INPUT_FRAME_SIZE,OMX_U8);	
+                                                    NBAMRENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, NBAMRENC_INPUT_FRAME_SIZE,OMX_U8);	
                                                 }
                                                 /* Not enough data to be sent. Copy all received data into pHoldBuffer.*/
                                                 /* Size to be copied will be iHoldLen == mmData->BufferSize() */
                                                 memset(pComponentPrivate->pHoldBuffer, 0, NBAMRENC_INPUT_FRAME_SIZE);
                                                 
-												if(pComponentPrivate->nHoldLength <= NBAMRENC_INPUT_FRAME_SIZE) {
+                                                if(pComponentPrivate->nHoldLength <= NBAMRENC_INPUT_FRAME_SIZE) {
                                                     memcpy(pComponentPrivate->pHoldBuffer, pBufHeader->pBuffer, pComponentPrivate->nHoldLength);
-												}
-												else {
-													AMRENC_EPRINT ("%d :: Error: pHoldLenght is bigger than the input frame size\n", __LINE__);
-                									goto EXIT;
-												}
-                                                
+                                                }
+                                                else {
+                                                    AMRENC_EPRINT ("%d :: Error: pHoldLenght is bigger than the input frame size\n", __LINE__);
+                                                    goto EXIT;
+                                                }  
                                         }
                                         /* since not enough data, we shouldn't send anything to SN, but instead request to EmptyBufferDone again.*/
                                         if (pComponentPrivate->curState != OMX_StatePause ) {
@@ -2305,6 +2303,11 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             AMRENC_DPRINT("%d :: Output: pLcmlHdr->buffer->pBuffer = %p\n",__LINE__, pLcmlHdr->buffer->pBuffer);
             pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
             AMRENC_DPRINT("%d :: Output: pBuffer = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
+#if 1
+            pLcmlHdr->buffer->nFilledLen = 32;
+            AMRENC_DPRINT("%d :: Output: ::RESET:: pBuffer->nFilledLen = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
+#endif
+
 #ifdef __PERF_INSTRUMENTATION__
             PERF_ReceivedFrame(pComponentPrivate_CC->pPERFcomp,
                                PREF(pLcmlHdr->buffer,pBuffer),
