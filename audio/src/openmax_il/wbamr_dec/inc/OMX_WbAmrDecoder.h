@@ -162,7 +162,7 @@ typedef enum WBAMR_DEC_COMP_PORT_TYPE {
  * @def    WBAMR_DEC_DEBUG   Turns debug messaging on and off
  */
 /* ======================================================================= */
-#define WBAMR_DEC_DEBUG
+#undef WBAMR_DEC_DEBUG
 /* ======================================================================= */
 /**
  * @def    WBAMR_DEC_MEMCHECK   Turns memory messaging on and off

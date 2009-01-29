@@ -1174,6 +1174,22 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
             } 
 
             else if(pComponentPrivate->curState == OMX_StatePause) {            
+                char *pArgs = "damedesuStr";
+                eError = LCML_ControlCodec(
+                    ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                    MMCodecControlStop,(void *)pArgs);
+                if(eError != OMX_ErrorNone) {
+                    WBAMR_DEC_EPRINT("%d: Error Occurred in Codec Stop..\n",
+                                                                      __LINE__);
+					pComponentPrivate->curState = OMX_StateInvalid;
+                    pComponentPrivate->cbInfo.EventHandler(pHandle, 
+															pHandle->pApplicationPrivate,
+                                                            OMX_EventError, 
+                                                            eError,
+                                                            OMX_TI_ErrorSevere, 
+                                                            NULL);																
+                    goto EXIT;
+                }
                 
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
@@ -2071,7 +2087,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 }
             }
         }else{
-            if(pBufHeader->nFlags != OMX_BUFFERFLAG_EOS){
+            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS){
                 pComponentPrivate->nEmptyBufferDoneCount++;
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -2220,8 +2236,8 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 				pComponentPrivate->SendAfterEOS = 0;				
 			}
                 
-            if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
-                (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame = OMX_BUFFERFLAG_EOS;
+            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
+                (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame |= OMX_BUFFERFLAG_EOS;
                 pBufHeader->nFlags = 0;
                 if(!pComponentPrivate->dasfmode){
                     if(!pBufHeader->nFilledLen){
@@ -2638,9 +2654,9 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             pComponentPrivate->nOutStandingFillDones++;
             WBAMR_DEC_DPRINT("Incremented pComponentPrivate->nOutStandingFillDones = %d\n",pComponentPrivate->nOutStandingFillDones);
             for(i=0;i<pLcmlHdr->pBufferParam->usNbFrames;i++){
-                if (((pLcmlHdr->pFrameParam+i)->usLastFrame) == OMX_BUFFERFLAG_EOS){                                                
+                if ((((pLcmlHdr->pFrameParam+i)->usLastFrame) & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS){                                                
                     (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
-                    pLcmlHdr->buffer->nFlags = OMX_BUFFERFLAG_EOS;
+                    pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
                     WBAMR_DEC_DPRINT("%d :: On Component receiving OMX_BUFFERFLAG_EOS on output\n", __LINE__);
 					break;
                 }
@@ -2823,7 +2839,7 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 			pHandle = pComponentPrivate->pHandle;
             WBAMR_DEC_DPRINT("%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
             if(pComponentPrivate->LastOutbuf!=NULL && !pComponentPrivate->dasfmode){
-                pComponentPrivate->LastOutbuf->nFlags = OMX_BUFFERFLAG_EOS;
+                pComponentPrivate->LastOutbuf->nFlags |= OMX_BUFFERFLAG_EOS;
             }
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,                  
                                                       pComponentPrivate->pHandle->pApplicationPrivate,

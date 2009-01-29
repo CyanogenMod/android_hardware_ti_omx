@@ -85,7 +85,7 @@
 
 /* #define DSP_RENDERING_ON*/ /* Enable to use DASF functionality */
 /* #define MP3DEC_MEMDEBUG */ /* Enable memory leaks debuf info */
- #define MP3DEC_DEBUG    /* See all debug statement of the component */
+/* #define MP3DEC_DEBUG */    /* See all debug statement of the component */
 /* #define MP3DEC_MEMDETAILS */  /* See memory details of the component */
 /* #define MP3DEC_BUFDETAILS */  /* See buffers details of the component */
 /* #define MP3DEC_STATEDETAILS */ /* See all state transitions of the component*/

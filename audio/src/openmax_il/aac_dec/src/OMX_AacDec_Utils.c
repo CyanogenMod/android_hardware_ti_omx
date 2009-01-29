@@ -1925,6 +1925,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput) &&
                         (pComponentPrivate->numPendingBuffers < pComponentPrivate->pOutputBufferList->numBuffers))  {
                         if (!pComponentPrivate->bDspStoppedWhileExecuting){
+                        AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
 							eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                   EMMCodecOuputBuffer,
                                                   pBufHeader->pBuffer,
@@ -2300,7 +2301,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             }
         }
 
-      for (i=0; i < (pComponentPrivate->nFillThisBufferCount - pComponentPrivate->nFillBufferDoneCount) ; i++) {
+        for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pComponentPrivate->pOutputBufferList->bBufferPending[i]) {
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
