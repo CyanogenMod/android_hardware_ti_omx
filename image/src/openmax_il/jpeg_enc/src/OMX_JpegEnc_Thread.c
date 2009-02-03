@@ -181,7 +181,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                 /* Do not accept any command when the component is stopping */
                 JPEGENC_DPRINT ("CMD pipe is set in Component Thread\n");
                 eCmd = 0;
-                read (pComponentPrivate->nCmdPipe[0], &eCmd, 1 /*sizeof (eCmd)*/);
+                read (pComponentPrivate->nCmdPipe[0], &eCmd, sizeof(eCmd));
                 read (pComponentPrivate->nCmdDataPipe[0], &nParam1, sizeof (nParam1));
 
 #ifdef __PERF_INSTRUMENTATION__

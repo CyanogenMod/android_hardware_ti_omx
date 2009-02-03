@@ -849,7 +849,7 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefIn    = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefOut   = NULL;
     OMX_MARKTYPE *pMarkType = NULL; 
-    ThrCmdType eCmd         = -1;
+    OMX_COMMANDTYPE eCmd         = -1;
     int nRet                = 0;
 
     OMX_CHECK_PARAM(hComponent);

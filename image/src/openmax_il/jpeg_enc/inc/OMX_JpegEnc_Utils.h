@@ -85,6 +85,7 @@
 
 #define COMP_MAX_NAMESIZE 127
 
+#define OMX_CustomCommandStopThread (OMX_CommandMax - 1)
 
 
 #ifdef UNDER_CE

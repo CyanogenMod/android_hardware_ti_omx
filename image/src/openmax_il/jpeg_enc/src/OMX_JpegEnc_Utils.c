@@ -427,7 +427,8 @@ OMX_ERRORTYPE JPEGEnc_Free_ComponentResources(JPEGENC_COMPONENT_PRIVATE *pCompon
     OMX_ERRORTYPE pipeError = OMX_ErrorNone;
     int pthreadError = 0;
     int nCount = 0;
-    ThrCmdType eCmd = Stop;
+    OMX_COMMANDTYPE eCmd = OMX_CustomCommandStopThread;
+    OMX_U32 nParam = 0;
     OMX_U8 *p;
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -451,7 +452,7 @@ OMX_ERRORTYPE JPEGEnc_Free_ComponentResources(JPEGENC_COMPONENT_PRIVATE *pCompon
         JPEGENC_DPRINT("Error while writing to nCmdPipe\n");
     }
     
-    pipeError = write(pComponentPrivate->nCmdDataPipe[1], &eCmd, sizeof(eCmd));
+    pipeError = write(pComponentPrivate->nCmdDataPipe[1], &nParam, sizeof(eCmd));
     if (pipeError == -1) {
         eError = OMX_ErrorHardware;
         JPEGENC_DPRINT("Error while writing to nCmdPipe\n");
