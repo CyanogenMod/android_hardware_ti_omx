@@ -225,7 +225,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                         }
                     } 
                     
-                else if ( eCmd == Stop ) {
+                else if ( eCmd == OMX_CustomCommandStopThread ) {
                     /*eError = 10;*/
                     goto EXIT;
                     }
