@@ -1443,6 +1443,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                                 pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingMPEG4;
                                 break;
                             case OMX_VIDEO_CodingWMV:
+                                OMX_DPRINT("%s: eCompressionFormat = OMX_VIDEO_CodingWMV", __FUNCTION__);
                                 pComponentPrivate->pInPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingWMV;
                                 break;
 
@@ -2795,12 +2796,16 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 #endif
 
 #ifndef UNDER_CE
-    free(pComponentPrivate->pCodecData);
     if(pComponentPrivate->eFirstBuffer.pFirstBufferSaved){
         free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
         pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
         pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
         pComponentPrivate->eFirstBuffer.nFilledLen = 0;
+    }
+    if(pComponentPrivate->pCodecData){
+        free(pComponentPrivate->pCodecData);
+        pComponentPrivate->pCodecData = NULL;
+        pComponentPrivate->nCodecDataSize = 0;
     }
     VIDDEC_PTHREAD_MUTEX_DESTROY(pComponentPrivate->sMutex);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sInSemaphore);
@@ -2910,14 +2915,15 @@ static OMX_ERRORTYPE VIDDEC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     (*ppBufferHdr)->nAllocLen = nSizeBytes;
     (*ppBufferHdr)->pAppPrivate = pAppPrivate;
     (*ppBufferHdr)->pMarkData = NULL;
+#ifndef VIDDEC_WMVPOINTERFIXED
     if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM &&
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
-        pComponentPrivate->ProcessMode == 0 &&
-        nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
+        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
+        pComponentPrivate->ProcessMode == 0 && 
+        nPortIndex == VIDDEC_INPUT_PORT) {
         /* vc-1 fix */
         (*ppBufferHdr)->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
     }
-    
+#endif
     if (pCompPort->hTunnelComponent != NULL) {
         if (pPortDef->eDir == OMX_DirInput) {
             (*ppBufferHdr)->nInputPortIndex  = nPortIndex; 
@@ -3191,6 +3197,15 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
            pTemp = (OMX_U8*)(pBuffHead->pBuffer);
+#ifdef VIDDEC_WMVPOINTERFIXED
+            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
+                nPortIndex == VIDDEC_INPUT_PORT && 
+                pComponentPrivate->ProcessMode == 0) {
+                pTemp -= VIDDEC_WMV_BUFFER_OFFSET;
+                VIDDEC_BUFFERPRINT("Removing extra wmv padding %d pBuffer 0x%x\n", VIDDEC_WMV_BUFFER_OFFSET, 
+                    (int )pTemp);
+            }
+#endif
            pTemp -= VIDDEC_PADDING_HALF;
            pBuffHead->pBuffer = (OMX_U8*)pTemp;
            free(pBuffHead->pBuffer);
@@ -3326,6 +3341,8 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     VIDDEC_PORT_TYPE* pCompPort = NULL;
     OMX_U8* pTemp = NULL;
     OMX_U8 pBufferCnt = 0;
+    OMX_U32 nTempSizeBytes = 0;
+    nTempSizeBytes = nSizeBytes;
     
     VIDDEC_BUFFERPRINT("+++Entering pHandle 0x%x pBuffHead 0x%x nPortIndex 0x%x nSizeBytes 0x%x\n",
         (int*)hComponent, (int*)(*pBuffHead), (int*)nPortIndex, (int*)nSizeBytes);
@@ -3334,6 +3351,14 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
     
+#ifdef VIDDEC_WMVPOINTERFIXED
+    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
+        nPortIndex == VIDDEC_INPUT_PORT &&
+        pComponentPrivate->ProcessMode == 0) {
+        nTempSizeBytes += VIDDEC_WMV_BUFFER_OFFSET;
+        VIDDEC_BUFFERPRINT("Adding extra wmv buffer add %d size %d\n", VIDDEC_WMV_BUFFER_OFFSET, nTempSizeBytes);
+    }
+#endif
     if (nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
         pCompPort = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT];
         pBufferCnt = pCompPort->nBufferCnt;
@@ -3377,23 +3402,35 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     pTemp = (OMX_U8*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
     pTemp += VIDDEC_PADDING_HALF;
+#ifdef VIDDEC_WMVPOINTERFIXED
+    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
+        nPortIndex == VIDDEC_INPUT_PORT &&
+        pComponentPrivate->ProcessMode == 0) {
+        pTemp += VIDDEC_WMV_BUFFER_OFFSET;
+        pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = (OMX_U8*)pTemp;
+        (*pBuffHead)->nOffset = 0;
+        VIDDEC_BUFFERPRINT("Adding extra wmv padding %d pBuffer 0x%x\n", VIDDEC_WMV_BUFFER_OFFSET, 
+            (int )pTemp);
+    }
+#endif
     pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer = (OMX_U8*)pTemp;
     (*pBuffHead)->pBuffer = (pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer);
-    (*pBuffHead)->nAllocLen = nSizeBytes;
+    (*pBuffHead)->nAllocLen = nTempSizeBytes;
     (*pBuffHead)->pAppPrivate = pAppPrivate;
     (*pBuffHead)->pPlatformPrivate = NULL;
     (*pBuffHead)->pInputPortPrivate = NULL;
     (*pBuffHead)->pOutputPortPrivate = NULL;
     (*pBuffHead)->nFlags = VIDDEC_CLEARFLAGS;
     (*pBuffHead)->pMarkData = NULL;
+#ifndef VIDDEC_WMVPOINTERFIXED
     if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM &&
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
-        pComponentPrivate->ProcessMode == 0 &&
-        nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
+        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
+        pComponentPrivate->ProcessMode == 0 && 
+        nPortIndex == VIDDEC_INPUT_PORT) {
         /* vc-1 fix */
         (*pBuffHead)->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
     }
-
+#endif
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
                        (*pBuffHead)->pBuffer,
@@ -3440,7 +3477,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pCompPort->pBufferPrivate[pBufferCnt]->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
     }
     
-    pPortDef->nBufferSize = nSizeBytes;
+    pPortDef->nBufferSize = nTempSizeBytes;
     VIDDEC_BUFFERPRINT("pBuffHead 0x%x nAllocLen 0x%x pBuffer %x eBufferOwner %d\n",
         (int*)(*pBuffHead), (int*)(*pBuffHead)->nAllocLen, (int*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, 
         (int*)pCompPort->pBufferPrivate[pBufferCnt]->eBufferOwner);

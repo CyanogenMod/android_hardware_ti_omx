@@ -88,6 +88,9 @@
     #define VIDDEC_ACTIVATEPARSER
 #endif
 
+#define VIDDEC_WMVPOINTERFIXED
+#define VIDDEC_HANDLE_FULL_STRM_PROP_OBJ
+
 #include <sched.h>
 #include <OMX_Core.h>
 #include "OMX_VideoDecoder.h"
@@ -370,6 +373,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_SN_WMV_ELEMSTREAM                        1
 #define VIDDEC_SN_WMV_RCVSTREAM                         2
 
+#define CSD_POSITION                                    51 /*Codec Specific Data position on the "stream propierties object"(ASF spec)*/
+
 /*Custom Parameters*/
 #ifdef VIDDEC_FLAGGED_EOS
  #define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 7
@@ -555,6 +560,9 @@ typedef struct VIDDEC_BUFFER_PRIVATE
     VIDDEC_BUFFER_OWNER eBufferOwner;
     VIDDEC_TYPE_ALLOCATE bAllocByComponent;
     OMX_U32 nNumber;
+#ifdef VIDDEC_WMVPOINTERFIXED
+     OMX_U8* pTempBuffer;
+#endif
 } VIDDEC_BUFFER_PRIVATE;
 
 /*structures and defines for Circular Buffer*/
@@ -1313,6 +1321,29 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
  #define VIDDEC_SPARKCHECK (OMX_FALSE)
 #endif
 
+
+/* DEFINITIONS for parsing the config information & sequence header for WMV*/
+ #define VIDDEC_GetUnalignedDword( pb, dw ) \
+             (dw) = ((OMX_U32) *(pb + 3) << 24) + \
+                    ((OMX_U32) *(pb + 2) << 16) + \
+                    ((OMX_U16) *(pb + 1) << 8) + *pb;
+ 
+ #define VIDDEC_GetUnalignedDwordEx( pb, dw )   VIDDEC_GetUnalignedDword( pb, dw ); (pb) += sizeof(OMX_U32);
+ #define VIDDEC_LoadDWORD( dw, p )  VIDDEC_GetUnalignedDwordEx( p, dw )
+ #ifndef VIDDEC_MAKEFOURCC
+ #define VIDDEC_MAKEFOURCC(ch0, ch1, ch2, ch3) \
+         ((OMX_U32)(OMX_U8)(ch0) | ((OMX_U32)(OMX_U8)(ch1) << 8) |   \
+         ((OMX_U32)(OMX_U8)(ch2) << 16) | ((OMX_U32)(OMX_U8)(ch3) << 24 ))
+ 
+ #define VIDDEC_FOURCC(ch0, ch1, ch2, ch3)  VIDDEC_MAKEFOURCC(ch0, ch1, ch2, ch3)
+ #endif
+ 
+ #define FOURCC_WMV3     VIDDEC_FOURCC('W','M','V','3')
+ #define FOURCC_WMV2     VIDDEC_FOURCC('W','M','V','2')
+ #define FOURCC_WMV1     VIDDEC_FOURCC('W','M','V','1')
+ #define FOURCC_WVC1     VIDDEC_FOURCC('W','V','C','1')
+ 
+ 
 /*-------function prototypes -------------------------------------------------*/
 typedef OMX_ERRORTYPE (*VIDDEC_fpo)(OMX_HANDLETYPE);
 
