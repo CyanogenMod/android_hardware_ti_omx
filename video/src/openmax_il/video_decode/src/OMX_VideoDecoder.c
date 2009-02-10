@@ -1521,6 +1521,9 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+                    pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
+                                            pPortDef->format.video.nFrameHeight *
+                                            ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
                 }
                 else {
                     eError = OMX_ErrorBadPortIndex;
