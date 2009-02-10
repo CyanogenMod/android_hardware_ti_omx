@@ -5143,6 +5143,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     OMX_U32 nOutMinBufferSize = 0;
     OMX_BOOL bInPortSettingsChanged = OMX_FALSE;
     OMX_BOOL bOutPortSettingsChanged = OMX_FALSE;
+    OMX_U32 nOutPortActualAllocLen = 0;
 
     OMX_DPRINT("%s: IN", __FUNCTION__);
     if(!pComponentPrivate) {
@@ -5151,6 +5152,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 
     bInPortSettingsChanged = pComponentPrivate->bInPortSettingsChanged;
     bOutPortSettingsChanged = pComponentPrivate->bOutPortSettingsChanged;
+    /*Get output port allocated buffer size*/
+    nOutPortActualAllocLen =  pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[0]->pBufferHdr->nAllocLen;
 
     if( (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) ||
         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV ||
@@ -5224,7 +5227,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 
         /*Verify correct values in the initial setup*/
 
-        /*Get minimum output buffer size & verify if the actual size is enough*/
+        /*Get minimum output buffer size & verify if the actual allocated size is enough*/
         if (pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420){
             nOutMinBufferSize = nWidth*nHeight*VIDDEC_FACTORFORMAT420;
         }
@@ -5232,7 +5235,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             nOutMinBufferSize = nWidth*nHeight*VIDDEC_FACTORFORMAT422;
         }
 
-        if(pComponentPrivate->pOutPortDef->nBufferSize < nOutMinBufferSize){
+        if(nOutPortActualAllocLen < nOutMinBufferSize){
             pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
             bOutPortSettingsChanged = OMX_TRUE;
         }
