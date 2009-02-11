@@ -76,12 +76,12 @@
 
 #define MP3_APP_ID  100 /* Defines MP3 Dec App ID, App must use this value */
 #define MP3D_MAX_NUM_OF_BUFS 10 /* Max number of buffers used */
-#define MP3D_NUM_INPUT_BUFFERS 1  /* Default number of input buffers */
-#define MP3D_NUM_OUTPUT_BUFFERS 1 /* Default number of output buffers */
+#define MP3D_NUM_INPUT_BUFFERS 2  /* Default number of input buffers */
+#define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
 
-#define MP3D_INPUT_BUFFER_SIZE  100 /* Default size of input buffer */
-#define MP3D_OUTPUT_BUFFER_SIZE 2304 /* Default size of output buffer */
+//#define MP3D_INPUT_BUFFER_SIZE  100 /* Default size of input buffer */
+//#define MP3D_OUTPUT_BUFFER_SIZE 4608 /* Default size of output buffer */
 
 #define MP3D_MONO_STREAM  1 /* Mono stream index */
 #define MP3D_STEREO_INTERLEAVED_STREAM  2 /* Stereo Interleaved stream index */

@@ -70,6 +70,9 @@
 /* Log for Android system*/
 #include <utils/Log.h>
 
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#define ANDROID
 
 #define MP3DEC_MAJOR_VER 0x1/* Major number of the component */
 #define MP3DEC_MINOR_VER 0x1 /* Mnor number of the component */
@@ -85,19 +88,22 @@
 
 /* #define DSP_RENDERING_ON*/ /* Enable to use DASF functionality */
 /* #define MP3DEC_MEMDEBUG */ /* Enable memory leaks debuf info */
-/* #define MP3DEC_DEBUG */    /* See all debug statement of the component */
+// #define MP3DEC_DEBUG    /* See all debug statement of the component */
 /* #define MP3DEC_MEMDETAILS */  /* See memory details of the component */
 /* #define MP3DEC_BUFDETAILS */  /* See buffers details of the component */
-/* #define MP3DEC_STATEDETAILS */ /* See all state transitions of the component*/
+ #define MP3DEC_STATEDETAILS /* See all state transitions of the component*/
 
 #define MP3_APP_ID  100 /* Defines MP3 Dec App ID, App must use this value */
-#define MP3D_MAX_NUM_OF_BUFS 12 /* Max number of buffers used */
-#define MP3D_NUM_INPUT_BUFFERS 1  /* Default number of input buffers */
-#define MP3D_NUM_OUTPUT_BUFFERS 1 /* Default number of output buffers */
+#define MP3D_MAX_NUM_OF_BUFS 10 /* Max number of buffers used */
+#define MP3D_NUM_INPUT_BUFFERS 4  /* Default number of input buffers */
+#define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
 #define MP3D_INPUT_BUFFER_SIZE  2000 /* Default size of input buffer */
 #define MP3D_OUTPUT_BUFFER_SIZE 8192 /* Default size of output buffer */
 #define MP3D_DEFAULT_FREQUENCY 44100 /* Default sample frequency*/
+
+#define OUTPUT_PORT_MP3DEC 1
+#define INPUT_PORT_MP3DEC 0
 
 #define MP3D_MONO_STREAM  1 /* Mono stream index */
 #define MP3D_STEREO_INTERLEAVED_STREAM  2 /* Stereo Interleaved stream index */
@@ -178,9 +184,9 @@
 #else /* for Linux */
 #ifdef  MP3DEC_DEBUG
 
-    #define MP3DEC_DPRINT(...)  	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+    #define MP3DEC_DPRINT  printf //(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
+	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
     #define MP3DEC_BUFPRINT printf
     #define MP3DEC_MEMPRINT printf
@@ -190,7 +196,9 @@
     #define MP3DEC_DPRINT(...)
 
     #ifdef MP3DEC_STATEDETAILS
-        #define MP3DEC_STATEPRINT printf
+        #define MP3DEC_STATEPRINT   __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
+	                      //      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
     #else
         #define MP3DEC_STATEPRINT(...)
     #endif
@@ -211,9 +219,13 @@
 
 #endif
 
-#define MP3DEC_EPRINT(...)  fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
-                            fprintf(stdout, __VA_ARGS__);\
-                            fprintf(stdout, "\n");
+#define MP3DEC_EPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ERROR",__FUNCTION__, __LINE__);\
+	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+
+                            //fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
+                            //fprintf(stdout, __VA_ARGS__);\
+                            //fprintf(stdout, "\n");
 
 #endif
 
@@ -275,6 +287,22 @@
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
+/* ======================================================================= */
+/** PV_OMXComponentCapabilityFlagsType: this communicates capabilities to opencore client
+* 
+*/
+/* ==================================================================== */
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+        ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)
+        OMX_BOOL iIsOMXComponentMultiThreaded;
+        OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+        OMX_BOOL iOMXComponentSupportsPartialFrames;
+        OMX_BOOL iOMXComponentNeedsNALStartCode;
+        OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
 /* ======================================================================= */
 /** MP3D_COMP_PORT_TYPE: This enum is used by the OMX Component.
 * 
@@ -343,7 +371,6 @@ typedef struct {
   unsigned long    lMonoToStereoCopy;
   unsigned long    lStereoToMonoCopy;
 } MP3DEC_UALGParams;
-
 
 
 /* ======================================================================= */
@@ -493,6 +520,16 @@ struct _MP3D_BUFFERLIST{
 };
 
 typedef struct _MP3D_BUFFERLIST MP3D_BUFFERLIST;
+
+typedef struct StreamData{
+    OMX_U32 nSyncWord;
+    OMX_U32 nMpegVersion;
+    OMX_U32 nLayer;
+    OMX_U32 nBitRate;
+    OMX_U32 nFrequency;
+    OMX_U32 nChannelMode;
+}StreamData;
+
 
 /* ======================================================================= */
 /** MP3DEC_COMPONENT_PRIVATE: This is the major and main structure of the
@@ -724,7 +761,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     /** Keep buffer timestamps **/
     OMX_S64 arrBufIndex[MP3D_MAX_NUM_OF_BUFS];
 	/**Keep buffer tickcounts*/
-	OMX_U32 arrBufIndexTick[MP3D_MAX_NUM_OF_BUFS];
+    OMX_U32 arrBufIndexTick[MP3D_MAX_NUM_OF_BUFS];
 	
     /** Index to arrBufIndex[] and arrBufIndexTick[], used for input buffer timestamps */
     OMX_U8 IpBufindex;
@@ -738,6 +775,12 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
 
     /** First Time Stamp sent **/
     OMX_U8 first_TS;
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
+    OMX_BOOL reconfigInputPort;
+    OMX_BOOL reconfigOutputPort;
+    OMX_BOOL bConfigData;
+
+    StreamData pStreamData;
 	
 } MP3DEC_COMPONENT_PRIVATE;
 
@@ -1003,4 +1046,13 @@ void MP3DEC_ClearPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
 OMX_U32 MP3DEC_IsPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir);
 OMX_U32 MP3DEC_IsValid(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 void* MP3DEC_ComponentThread (void* pThreadData);
+
+/*  =========================================================================*/
+/*  func    GetBits                                                          */
+/*                                                                           */
+/*  desc    Gets aBits number of bits from position aPosition of one buffer  */
+/*            and returns the value in a TUint value.                        */
+/*  =========================================================================*/
+OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition);
+
 #endif
