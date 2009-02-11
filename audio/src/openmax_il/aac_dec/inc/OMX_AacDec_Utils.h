@@ -45,6 +45,7 @@
 #include <OMX_TI_Common.h>
 #include "LCML_DspCodec.h"
 #include <pthread.h>
+#include <sched.h>
 /* #include <ResourceManagerProxyAPI.h> */
 #ifdef UNDER_CE
 #include <windows.h>
@@ -80,8 +81,8 @@
  * @def    AAC_DEC__XXX_VER    Component version
  */
 /* ======================================================================= */
-#define AACDEC_MAJOR_VER 0x1
-#define AACDEC_MINOR_VER 0x1
+#define AACDEC_MAJOR_VER 1
+#define AACDEC_MINOR_VER 1
 /* ======================================================================= */
 /**
  * @def    NOT_USED_AACDEC    Defines a value for "don't care" parameters
@@ -220,41 +221,44 @@
 #endif
 
 #else /* for Linux */
-#ifdef  AACDEC_DEBUG
-#define AACDEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ",__FUNCTION__, __LINE__);\
-	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
-#define AACDEC_BUFPRINT printf
-#define AACDEC_MEMPRINT printf
-#define AACDEC_STATEPRINT printf
+#ifdef  AACDEC_DEBUG
+    #define AACDEC_DPRINT printf    //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ",__FUNCTION__, __LINE__);\
+	                            //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+
+    #undef AACDEC_BUFPRINT printf
+    #undef AACDEC_MEMPRINT printf
+    #define AACDEC_STATEPRINT printf
 #else
-#define AACDEC_DPRINT(...)
+    #define AACDEC_DPRINT(...)
 #endif
 
 #ifdef AACDEC_STATEDETAILS
-#define AACDEC_STATEPRINT printf
+    #define AACDEC_STATEPRINT printf
 #else
-#define AACDEC_STATEPRINT(...)
+    #define AACDEC_STATEPRINT(...)
 #endif
 
 #ifdef AACDEC_BUFDETAILS
-#define AACDEC_BUFPRINT printf
+    #define AACDEC_BUFPRINT printf
 #else
-#define AACDEC_BUFPRINT(...)
+    #define AACDEC_BUFPRINT(...)
 #endif
 
 #ifdef AACDEC_MEMDETAILS
-#define AACDEC_MEMPRINT(...)  fprintf(stdout, "%s %d::  ",__FUNCTION__, __LINE__); \
-    fprintf(stdout, __VA_ARGS__);                                       \
-    fprintf(stdout, "\n");
+    #define AACDEC_MEMPRINT(...)  fprintf(stdout, "%s %d::  ",__FUNCTION__, __LINE__); \
+                                  fprintf(stdout, __VA_ARGS__); \
+                                  fprintf(stdout, "\n");
 #else
-#define AACDEC_MEMPRINT(...)
+    #define AACDEC_MEMPRINT(...)
 #endif
 
-#define AACDEC_EPRINT(...)  __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	ERROR",__FUNCTION__, __LINE__);\
+#define AACDEC_EPRINT printf
+
+                           /* __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	ERROR",__FUNCTION__, __LINE__);\
 	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+    	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n"); */
 
 #endif
 
@@ -337,8 +341,8 @@
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
     memset((_s_), 0x0, sizeof(_name_));         \
     (_s_)->nSize = sizeof(_name_);              \
-    (_s_)->nVersion.s.nVersionMajor = 0x1;      \
-    (_s_)->nVersion.s.nVersionMinor = 0x1;      \
+    (_s_)->nVersion.s.nVersionMajor = 1;      \
+    (_s_)->nVersion.s.nVersionMinor = 1;      \
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
@@ -363,7 +367,8 @@
 
 #define EXTRA_BYTES 128 /* For Cache alignment*/
 #define DSP_CACHE_ALIGNMENT 256 /* For Cache alignment*/
-
+#define AACDEC_OUTPUT_PORT 1
+#define AACDEC_INPUT_PORT 0
 #define AACDEC_APP_ID  100
 #define MAX_NUM_OF_BUFS_AACDEC 15
 #define PARAMETRIC_STEREO_AACDEC 1
@@ -959,6 +964,8 @@ typedef struct AACDEC_COMPONENT_PRIVATE
 
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
     OMX_BOOL bConfigData;
+    OMX_BOOL reconfigInputPort;
+    OMX_BOOL reconfigOutputPort;
 
 } AACDEC_COMPONENT_PRIVATE;
 
@@ -1288,6 +1295,7 @@ OMX_U32 AACDEC_IsValid(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuf
  */
 /*=======================================================================*/
 int AACDec_GetSampleRateIndexL( const int aRate);
+int AACDec_GetSampleRatebyIndex( const int index);
 void* AACDEC_ComponentThread (void* pThreadData);
 
 /*  =========================================================================*/

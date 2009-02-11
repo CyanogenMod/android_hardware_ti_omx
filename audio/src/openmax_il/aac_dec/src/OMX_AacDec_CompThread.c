@@ -147,7 +147,7 @@ void* AACDEC_ComponentThread (void* pThreadData)
             AACDEC_DPRINT("\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
         } 
         else if (-1 == status) {
-            AACDEC_DPRINT ("%d :: Error in Select\n", __LINE__);
+            AACDEC_EPRINT ("%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                     pHandle->pApplicationPrivate,
                                                     OMX_EventError,
@@ -155,23 +155,9 @@ void* AACDEC_ComponentThread (void* pThreadData)
                                                     OMX_TI_ErrorSevere,
                                                     "Error from COmponent Thread in select");
             goto EXIT;
-
-        } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
-            int ret;
-            OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
-
-            AACDEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
-            ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
-            if (ret == -1) {
-                AACDEC_DPRINT ("%d :: Error while reading from the pipe\n",__LINE__);
-            }
-
-            eError = AACDEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
-            if (eError != OMX_ErrorNone) {
-                AACDEC_DPRINT ("%d :: Error From HandleDataBuf_FromApp\n",__LINE__);
-                break;
-            }
-        } else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
+            
+        } 
+        else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
             AACDEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
             nRet = AACDEC_HandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
@@ -189,6 +175,7 @@ void* AACDEC_ComponentThread (void* pThreadData)
                                                            OMX_EventCmdComplete,
                                                            OMX_ErrorNone,pComponentPrivate->curState, NULL);
                 } else {
+                    AACDEC_EPRINT("OMX_EventError:: OMX_ErrorPortUnpopulated at CompThread line %d\n", __LINE__);
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -198,7 +185,23 @@ void* AACDEC_ComponentThread (void* pThreadData)
                     pComponentPrivate->bPreempted = 0;
                 }
             }    
-        }  
+        }        
+        else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
+            int ret;
+            OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
+
+            AACDEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
+            ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
+            if (ret == -1) {
+                AACDEC_DPRINT ("%d :: Error while reading from the pipe\n",__LINE__);
+            }
+
+            eError = AACDEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
+            if (eError != OMX_ErrorNone) {
+                AACDEC_DPRINT ("%d :: Error From HandleDataBuf_FromApp\n",__LINE__);
+                break;
+            }
+        }   
     }
  EXIT:
 
