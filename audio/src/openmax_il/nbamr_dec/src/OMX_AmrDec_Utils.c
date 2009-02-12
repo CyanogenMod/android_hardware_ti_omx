@@ -1120,22 +1120,6 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->nHoldLength = 0;
             } 
             else if(pComponentPrivate->curState == OMX_StatePause) {
-		OMX_U8 *pArgs = (void*)"damedesuStr";
-		eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-					   MMCodecControlStop,(void *)pArgs);
-		if(eError != OMX_ErrorNone) {
-		    AMRDEC_EPRINT("%d :: OMX_AmrDec_Utils.c :: Error Occurred in Codec Stop..\n",
-				  __LINE__);
-
-		    pComponentPrivate->curState = OMX_StateInvalid;
-		    pComponentPrivate->cbInfo.EventHandler( pHandle,
-							    pHandle->pApplicationPrivate,
-							    OMX_EventError,
-							    eError,
-							    OMX_TI_ErrorSevere,
-							    NULL);
-		    goto EXIT;
-		}
 
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
@@ -1859,7 +1843,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     pBufHeader->nFilledLen=nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
                 }
 				
-#else
+#endif
 				if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE)
 								{
 									AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
@@ -1868,7 +1852,6 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 									frameLength=INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
 									nFrames=pBufHeader->nAllocLen / frameLength; /*to get the corresponding header in the LCML */
 								}
-#endif
                 else if (pComponentPrivate->mimemode == NBAMRDEC_IF2)
                 {
                     AMRDEC_DPRINT("%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDataBuf_FromApp - reading NBAMRDEC_IF2MODE\n", __LINE__);
@@ -2170,7 +2153,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 			
 			
             
-            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) 
+            if(pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) 
             {
                 (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame = OMX_BUFFERFLAG_EOS;
                 pBufHeader->nFlags = 0;
@@ -2596,10 +2579,10 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             pComponentPrivate->nOutStandingFillDones++;
 
             for(i=0;i<pLcmlHdr->pBufferParam->usNbFrames;i++){
-                if (((pLcmlHdr->pFrameParam+i)->usLastFrame)&(OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS){                
+                 if ( (pLcmlHdr->pFrameParam+i)->usLastFrame & OMX_BUFFERFLAG_EOS){ 
                     (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
                     (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
-                    pLcmlHdr->buffer->nFlags = OMX_BUFFERFLAG_EOS;
+                    pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
                     AMRDEC_DPRINT("%d :: On Component receiving OMX_BUFFERFLAG_EOS on output\n", __LINE__);
                     break;
                 }
