@@ -310,6 +310,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->pcmParams = mp3_op;
 
     pComponentPrivate->dasfmode = 0;
+    pComponentPrivate->frameMode = 0;
     pComponentPrivate->bBufferIsAllocated = 0;
     pComponentPrivate->bPortDefsAllocated = 0;
     pComponentPrivate->bCompThreadStarted = 0;
@@ -512,7 +513,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         MP3D_OMX_FREE(pTemp);
     }
     MP3DEC_DPRINT (":: Exiting OMX_ComponentInit\n");
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -541,8 +541,6 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                   OMX_COMMANDTYPE Cmd,
                                   OMX_U32 nParam,OMX_PTR pCmdData)
 {
-	
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nRet;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)phandle;
@@ -689,8 +687,6 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
 #endif    
 
  EXIT:
-
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -721,7 +717,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
@@ -884,7 +879,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
  EXIT:
     MP3DEC_DPRINT(" :: Exiting GetParameter\n");
     MP3DEC_DPRINT(" :: Returning = 0x%x\n",eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -914,7 +908,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR pCompParam)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate;
     OMX_AUDIO_PARAM_PORTFORMATTYPE* pComponentParam = NULL;
@@ -1080,7 +1073,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
  EXIT:
     MP3DEC_DPRINT(":: Exiting SetParameter\n");
     MP3DEC_DPRINT(":: Returning = 0x%x\n",eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1101,7 +1093,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_INDEXTYPE nConfigIndex,
                                 OMX_PTR ComponentConfigStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1269,7 +1260,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
  EXIT:
     MP3DEC_DPRINT(":: Exiting SetConfig\n");
     MP3DEC_DPRINT(" :: Returning = 0x%x\n",eError);
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1297,7 +1287,6 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
                                    OMX_CALLBACKTYPE* pCallBacks,
                                    OMX_PTR pAppData)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
 
@@ -1321,7 +1310,6 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     pComponentPrivate->curState = OMX_StateLoaded;
  EXIT:
     MP3DEC_DPRINT (":: Exiting SetCallbacks\n");
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1355,7 +1343,6 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
                                           OMX_VERSIONTYPE* pSpecVersion,
                                           OMX_UUIDTYPE* pComponentUUID)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
 #ifdef _ERROR_PROPAGATION__ 
@@ -1374,7 +1361,6 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     MP3DEC_DPRINT (":: Inside  GetComponentVersion\n");
     MP3DEC_DPRINT (" :: Exiting GetComponentVersion\n");
  EXIT:   
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 
 }
@@ -1405,7 +1391,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
                                 OMX_INDEXTYPE nConfigIndex,
                                 OMX_PTR ComponentConfigStructure)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1433,7 +1418,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     MP3D_OMX_FREE(streamInfo);
     
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1457,7 +1441,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 /* ================================================================================ * */
 static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
 
@@ -1482,7 +1465,6 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
     eError = OMX_ErrorNone;
 
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1509,7 +1491,6 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                                       OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1586,7 +1567,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     
  EXIT:
     MP3DEC_DPRINT (" :: Exiting EmptyThisBuffer\n");
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1613,7 +1593,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
                                      OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -1714,7 +1693,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
 
  EXIT:
     MP3DEC_DPRINT (": Exiting FillThisBuffer\n");
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1737,7 +1715,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
 /* ================================================================================ * */
 static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_ERRORTYPE eError1 = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
@@ -1805,7 +1782,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     MP3D_OMX_FREE(pComponentPrivate);
     MP3DEC_DPRINT("::*********** ComponentDeinit is Done************** \n");
  EXIT:
-	 __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -1839,14 +1815,12 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
                                              OMX_U32 nTunneledPort,
                                              OMX_TUNNELSETUPTYPE* pTunnelSetup)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     MP3DEC_DPRINT (":: Entering ComponentTunnelRequest\n");
     MP3DEC_DPRINT (" :: Inside   ComponentTunnelRequest\n");
     eError = OMX_ErrorNotImplemented;
     MP3DEC_DPRINT (" :: Exiting ComponentTunnelRequest\n");
     return eError;
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
 }
 
 
@@ -1880,7 +1854,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                    OMX_IN OMX_PTR pAppPrivate,
                    OMX_IN OMX_U32 nSizeBytes)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2024,7 +1997,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         MP3D_OMX_FREE(pBufferHeader->pBuffer);
         MP3D_OMX_FREE(pBufferHeader);
     }
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -2051,7 +2023,6 @@ static OMX_ERRORTYPE FreeBuffer(
             OMX_IN  OMX_U32 nPortIndex,
             OMX_IN  OMX_BUFFERHEADERTYPE* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     MP3DEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_U8* buff;
@@ -2265,7 +2236,6 @@ static OMX_ERRORTYPE FreeBuffer(
     }
 */
     MP3DEC_DPRINT (":: Exiting FreeBuffer\n");
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -2304,7 +2274,6 @@ static OMX_ERRORTYPE UseBuffer (
             OMX_IN OMX_U32 nSizeBytes,
             OMX_IN OMX_U8* pBuffer)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2418,7 +2387,6 @@ static OMX_ERRORTYPE UseBuffer (
 
     MP3DEC_DPRINT("pBufferHeader = %p\n",pBufferHeader);
  EXIT:
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -2436,7 +2404,6 @@ static OMX_ERRORTYPE GetExtensionIndex(
             OMX_IN  OMX_STRING cParameterName,
             OMX_OUT OMX_INDEXTYPE *pIndexType)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     if(!(strcmp(cParameterName,"OMX.TI.index.config.mp3headerinfo"))) {
@@ -2451,7 +2418,6 @@ static OMX_ERRORTYPE GetExtensionIndex(
     else {
         eError = OMX_ErrorBadParameter;
     }
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 
@@ -2469,7 +2435,6 @@ static OMX_ERRORTYPE ComponentRoleEnum(
       OMX_OUT OMX_U8 *cRole,
          OMX_IN OMX_U32 nIndex)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
    
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2482,7 +2447,6 @@ static OMX_ERRORTYPE ComponentRoleEnum(
         eError = OMX_ErrorNoMore;
     }
 
-	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
     return eError;
 }
 

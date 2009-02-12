@@ -69,6 +69,8 @@
 
 /* Log for Android system*/
 #include <utils/Log.h>
+#undef LOG_TAG
+#define LOG_TAG "OMX_MP3"
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -95,7 +97,7 @@
 
 #define MP3_APP_ID  100 /* Defines MP3 Dec App ID, App must use this value */
 #define MP3D_MAX_NUM_OF_BUFS 10 /* Max number of buffers used */
-#define MP3D_NUM_INPUT_BUFFERS 4  /* Default number of input buffers */
+#define MP3D_NUM_INPUT_BUFFERS 2  /* Default number of input buffers */
 #define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
 #define MP3D_INPUT_BUFFER_SIZE  2000 /* Default size of input buffer */
@@ -184,7 +186,7 @@
 #else /* for Linux */
 #ifdef  MP3DEC_DEBUG
 
-    #define MP3DEC_DPRINT  printf //(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
+    #define MP3DEC_DPRINT  LOGE //(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
 	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
     	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
@@ -219,11 +221,7 @@
 
 #endif
 
-#define MP3DEC_EPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ERROR",__FUNCTION__, __LINE__);\
-	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-
-                            //fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
+#define MP3DEC_EPRINT LOGE      //(...)  fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
                             //fprintf(stdout, __VA_ARGS__);\
                             //fprintf(stdout, "\n");
 

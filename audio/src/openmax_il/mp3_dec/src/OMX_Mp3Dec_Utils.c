@@ -1695,7 +1695,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStrmCtrl,(void *)pValues);
                     if(eError != OMX_ErrorNone) {
-                        MP3DEC_EPRINT(": Error Occurred in Codec StreamControl..\n");
+                        LOGE(": Error Occurred in Codec StreamControl..\n");
                         pComponentPrivate->curState = OMX_StateInvalid;
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1706,7 +1706,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         goto EXIT;
                     }
                 }
-                    MP3DEC_DPRINT(": LOOK HERE! decide on reconfig ports...\n");
+                    LOGE(": LOOK HERE! decide on reconfig ports...\n");
                 // parse something here
                 if(pComponentPrivate->bConfigData == 1){
 
@@ -1722,9 +1722,9 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     //save the current value of pcmParams->nSamplingRate
                     temp =  pComponentPrivate->pcmParams->nSamplingRate;
 
-// parsing completed, now compare to existing values and set port params as needed
+                    // parsing completed, now compare to existing values and set port params as needed
                     switch(pComponentPrivate->pStreamData.nFrequency){
-                        // these frequency values are based on mpeg1 table
+                        // these frequency values are based on mpeg1 supported freqs
                         // if the stream is actually mpeg2, we will divide appropriately below.
                         case 0:
                             pComponentPrivate->pcmParams->nSamplingRate = 44100;
@@ -1739,13 +1739,14 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             MP3DEC_EPRINT("Unsupported Frequency\n");
                             break;
                     }
-                    if (pComponentPrivate->pStreamData.nMpegVersion == 3){
+                    if (pComponentPrivate->pStreamData.nMpegVersion == 2){
                         // the actual sampling frequency is dependant upon the mpeg version
                         // if Mpeg2 is used, divide the sampling rate from above by 2
                         pComponentPrivate->pcmParams->nSamplingRate /= 2;
                     }
                     else if (pComponentPrivate->pStreamData.nMpegVersion == 0){
                         // the actual sampling frequency is dependant upon the mpeg version
+                        // divide by 4 for mpeg 2.5
                         pComponentPrivate->pcmParams->nSamplingRate /= 4;
                     }
                     // save the current value of nChannels
@@ -1762,10 +1763,13 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     MP3DEC_DPRINT(": decide on reconfig ports...\n");
                     if (temp !=  pComponentPrivate->pcmParams->nSamplingRate || temp2 != pComponentPrivate->pcmParams->nChannels){
                         pComponentPrivate->reconfigOutputPort = OMX_TRUE;
-                        MP3DEC_DPRINT(": reconfif output port set to true...\n");
+                        LOGE(": reconfif output port set to true...\n");
                     }
                     
-
+                    LOGE("CODEC CONFIG: \n\tsample rate = %d\n\tchannels = %d\n\t channel mode = %d\n",
+                          pComponentPrivate->pcmParams->nSamplingRate, 
+                          pComponentPrivate->pcmParams->nChannels,
+                          pComponentPrivate->pStreamData.nChannelMode);
                     // set up the codec with corrected settings
                     // it was not done in idle->executing transition
                     if(pComponentPrivate->dasfmode == 0 && 
@@ -1786,7 +1790,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlAlgCtrl,(void *)pValues1);
                     if(eError != OMX_ErrorNone) {
-                        MP3DEC_EPRINT("Error Occurred in Codec Start..\n");
+                        LOGE("Error Occurred in Codec Start..\n");
                         pComponentPrivate->curState = OMX_StateInvalid;
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1797,25 +1801,25 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         goto EXIT;
                     }
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
-                    MP3DEC_DPRINT(":: Algcontrol has been sent to DSP\n");
+                    LOGE(":: Algcontrol has been sent to DSP\n");
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStart,(void *)pArgs);
                     if(eError != OMX_ErrorNone) {
-                        MP3DEC_EPRINT("%d: Error Occurred in Codec Start..\n", __LINE__);
+                        LOGE("%d: Error Occurred in Codec Start..\n", __LINE__);
                         goto EXIT;
                     }
-                    MP3DEC_DPRINT(": Codec Has Been Started \n");
+                    LOGE(": Codec Has Been Started \n");
 
                     // adding port config
                     if(pComponentPrivate->reconfigOutputPort){
-                        MP3DEC_DPRINT(": send event PortSettingsChanged for ouput port...\n");
+                        LOGE(": send event PortSettingsChanged for ouput port...\n");
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventPortSettingsChanged,
                                                OUTPUT_PORT_MP3DEC,
                                                0,
                                                NULL);
-                        MP3DEC_DPRINT("then give back the config buffer...\n");
+                        LOGE("then give back the config buffer...\n");
                         
                         pComponentPrivate->cbInfo.EmptyBufferDone (
                                                                    pComponentPrivate->pHandle,
@@ -1872,7 +1876,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                   sizeof(MP3DEC_UAlgInBufParamStruct),
                                                   NULL);
                             if (eError != OMX_ErrorNone) {
-                                MP3DEC_DPRINT ("::Comp: SetBuff: IP: Error Occurred\n");
+                                LOGE ("::Comp: SetBuff: IP: Error Occurred\n");
                                 eError = OMX_ErrorHardware;
                                 goto EXIT;
                             }
