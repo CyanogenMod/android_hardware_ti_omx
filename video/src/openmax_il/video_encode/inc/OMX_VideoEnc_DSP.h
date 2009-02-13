@@ -317,6 +317,7 @@ typedef struct MP4VE_GPP_SN_Obj_CreatePhase {
     unsigned short usStreamId2;
     unsigned short usBuffTypeInStream2;
     unsigned short usMaxBuffsInStream2;
+    unsigned short usReserved1;
 
     unsigned int   ulWidth;
     unsigned int   ulHeight;
@@ -346,6 +347,10 @@ typedef struct MP4VE_GPP_SN_Obj_CreatePhase {
     unsigned int   ulUseGOV;
     unsigned int   ulUseVOS;
 	
+    unsigned int   enableH263AnnexI;
+    unsigned int   enableH263AnnexJ;
+    unsigned int   enableH263AnnexT;
+
     unsigned short endArgs;
 } MP4VE_GPP_SN_Obj_CreatePhase;
 

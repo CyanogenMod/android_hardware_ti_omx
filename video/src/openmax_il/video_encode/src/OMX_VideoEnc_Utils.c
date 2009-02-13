@@ -112,6 +112,8 @@ void sleep(DWORD Duration)
 *  PRIVATE DECLARATIONS Defined here, used only here
 *******************************************************************************/
 /*--------data declarations --------------------------------------------------*/
+#define LOG_TAG " TI_VideoEncoderUtils"
+
 struct DSP_UUID H264VESOCKET_TI_UUID = {
     0x63A3581A, 0x09D7, 0x4AD0, 0x80, 0xB8, {
     0x5F, 0x2C, 0x4D, 0x4D, 0x59, 0xC9
@@ -2107,6 +2109,30 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             }
 	#endif      
 
+             /* Make sure the DSP node has been deleted */
+             if (pComponentPrivate->bCodecStarted == OMX_TRUE || pComponentPrivate->bCodecLoaded == OMX_TRUE)
+             {
+                 OMX_TRACE("LCML_ControlCodec EMMCodecControlDestroy\n");
+                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                             EMMCodecControlDestroy,
+                                             NULL);
+                 OMX_CONF_BAIL_IF_ERROR(eError);
+                 OMX_TRACE("Atempting to Unload LCML");
+                 /*Unload LCML */
+                 if(pComponentPrivate->pModLcml != NULL)
+                 {
+                     OMX_TRACE("Unloading LCML");
+                     dlclose(pComponentPrivate->pModLcml);
+                     pComponentPrivate->pModLcml = NULL;
+                     pComponentPrivate->pLCML = NULL;
+                 }
+
+                 pComponentPrivate->bCodecStarted = OMX_FALSE;
+                 pComponentPrivate->bCodecLoaded = OMX_FALSE;
+             }
+
+             OMX_CONF_BAIL_IF_ERROR(eError);
+
 #ifdef __KHRONOS_CONF__
             pComponentPrivate->bPassingIdleToLoaded = OMX_FALSE;
 #endif            
@@ -2865,6 +2891,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitLCML(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
 
 #ifndef UNDER_CE    
     pMyLCML = dlopen("libLCML.so", RTLD_LAZY);
+    pComponentPrivate->pModLcml = pMyLCML;
     if (!pMyLCML)
     {
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
@@ -3427,6 +3454,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
 #else
         pCreatePhaseArgs->ucLevel = pMpeg4->eLevel;
 #endif
+        pCreatePhaseArgs->enableH263AnnexI  = 0;
+        pCreatePhaseArgs->enableH263AnnexJ  = 0;
+        pCreatePhaseArgs->enableH263AnnexT  = 0;
+
     }
     else
     {
@@ -3466,6 +3497,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         {
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
         }
+
+        pCreatePhaseArgs->enableH263AnnexI  = 1;
+        pCreatePhaseArgs->enableH263AnnexJ  = 1;
+        pCreatePhaseArgs->enableH263AnnexT  = 1;
     }
     pCreatePhaseArgs->ulMaxDelay              = 300;
 	#ifndef MODE_3410

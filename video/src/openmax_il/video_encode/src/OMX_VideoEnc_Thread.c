@@ -92,7 +92,7 @@
 *  PRIVATE DECLARATIONS Defined here, used only here
 *******************************************************************************/
 /*--------data declarations --------------------------------------------------*/
-
+#define LOG_TAG " TI_VideoEncoderThread"
 /*--------macro definitions --------------------------------------------------*/
 
 /*--------function prototypes ------------------------------------------------*/
