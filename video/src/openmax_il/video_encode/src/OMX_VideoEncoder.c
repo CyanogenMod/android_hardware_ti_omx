@@ -106,6 +106,8 @@
 *  PRIVATE DECLARATIONS Defined here, used only here
 *******************************************************************************/
 /*--------data declarations --------------------------------------------------*/
+#define LOG_TAG " TI_VideoEncoder!"
+
 #ifdef UNDER_CE
            static pthread_t ComponentThread;
 #endif

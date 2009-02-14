@@ -43,6 +43,7 @@
 
 #ifndef OMX_VIDEOENC_DEBUG__H
 #define OMX_VIDEOENC_DEBUG__H
+#include <utils/Log.h>
 
 /*
  *  PRINT OPTIONS     
@@ -96,19 +97,22 @@ void VIDENC_Trace (const char *szFunctionName, const char *strFormat, ...);
 void VIDENC_eprint (int iLineNum, const char *szFunctionName, const char *strFormat, ...);
 
 #ifdef __OMX_TRACE__
-    #define OMX_TRACE(STR, ARG...) VIDENC_Trace(__FUNCTION__, STR, ##ARG)
+    /*#define OMX_TRACE(STR, ARG...) VIDENC_Trace(__FUNCTION__, STR, ##ARG)*/
+	#define OMX_TRACE LOGD
 #else
     #define OMX_TRACE(...)
 #endif
 
-#ifdef __OMX_EPRINT__
-    #define OMX_EPRINT(STR, ARG...) VIDENC_eprint(__LINE__, __FUNCTION__, STR, ##ARG)
+#ifdef __OMX_TRACE__
+    /*#define OMX_EPRINT(STR, ARG...) VIDENC_eprint(__LINE__, __FUNCTION__, STR, ##ARG)*/
+    #define OMX_EPRINT LOGE
 #else
     #define OMX_EPRINT(...)
 #endif
 
-#ifdef __OMX_PRINT__
-    #define OMX_PRINT(...) fprintf(stdout, __VA_ARGS__)
+#ifdef __OMX_TRACE__
+    /*#define OMX_PRINT(...) fprintf(stdout, __VA_ARGS__)*/
+	#define OMX_PRINT LOGD
 #else
     #define OMX_PRINT(...)
 #endif
