@@ -2556,21 +2556,21 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulFrameIndex         = pComponentPrivate->nFrameCnt;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulTargetFrameRate    = pComponentPrivate->nTargetFrameRate;            
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulTargetBitRate      = pComponentPrivate->nTargetBitRate;
-        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulGenerateHeader     = 0; 
+        if(pComponentPrivate->nFrameCnt == 0 && pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4){
+            OMX_TRACE("GENERATING VOL HEADER\n");
+            ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulGenerateHeader     = 1;
+        }
+        else
+            ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulGenerateHeader     = 0;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulForceIFrame        = pComponentPrivate->bForceIFrame;
-        /*((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulResyncInterval = 2048;*/
-        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulResyncInterval     = pCompPortOut->pErrorCorrectionType->nResynchMarkerSpacing; /*1024;*/
-        /*((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHecInterval    = 0;*/
-		if(pCompPortOut->pErrorCorrectionType->bEnableHEC)
-			((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHecInterval        = 3;/**/
+        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulResyncInterval     = pCompPortOut->pErrorCorrectionType->nResynchMarkerSpacing;
+        if(pCompPortOut->pErrorCorrectionType->bEnableHEC)
+			((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHecInterval        = 3;
 		else
 			((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHecInterval        = 0;
-        /*((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulAIRRate        = pComponentPrivate->nAIRRate; */
-        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulAIRRate            = pCompPortOut->pIntraRefreshType->nAirRef; /*10;*/
-        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulMIRRate            = pComponentPrivate->nMIRRate; /*0;*/
-        /*((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulfCode          = 1;*/
+        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulAIRRate            = pCompPortOut->pIntraRefreshType->nAirRef;
+        ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulMIRRate            = pComponentPrivate->nMIRRate;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulfCode              = 5;
-        /*((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHalfPel        = 0;*/
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulHalfPel            = 1;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ul4MV                = 0;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulIntraFrameInterval = pComponentPrivate->nIntraFrameInterval;   
@@ -3508,8 +3508,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
 	pCreatePhaseArgs->ulH263SliceMode         = 0;
 	#endif
 	pCreatePhaseArgs->ulUseGOV                = 0;
-	pCreatePhaseArgs->ulUseVOS                = 0;
-	
+    if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
+        pCreatePhaseArgs->ulUseVOS            = 1;//needed to generate VOL Header
+    else
+        pCreatePhaseArgs->ulUseVOS            = 0;
     pCreatePhaseArgs->endArgs                 = END_OF_CR_PHASE_ARGS;
     pTmp = memcpy(nArr, pCreatePhaseArgs, sizeof(MP4VE_GPP_SN_Obj_CreatePhase));
     if (pTmp == NULL) 
