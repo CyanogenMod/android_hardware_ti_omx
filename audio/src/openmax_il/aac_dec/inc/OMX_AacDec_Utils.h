@@ -65,6 +65,7 @@
 
 /* Log for Android system*/
 #include <utils/Log.h>
+#define LOG_TAG "OMX_AACDEC"
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -409,14 +410,14 @@
  *
  */
 /* ======================================================================= */
-#define AACD_INPUT_BUFFER_SIZE 1536
+#define AACD_INPUT_BUFFER_SIZE 1536*6
 /* ======================================================================= */
 /**
  * @def    AACD_OUTPUT_BUFFER_SIZE   Default output buffer size
  *
  */
 /* ======================================================================= */
-#define AACD_OUTPUT_BUFFER_SIZE 8192
+#define AACD_OUTPUT_BUFFER_SIZE 8192*6
 /* ======================================================================= */
 /**
  * @def    AACD_SAMPLING_FREQUENCY   Sampling frequency

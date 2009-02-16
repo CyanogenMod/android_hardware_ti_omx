@@ -319,11 +319,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data */
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 0;
-
-#ifdef ANDROID
-/* force to use frame mode always because opencore does not call SetConfig */
     pComponentPrivate->framemode = 1;
-#endif
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
