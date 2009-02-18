@@ -394,14 +394,14 @@
  *
  */
 /* ======================================================================= */
-#define AACD_NUM_INPUT_BUFFERS 4 
+#define AACD_NUM_INPUT_BUFFERS 4
 /* ======================================================================= */
 /**
  * @def    AACD_NUM_OUTPUT_BUFFERS   Default number of output buffers
  *
  */
 /* ======================================================================= */
-#define AACD_NUM_OUTPUT_BUFFERS 4 
+#define AACD_NUM_OUTPUT_BUFFERS 4
 
 /* ======================================================================= */
 /**
@@ -966,6 +966,12 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_BOOL bConfigData;
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
+    OMX_U32 PScontent;
+    OMX_U32 PSdetected;
+    OMX_U32 firstOUTbuffer;
+    OMX_U32 firstINbuffer;
+    OMX_U8 OutPendingPR;
+    OMX_BUFFERHEADERTYPE *pOutPendingPR[MAX_NUM_OF_BUFS_AACDEC];
 
 } AACDEC_COMPONENT_PRIVATE;
 
@@ -1297,6 +1303,9 @@ OMX_U32 AACDEC_IsValid(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuf
 int AACDec_GetSampleRateIndexL( const int aRate);
 int AACDec_GetSampleRatebyIndex( const int index);
 void* AACDEC_ComponentThread (void* pThreadData);
+
+OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
+                           AACDEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /*  =========================================================================*/
 /*  func    GetBits                                                          */

@@ -319,6 +319,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data */
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 0;
+    pComponentPrivate->PScontent = 0;
+    pComponentPrivate->PSdetected = 0;
+    pComponentPrivate->firstOUTbuffer = 1;
+    pComponentPrivate->firstINbuffer = 1;
 
 #ifdef ANDROID
 /* force to use frame mode always because opencore does not call SetConfig */
@@ -328,9 +332,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
         pComponentPrivate->pOutputBufHdrPending[i] = NULL;
+        pComponentPrivate->pOutPendingPR[i] = NULL;
     }
     pComponentPrivate->nNumInputBufPending = 0;
     pComponentPrivate->nNumOutputBufPending = 0;
+    pComponentPrivate->OutPendingPR = 0;
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInBufHdrPausedPending[i] = NULL;
@@ -2251,7 +2257,7 @@ static OMX_ERRORTYPE UseBuffer (
     pComponentPrivate->bufAlloced = 1;
     AACDEC_DPRINT("pBufferHeader = %p\n",pBufferHeader);
     
-    if (pComponentPrivate->bEnableCommandPending){
+    if (pComponentPrivate->bEnableCommandPending && pPortDef->bPopulated) {
         SendCommand (pComponentPrivate->pHandle,
                      OMX_CommandPortEnable,
                      pComponentPrivate->bEnableCommandParam,NULL);
