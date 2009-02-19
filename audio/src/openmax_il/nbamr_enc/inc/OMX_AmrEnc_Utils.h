@@ -78,7 +78,15 @@
 	#define sleep Sleep
 #endif
 
+#ifndef ANDROID
+    #define ANDROID
+#endif
 
+#ifdef ANDROID
+    #include <utils/Log.h>
+    #undef LOG_TAG
+    #define LOG_TAG "nbamr_enc"
+#endif
 /* ======================================================================= */
 /**
  * @def    AMRENC_DEBUG   Turns debug messaging on and off
@@ -107,28 +115,50 @@
  */
 /* ======================================================================= */
 #ifndef UNDER_CE
-		#define AMRENC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
+    #ifdef ANDROID
+        #define AMRENC_EPRINT LOGE
+    #else	
+        #define AMRENC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
+    #endif
 #else
 		#define AMRENC_EPRINT
 #endif
-#ifndef UNDER_CE
+
+
+
 /* ======================================================================= */
 /**
  * @def    AMRENC_DEBUG   Debug print macro
  */
 /* ======================================================================= */
+#ifndef UNDER_CE
+
 #ifdef  AMRENC_DEBUG
         #define AMRENC_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
+
+    #ifdef ANDROID
+        #undef AMRENC_DPRINT
+        #define AMRENC_DPRINT LOGW
+    #endif
+
 #else
         #define AMRENC_DPRINT(...)
 #endif
+
+
 /* ======================================================================= */
 /**
  * @def    AMRENC_MEMCHECK   Memory print macro
  */
 /* ======================================================================= */
 #ifdef  AMRENC_MEMCHECK
-        #define AMRENC_MEMPRINT(...)    fprintf(stderr,__VA_ARGS__)
+    #define AMRENC_MEMPRINT(...)    fprintf(stderr,__VA_ARGS__)
+
+    #ifdef ANDROID
+        #undef AMRENC_MEMPRINT
+        #define AMRENC_MEMPRINT LOGW
+    #endif
+
 #else
         #define AMRENC_MEMPRINT(...)	printf
 #endif
@@ -158,8 +188,13 @@
 #ifdef UNDER_CE
 
 #ifdef DEBUG
-		#define AMRENC_DPRINT     printf
-		#define AMRENC_MEMPRINT   printf
+    #ifdef ANDROID
+        #define AMRENC_DPRINT     LOGW
+        #define AMRENC_MEMPRINT   LOGW
+    #else
+        #define AMRENC_DPRINT     printf
+        #define AMRENC_MEMPRINT   printf
+    #endif
 #else
 		#define AMRENC_DPRINT
 		#define AMRENC_MEMPRINT
@@ -243,9 +278,7 @@
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-#ifndef ANDROID
-    #define ANDROID
-#endif
+
 /* ======================================================================= */
 /**
  * @def EXTRA_BYTES   	 Extra bytes For Cache alignment

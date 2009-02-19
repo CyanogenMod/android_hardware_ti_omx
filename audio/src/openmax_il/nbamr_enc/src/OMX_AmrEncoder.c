@@ -224,7 +224,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_AUDIO_PARAM_PORTFORMATTYPE *pPortFormat = NULL;
 	int i = 0;
 
-	AMRENC_DPRINT("%d :: Entering OMX_ComponentInit\n", __LINE__);
+	printf("%d :: Entering OMX_ComponentInit\n", __LINE__);
 	/*Set the all component function pointer to the handle */
     pHandle->SetCallbacks = SetCallbacks;
     pHandle->GetComponentVersion = GetComponentVersion;
@@ -339,7 +339,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->eDir                               = OMX_DirOutput;
     pPortDef_op->nBufferCountMin                    = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountActual                 = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferSize                        = NBAMRENC_OUTPUT_FRAME_SIZE;
+    pPortDef_op->nBufferSize                        = 320; //NBAMRENC_OUTPUT_FRAME_SIZE;
     pPortDef_op->bEnabled                           = OMX_TRUE;
     pPortDef_op->bPopulated                         = OMX_FALSE;
     pPortDef_op->eDomain                            = OMX_PortDomainAudio;

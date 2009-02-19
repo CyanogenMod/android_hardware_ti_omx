@@ -1630,7 +1630,7 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     LCML_DSP_INTERFACE * phandle = NULL;
     OMX_U8* pBufParmsTemp = NULL;
 
-    /* NBAMRENC_BUFDATA* OutputFrames; */
+
     AMRENC_DPRINT ("%d :: Entering NBAMRENC_HandleDataBufFromApp Function\n",__LINE__);
     /*Find the direction of the received buffer from buffer list */
         eError = NBAMRENC_GetBufferDirection(pBufHeader, &eDir);
@@ -1766,7 +1766,7 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 }
                         }
                 }else{
-                        if(pBufHeader->nFlags != OMX_BUFFERFLAG_EOS){
+                        if((pBufHeader->nFlags&OMX_BUFFERFLAG_EOS) != OMX_BUFFERFLAG_EOS){
                             if (pComponentPrivate->dasfMode == 0 && !pBufHeader->pMarkData) {
 #ifdef __PERF_INSTRUMENTATION__
 	    	                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -1839,7 +1839,7 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
                 }
 
-                if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
+                if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS)  == OMX_BUFFERFLAG_EOS) {
                         (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame = OMX_BUFFERFLAG_EOS;
                         pComponentPrivate->InBuf_Eos_alreadysent = 1; /*TRUE*/
                         if(pComponentPrivate->dasfMode == 0) {
@@ -1868,6 +1868,15 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 								{
                                         if (!NBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
                                                 NBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
+/*				if (pLcmlHdr->buffer->nFilledLen != 0)
+					fwrite(pLcmlHdr->buffer->pBuffer, 1, pLcmlHdr->buffer->nFilledLen, fOut);
+*/				
+				/* fflush(fOut); */
+
+/*				
+				fclose(fOut);
+*/
+
                                                 eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
                                                                                                 EMMCodecInputBuffer,
                                                                                                 (OMX_U8 *)pBufHeader->pBuffer,
@@ -2184,6 +2193,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     pComponentPrivate_CC = (AMRENC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)args[6])->pComponentPrivate;
 	pHandle = pComponentPrivate_CC->pHandle;
 
+
 #ifdef AMRENC_DEBUG
 	switch(event) {
 
@@ -2303,7 +2313,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             AMRENC_DPRINT("%d :: Output: pLcmlHdr->buffer->pBuffer = %p\n",__LINE__, pLcmlHdr->buffer->pBuffer);
             pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
             AMRENC_DPRINT("%d :: Output: pBuffer = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
-#if 1
+#if 0
             pLcmlHdr->buffer->nFilledLen = 32;
             AMRENC_DPRINT("%d :: Output: ::RESET:: pBuffer->nFilledLen = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
 #endif
@@ -2423,6 +2433,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
 		                                      0,
 		                                      PERF_ModuleHLMM);
 #endif
+
 				        pComponentPrivate_CC->cbInfo.EmptyBufferDone (
                                        pHandle,
                                        pHandle->pApplicationPrivate,
@@ -2592,7 +2603,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                         AMRENC_DPRINT("%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
                         AMRENC_DPRINT("IUALG_WARN_PLAYCOMPLETED Received\n");
                         if(pComponentPrivate_CC->LastOutbuf!=NULL){
-                                    pComponentPrivate_CC->LastOutbuf->nFlags = OMX_BUFFERFLAG_EOS;
+                                    pComponentPrivate_CC->LastOutbuf->nFlags |= OMX_BUFFERFLAG_EOS;
                         }
                         pComponentPrivate_CC->cbInfo.EventHandler(pComponentPrivate_CC->pHandle,
                                                                 pComponentPrivate_CC->pHandle->pApplicationPrivate,

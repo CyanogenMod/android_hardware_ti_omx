@@ -523,8 +523,8 @@ typedef struct OMX_AUDIO_PARAM_AMRTYPE {
     OMX_U32 nChannels;                      /**< Number of channels */
     OMX_U32 nBitRate;                       /**< Bit rate read only field */
     OMX_AUDIO_AMRBANDMODETYPE eAMRBandMode; /**< AMR Band Mode enumeration */ 
-    OMX_U32 nBitPerSample;                  /**< Bit per sample.  If nBitPerSample = 0, 
-                                                 use the value from eAMRBandMode */
+//    OMX_U32 nBitPerSample;                  /**< Bit per sample.  If nBitPerSample = 0, 
+//                                               use the value from eAMRBandMode */
     OMX_AUDIO_AMRDTXMODETYPE  eAMRDTXMode;  /**< AMR DTX Mode enumeration */
     OMX_AUDIO_AMRFRAMEFORMATTYPE eAMRFrameFormat; /**< AMR frame format enumeration */
 } OMX_AUDIO_PARAM_AMRTYPE;

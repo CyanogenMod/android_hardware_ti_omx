@@ -156,7 +156,7 @@ void* NBAMRENC_CompThread(void* pThreadData)
                     goto EXIT;
                 }
              }
-             AMRENC_DPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
+             AMRENC_EPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
         } else if(-1 == status) {
             AMRENC_EPRINT("%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler ( pHandle,
