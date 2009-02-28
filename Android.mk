@@ -73,6 +73,8 @@ include $(TI_OMX_AUDIO)/nbamr_enc/tests/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_enc/tests/Android.mk
+include $(TI_OMX_AUDIO)/wma_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/wma_dec/tests/Android.mk
 
 #call to video
 include $(TI_OMX_VIDEO)/video_decode/Android.mk
