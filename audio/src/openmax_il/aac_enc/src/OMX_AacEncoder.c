@@ -180,6 +180,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	int i;
 
 	AACENC_DPRINT("%d :: AACENC : Entering OMX_ComponentInit\n", __LINE__);
+/* For Android Tests */
+	printf("%d :: AACENC : Entering OMX_ComponentInit\n", __LINE__);
+
     /*Set the all component function pointer to the handle*/
     pHandle->SetCallbacks 		 	= SetCallbacks;
     pHandle->GetComponentVersion 	= GetComponentVersion;
@@ -245,9 +248,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	aac_pcm_ip->nSize				= sizeof(OMX_AUDIO_PARAM_PCMMODETYPE);
 	aac_pcm_ip->nBitPerSample		= 16;							/*Will be remapped for SN. 16:2,  24:3*/
 	aac_pcm_ip->nPortIndex			= 0;
-	aac_pcm_ip->nChannels			= 2;							/*Will be remapped for SN.  0:mono, 1:stereo*/
+	aac_pcm_ip->nChannels			= 1;							/*Will be remapped for SN.  0:mono, 1:stereo*/
 	aac_pcm_ip->eNumData			= OMX_NumericalDataSigned;	
-	aac_pcm_ip->nSamplingRate		= 44100;
+	aac_pcm_ip->nSamplingRate		= 8000;
 	aac_pcm_ip->ePCMMode			= OMX_AUDIO_PCMModeLinear; 
 	aac_pcm_ip->bInterleaved		= OMX_TRUE; 
 
