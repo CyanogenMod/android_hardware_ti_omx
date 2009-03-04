@@ -72,9 +72,6 @@
 #include <stdio.h>
 #include <dbapi.h>
 
-/* Log for Android system*/
-#include <utils/Log.h>
-
 /*------- Program Header Files -----------------------------------------------*/
 
 #include "LCML_DspCodec.h"
@@ -217,7 +214,7 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
 	
-    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s: IN", __FUNCTION__);
+
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip = NULL, *pPortDef_op = NULL;
@@ -229,7 +226,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     MP3D_BUFFERLIST *pTemp = NULL;
     int i=0;
 
-    MP3DEC_DPRINT ("Entering OMX_ComponentInit\n");
+    MP3DEC_EPRINT ("Entering OMX_ComponentInit\n"); //using e-print for verification puposes
 
     MP3D_OMX_CONF_CHECK_CMD(pHandle,1,1);
 
@@ -261,7 +258,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleAudioDecode);
 #endif
 
-#ifdef ANDROID /* leave this now, we may need them later. */
     pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE;
@@ -269,7 +265,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; 
-#endif
+
 
     MP3D_OMX_MALLOC(pCompPort, MP3D_AUDIODEC_PORT_TYPE);
     pComponentPrivate->pCompPort[MP3D_INPUT_PORT] =  pCompPort;
@@ -296,7 +292,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CONF_INIT_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
     MP3D_OMX_MALLOC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
-    pComponentPrivate->sPortParam->nPorts = 0x2;
+    pComponentPrivate->sPortParam->nPorts = NUM_OF_PORTS;
     pComponentPrivate->sPortParam->nStartPortNumber = 0x0;
     pComponentPrivate->mp3Params = NULL;
 
@@ -336,16 +332,15 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->SendAfterEOS = 0;    
     pComponentPrivate->nUnhandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
-    
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
 
     pComponentPrivate->bPreempted = OMX_FALSE; 
     pComponentPrivate->first_buff = 0;
 
-    pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data */
+    pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data, need to use bufferFlag instead for 1.1.2 compliance */
     pComponentPrivate->reconfigInputPort = 0;
-    pComponentPrivate->reconfigOutputPort = 0;
+    pComponentPrivate->reconfigOutputPort = 1; //set the initial value to true if you expect to do port config...
 
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
@@ -354,6 +349,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
         pComponentPrivate->pOutputBufHdrPending[i] = NULL;
     }
+
+
 
     pComponentPrivate->nInvalidFrameCount = 0;
     pComponentPrivate->bDisableCommandPending = 0;
@@ -374,6 +371,14 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    pComponentPrivate->codecStop_waitingsignal = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
             
     pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
@@ -454,7 +459,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CONF_INIT_STRUCT(mp3_ip, OMX_AUDIO_PARAM_MP3TYPE);
     mp3_ip->nPortIndex = MP3D_INPUT_PORT;
     mp3_ip->nSampleRate = 44100;
-    mp3_ip->nChannels = 2;
+    mp3_ip->nChannels = MP3D_STEREO_STREAM;
     mp3_ip->eChannelMode = OMX_AUDIO_ChannelModeStereo;
     mp3_ip->nAudioBandWidth = 0;
     mp3_ip->eFormat = OMX_AUDIO_MP3StreamFormatMP1Layer3;
@@ -463,7 +468,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CONF_INIT_STRUCT(mp3_op, OMX_AUDIO_PARAM_PCMMODETYPE);
     mp3_op->nPortIndex = MP3D_OUTPUT_PORT;
     mp3_op->nBitPerSample = 16;
-    mp3_op->nChannels = 2;
+    mp3_op->nChannels = MP3D_STEREO_STREAM;
     mp3_op->nSamplingRate = 44100;
     mp3_op->eNumData= OMX_NumericalDataSigned; 
     mp3_op->ePCMMode = OMX_AUDIO_PCMModeLinear; 
@@ -557,16 +562,6 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
 #else
     MP3DEC_DPRINT(":: MP3DEC: Entered SendCommand\n");
     if(pCompPrivate->curState == OMX_StateInvalid){
-        MP3DEC_DPRINT(" MP3DEC: Error Notofication Sent to App\n");
-#if 0
-        pCompPrivate->cbInfo.EventHandler (pHandle, 
-                                           pHandle->pApplicationPrivate,
-                                           OMX_EventError, 
-                                           OMX_ErrorInvalidState,
-                                           OMX_TI_ErrorMinor,
-                                           "Invalid State");
-#endif
-
         MP3D_OMX_ERROR_EXIT(eError, OMX_ErrorInvalidState,"OMX_ErrorInvalidState");
     }
 #endif
@@ -663,12 +658,8 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
             MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
         }
     }
-
-
     MP3DEC_DPRINT(":: MP3DEC:SendCommand - nRet = %d\n",nRet);
-    /*if (nRet == -1) {
-        MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorInsufficientResources,"OMX_ErrorInsufficientResources");
-    }*/
+
 
 #ifdef DSP_RENDERING_ON
     if(Cmd == OMX_CommandStateSet && nParam == OMX_StateExecuting) {
@@ -852,8 +843,8 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     case OMX_IndexParamOtherInit:
         break;
 
-#ifdef ANDROID
-    case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+#ifdef ANDROID 
+   case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
     {
 	MP3DEC_DPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
         PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
@@ -869,7 +860,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     }
     break;
 #endif
-
 
     default:
         MP3DEC_EPRINT(" :: OMX_ErrorUnsupportedIndex GetParameter \n");
@@ -1635,7 +1625,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
     if (pBuffer->nSize != sizeof(OMX_BUFFERHEADERTYPE)) {
-        MP3DEC_EPRINT (" :: EmptyThisBuffer: Bad Size\n");
+        MP3DEC_EPRINT (" :: FillThisBuffer: Bad Size\n");
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -1722,7 +1712,19 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     int k=0, k2 = 0;
 
 
-    MP3DEC_DPRINT("ComponentDeInit\n");
+    MP3DEC_EPRINT("ComponentDeInit\n");
+
+    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntIp = %d\n", pComponentPrivate->lcml_nCntIp);
+    MP3DEC_EPRINT("pComponentPrivate->lcml_nIpBuf = %d\n", pComponentPrivate->lcml_nIpBuf);
+    MP3DEC_EPRINT("pComponentPrivate->num_Sent_Ip_Buff = %d\n", pComponentPrivate->num_Sent_Ip_Buff);
+    MP3DEC_EPRINT("pComponentPrivate->nNumInputBufPending = %d\n", pComponentPrivate->nNumInputBufPending);
+
+    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntOp = %d\n", pComponentPrivate->lcml_nCntOp);
+    MP3DEC_EPRINT("pComponentPrivate->lcml_nOpBuf = %d\n", pComponentPrivate->lcml_nOpBuf);
+    MP3DEC_EPRINT("pComponentPrivate->num_Op_Issued = %d\n", pComponentPrivate->num_Op_Issued);
+    MP3DEC_EPRINT("pComponentPrivate->nNumOutputBufPending = %d\n", pComponentPrivate->nNumOutputBufPending);
+
+
     MP3D_OMX_CONF_CHECK_CMD(pComponent,1,1)
         pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
     MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate,1,1)
@@ -1752,10 +1754,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 #endif
 
     pComponentPrivate->bExitCompThrd = 1;
-    /* @TODO: check that this fix is not causing power management issues */
-    /* Fix for CSR OMAPS00184865 start*/
     write (pComponentPrivate->cmdPipe[1], &pComponentPrivate->bExitCompThrd, sizeof(OMX_U16));
-    /* Fix for CSR OMAPS00184865 ends */
     k = pthread_join(pComponentPrivate->ComponentThread, (void*)&k2);
     if(0 != k) {
         if (OMX_ErrorNone == eError) {
@@ -1890,7 +1889,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     MP3D_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     memset((pBufferHeader), 0x0, sizeof(OMX_BUFFERHEADERTYPE));
 
-    /* This extra 256 bytes memory is required to avoid DSP cashing issues */
+    /* This extra 256 bytes memory is required to avoid DSP caching issues */
     pBufferHeader->pBuffer = (OMX_U8 *)newmalloc(nSizeBytes + DSP_CACHE_ALIGNMENT);
     if(NULL == pBufferHeader->pBuffer) {
         MP3DEC_EPRINT(" :: Malloc Failed\n");
@@ -2051,7 +2050,7 @@ static OMX_ERRORTYPE FreeBuffer(
     for (i=0; i < MP3D_MAX_NUM_OF_BUFS; i++) {
         buff = (OMX_U8 *)pComponentPrivate->pOutputBufferList->pBufHdr[i];
         if (buff == (OMX_U8 *)pBuffer) {
-            MP3DEC_DPRINT("Found matching output buffer\n");
+            MP3DEC_EPRINT("Found matching output buffer\n");
             MP3DEC_DPRINT("buff = %p\n",buff);
             MP3DEC_DPRINT("pBuffer = %p\n",pBuffer);
             outputIndex = i;
@@ -2226,15 +2225,8 @@ static OMX_ERRORTYPE FreeBuffer(
     } 
 
 
-///
+
     pComponentPrivate->bufAlloced = 0;
-/*
-    
-    if (pComponentPrivate->bDisableCommandPending && (pComponentPrivate->pInputBufferList->numBuffers + 
-                                                      pComponentPrivate->pOutputBufferList->numBuffers == 0)) {
-        SendCommand (pComponentPrivate->pHandle,OMX_CommandPortDisable,pComponentPrivate->bDisableCommandParam,NULL);
-    }
-*/
     MP3DEC_DPRINT (":: Exiting FreeBuffer\n");
     return eError;
 }
@@ -2297,7 +2289,7 @@ static OMX_ERRORTYPE UseBuffer (
 
     pPortDef = ((MP3DEC_COMPONENT_PRIVATE*)
                 pComponentPrivate)->pPortDef[nPortIndex];
-///
+
     MP3D_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
     if(!pPortDef->bEnabled){
         pComponentPrivate->AlloBuf_waitingsignal = 1;   
@@ -2305,7 +2297,6 @@ static OMX_ERRORTYPE UseBuffer (
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
     }
-///
     MP3DEC_DPRINT (":: pPortDef = %p\n",pPortDef);
     MP3DEC_DPRINT (":: pPortDef->bEnabled = %d\n",pPortDef->bEnabled);
 
@@ -2321,18 +2312,14 @@ static OMX_ERRORTYPE UseBuffer (
 #endif  
 
     MP3D_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
-
     memset((pBufferHeader), 0x0, sizeof(OMX_BUFFERHEADERTYPE));
 
     if (nPortIndex == MP3D_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;
         pBufferHeader->nOutputPortIndex = nPortIndex;
         MP3D_OMX_MALLOC(pBufferHeader->pOutputPortPrivate,MP3DEC_BUFDATA);
-
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
-
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
-
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 0;
         if (pComponentPrivate->pOutputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
@@ -2341,11 +2328,8 @@ static OMX_ERRORTYPE UseBuffer (
     else {
         pBufferHeader->nInputPortIndex = nPortIndex;
         pBufferHeader->nOutputPortIndex = -1;
-
         pComponentPrivate->pInputBufferList->pBufHdr[pComponentPrivate->pInputBufferList->numBuffers] = pBufferHeader;
-
         pComponentPrivate->pInputBufferList->bBufferPending[pComponentPrivate->pInputBufferList->numBuffers] = 0;
-
         pComponentPrivate->pInputBufferList->bufferOwner[pComponentPrivate->pInputBufferList->numBuffers++] = 0;
         if (pComponentPrivate->pInputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
@@ -2373,7 +2357,6 @@ static OMX_ERRORTYPE UseBuffer (
     pBufferHeader->nVersion.s.nVersionMajor = MP3DEC_MAJOR_VER;
     pBufferHeader->nVersion.s.nVersionMinor = MP3DEC_MINOR_VER;
     pComponentPrivate->nVersion = pBufferHeader->nVersion.nVersion;
-
     pBufferHeader->pBuffer = pBuffer;
     pBufferHeader->nSize = sizeof(OMX_BUFFERHEADERTYPE);
     *ppBufferHdr = pBufferHeader;
