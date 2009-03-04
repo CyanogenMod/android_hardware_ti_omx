@@ -58,7 +58,7 @@
 #define APP_INFO
 #define APP_ERROR
 #define DASF
-#undef USE_BUFFER
+#define USE_BUFFER
 #undef AACENC_DEBUGMEM 
 
 /*#define GT_PERFM  *//*Defines the Performance and measurements mode*/
@@ -1501,9 +1501,11 @@ int Aacenc_fdread;
 				FD_SET(OpBuf_Pipe[0], &rfds);
 				FD_SET(Event_Pipe[0], &rfds);
 				
+					APP_DPRINT("%d :: ---------------------------------------\n\n\n",__LINE__);
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 
+					APP_DPRINT("%d :: ---------------------------------------\n\n\n",__LINE__);
 				retval = select(fdmax+1, &rfds, NULL, NULL, &tv);
 				if(retval == -1) 
 				{

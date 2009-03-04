@@ -148,7 +148,7 @@ void* ComponentThread (void* pThreadData)
                     goto EXIT;
                 }
              }
-             AACENC_DPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
+             AACENC_EPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
         } 
 		else if(status == -1) 
 		{

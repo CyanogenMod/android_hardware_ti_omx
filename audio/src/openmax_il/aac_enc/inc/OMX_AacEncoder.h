@@ -59,7 +59,7 @@
 #define INPUT_AACENC_BUFFER_SIZE_DASF 8192
 #define OUTPUT_AACENC_BUFFER_SIZE 9200
 #define SAMPLING_FREQUENCY 44100
-#define MAX_NUM_OF_BUFS 5
+#define MAX_NUM_OF_BUFS 10
 #define NUM_OF_PORTS 2
 
 /* ======================================================================= */

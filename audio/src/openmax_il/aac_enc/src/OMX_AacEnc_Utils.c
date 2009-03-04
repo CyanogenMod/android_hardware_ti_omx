@@ -222,13 +222,22 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     plcml_Init->Alignment 	= 0;
     plcml_Init->Priority 	= OMX_AACENC_SN_PRIORITY;
     plcml_Init->ProfileID 	= -1; 
+			AACENC_DPRINT("Pre unNumChannels %d \n",  pComponentPrivate->unNumChannels);
+			AACENC_DPRINT("pre SampleRate %d \n",  pComponentPrivate->ulSamplingRate);
+			AACENC_DPRINT("pre BitRate %d \n",  pComponentPrivate->unBitrate);
+			AACENC_DPRINT("pre ObjectType %d \n",  pComponentPrivate->nObjectType);
 
-	pComponentPrivate->unNumChannels   = (OMX_U16)pComponentPrivate->aacParams[OUTPUT_PORT]->nChannels;          /*Number of Channels*/
+	pComponentPrivate->unNumChannels   = (OMX_U16)pComponentPrivate->aacParams[OUTPUT_PORT]->nChannels;       /*Number of Channels*/
 	/* splitting values for Sample rate and bit rate */
-	pComponentPrivate->ulSamplingRate  = (OMX_U16)pComponentPrivate->aacParams[OUTPUT_PORT]->nSampleRate ;       /*Sampling rate*/
+	pComponentPrivate->ulSamplingRate  = (OMX_U16)pComponentPrivate->aacParams[OUTPUT_PORT]->nSampleRate;       /*Sampling rate*/
 	HigherBitsSamplingRate             =(OMX_U16)((pComponentPrivate->aacParams[OUTPUT_PORT]->nSampleRate >>16)& 0xFFFF); 
-	pComponentPrivate->unBitrate       = pComponentPrivate->aacParams[OUTPUT_PORT]->nBitRate;                	 /*Bit rate 2bytes*/
-	pComponentPrivate->nObjectType	   = pComponentPrivate->aacParams[OUTPUT_PORT]->eAACProfile;				/*Object Type */
+	pComponentPrivate->unBitrate       = pComponentPrivate->aacParams[OUTPUT_PORT]->nBitRate;            	 /*Bit rate 2bytes*/
+	pComponentPrivate->nObjectType	   = OMX_AUDIO_AACObjectLC; /*pComponentPrivate->aacParams[OUTPUT_PORT]->eAACProfile;	*/			/*Object Type */
+
+			AACENC_DPRINT("Post unNumChannels %d \n",  pComponentPrivate->unNumChannels);
+			AACENC_DPRINT("post SampleRate %d \n",  pComponentPrivate->ulSamplingRate);
+			AACENC_DPRINT("post BitRate %d \n",  pComponentPrivate->unBitrate);
+			AACENC_DPRINT("post ObjectType %d \n",  pComponentPrivate->nObjectType);
 
     /*   Remaping Number of channels for SN	*/
     /*   SN does use 0: Mono and  1: stereo      */
@@ -243,14 +252,17 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     
 	if (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
         pComponentPrivate->File_Format = 0;
+			AACENC_DPRINT("OMX_AUDIO_AACStreamFormatRAW \n");
 	}
     else if (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatADIF) {
 	    pComponentPrivate->File_Format = 1;
+			AACENC_DPRINT("OMX_AUDIO_AACStreamFormatADIF \n");
 	}
 	else if( (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP4ADTS) ||
 			(pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP2ADTS) )																
 	{
 		pComponentPrivate->File_Format = 2;
+			AACENC_DPRINT("OMX_AUDIO_AACStreamFormatMP2ADTS \n");
 	}
 
   	if(pComponentPrivate->dasfmode == 1) {
@@ -285,6 +297,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 		arr[2]	= 0;                                                      /*Type of Input Stream*/
 		if (pComponentPrivate->pInputBufferList->numBuffers) {
 			arr[3] = (OMX_U16) pComponentPrivate->pInputBufferList->numBuffers;     /*Number of buffers for Input Stream*/
+			AACENC_DPRINT("arr[3] InputBuffers %d \n",arr[3]);
 		}
 		else {
 			arr[3] = 1;
@@ -293,6 +306,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 		arr[5]	= 0;                                                      /*Type of Output Stream*/ 
 	    if (pComponentPrivate->pOutputBufferList->numBuffers) {
 		    arr[6] = (OMX_U16) pComponentPrivate->pOutputBufferList->numBuffers;    /*Number of buffers for Output Stream*/
+			AACENC_DPRINT("arr[6] Output Buffers%d \n",arr[6]);
 		}
 	    else {
 		    arr[6] = 1;
@@ -310,6 +324,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 		arr[14] = (OMX_U16)pComponentPrivate->nObjectType;                    					  /*bitsperSample;*/
 			AACENC_DPRINT("arr[14] Object Type %d \n",arr[14]);
 		arr[15] = (OMX_U16)pComponentPrivate->bitRateMode;				  /*bitrateMode*/
+			AACENC_DPRINT("arr[15] Bit Rate %d \n",arr[15]);
 		arr[16] = pComponentPrivate->File_Format;						  /*FileFormat*/
 			AACENC_DPRINT("arr[16] format type %d \n",arr[16]);
 		arr[17] = FramesPerOutBuf;								          /*FramesPerOutBuf*/
@@ -921,6 +936,16 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 															   OMX_CommandStateSet,
 															   pComponentPrivate->curState, 
 															   NULL);
+#else			
+				pComponentPrivate->curState = OMX_StateIdle;
+				pComponentPrivate->cbInfo.EventHandler( pHandle,
+														pHandle->pApplicationPrivate,
+														OMX_EventCmdComplete,
+														OMX_CommandStateSet,
+														pComponentPrivate->curState,
+														NULL);
+
+
 #endif
 					} 
 					else if (pComponentPrivate->curState == OMX_StateExecuting) 
@@ -937,7 +962,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 													  MMCodecControlStop,(void *)pArgs);
 						if(eError != OMX_ErrorNone) 
 						{
-							AACENC_DPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
+							AACENC_EPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
 							goto EXIT;
 						}
 						AACENC_DPRINT("%d :: AACENC: After MMCodecControlStop\n", __LINE__);
@@ -949,7 +974,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 						eError = LCML_FlushHashes(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
 						if (eError != OMX_ErrorNone) 
 						{
-							AACENC_DPRINT("Error occurred in Codec mapping flush!\n");
+							AACENC_EPRINT("Error occurred in Codec mapping flush!\n");
 							break;
 						}
 #endif
@@ -1773,7 +1798,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
     eError = AACENCGetBufferDirection(pBufHeader, &eDir);
     if (eError != OMX_ErrorNone) 
 	{
-        AACENC_DPRINT ("%d :: UTIL: The pBufHeader is not found in the list\n",__LINE__);
+        AACENC_EPRINT ("%d :: UTIL: The pBufHeader is not found in the list\n",__LINE__);
         goto EXIT;
     }
 
@@ -1782,7 +1807,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 		pComponentPrivate->nUnhandledEmptyThisBuffers--;
 		AACENC_DPRINT("%d :: UTIL:  Buffer Dir = input\n",__LINE__);
 		pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
-		if ((pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags == OMX_BUFFERFLAG_EOS)) 
+		if ((pBufHeader->nFilledLen > 0) || ((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) 
 		{
         	pComponentPrivate->bBypassDSP = 0;			/* flag for buffers with data */
         	eError = AACENCGetCorresponding_LCMLHeader(pComponentPrivate, pBufHeader->pBuffer, OMX_DirInput, &pLcmlHdr);
@@ -1807,7 +1832,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 							  PERF_ModuleCommonLayer);
 #endif
 
-			if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) 
+			if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) 
 			{
 				AACENC_DPRINT("%d :: UTIL: End of Stream has been reached \n",__LINE__);
 			    pLcmlHdr->pIpParam->bLastBuffer   = 1;	/* EOS flag for SN. - It is the last buffer with data for SN */
@@ -1917,7 +1942,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 		    AACENC_DPRINT("%d :: UTIL: pComponentPrivate->EmptythisbufferCount = %ld \n",__LINE__,pComponentPrivate->EmptythisbufferCount);
 		}
 
-        if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) 
+        if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) 
 		{
 			AACENC_DPRINT("%d :: UTIL: Component Detected EOS\n",__LINE__);
 			if(pComponentPrivate->dasfmode == 0) 
@@ -2080,7 +2105,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 	} 
 	else 
 	{
-        AACENC_DPRINT("%d :: UTIL: BufferHeader  = %p, Buffer  = %p Unknown\n",__LINE__,pBufHeader, pBufHeader->pBuffer);
+        AACENC_EPRINT("%d :: UTIL: BufferHeader  = %p, Buffer  = %p Unknown\n",__LINE__,pBufHeader, pBufHeader->pBuffer);
         eError = OMX_ErrorBadParameter;
     }
 EXIT:
@@ -2180,6 +2205,17 @@ OMX_ERRORTYPE AACENCLCML_Callback(TUsnCodecEvent event,void * args [10])
 	OMX_S16 i = 0;
 	int j =0, k=0 ;
 
+
+	FILE* fOut = NULL;
+
+	fOut = fopen("testingaacenc.aac", "a");
+	if( fOut == NULL ) {
+		AACENC_DPRINT("Error:	failed to create the output file \n");
+		goto EXIT;
+	}
+		AACENC_DPRINT("%d :: Op File has created\n",__LINE__);
+
+
 #ifdef RESOURCE_MANAGER_ENABLED 
     OMX_ERRORTYPE rm_error = OMX_ErrorNone;
 #endif  
@@ -2252,7 +2288,7 @@ pHandle = pComponentPrivate_CC->pHandle;
 	AACENC_DPRINT("%d :: UTIL: pHandle:%p \n",__LINE__,pHandle);
 	AACENC_DPRINT("%d :: UTIL: pComponentPrivate_CC:%p \n",__LINE__,pComponentPrivate_CC);
 	AACENC_DPRINT("%d :: UTIL: pLcmlHdr:%p \n",__LINE__,pLcmlHdr);
-	AACENC_DPRINT("%d :: UTIL: pLcmlHdr->pIpParam:%p \n",__LINE__,pLcmlHdr->pIpParam);
+/*	AACENC_DPRINT("%d :: UTIL: pLcmlHdr->pIpParam:%p \n",__LINE__,pLcmlHdr->pIpParam); */
 
 
     if(event == EMMCodecBufferProcessed) 
@@ -2367,6 +2403,16 @@ pHandle = pComponentPrivate_CC->pHandle;
 				AACENC_DPRINT("%d Frame size[%d]: %lx \n",__LINE__,k,pLcmlHdr->pOpParam->unFrameSizes[k]);	
 			}
 			pLcmlHdr->buffer->pOutputPortPrivate=pLcmlHdr->pOpParam;
+
+
+				if (pLcmlHdr->buffer->nFilledLen != 0)
+					fwrite(pLcmlHdr->buffer->pBuffer, 1, pLcmlHdr->buffer->nFilledLen, fOut);
+				
+				/* fflush(fOut); */
+
+			
+				fclose(fOut);
+
             pComponentPrivate_CC->cbInfo.FillBufferDone (
 							   pHandle,
 							   pHandle->pApplicationPrivate,
@@ -2555,7 +2601,7 @@ pHandle = pComponentPrivate_CC->pHandle;
 			
 			AACENC_DPRINT("%d :: UTIL: pComponentPrivate_CC->bPlayCompleteFlag = %ld \n",__LINE__,pComponentPrivate_CC->bPlayCompleteFlag);
             AACENC_DPRINT("bPlayCompleteFlag\n");
-           	pComponentPrivate_CC->LastOutbuf->nFlags = OMX_BUFFERFLAG_EOS;  /* Extra feature Not used */
+           	pComponentPrivate_CC->LastOutbuf->nFlags |= OMX_BUFFERFLAG_EOS;  /* Extra feature Not used */
 			AACENC_DPRINT("%d :: UTIL: Buffer with EOS flag: %p \n",__LINE__,pComponentPrivate_CC->LastOutbuf);
 			/* add callback to application to indicate SN/USN has completed playing of current set of date */
 			pComponentPrivate_CC->cbInfo.EventHandler(pHandle,				  
