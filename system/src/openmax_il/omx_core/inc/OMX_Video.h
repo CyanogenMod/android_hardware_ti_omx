@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005 The Khronos Group Inc. 
+ * Copyright (c) 2008 The Khronos Group Inc. 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,7 +22,7 @@
  */
 
 /** 
- *  @file OMX_Video.h - OpenMax IL version 1.1
+ *  @file OMX_Video.h - OpenMax IL version 1.1.2
  *  The structures is needed by Video components to exchange parameters 
  *  and configuration data with OMX components.
  */
@@ -45,8 +45,7 @@ extern "C" {
  * header to compile without errors.  The includes below are required
  * for this header file to compile successfully 
  */
-#include <OMX_Types.h>
-#include <OMX_Core.h>
+
 #include <OMX_IVCommon.h>
 
 
@@ -69,6 +68,8 @@ typedef enum OMX_VIDEO_CODINGTYPE {
     OMX_VIDEO_CodingRV,         /**< all versions of Real Video */
     OMX_VIDEO_CodingAVC,        /**< H.264/AVC */
     OMX_VIDEO_CodingMJPEG,      /**< Motion JPEG */
+    OMX_VIDEO_CodingKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_CodingVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_CodingMax = 0x7FFFFFFF
 } OMX_VIDEO_CODINGTYPE;
 
@@ -218,6 +219,8 @@ typedef enum OMX_VIDEO_CONTROLRATETYPE {
     OMX_Video_ControlRateConstant,
     OMX_Video_ControlRateVariableSkipFrames,
     OMX_Video_ControlRateConstantSkipFrames,
+    OMX_Video_ControlRateKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_Video_ControlRateVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_Video_ControlRateMax = 0x7FFFFFFF
 } OMX_VIDEO_CONTROLRATETYPE;
 
@@ -249,6 +252,8 @@ typedef enum OMX_VIDEO_MOTIONVECTORTYPE {
     OMX_Video_MotionVectorHalfPel,
     OMX_Video_MotionVectorQuarterPel,
     OMX_Video_MotionVectorEighthPel,
+    OMX_Video_MotionVectorKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_Video_MotionVectorVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_Video_MotionVectorMax = 0x7FFFFFFF
 } OMX_VIDEO_MOTIONVECTORTYPE;
 
@@ -286,6 +291,8 @@ typedef enum OMX_VIDEO_INTRAREFRESHTYPE {
     OMX_VIDEO_IntraRefreshCyclic,
     OMX_VIDEO_IntraRefreshAdaptive,
     OMX_VIDEO_IntraRefreshBoth,
+    OMX_VIDEO_IntraRefreshKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_IntraRefreshVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_IntraRefreshMax = 0x7FFFFFFF
 } OMX_VIDEO_INTRAREFRESHTYPE;
 
@@ -407,6 +414,8 @@ typedef enum OMX_VIDEO_H263PROFILETYPE {
     OMX_VIDEO_H263ProfileInternet            = 0x40,            
     OMX_VIDEO_H263ProfileInterlace           = 0x80,           
     OMX_VIDEO_H263ProfileHighLatency         = 0x100,         
+    OMX_VIDEO_H263ProfileKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_H263ProfileVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_H263ProfileMax                 = 0x7FFFFFFF  
 } OMX_VIDEO_H263PROFILETYPE;
 
@@ -424,6 +433,8 @@ typedef enum OMX_VIDEO_H263LEVELTYPE {
     OMX_VIDEO_H263Level50  = 0x20,      
     OMX_VIDEO_H263Level60  = 0x40,      
     OMX_VIDEO_H263Level70  = 0x80, 
+    OMX_VIDEO_H263LevelKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_H263LevelVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_H263LevelMax = 0x7FFFFFFF  
 } OMX_VIDEO_H263LEVELTYPE;
 
@@ -447,6 +458,8 @@ typedef enum OMX_VIDEO_PICTURETYPE {
     OMX_VIDEO_PictureTypeEI  = 0x11,
     OMX_VIDEO_PictureTypeEP  = 0x12,
     OMX_VIDEO_PictureTypeS   = 0x14,
+    OMX_VIDEO_PictureTypeKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_PictureTypeVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_PictureTypeMax = 0x7FFFFFFF
 } OMX_VIDEO_PICTURETYPE;
 
@@ -504,6 +517,8 @@ typedef enum OMX_VIDEO_MPEG2PROFILETYPE {
     OMX_VIDEO_MPEG2ProfileSNR,         /**< SNR Profile */
     OMX_VIDEO_MPEG2ProfileSpatial,     /**< Spatial Profile */
     OMX_VIDEO_MPEG2ProfileHigh,        /**< High Profile */
+    OMX_VIDEO_MPEG2ProfileKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_MPEG2ProfileVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_MPEG2ProfileMax = 0x7FFFFFFF  
 } OMX_VIDEO_MPEG2PROFILETYPE;
 
@@ -517,6 +532,8 @@ typedef enum OMX_VIDEO_MPEG2LEVELTYPE {
     OMX_VIDEO_MPEG2LevelML,      /**< Main Level */ 
     OMX_VIDEO_MPEG2LevelH14,     /**< High 1440 */ 
     OMX_VIDEO_MPEG2LevelHL,      /**< High Level */   
+    OMX_VIDEO_MPEG2LevelKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_MPEG2LevelVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_MPEG2LevelMax = 0x7FFFFFFF  
 } OMX_VIDEO_MPEG2LEVELTYPE;
 
@@ -580,7 +597,10 @@ typedef enum OMX_VIDEO_MPEG4PROFILETYPE {
     OMX_VIDEO_MPEG4ProfileCoreScalable     = 0x800,      
     OMX_VIDEO_MPEG4ProfileAdvancedCoding   = 0x1000,    
     OMX_VIDEO_MPEG4ProfileAdvancedCore     = 0x2000,      
-    OMX_VIDEO_MPEG4ProfileAdvancedScalable = 0x4000,  
+    OMX_VIDEO_MPEG4ProfileAdvancedScalable = 0x4000,
+    OMX_VIDEO_MPEG4ProfileAdvancedSimple   = 0x8000,
+    OMX_VIDEO_MPEG4ProfileKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_MPEG4ProfileVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_MPEG4ProfileMax              = 0x7FFFFFFF  
 } OMX_VIDEO_MPEG4PROFILETYPE;
 
@@ -598,6 +618,8 @@ typedef enum OMX_VIDEO_MPEG4LEVELTYPE {
     OMX_VIDEO_MPEG4Level4  = 0x20,   /**< Level 4 */  
     OMX_VIDEO_MPEG4Level4a = 0x40,   /**< Level 4a */  
     OMX_VIDEO_MPEG4Level5  = 0x80,   /**< Level 5 */  
+    OMX_VIDEO_MPEG4LevelKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_MPEG4LevelVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_MPEG4LevelMax = 0x7FFFFFFF  
 } OMX_VIDEO_MPEG4LEVELTYPE;
 
@@ -659,6 +681,8 @@ typedef enum OMX_VIDEO_WMVFORMATTYPE {
     OMX_VIDEO_WMVFormat7      = 0x02,   /**< Windows Media Video format 7 */
     OMX_VIDEO_WMVFormat8      = 0x04,   /**< Windows Media Video format 8 */
     OMX_VIDEO_WMVFormat9      = 0x08,   /**< Windows Media Video format 9 */
+    OMX_VIDEO_WMFFormatKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_WMFFormatVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_WMVFormatMax    = 0x7FFFFFFF
 } OMX_VIDEO_WMVFORMATTYPE;
 
@@ -688,6 +712,8 @@ typedef enum OMX_VIDEO_RVFORMATTYPE {
     OMX_VIDEO_RVFormat8,          /**< Real Video format 8 */
     OMX_VIDEO_RVFormat9,          /**< Real Video format 9 */
     OMX_VIDEO_RVFormatG2,         /**< Real Video Format G2 */
+    OMX_VIDEO_RVFormatKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_RVFormatVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_RVFormatMax = 0x7FFFFFFF
 } OMX_VIDEO_RVFORMATTYPE;
 
@@ -745,6 +771,8 @@ typedef enum OMX_VIDEO_AVCPROFILETYPE {
     OMX_VIDEO_AVCProfileHigh10   = 0x10,   /**< High 10 profile */
     OMX_VIDEO_AVCProfileHigh422  = 0x20,   /**< High 4:2:2 profile */
     OMX_VIDEO_AVCProfileHigh444  = 0x40,   /**< High 4:4:4 profile */
+    OMX_VIDEO_AVCProfileKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_AVCProfileVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_AVCProfileMax      = 0x7FFFFFFF  
 } OMX_VIDEO_AVCPROFILETYPE;
 
@@ -770,6 +798,8 @@ typedef enum OMX_VIDEO_AVCLEVELTYPE {
     OMX_VIDEO_AVCLevel42  = 0x2000,   /**< Level 4.2 */
     OMX_VIDEO_AVCLevel5   = 0x4000,   /**< Level 5 */
     OMX_VIDEO_AVCLevel51  = 0x8000,   /**< Level 5.1 */
+    OMX_VIDEO_AVCLevelKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_AVCLevelVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_AVCLevelMax = 0x7FFFFFFF  
 } OMX_VIDEO_AVCLEVELTYPE;
 
@@ -785,6 +815,8 @@ typedef enum OMX_VIDEO_AVCLOOPFILTERTYPE {
     OMX_VIDEO_AVCLoopFilterEnable = 0,
     OMX_VIDEO_AVCLoopFilterDisable,
     OMX_VIDEO_AVCLoopFilterDisableSliceBoundary,
+    OMX_VIDEO_AVCLoopFilterKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_AVCLoopFilterVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_AVCLoopFilterMax = 0x7FFFFFFF
 } OMX_VIDEO_AVCLOOPFILTERTYPE;
 
@@ -830,7 +862,7 @@ typedef enum OMX_VIDEO_AVCLOOPFILTERTYPE {
  *                              be applied to P and SP slices
  *  nWeightedBipredicitonMode : Default weighted prediction is applied to B 
  *                              slices 
- *  bConstIpred               : Enable/disable intra prediction
+ *  bconstIpred               : Enable/disable intra prediction
  *  bDirect8x8Inference       : Specifies the method used in the derivation 
  *                              process for luma motion vectors for B_Skip, 
  *                              B_Direct_16x16 and B_Direct_8x8 as specified 
@@ -915,7 +947,7 @@ typedef struct OMX_CONFIG_FRAMERATETYPE {
     OMX_U32 nSize;
     OMX_VERSIONTYPE nVersion;
     OMX_U32 nPortIndex;
-    OMX_U32 xEncodeFramerate; /* Q16 format*/
+    OMX_U32 xEncodeFramerate; /* Q16 format */
 } OMX_CONFIG_FRAMERATETYPE;
 
 typedef struct OMX_CONFIG_INTRAREFRESHVOPTYPE {
@@ -929,8 +961,8 @@ typedef struct OMX_CONFIG_MACROBLOCKERRORMAPTYPE {
     OMX_U32 nSize;
     OMX_VERSIONTYPE nVersion;
     OMX_U32 nPortIndex;
-    OMX_U32 nErrMapSize;           /* Size of the Error Map in bytes*/
-    OMX_U8  ErrMap[1];             /* Error map hint   */
+    OMX_U32 nErrMapSize;           /* Size of the Error Map in bytes */
+    OMX_U8  ErrMap[1];             /* Error map hint */
 } OMX_CONFIG_MACROBLOCKERRORMAPTYPE;
 
 typedef struct OMX_CONFIG_MBERRORREPORTINGTYPE {
@@ -958,6 +990,8 @@ typedef enum OMX_VIDEO_AVCSLICEMODETYPE {
     OMX_VIDEO_SLICEMODE_AVCDefault = 0,
     OMX_VIDEO_SLICEMODE_AVCMBSlice,
     OMX_VIDEO_SLICEMODE_AVCByteSlice,
+    OMX_VIDEO_SLICEMODE_AVCKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    OMX_VIDEO_SLICEMODE_AVCVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
     OMX_VIDEO_SLICEMODE_AVCLevelMax = 0x7FFFFFFF
 } OMX_VIDEO_AVCSLICEMODETYPE;
 
