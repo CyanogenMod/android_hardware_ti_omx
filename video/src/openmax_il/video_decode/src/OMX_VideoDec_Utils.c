@@ -907,6 +907,10 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->pInPortDef->bEnabled                             = VIDDEC_PORT_ENABLED;
             pComponentPrivate->pInPortDef->bPopulated                           = VIDDEC_PORT_POPULATED;
             pComponentPrivate->pInPortDef->eDomain                              = VIDDEC_PORT_DOMAIN;
+#ifdef KHRONOS_1_2
+            pComponentPrivate->pInPortDef->bBuffersContiguous                   = OMX_FALSE;
+            pComponentPrivate->pInPortDef->nBufferAlignment                     = OMX_FALSE;
+#endif
             pComponentPrivate->pInPortDef->format.video.pNativeRender           = VIDDEC_INPUT_PORT_NATIVERENDER;
             pComponentPrivate->pInPortDef->format.video.nFrameWidth             = VIDDEC_DEFAULT_WIDTH;
             pComponentPrivate->pInPortDef->format.video.nFrameHeight            = VIDDEC_DEFAULT_HEIGHT;
@@ -932,6 +936,10 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->pOutPortDef->bEnabled                            = VIDDEC_PORT_ENABLED;
             pComponentPrivate->pOutPortDef->bPopulated                          = VIDDEC_PORT_POPULATED;
             pComponentPrivate->pOutPortDef->eDomain                             = VIDDEC_PORT_DOMAIN;
+#ifdef KHRONOS_1_2
+            pComponentPrivate->pInPortDef->bBuffersContiguous                   = OMX_FALSE;
+            pComponentPrivate->pInPortDef->nBufferAlignment                     = OMX_FALSE;
+#endif
             pComponentPrivate->pOutPortDef->format.video.cMIMEType              = VIDDEC_MIMETYPEYUV;
             pComponentPrivate->pOutPortDef->format.video.pNativeRender          = VIDDEC_OUTPUT_PORT_NATIVERENDER;
             pComponentPrivate->pOutPortDef->format.video.nFrameWidth            = VIDDEC_DEFAULT_WIDTH;

@@ -1708,12 +1708,22 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
         case OMX_IndexAutoPauseAfterCapture:
         case OMX_IndexParamCustomContentPipe:
         case OMX_IndexParamDisableResourceConcealment:
-        case OMX_IndexConfigMetaDataItemCount:
-        case OMX_IndexConfigMetaDataSize:
-        case OMX_IndexConfigMetaDataAtIndex:
-        case OMX_IndexConfigMetaDataAtKey:
-        case OMX_IndexConfigMetaDataNodeCount:
-        case OMX_IndexConfigMetaDataNode:
+#ifdef KHRONOS_1_2
+            case OMX_IndexConfigMetadataItemCount:
+            case OMX_IndexConfigContainerNodeCount:
+            case OMX_IndexConfigMetadataItem:
+            case OMX_IndexConfigCounterNodeID:
+            case OMX_IndexParamMetadataFilterType:
+            case OMX_IndexConfigCommonTransitionEffect:
+            case OMX_IndexKhronosExtensions:
+#else
+            case OMX_IndexConfigMetaDataSize:
+            case OMX_IndexConfigMetaDataAtIndex:
+            case OMX_IndexConfigMetaDataAtKey:
+            case OMX_IndexConfigMetaDataNodeCount:
+            case OMX_IndexConfigMetaDataNode:
+            case OMX_IndexConfigMetaDataItemCount:
+#endif
         case OMX_IndexParamMetadataKeyFilter:
         case OMX_IndexConfigPriorityMgmt:
         case OMX_IndexConfigAudioChannelVolume:
@@ -1854,12 +1864,22 @@ static OMX_ERRORTYPE VIDDEC_GetConfig (OMX_HANDLETYPE hComp,
             case OMX_IndexAutoPauseAfterCapture:
             case OMX_IndexParamCustomContentPipe:
             case OMX_IndexParamDisableResourceConcealment:
-            case OMX_IndexConfigMetaDataItemCount:
+#ifdef KHRONOS_1_2
+            case OMX_IndexConfigMetadataItemCount:
+            case OMX_IndexConfigContainerNodeCount:
+            case OMX_IndexConfigMetadataItem:
+            case OMX_IndexConfigCounterNodeID:
+            case OMX_IndexParamMetadataFilterType:
+            case OMX_IndexConfigCommonTransitionEffect:
+            case OMX_IndexKhronosExtensions:
+#else
             case OMX_IndexConfigMetaDataSize:
             case OMX_IndexConfigMetaDataAtIndex:
             case OMX_IndexConfigMetaDataAtKey:
             case OMX_IndexConfigMetaDataNodeCount:
             case OMX_IndexConfigMetaDataNode:
+            case OMX_IndexConfigMetaDataItemCount:
+#endif
             case OMX_IndexParamMetadataKeyFilter:
             case OMX_IndexConfigPriorityMgmt:
             case OMX_IndexParamStandardComponentRole:
@@ -2022,7 +2042,11 @@ static OMX_ERRORTYPE VIDDEC_GetConfig (OMX_HANDLETYPE hComp,
             case OMX_IndexConfigTimeSeekMode:              /**< reference: OMX_TIME_CONFIG_SEEKMODETYPE */
 
             /* Vendor specific area */
+#ifdef KHRONOS_1_2
+            case OMX_IndexVendorStartUnused:
+#else
             case OMX_IndexIndexVendorStartUnused:
+#endif
             /* Vendor specific structures should be in the range of 0xFF000000 
                to 0xFFFFFFFF.  This range is not broken out by vendor, so
                private indexes are not guaranteed unique and therefore should
@@ -2126,12 +2150,22 @@ static OMX_ERRORTYPE VIDDEC_SetConfig (OMX_HANDLETYPE hComp,
             case OMX_IndexAutoPauseAfterCapture:
             case OMX_IndexParamCustomContentPipe:
             case OMX_IndexParamDisableResourceConcealment:
-            case OMX_IndexConfigMetaDataItemCount:
+#ifdef KHRONOS_1_2
+            case OMX_IndexConfigMetadataItemCount:
+            case OMX_IndexConfigContainerNodeCount:
+            case OMX_IndexConfigMetadataItem:
+            case OMX_IndexConfigCounterNodeID:
+            case OMX_IndexParamMetadataFilterType:
+            case OMX_IndexConfigCommonTransitionEffect:
+            case OMX_IndexKhronosExtensions:
+#else
             case OMX_IndexConfigMetaDataSize:
             case OMX_IndexConfigMetaDataAtIndex:
             case OMX_IndexConfigMetaDataAtKey:
             case OMX_IndexConfigMetaDataNodeCount:
             case OMX_IndexConfigMetaDataNode:
+            case OMX_IndexConfigMetaDataItemCount:
+#endif
             case OMX_IndexParamMetadataKeyFilter:
             case OMX_IndexConfigPriorityMgmt:
             case OMX_IndexParamStandardComponentRole:
@@ -2295,8 +2329,11 @@ static OMX_ERRORTYPE VIDDEC_SetConfig (OMX_HANDLETYPE hComp,
             case OMX_IndexConfigTimeSeekMode:              /**< reference: OMX_TIME_CONFIG_SEEKMODETYPE */
 
             /* Vendor specific area */
+#ifdef KHRONOS_1_2
+            case OMX_IndexVendorStartUnused:
+#else
             case OMX_IndexIndexVendorStartUnused:
-            /* Vendor specific structures should be in the range of 0xFF000000 
+#endif            /* Vendor specific structures should be in the range of 0xFF000000 
                to 0xFFFFFFFF.  This range is not broken out by vendor, so
                private indexes are not guaranteed unique and therefore should
                only be sent to the appropriate component. */

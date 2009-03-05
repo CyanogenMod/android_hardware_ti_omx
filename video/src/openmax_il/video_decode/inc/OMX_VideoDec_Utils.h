@@ -68,6 +68,7 @@
 #define KHRONOS_1_1
 #endif
 
+#define KHRONOS_1_2
 #ifndef VIDDEC_SPARK_CODE
     #define VIDDEC_SPARK_CODE
 #endif
@@ -392,7 +393,9 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
  #endif
 #endif
 
-#define OMX_BUFFERFLAG_CODECCONFIG 0x00000080
+#ifndef KHRONOS_1_2
+ #define OMX_BUFFERFLAG_CODECCONFIG 0x00000080
+#endif
 /*#define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 6*/
 typedef struct VIDDEC_CUSTOM_PARAM
 {
@@ -402,7 +405,11 @@ typedef struct VIDDEC_CUSTOM_PARAM
 
 typedef enum VIDDEC_CUSTOM_PARAM_INDEX
 {
+#ifdef KHRONOS_1_2
+    VideoDecodeCustomParamProcessMode = (OMX_IndexVendorStartUnused + 1),
+#else
     VideoDecodeCustomParamProcessMode = (OMX_IndexIndexVendorStartUnused + 1),
+#endif
     VideoDecodeCustomParamH264BitStreamFormat,
     VideoDecodeCustomParamWMVProfile,
     VideoDecodeCustomParamWMVFileType,
