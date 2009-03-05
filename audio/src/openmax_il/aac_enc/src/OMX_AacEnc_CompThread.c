@@ -81,7 +81,7 @@ void* ComponentThread (void* pThreadData)
     fd_set rfds;
     OMX_U32 nRet;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-	OMX_BUFFERHEADERTYPE *pBufHeader;
+    OMX_BUFFERHEADERTYPE *pBufHeader;
 
     /* Recover the pointer to my component specific data */
     AACENC_COMPONENT_PRIVATE* pComponentPrivate = (AACENC_COMPONENT_PRIVATE*)pThreadData;
@@ -89,19 +89,19 @@ void* ComponentThread (void* pThreadData)
 
 
 #ifdef __PERF_INSTRUMENTATION__
-	pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('A', 'A', 'C', 'E'),
-												   PERF_ModuleComponent |
-												   PERF_ModuleAudioDecode);
+    pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('A', 'A', 'C', 'E'),
+                                                   PERF_ModuleComponent |
+                                                   PERF_ModuleAudioDecode);
 #endif
 
-	AACENC_DPRINT("%d :: Entering ComponentThread\n", __LINE__);
+    AACENC_DPRINT("%d :: Entering ComponentThread\n", __LINE__);
     fdmax = pComponentPrivate->cmdPipe[0];
 
     if (pComponentPrivate->dataPipe[0] > fdmax) 
         fdmax = pComponentPrivate->dataPipe[0];
 
     while (1) 
-	{
+    {
         FD_ZERO (&rfds);
         FD_SET (pComponentPrivate->cmdPipe[0], &rfds);
         FD_SET (pComponentPrivate->dataPipe[0], &rfds);
@@ -123,64 +123,64 @@ void* ComponentThread (void* pThreadData)
         }
 
         if (status == 0) 
-		{
+        {
 
             AACENC_DPRINT("%d : bIsStopping = %ld\n",__LINE__, pComponentPrivate->bIsStopping);
             AACENC_DPRINT("%d : lcml_nOpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nOpBuf);
             AACENC_DPRINT("%d : lcml_nIpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nIpBuf);
 
             if (pComponentPrivate->bIsThreadstop == 1)  
-			{
+            {
                 AACENC_DPRINT("%d  :: OMX_AACENC_ComponentThread \n",__LINE__);
                 pComponentPrivate->bIsStopping = 0;
                 pComponentPrivate->bIsThreadstop = 0;
                 pComponentPrivate->lcml_nOpBuf = 0;
                 pComponentPrivate->lcml_nIpBuf = 0;
-                pComponentPrivate->app_nBuf = 0;			/* NOT USED */
+                pComponentPrivate->app_nBuf = 0;            /* NOT USED */
                 pComponentPrivate->num_Op_Issued = 0;
                 pComponentPrivate->num_Sent_Ip_Buff = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
                 pComponentPrivate->bIsEOFSent = 0;
                 AACENC_DPRINT("%d :: OMX_AACENC_ComponentThread \n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateIdle) 
-				{
+                {
                     AACENC_DPRINT("%d ::OMX_AACENC_ComponentThread \n",__LINE__);
                     goto EXIT;
                 }
              }
              AACENC_EPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
         } 
-		else if(status == -1) 
-		{
+        else if(status == -1) 
+        {
             AACENC_DPRINT("%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle, pHandle->pApplicationPrivate, 
-													OMX_EventError,
-													OMX_ErrorHardware,
-													OMX_TI_ErrorSevere,
-													"Error from Component Thread in select");
+                                                    OMX_EventError,
+                                                    OMX_ErrorHardware,
+                                                    OMX_TI_ErrorSevere,
+                                                    "Error from Component Thread in select");
             exit(1);
 
         } 
 
-		else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) && (pComponentPrivate->curState != OMX_StatePause)) 
-		{
+        else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) && (pComponentPrivate->curState != OMX_StatePause)) 
+        {
             AACENC_DPRINT("%d :: DATA pipe is set in Component Thread\n",__LINE__);
-			AACENC_DPRINT("%d :: pHandle: %p \n",__LINE__, pHandle);
-			AACENC_DPRINT("%d :: pHandle->pComponentPrivate:%p \n",__LINE__, pHandle->pComponentPrivate);
+            AACENC_DPRINT("%d :: pHandle: %p \n",__LINE__, pHandle);
+            AACENC_DPRINT("%d :: pHandle->pComponentPrivate:%p \n",__LINE__, pHandle->pComponentPrivate);
 
-			AACENC_DPRINT("%d :: pComponentPrivate:%p \n",__LINE__, pComponentPrivate);
+            AACENC_DPRINT("%d :: pComponentPrivate:%p \n",__LINE__, pComponentPrivate);
             pBufHeader = NULL;
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) 
-			{
+            {
                 AACENC_DPRINT("%d :: Error while reading from the pipe\n",__LINE__);
-				eError = OMX_ErrorHardware;
+                eError = OMX_ErrorHardware;
                 goto EXIT;
             }
-			AACENC_DPRINT("%d :: pBufHeader:%p \n",__LINE__, pBufHeader);
+            AACENC_DPRINT("%d :: pBufHeader:%p \n",__LINE__, pBufHeader);
             eError = AACENCHandleDataBuf_FromApp(pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) 
-			{
+            {
                 AACENC_DPRINT("%d :: Error From AACENCHandleDataBuf_FromApp\n",__LINE__);
                 break;
             }
@@ -189,19 +189,19 @@ void* ComponentThread (void* pThreadData)
 
 
 
-		else if(FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) 
-		{
-			AACENC_DPRINT("%d :: pHandle: %p \n",__LINE__,pHandle);
+        else if(FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) 
+        {
+            AACENC_DPRINT("%d :: pHandle: %p \n",__LINE__,pHandle);
             /* Do not accept any command when the component is stopping */
             AACENC_DPRINT("%d :: CMD pipe is set in Component Thread\n",__LINE__);
             nRet = AACENCHandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) 
-			{
+            {
                 AACENC_DPRINT(" %d :: Exiting from Component thread\n",__LINE__);
 
-				AACENC_CleanupInitParams(pHandle);
+                AACENC_CleanupInitParams(pHandle);
                 if(eError != OMX_ErrorNone) 
-				{
+                {
                     AACENC_DPRINT("%d :: AACENC_CleanupInitParams returned error\n",__LINE__);
                     goto EXIT;
                 }
@@ -210,32 +210,32 @@ void* ComponentThread (void* pThreadData)
                 pComponentPrivate->curState = OMX_StateLoaded;
 
 #ifdef __PERF_INSTRUMENTATION__
-				PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
-#endif	
+                PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
+#endif  
 
 
-				if(pComponentPrivate->bPreempted==0){
-	                pComponentPrivate->cbInfo.EventHandler(pHandle, 
-														   pHandle->pApplicationPrivate,
-														   OMX_EventCmdComplete,
-														   OMX_ErrorNone,pComponentPrivate->curState, 
-														   NULL);
+                if(pComponentPrivate->bPreempted==0){
+                    pComponentPrivate->cbInfo.EventHandler(pHandle, 
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete,
+                                                           OMX_ErrorNone,pComponentPrivate->curState, 
+                                                           NULL);
 
-				}
-				else{
-	                pComponentPrivate->cbInfo.EventHandler(pHandle, 
-														   pHandle->pApplicationPrivate,
-														   OMX_EventError,
-														   OMX_ErrorResourcesLost,
-														   OMX_TI_ErrorMajor, 
-														   NULL);
-					pComponentPrivate->bPreempted = 0;
-				}
+                }
+                else{
+                    pComponentPrivate->cbInfo.EventHandler(pHandle, 
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           OMX_ErrorResourcesLost,
+                                                           OMX_TI_ErrorMajor, 
+                                                           NULL);
+                    pComponentPrivate->bPreempted = 0;
+                }
 
             pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
             }
 
-		}  
+        }  
     }
 
 EXIT:

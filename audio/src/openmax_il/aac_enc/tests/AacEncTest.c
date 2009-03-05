@@ -40,6 +40,7 @@
 #include <OMX_Index.h> 
 #include <OMX_Types.h>
 #include <OMX_Core.h>
+#include <OMX_Component.h>
 #include <OMX_Audio.h>
 #include <TIDspOmx.h>
 #include <stdio.h>
@@ -1501,11 +1502,9 @@ int Aacenc_fdread;
 				FD_SET(OpBuf_Pipe[0], &rfds);
 				FD_SET(Event_Pipe[0], &rfds);
 				
-					APP_DPRINT("%d :: ---------------------------------------\n\n\n",__LINE__);
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 
-					APP_DPRINT("%d :: ---------------------------------------\n\n\n",__LINE__);
 				retval = select(fdmax+1, &rfds, NULL, NULL, &tv);
 				if(retval == -1) 
 				{
