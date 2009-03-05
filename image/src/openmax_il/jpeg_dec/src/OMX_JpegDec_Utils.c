@@ -49,7 +49,6 @@
     #include <omx_core.h>
     #include <stdlib.h>
 #else
-    #include <wchar.h>
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/types.h>
@@ -789,8 +788,10 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
 
     if (pComponentPrivate->nProgressive == 1) {
         JPEGDEC_DPRINT("JPEGdec:: nProgressive IMAGE");
-        arr[7] = pComponentPrivate->sMaxResolution.nHeight;
-        arr[8] = pComponentPrivate->sMaxResolution.nWidth;
+        //arr[7] = pComponentPrivate->sMaxResolution.nHeight;
+        //arr[8] = pComponentPrivate->sMaxResolution.nWidth;
+        arr[7] = pPortDefIn->format.image.nFrameHeight;	
+        arr[8] = pPortDefIn->format.image.nFrameWidth;
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
     else {
@@ -832,7 +833,13 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
         arr[13] = 0;
     }
 
-    arr[14] = END_OF_CR_PHASE_ARGS;
+    arr[14] = 0;
+    if (pPortDefOut->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888)
+    {
+    	arr[14] = 1; /* RGB32 output mode */
+    }
+
+    arr[15] = END_OF_CR_PHASE_ARGS;
 
     lcml_dsp->pCrPhArgs = arr;
 
