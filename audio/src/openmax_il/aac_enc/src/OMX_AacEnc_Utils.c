@@ -241,7 +241,8 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         Channels=0;
     }
     
-    if (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
+    if (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW ||
+        pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP4FF){
         pComponentPrivate->File_Format = 0;
             AACENC_DPRINT("OMX_AUDIO_AACStreamFormatRAW \n");
     }
@@ -249,8 +250,8 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         pComponentPrivate->File_Format = 1;
             AACENC_DPRINT("OMX_AUDIO_AACStreamFormatADIF \n");
     }
-    else if( (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP4ADTS) ||
-            (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP2ADTS) )                                                             
+    else if((pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP4ADTS) ||
+            (pComponentPrivate->aacParams[OUTPUT_PORT]->eAACStreamFormat == OMX_AUDIO_AACStreamFormatMP2ADTS) )
     {
         pComponentPrivate->File_Format = 2;
             AACENC_DPRINT("OMX_AUDIO_AACStreamFormatMP2ADTS \n");
@@ -1798,7 +1799,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
         AACENC_DPRINT("%d :: UTIL:  Buffer Dir = input\n",__LINE__);
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
-        if ((pBufHeader->nFilledLen > 0) || ((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS)) 
+        if ((pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags & OMX_BUFFERFLAG_EOS)) 
         {
             pComponentPrivate->bBypassDSP = 0;          /* flag for buffers with data */
             eError = AACENCGetCorresponding_LCMLHeader(pComponentPrivate, pBufHeader->pBuffer, OMX_DirInput, &pLcmlHdr);
@@ -1823,7 +1824,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                               PERF_ModuleCommonLayer);
 #endif
 
-            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) 
+            if(pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) 
             {
                 AACENC_DPRINT("%d :: UTIL: End of Stream has been reached \n",__LINE__);
                 pLcmlHdr->pIpParam->bLastBuffer   = 1;  /* EOS flag for SN. - It is the last buffer with data for SN */
@@ -1933,7 +1934,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
             AACENC_DPRINT("%d :: UTIL: pComponentPrivate->EmptythisbufferCount = %ld \n",__LINE__,pComponentPrivate->EmptythisbufferCount);
         }
 
-        if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) 
+        if(pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) 
         {
             AACENC_DPRINT("%d :: UTIL: Component Detected EOS\n",__LINE__);
             if(pComponentPrivate->dasfmode == 0) 
