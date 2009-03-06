@@ -790,8 +790,10 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
         JPEGDEC_DPRINT("JPEGdec:: nProgressive IMAGE");
         //arr[7] = pComponentPrivate->sMaxResolution.nHeight;
         //arr[8] = pComponentPrivate->sMaxResolution.nWidth;
-        arr[7] = pPortDefIn->format.image.nFrameHeight;	
-        arr[8] = pPortDefIn->format.image.nFrameWidth;
+        arr[7] = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;
+        if ((arr[7]%2) != 0) arr[7]++;
+        arr[8] = pPortDefIn->format.image.nFrameWidth * nScaleFactor / 100;
+        if ((arr[8]%2) != 0) arr[8]++;        
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
     else {
