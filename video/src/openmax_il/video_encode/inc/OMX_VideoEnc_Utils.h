@@ -475,6 +475,12 @@ typedef struct VIDEOENC_PORT_TYPE {
     VIDENC_BUFFER_PRIVATE* pBufferPrivate[VIDENC_MAX_NUM_OF_BUFFERS];
 } VIDEOENC_PORT_TYPE;
 
+#ifndef KHRONOS_1_2
+    typedef enum OMX_EXTRADATATYPE {
+	    OMX_ExtraDataNone = 0,
+        OMX_ExtraDataQuantization
+    } OMX_EXTRADATATYPE;
+#endif
 typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2 {
 	OMX_U32 nSize;
 	OMX_VERSIONTYPE nVersion;
