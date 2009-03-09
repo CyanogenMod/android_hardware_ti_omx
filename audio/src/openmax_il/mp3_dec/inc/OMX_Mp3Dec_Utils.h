@@ -67,14 +67,21 @@
     #include "perf.h"
 #endif
 
-/* Log for Android system*/
-#include <utils/Log.h>
-#undef LOG_TAG
-#define LOG_TAG "OMX_MP3"
+#ifndef ANDROID
+    #define ANDROID
+#endif
 
-/* PV opencore capability custom parameter index */
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-#define ANDROID
+#ifdef ANDROID
+    /* Log for Android system*/
+    #include <utils/Log.h>
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_MP3"
+    
+    /* PV opencore capability custom parameter index */ 
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
+
+
 
 #define MP3DEC_MAJOR_VER 0x1/* Major number of the component */
 #define MP3DEC_MINOR_VER 0x1 /* Mnor number of the component */
@@ -90,18 +97,18 @@
 
 /* #define DSP_RENDERING_ON*/ /* Enable to use DASF functionality */
 /* #define MP3DEC_MEMDEBUG */ /* Enable memory leaks debuf info */
-// #define MP3DEC_DEBUG    /* See all debug statement of the component */
+#define MP3DEC_DEBUG    /* See all debug statement of the component */
 /* #define MP3DEC_MEMDETAILS */  /* See memory details of the component */
 /* #define MP3DEC_BUFDETAILS */  /* See buffers details of the component */
  #define MP3DEC_STATEDETAILS /* See all state transitions of the component*/
 
 #define MP3_APP_ID  100 /* Defines MP3 Dec App ID, App must use this value */
 #define MP3D_MAX_NUM_OF_BUFS 10 /* Max number of buffers used */
-#define MP3D_NUM_INPUT_BUFFERS 2  /* Default number of input buffers */
+#define MP3D_NUM_INPUT_BUFFERS 4  /* Default number of input buffers */
 #define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
-#define MP3D_INPUT_BUFFER_SIZE  2000 /* Default size of input buffer */
-#define MP3D_OUTPUT_BUFFER_SIZE 8192 /* Default size of output buffer */
+#define MP3D_INPUT_BUFFER_SIZE  2000*2 /* Default size of input buffer */
+#define MP3D_OUTPUT_BUFFER_SIZE 8192*6 /* Default size of output buffer */
 #define MP3D_DEFAULT_FREQUENCY 44100 /* Default sample frequency*/
 
 #define OUTPUT_PORT_MP3DEC 1
@@ -116,7 +123,7 @@
 
 #define MP3D_STEREO_STREAM  2
 
-#define NUM_OF_PORTS 2 /* Number of ports of component */
+#define NUM_OF_PORTS 0x2 /* Number of ports of component */
 
 #ifdef UNDER_CE
 #define MP3DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
@@ -186,21 +193,23 @@
 #else /* for Linux */
 #ifdef  MP3DEC_DEBUG
 
-    #define MP3DEC_DPRINT  LOGE //(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
-	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                          //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-
+  #ifdef ANDROID
+    #define MP3DEC_DPRINT  LOGW
+    #define MP3DEC_BUFPRINT LOGW
+    #define MP3DEC_MEMPRINT LOGW
+    #define MP3DEC_STATEPRINT LOGW
+  #else
+    #define MP3DEC_DPRINT  printf
     #define MP3DEC_BUFPRINT printf
     #define MP3DEC_MEMPRINT printf
     #define MP3DEC_STATEPRINT printf
+  #endif
 
 #else
     #define MP3DEC_DPRINT(...)
 
     #ifdef MP3DEC_STATEDETAILS
-        #define MP3DEC_STATEPRINT   __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);\
-	                      //      __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+        #define MP3DEC_STATEPRINT printf
     #else
         #define MP3DEC_STATEPRINT(...)
     #endif
@@ -212,18 +221,18 @@
     #endif
 
     #ifdef MP3DEC_MEMDETAILS
-        #define MP3DEC_MEMPRINT(...)  __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ERROR",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+        #define MP3DEC_MEMPRINT printf
     #else
         #define MP3DEC_MEMPRINT(...)
     #endif
 
 #endif
 
-#define MP3DEC_EPRINT LOGE      //(...)  fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
-                            //fprintf(stdout, __VA_ARGS__);\
-                            //fprintf(stdout, "\n");
+#ifdef ANDROID
+  #define MP3DEC_EPRINT LOGE
+#else
+  #define MP3DEC_EPRINT printf
+#endif
 
 #endif
 
@@ -281,8 +290,8 @@
     memset((_s_), 0x0, sizeof(_name_)); \
     (_s_)->nSize = sizeof(_name_);              \
     (_s_)->nVersion.s.nVersionMajor = 0x1;      \
-    (_s_)->nVersion.s.nVersionMinor = 0x0;      \
-    (_s_)->nVersion.s.nRevision = 0x0;          \
+    (_s_)->nVersion.s.nVersionMinor = 0x1;      \
+    (_s_)->nVersion.s.nRevision = 0x1;          \
     (_s_)->nVersion.s.nStep = 0x0
 
 /* ======================================================================= */
@@ -665,7 +674,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
 	
-/*	RMPROXY_CALLBACKTYPE rmproxyCallback; */
+/*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
 	OMX_BOOL bPreempted;
 	
     /** Contains the port related info of both the ports */
@@ -707,6 +716,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_U32 nNumInputBufPending;
     OMX_BUFFERHEADERTYPE *pOutputBufHdrPending[MP3D_MAX_NUM_OF_BUFS];
     OMX_U32 nNumOutputBufPending;
+
     /** Store buffers received while paused **/
     OMX_BUFFERHEADERTYPE *pOutputBufHdrPause[MP3D_MAX_NUM_OF_BUFS];
     OMX_U32 nNumOutputBufPause;
@@ -735,6 +745,14 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
     
+    pthread_mutex_t codecStop_mutex;    
+    pthread_cond_t codecStop_threshold;
+    OMX_U8 codecStop_waitingsignal;
+
+    pthread_mutex_t codecFlush_mutex;    
+    pthread_cond_t codecFlush_threshold;
+    OMX_U8 codecFlush_waitingsignal;
+
     pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
     OMX_U8 InLoaded_readytoidle;
@@ -1038,7 +1056,7 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent);
 /* =================================================================================== */
 /* void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
 
-OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
+OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 void MP3DEC_SetPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber);
 void MP3DEC_ClearPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber) ;
 OMX_U32 MP3DEC_IsPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir);
