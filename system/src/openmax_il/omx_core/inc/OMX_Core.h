@@ -1186,7 +1186,7 @@ typedef struct OMX_TUNNELSETUPTYPE
         OMX_ErrorNone.  Otherwise the appropriate OMX error will be returned.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_Init(void);
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_Init(void);
 
 
 /** The OMX_Deinit method is used to deinitialize the OMX core.  It shall be 
@@ -1201,7 +1201,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_Init(void);
         OMX_ErrorNone.  Otherwise the appropriate OMX error will be returned.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_Deinit(void);
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_Deinit(void);
 
 
 /** The OMX_ComponentNameEnum method will enumerate through all the names of
@@ -1241,7 +1241,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_Deinit(void);
         returned. Otherwise the appropriate OMX error will be returned.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_ComponentNameEnum(
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_ComponentNameEnum(
     OMX_OUT OMX_STRING cComponentName,
     OMX_IN  OMX_U32 nNameLength,
     OMX_IN  OMX_U32 nIndex);
@@ -1274,7 +1274,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_ComponentNameEnum(
         OMX_ErrorNone.  Otherwise the appropriate OMX error will be returned.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_GetHandle(
     OMX_OUT OMX_HANDLETYPE* pHandle, 
     OMX_IN  OMX_STRING cComponentName,
     OMX_IN  OMX_PTR pAppData,
@@ -1296,7 +1296,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_GetHandle(
         OMX_ErrorNone.  Otherwise the appropriate OMX error will be returned.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_FreeHandle(
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_FreeHandle(
     OMX_IN  OMX_HANDLETYPE hComponent);
 
 
@@ -1349,7 +1349,7 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_FreeHandle(
         with the application / IL Client.
     @ingroup core tun
  */
-OMX_API OMX_ERRORTYPE OMX_APIENTRY OMX_SetupTunnel(
+OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_SetupTunnel(
     OMX_IN  OMX_HANDLETYPE hOutput,
     OMX_IN  OMX_U32 nPortOutput,
     OMX_IN  OMX_HANDLETYPE hInput,
@@ -1387,7 +1387,7 @@ OMX_API OMX_ERRORTYPE   OMX_GetContentPipe(
         Each name is NULL terminated. numComps indicates the number of names.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_GetComponentsOfRole ( 
+OMX_API OMX_ERRORTYPE TIOMX_GetComponentsOfRole ( 
 	OMX_IN      OMX_STRING role,
     OMX_INOUT   OMX_U32 *pNumComps,
     OMX_INOUT   OMX_U8  **compNames);
@@ -1417,7 +1417,7 @@ OMX_API OMX_ERRORTYPE OMX_GetComponentsOfRole (
         specified component name. numComps indicates the number of names.
     @ingroup core
  */
-OMX_API OMX_ERRORTYPE OMX_GetRolesOfComponent ( 
+OMX_API OMX_ERRORTYPE TIOMX_GetRolesOfComponent ( 
 	OMX_IN      OMX_STRING compName, 
     OMX_INOUT   OMX_U32 *pNumRoles,
     OMX_OUT     OMX_U8 **roles);
