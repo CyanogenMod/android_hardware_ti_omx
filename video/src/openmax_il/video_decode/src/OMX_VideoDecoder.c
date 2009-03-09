@@ -1658,9 +1658,16 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 if(eError != OMX_ErrorNone) {
                     goto EXIT;
                 }
+#ifdef ANDROID
+                /* Set format according with hw accelerated rendering */
+                if( pComponentPrivate->pOutPortFormat->eColorFormat != VIDDEC_COLORFORMAT422) {
+                    eError = VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_INTERLEAVED422);
+                }
+#else
                 if( pComponentPrivate->pOutPortFormat->eColorFormat != VIDDEC_COLORFORMAT420) {
                     eError = VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_PLANAR420);
                 }
+#endif
                 memcpy( (void *)&pComponentPrivate->componentRole, (void *)pRole, sizeof(OMX_PARAM_COMPONENTROLETYPE));
             } 
             else {
