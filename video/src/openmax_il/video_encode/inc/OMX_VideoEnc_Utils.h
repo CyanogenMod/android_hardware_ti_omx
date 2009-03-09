@@ -89,6 +89,8 @@
     #define __KHRONOS_CONF_1_1__
 #endif
     
+#define KHRONOS_1_2
+
 #define VIDENC_MAX_COMPONENT_TIMEOUT 0xFFFFFFFF 
 #define OMX_NOPORT 0xFFFFFFFE
 #define MAXNUMSLCGPS 8  /*< max. number of slice groups*/
@@ -390,7 +392,11 @@ typedef struct OMX_CONF_CIRCULAR_BUFFER{
 } OMX_CONF_CIRCULAR_BUFFER;
 
 typedef enum VIDENC_CUSTOM_INDEX {
-    VideoEncodeCustomParamIndexVBVSize = OMX_IndexIndexVendorStartUnused,
+    #ifdef KHRONOS_1_2
+        VideoEncodeCustomParamIndexVBVSize = OMX_IndexVendorStartUnused,
+    #else
+        VideoEncodeCustomParamIndexVBVSize = OMX_IndexIndexVendorStartUnused,
+    #endif
     VideoEncodeCustomParamIndexDeblockFilter,
     VideoEncodeCustomConfigIndexForceIFrame,
     VideoEncodeCustomConfigIndexIntraFrameInterval,
@@ -468,11 +474,6 @@ typedef struct VIDEOENC_PORT_TYPE {
 	OMX_VIDEO_PARAM_BITRATETYPE* pBitRateType;
     VIDENC_BUFFER_PRIVATE* pBufferPrivate[VIDENC_MAX_NUM_OF_BUFFERS];
 } VIDEOENC_PORT_TYPE;
-
-typedef enum OMX_EXTRADATATYPE {
-	OMX_ExtraDataNone = 0,
-	OMX_ExtraDataQuantization
-} OMX_EXTRADATATYPE;
 
 typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2 {
 	OMX_U32 nSize;

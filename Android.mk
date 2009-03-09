@@ -77,12 +77,12 @@ include $(TI_OMX_AUDIO)/wma_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/wma_dec/tests/Android.mk
 
 #call to video
-#include $(TI_OMX_VIDEO)/video_decode/Android.mk
-#include $(TI_OMX_VIDEO)/video_encode/Android.mk
+include $(TI_OMX_VIDEO)/video_decode/Android.mk
+include $(TI_OMX_VIDEO)/video_encode/Android.mk
 
 #call to image
-#include $(TI_OMX_IMAGE)/jpeg_enc/Android.mk
-#include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
+include $(TI_OMX_IMAGE)/jpeg_enc/Android.mk
+include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
 
 #call to plugin
 include $(TI_OMX_TOP)/core_plugin/Android.mk
