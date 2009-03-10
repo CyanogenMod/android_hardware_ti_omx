@@ -107,7 +107,7 @@
 #define MP3D_NUM_INPUT_BUFFERS 4  /* Default number of input buffers */
 #define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
-#define MP3D_INPUT_BUFFER_SIZE  2000*2 /* Default size of input buffer */
+#define MP3D_INPUT_BUFFER_SIZE  2000*4 /* Default size of input buffer */
 #define MP3D_OUTPUT_BUFFER_SIZE 8192*6 /* Default size of output buffer */
 #define MP3D_DEFAULT_FREQUENCY 44100 /* Default sample frequency*/
 
