@@ -5333,10 +5333,11 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         FOURCC_WMV1, FOURCC_WMV2, FOURCC_WMV3, FOURCC_WVC1, nActualCompression);
                 if(pComponentPrivate->nWMVFileType == VIDDEC_WMV_RCVSTREAM && nActualCompression == FOURCC_WVC1){
                     pComponentPrivate->nWMVFileType = VIDDEC_WMV_ELEMSTREAM;
-                    eError = VIDDEC_Set_SN_StreamType(pComponentPrivate);
-                    if(eError != OMX_ErrorNone){
-                        goto EXIT;
-                    }
+                }
+
+                eError = VIDDEC_Set_SN_StreamType(pComponentPrivate);
+                if(eError != OMX_ErrorNone){
+                    goto EXIT;
                 }
             
                 /*Seting pCSD to proper position*/
