@@ -1711,20 +1711,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     int k=0, k2 = 0;
 
-
-    MP3DEC_EPRINT("ComponentDeInit\n");
-
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntIp = %d\n", pComponentPrivate->lcml_nCntIp);
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nIpBuf = %d\n", pComponentPrivate->lcml_nIpBuf);
-    MP3DEC_EPRINT("pComponentPrivate->num_Sent_Ip_Buff = %d\n", pComponentPrivate->num_Sent_Ip_Buff);
-    MP3DEC_EPRINT("pComponentPrivate->nNumInputBufPending = %d\n", pComponentPrivate->nNumInputBufPending);
-
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntOp = %d\n", pComponentPrivate->lcml_nCntOp);
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nOpBuf = %d\n", pComponentPrivate->lcml_nOpBuf);
-    MP3DEC_EPRINT("pComponentPrivate->num_Op_Issued = %d\n", pComponentPrivate->num_Op_Issued);
-    MP3DEC_EPRINT("pComponentPrivate->nNumOutputBufPending = %d\n", pComponentPrivate->nNumOutputBufPending);
-
-
     MP3D_OMX_CONF_CHECK_CMD(pComponent,1,1)
         pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
     MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate,1,1)
