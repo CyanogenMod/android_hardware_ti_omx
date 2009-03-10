@@ -2854,79 +2854,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         goto EXIT;
                     }
                 }
-                else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
-                    pComponentPrivate->eState == OMX_StateIdle) {
-                    WMV9DEC_UALGDynamicParams* pDynParams = NULL;
-                    char* pTmp = NULL;
-                    OMX_U32 cmdValues[3] = {0, 0, 0};
-
-                    VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_IDLEEXECUTING);
-                    VIDDECODER_DPRINT("Initializing DSP for wmv9 eCompressionFormat 0x%x\n",
-                        pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
-                    OMX_MALLOC_STRUCT_SIZED(pDynParams, WMV9DEC_UALGDynamicParams, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
-                    if (pDynParams == NULL) {
-                       VIDDECODER_EPRINT("Error: Malloc failed\n");
-                       eError = OMX_ErrorInsufficientResources;
-                       goto EXIT;
-                    }
-                    memset(pDynParams, 0, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL);
-                    pTmp = (char*)pDynParams;
-                    pTmp += VIDDEC_PADDING_HALF;
-                    pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
-
-#ifdef VIDDEC_SN_R8_14
-                    pDynParams->size = sizeof(WMV9DEC_UALGDynamicParams);
-#endif
-                    pDynParams->ulDecodeHeader = 0;
-                    pDynParams->ulDisplayWidth = 0;
-                    pDynParams->ulFrameSkipMode = 0;
-                    pDynParams->ulPPType = 0;
-
-                    if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM) {
-                        pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_ELEMSTREAM;
-                    }
-                    else {
-                        pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_RCVSTREAM;
-                    }
-
-                    cmdValues[0] = IUALG_CMD_SETSTATUS; /* add #define IUALG_CMD_SETSTATUS 3 */
-                    cmdValues[1] = (OMX_U32)(pDynParams);
-                    cmdValues[2] = sizeof(WMV9DEC_UALGDynamicParams);
-
-                    p = (void*)&cmdValues;
-                    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-                        pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-                        pComponentPrivate->pLCML != NULL &&
-                        pComponentPrivate->bLCMLHalted != OMX_TRUE){
-                        VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
-                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                   EMMCodecControlAlgCtrl,
-                                                   (void*)p);
-                         if(eError != OMX_ErrorNone){
-                            eError = OMX_ErrorHardware;
-                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   OMX_EventError,
-                                                                   eError,
-                                                                   OMX_TI_ErrorSevere,
-                                                                   "LCML_ControlCodec function");
-                            VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-                            goto EXIT;
-                        }
-                        VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
-                        VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-                    }
-
-                    pTmp = (char*)pDynParams;
-                    pTmp -= VIDDEC_PADDING_HALF;
-                    pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
-                    free(pDynParams);
-
-                    if (eError != OMX_ErrorNone) {
-                        VIDDECODER_EPRINT("Codec AlgCtrl 0x%x\n",eError);
-                        goto EXIT;
-                    }
-                }
                 else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2 &&
                     pComponentPrivate->eState == OMX_StateIdle) {
                     MP2VDEC_UALGDynamicParams* pDynParams = NULL;
@@ -5406,7 +5333,10 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         FOURCC_WMV1, FOURCC_WMV2, FOURCC_WMV3, FOURCC_WVC1, nActualCompression);
                 if(pComponentPrivate->nWMVFileType == VIDDEC_WMV_RCVSTREAM && nActualCompression == FOURCC_WVC1){
                     pComponentPrivate->nWMVFileType = VIDDEC_WMV_ELEMSTREAM;
-                    pComponentPrivate->bOutPortSettingsChanged = OMX_TRUE;
+                    eError = VIDDEC_Set_SN_StreamType(pComponentPrivate);
+                    if(eError != OMX_ErrorNone){
+                        goto EXIT;
+                    }
                 }
             
                 /*Seting pCSD to proper position*/
@@ -8552,78 +8482,6 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             goto EXIT;
         }
     }
-    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
-        pComponentPrivate->eState == OMX_StateIdle) {
-        WMV9DEC_UALGDynamicParams* pDynParams = NULL;
-        char* pTmp = NULL;
-        OMX_U32 cmdValues[3] = {0, 0, 0};
-
-        VIDDECODER_DPRINT("Initializing DSP for wmv9 eCompressionFormat 0x%x\n",
-            pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
-        OMX_MALLOC_STRUCT_SIZED(pDynParams, WMV9DEC_UALGDynamicParams, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
-        if (pDynParams == NULL) {
-           VIDDECODER_EPRINT("Error: Malloc failed\n");
-           eError = OMX_ErrorInsufficientResources;
-           goto EXIT;
-        }
-        memset(pDynParams, 0, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL);
-        pTmp = (char*)pDynParams;
-        pTmp += VIDDEC_PADDING_HALF;
-        pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
-
-#ifdef VIDDEC_SN_R8_14
-        pDynParams->size = sizeof(WMV9DEC_UALGDynamicParams);
-#endif
-        pDynParams->ulDecodeHeader = 0;
-        pDynParams->ulDisplayWidth = 0;
-        pDynParams->ulFrameSkipMode = 0;
-        pDynParams->ulPPType = 0;
-
-        if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM) {
-            pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_ELEMSTREAM;
-        }
-        else {
-            pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_RCVSTREAM;
-        }
-
-        cmdValues[0] = IUALG_CMD_SETSTATUS; /* add #define IUALG_CMD_SETSTATUS 3 */
-        cmdValues[1] = (OMX_U32)(pDynParams);
-        cmdValues[2] = sizeof(WMV9DEC_UALGDynamicParams);
-
-        p = (void*)&cmdValues;
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-            pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-            pComponentPrivate->pLCML != NULL &&
-            pComponentPrivate->bLCMLHalted != OMX_TRUE){
-            VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       EMMCodecControlAlgCtrl,
-                                       (void*)p);
-             if(eError != OMX_ErrorNone){
-                eError = OMX_ErrorHardware;
-                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       OMX_EventError,
-                                                       eError,
-                                                       OMX_TI_ErrorSevere,
-                                                       "LCML_ControlCodec function");
-                VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-                goto EXIT;
-            }
-            VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
-            VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-        }
-
-        pTmp = (char*)pDynParams;
-        pTmp -= VIDDEC_PADDING_HALF;
-        pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
-        free(pDynParams);
-
-        if (eError != OMX_ErrorNone) {
-            VIDDECODER_EPRINT("Codec AlgCtrl 0x%x\n",eError);
-            goto EXIT;
-        }
-    }
     else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2 &&
         pComponentPrivate->eState == OMX_StateIdle) {
         MP2VDEC_UALGDynamicParams* pDynParams = NULL;
@@ -8935,6 +8793,105 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         pComponentPrivate->bLCMLHalted = OMX_TRUE;
     }
     eError = OMX_ErrorNone;
+EXIT:
+    return eError;
+}
+
+
+
+/* ========================================================================== */
+/**
+  *  VIDDEC_Set_SN_StreamType() Set stream type using dynamic parameters at the SN.
+  *
+  * @param 
+  *     pComponentPrivate            Component private structure
+  *
+  * @retval OMX_NoError              Success, ready to roll
+  *         OMX_ErrorUndefined
+  *         OMX_ErrorInsufficientResources   Not enough memory
+ **/
+/* ========================================================================== */
+
+OMX_ERRORTYPE VIDDEC_Set_SN_StreamType(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
+{
+ 
+        WMV9DEC_UALGDynamicParams* pDynParams = NULL;
+        LCML_DSP_INTERFACE* pLcmlHandle;
+        char* pTmp = NULL;
+        OMX_U32 cmdValues[3] = {0, 0, 0};
+        void* p = NULL;
+        OMX_ERRORTYPE eError = OMX_ErrorUndefined;
+
+
+
+        VIDDECODER_DPRINT("Initializing DSP for wmv9 eCompressionFormat 0x%x\n",
+            pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
+        pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+        OMX_MALLOC_STRUCT_SIZED(pDynParams, WMV9DEC_UALGDynamicParams, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
+        if (pDynParams == NULL) {
+           VIDDECODER_EPRINT("Error: Malloc failed\n");
+           eError = OMX_ErrorInsufficientResources;
+           goto EXIT;
+        }
+        memset(pDynParams, 0, sizeof(WMV9DEC_UALGDynamicParams) + VIDDEC_PADDING_FULL);
+        pTmp = (char*)pDynParams;
+        pTmp += VIDDEC_PADDING_HALF;
+        pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
+
+        pDynParams->size = sizeof(WMV9DEC_UALGDynamicParams);
+        pDynParams->ulDecodeHeader = 0;
+        pDynParams->ulDisplayWidth = 0;
+        pDynParams->ulFrameSkipMode = 0;
+        pDynParams->ulPPType = 0;
+
+        if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM) {
+            pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_ELEMSTREAM;
+        }
+        else {
+            pDynParams->usIsElementaryStream = VIDDEC_SN_WMV_RCVSTREAM;
+        }
+
+        cmdValues[0] = IUALG_CMD_SETSTATUS; /* add #define IUALG_CMD_SETSTATUS 3 */
+        cmdValues[1] = (OMX_U32)(pDynParams);
+        cmdValues[2] = sizeof(WMV9DEC_UALGDynamicParams);
+
+        p = (void*)&cmdValues;
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
+            pComponentPrivate->pLCML != NULL &&
+            pComponentPrivate->bLCMLHalted != OMX_TRUE){
+            VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
+            VIDDECODER_DPRINT("Sending Control coded command EMMCodecControlAlgCtrl");
+            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                       EMMCodecControlAlgCtrl,
+                                       (void*)p);
+             if(eError != OMX_ErrorNone){
+                eError = OMX_ErrorHardware;
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventError,
+                                                       eError,
+                                                       OMX_TI_ErrorSevere,
+                                                       "LCML_ControlCodec function");
+                VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
+                goto EXIT;
+            }
+            VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
+            VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
+            /*This flag is set to TRUE in the LCML callback from EMMCodecControlAlgCtrl
+             * this is not the case were we need it*/       
+            pComponentPrivate->bTransPause = OMX_FALSE;
+        }
+
+        pTmp = (char*)pDynParams;
+        pTmp -= VIDDEC_PADDING_HALF;
+        pDynParams = (WMV9DEC_UALGDynamicParams*)pTmp;
+        free(pDynParams);
+
+        if (eError != OMX_ErrorNone) {
+            VIDDECODER_EPRINT("Codec AlgCtrl 0x%x\n",eError);
+        }
+
 EXIT:
     return eError;
 }
