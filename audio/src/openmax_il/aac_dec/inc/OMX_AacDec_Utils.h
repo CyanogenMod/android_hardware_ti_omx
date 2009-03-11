@@ -65,6 +65,7 @@
 
 /* Log for Android system*/
 #include <utils/Log.h>
+/*#define LOG_TAG "TIOMXAACDEC"*/
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -409,14 +410,14 @@
  *
  */
 /* ======================================================================= */
-#define AACD_INPUT_BUFFER_SIZE 1536
+#define AACD_INPUT_BUFFER_SIZE 1536*4
 /* ======================================================================= */
 /**
  * @def    AACD_OUTPUT_BUFFER_SIZE   Default output buffer size
  *
  */
 /* ======================================================================= */
-#define AACD_OUTPUT_BUFFER_SIZE 8192
+#define AACD_OUTPUT_BUFFER_SIZE 8192*4
 /* ======================================================================= */
 /**
  * @def    AACD_SAMPLING_FREQUENCY   Sampling frequency
@@ -972,6 +973,8 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_U32 firstINbuffer;
     OMX_U8 OutPendingPR;
     OMX_BUFFERHEADERTYPE *pOutPendingPR[MAX_NUM_OF_BUFS_AACDEC];
+    OMX_U8 *pfirstobuffer;
+    OMX_U32 pfirstobuffersize;
 
 } AACDEC_COMPONENT_PRIVATE;
 
@@ -1273,7 +1276,7 @@ OMX_U32 AACDEC_IsPending(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
  */
 
 /*================================================================== */
-OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
+OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 /* ===========================================================  */
 /**
  *  AACDEC_IsValid()

@@ -1465,6 +1465,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif
                 }
 
+		/* Needed for port reconfiguration */   
+                AACDECFill_LCMLInitParamsEx(pHandle,commandData);
 ////
 #if 1
 
@@ -1490,8 +1492,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->nNumInputBufPending = 0;
 ////
 #endif
-		/* Needed for port reconfiguration */   
-		AACDECFill_LCMLInitParamsEx(pHandle);
             }
             else {
                 pComponentPrivate->bEnableCommandPending = 1;
@@ -1518,6 +1518,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
 #endif
                 }
+		    /* Needed for port reconfiguration */   
+               AACDECFill_LCMLInitParamsEx(pHandle,commandData);
 #if 1
 //// release any buffers received during port disable for reconfig
                     for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
@@ -1542,38 +1544,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->nNumOutputBufPending = 0;
 ////
 #endif    
-                    for(i=0; i < pComponentPrivate->OutPendingPR; i++){
-                        if (pComponentPrivate->pOutPendingPR[i] != NULL) {
-                            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                      pComponentPrivate->pOutPendingPR[i]);
-                            pComponentPrivate->pOutPendingPR[i] = NULL;
-                        }
-                    }
-                    for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
-                        if (pComponentPrivate->pInputBufHdrPending[i] != NULL) {
-                            AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
-                            AACDEC_GetCorresponding_LCMLHeader(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
-                                                               OMX_DirInput, &pLcmlHdr);
-                            AACDEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
-                            eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                      EMMCodecInputBuffer,
-                                                      pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
-                                                      pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
-                                                      pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
-                                                      (OMX_U8 *) pLcmlHdr->pIpParam,
-                                                      sizeof(AACDEC_UAlgInBufParamStruct),
-                                                      NULL);
-                        }
-                    }
-                    pComponentPrivate->nNumInputBufPending = 0;
-
-                    pComponentPrivate->OutPendingPR = 0;
+                    /*pComponentPrivate->OutPendingPR = 0;*/
                     pComponentPrivate->bEnableCommandPending = 0;
                     pComponentPrivate->reconfigOutputPort = 0;
                     pComponentPrivate->PScontent = 0;
-		    /* Needed for port reconfiguration */   
-                    AACDECFill_LCMLInitParamsEx(pHandle);
                 }
                 else {
                     pComponentPrivate->bEnableCommandPending = 1;
@@ -1610,7 +1584,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                      }
                      pComponentPrivate->reconfigOutputPort = 0;
                      pComponentPrivate->bEnableCommandPending = 0;
-                     AACDECFill_LCMLInitParamsEx(pHandle);
+                     AACDECFill_LCMLInitParamsEx(pHandle,commandData);
 
 ///
 #if 1
@@ -1757,18 +1731,18 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
         pComponentPrivate->pcmParams->nSamplingRate = pComponentPrivate->aacParams->nSampleRate;
         AACDEC_DPRINT("New Sample rate detected:: %ld (%d)\n",pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx,
                       pComponentPrivate->pcmParams->nSamplingRate);
-        pComponentPrivate->reconfigOutputPort = OMX_TRUE;
+        /*pComponentPrivate->reconfigOutputPort = OMX_TRUE;*/
 
     }
 
     pComponentPrivate->pcmParams->nChannels = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
     AACDEC_DPRINT("nChannels %ld\n",pComponentPrivate->pcmParams->nChannels);
+    pComponentPrivate->PScontent = 1;
 
     if (iObjectType == OBJECTTYPE_HE){
         externsionSamplingFrequencyIdx = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
         /*pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = externsionSamplingFrequencyIdx;*/
         pComponentPrivate->SBR = 1;
-        pComponentPrivate->PScontent = 1;
         pComponentPrivate->reconfigOutputPort = OMX_FALSE;
         /*pComponentPrivate->pcmParams->nSamplingRate = 
             AACDec_GetSampleRatebyIndex(externsionSamplingFrequencyIdx);*/
@@ -1780,19 +1754,17 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
             extensionAudioObjectType = AACDEC_GetBits(&nBitPosition, 5, pHeaderStream, OMX_TRUE);
             if (extensionAudioObjectType == OBJECTTYPE_HE){
                 AACDEC_DPRINT("OBJECTTYPE_HE detected!\n");
-                pComponentPrivate->PScontent = 1;
                 pComponentPrivate->reconfigOutputPort = OMX_FALSE;
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
             }
             if (extensionAudioObjectType == OBJECTTYPE_HE2){
                 AACDEC_DPRINT("OBJECTTYPE_HE2 detected!\n");
-                pComponentPrivate->reconfigOutputPort = OMX_FALSE;
+                /*pComponentPrivate->reconfigOutputPort = OMX_FALSE;*/
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
                 pComponentPrivate->pcmParams->nChannels = 2;
             }
             pComponentPrivate->SBR = AACDEC_GetBits(&nBitPosition, 1, pHeaderStream, OMX_TRUE);
             if(pComponentPrivate->SBR){
-                pComponentPrivate->PScontent = 1;
                 pComponentPrivate->reconfigOutputPort = OMX_FALSE;
                 externsionSamplingFrequency = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
                 AACDEC_DPRINT("sbrPresentFlag detected, externsionSamplingFrequency %ld\n",
@@ -1809,7 +1781,7 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
     AACDEC_DPRINT("%s: nFilledLen=%d", __FUNCTION__, pBufHeader->nFilledLen);
                     
     // we are done with this config buffer, let the client know
-
+    pBufHeader->nFilledLen = 0;
     pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                pBufHeader);
@@ -1855,10 +1827,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     int iSampleRateIndex = 0;
     OMX_U32 nBitPosition = 0;
     OMX_U8* pHeaderStream = (OMX_U8*)pBufHeader->pBuffer;
-    OMX_U32 syncExtensionType = 0;
-    OMX_U32 extensionAudioObjectType = 0;
-    OMX_U32 externsionSamplingFrequency = 0;
-    OMX_U32 externsionSamplingFrequencyIdx = 0;
+    OMX_U32 i = 0;
 
     pBufHeader->pPlatformPrivate  = pComponentPrivate;
     eError = AACDEC_GetBufferDirection(pBufHeader, &eDir);
@@ -2110,7 +2079,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 		    pComponentPrivate->first_buff = 1;
 	        }
             }
-
+            /*
             if(pComponentPrivate->firstINbuffer == 1){
                 pComponentPrivate->firstINbuffer++;
                 AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
@@ -2125,13 +2094,13 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 goto EXIT;
 
             }
-
+            */
             AACDEC_DPRINT  ("%d Comp:: Sending Filled Input buffer = %p, %p\
                                to LCML\n", __LINE__,pBufHeader,pBufHeader->pBuffer);
             if (pComponentPrivate->curState == OMX_StateExecuting) {
                 if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
                     if(!pComponentPrivate->bDspStoppedWhileExecuting) {
-                        if(!(pComponentPrivate->reconfigInputPort || pComponentPrivate->reconfigOutputPort)){
+                        if(!pComponentPrivate->reconfigInputPort){
                         AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
                         AACDEC_DPRINT ("Calling LCML_QueueBuffer Line %d\n",__LINE__);
                         AACDEC_DPRINT("input pBufHeader->nFilledLen = %d\n\n", pBufHeader->nFilledLen);
@@ -2233,7 +2202,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                           0,
                           PERF_ModuleCommonLayer);
 #endif
-        if((pComponentPrivate->firstOUTbuffer == 1) && pComponentPrivate->PScontent){
+        if(pComponentPrivate->firstOUTbuffer == 1){
             pComponentPrivate->firstOUTbuffer++;
             pComponentPrivate->reconfigOutputPort = 1;
             AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
@@ -2247,8 +2216,26 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                       pBufHeader->pBuffer);
             pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
             goto EXIT;
-
         }
+	/*
+	if(pComponentPrivate->OutPendingPR){
+	    if(pComponentPrivate->pfirstobuffersize > 0){
+		LOGE("Return 1 out buffer\n");
+		memcpy(pBufHeader->pBuffer,
+		       pComponentPrivate->pfirstobuffer,
+		       pComponentPrivate->pfirstobuffersize);
+
+		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+							  pComponentPrivate->pHandle->pApplicationPrivate,
+							  pBufHeader);
+		pComponentPrivate->nFillBufferDoneCount++;
+	    }
+
+	    pComponentPrivate->OutPendingPR = 0;
+	    AACDEC_OMX_FREE(pComponentPrivate->pfirstobuffer);
+	    goto EXIT;
+	}
+	*/
         if (pComponentPrivate->bBypassDSP == 0) {
             AACDEC_DPRINT  ("%d Comp:: Sending Emptied Output buffer=%p to LCML\n",__LINE__,pBufHeader);
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -2262,7 +2249,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput) &&
                         (pComponentPrivate->numPendingBuffers < pComponentPrivate->pOutputBufferList->numBuffers))  {
                         if (!pComponentPrivate->bDspStoppedWhileExecuting){
-                            if(!(pComponentPrivate->reconfigInputPort || pComponentPrivate->reconfigOutputPort)){
+                            if(!pComponentPrivate->reconfigOutputPort){
                                     AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                                     eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                       EMMCodecOuputBuffer,
@@ -2608,9 +2595,21 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                 fclose(fOutPCM); */
                 if(pComponentPrivate->PScontent){
                     if(pComponentPrivate->PSdetected == OMX_TRUE){
-                        pComponentPrivate->pOutPendingPR[pComponentPrivate->OutPendingPR++] = pLcmlHdr->pBufHdr;
+			/*Store this buffer as we may/may not use it later */
+                        /*pComponentPrivate->pOutPendingPR[pComponentPrivate->OutPendingPR++] = pLcmlHdr->pBufHdr;*/
                     }else{
+			/*
+			LOGE("Store 1 buffer\n");
+			AACDEC_OMX_MALLOC_SIZE(pComponentPrivate->pfirstobuffer,
+					       pLcmlHdr->pBufHdr->nFilledLen,
+					       OMX_U8);
+			pComponentPrivate->pfirstobuffersize = pLcmlHdr->pBufHdr->nFilledLen;
+			memcpy(pComponentPrivate->pfirstobuffer,
+			       pLcmlHdr->pBufHdr->pBuffer,
+			       pLcmlHdr->pBufHdr->nFilledLen);
+			*/
                         /* Notify Client in case of an SBR without PS information */
+                        pComponentPrivate->pOutPendingPR[pComponentPrivate->OutPendingPR++] = pLcmlHdr->pBufHdr;
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventPortSettingsChanged,
@@ -2853,16 +2852,10 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         if ( ( (int)args[4] == USN_ERR_WARNING ) && ( (int)args[5] == AACDEC_PS_CONTENT )){
             AACDEC_DPRINT("%d :: LCML_Callback: PS content detected \n" ,__LINE__);
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
-                pComponentPrivate->PScontent = 1;
-                pComponentPrivate->pcmParams->nChannels = 2;
-                pComponentPrivate->reconfigOutputPort = OMX_TRUE;
-                pComponentPrivate->PSdetected = OMX_TRUE;
 
-                /*
-                pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
-                pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectHE_PS;
+                pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectLC;
+                pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
                 pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
-                */
                 pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
 
                 pValues[0] = IUALG_CMD_SETSTATUS;
@@ -2882,13 +2875,17 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                            NULL);
                     goto EXIT;
                 }
-                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       OMX_EventPortSettingsChanged,
-                                                       OMX_DirOutput,
-                                                       0,
-                                                       NULL);
 
+                if(pComponentPrivate->nFillBufferDoneCount == 0){
+                    pComponentPrivate->pcmParams->nChannels = 2;
+                    pComponentPrivate->PSdetected = OMX_TRUE;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventPortSettingsChanged,
+                                                           OMX_DirOutput,
+                                                           0,
+                                                           NULL);
+                }
             }else{
 		AACDEC_DPRINT("%d %s-PS reconfiguration not needed\n",__LINE__,__func__);
 	    }
@@ -3555,7 +3552,7 @@ OMX_U32 AACDEC_IsValid(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuf
 * @return appropriate OMX Error.
 */
 /* ========================================================================== */
-OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
+OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
 
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -3585,92 +3582,96 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     AACDEC_DPRINT("Output Buffer Size = %ld\n",nOpBufSize);
 
 
+    if(indexport == 0 || indexport == -1){
 
-    AACDEC_DPRINT("%d :: bufAlloced = %lu\n",__LINE__,pComponentPrivate->bufAlloced);
-    size_lcml = nIpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
+        AACDEC_DPRINT("%d :: bufAlloced = %lu\n",__LINE__,pComponentPrivate->bufAlloced);
+        size_lcml = nIpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
 
-    AACDEC_OMX_MALLOC_SIZE(ptr,size_lcml,char);
-    pTemp_lcml = (AACD_LCML_BUFHEADERTYPE *)ptr;
+        AACDEC_OMX_MALLOC_SIZE(ptr,size_lcml,char);
+        pTemp_lcml = (AACD_LCML_BUFHEADERTYPE *)ptr;
 
-    pComponentPrivate->pLcmlBufHeader[INPUT_PORT_AACDEC] = pTemp_lcml;
+        pComponentPrivate->pLcmlBufHeader[INPUT_PORT_AACDEC] = pTemp_lcml;
 
-    for (i=0; i<nIpBuf; i++) {
-        pTemp = pComponentPrivate->pInputBufferList->pBufHdr[i];
-        pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
+        for (i=0; i<nIpBuf; i++) {
+            pTemp = pComponentPrivate->pInputBufferList->pBufHdr[i];
+            pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
 
-        pTemp->nAllocLen = nIpBufSize;
-        pTemp->nFilledLen = nIpBufSize;
-        pTemp->nVersion.s.nVersionMajor = AACDEC_MAJOR_VER;
-        pTemp->nVersion.s.nVersionMinor = AACDEC_MINOR_VER;
+            pTemp->nAllocLen = nIpBufSize;
+            pTemp->nFilledLen = nIpBufSize;
+            pTemp->nVersion.s.nVersionMajor = AACDEC_MAJOR_VER;
+            pTemp->nVersion.s.nVersionMinor = AACDEC_MINOR_VER;
 
-        pComponentPrivate->nVersion = pTemp->nVersion.nVersion;
+            pComponentPrivate->nVersion = pTemp->nVersion.nVersion;
 
-        pTemp->pPlatformPrivate = pHandle->pComponentPrivate;
-        pTemp->nTickCount = NOT_USED_AACDEC;
+            pTemp->pPlatformPrivate = pHandle->pComponentPrivate;
+            pTemp->nTickCount = NOT_USED_AACDEC;
 
-        pTemp_lcml->pBufHdr = pTemp;
-        pTemp_lcml->eDir = OMX_DirInput;
-        pTemp_lcml->pOtherParams[i] = NULL;
+            pTemp_lcml->pBufHdr = pTemp;
+            pTemp_lcml->eDir = OMX_DirInput;
+            pTemp_lcml->pOtherParams[i] = NULL;
 
-        AACDEC_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam,
-                             (sizeof(AACDEC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
-                             AACDEC_UAlgInBufParamStruct);
-        ptr = (char*)pTemp_lcml->pIpParam;
-        ptr += EXTRA_BYTES;
-        pTemp_lcml->pIpParam = (AACDEC_UAlgInBufParamStruct*)ptr;
+            AACDEC_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam,
+                                   (sizeof(AACDEC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
+                                   AACDEC_UAlgInBufParamStruct);
+            ptr = (char*)pTemp_lcml->pIpParam;
+            ptr += EXTRA_BYTES;
+            pTemp_lcml->pIpParam = (AACDEC_UAlgInBufParamStruct*)ptr;
 
-        pTemp_lcml->pIpParam->bLastBuffer = 0;
+            pTemp_lcml->pIpParam->bLastBuffer = 0;
 
-        pTemp->nFlags = NORMAL_BUFFER_AACDEC;
-        ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
+            pTemp->nFlags = NORMAL_BUFFER_AACDEC;
+            ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
 
-        AACDEC_DPRINT("%d ::Comp: InBuffHeader[%d] = %p\n", __LINE__, i, pTemp);
-        AACDEC_DPRINT("%d ::Comp:  >>>> InputBuffHeader[%d]->pBuffer = %p\n",
-                      __LINE__, i, pTemp->pBuffer);
-        AACDEC_DPRINT("%d ::Comp: Ip : pTemp_lcml[%d] = %p\n", __LINE__, i, pTemp_lcml);
+            AACDEC_DPRINT("%d ::Comp: InBuffHeader[%d] = %p\n", __LINE__, i, pTemp);
+            AACDEC_DPRINT("%d ::Comp:  >>>> InputBuffHeader[%d]->pBuffer = %p\n",
+                          __LINE__, i, pTemp->pBuffer);
+            AACDEC_DPRINT("%d ::Comp: Ip : pTemp_lcml[%d] = %p\n", __LINE__, i, pTemp_lcml);
 
-        pTemp_lcml++;
+            pTemp_lcml++;
+        }
     }
+    if(indexport == 1 || indexport == -1){
 
-    size_lcml = nOpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
-    AACDEC_OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,AACD_LCML_BUFHEADERTYPE);
-    pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT_AACDEC] = pTemp_lcml;
+        size_lcml = nOpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
+        AACDEC_OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,AACD_LCML_BUFHEADERTYPE);
+        pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT_AACDEC] = pTemp_lcml;
 
-    for (i=0; i<nOpBuf; i++) {
-        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
-        pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
+        for (i=0; i<nOpBuf; i++) {
+            pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+            pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
 
-        pTemp->nAllocLen = nOpBufSize;
-        pTemp->nFilledLen = nOpBufSize;
-        pTemp->nVersion.s.nVersionMajor = AACDEC_MAJOR_VER;
-        pTemp->nVersion.s.nVersionMinor = AACDEC_MINOR_VER;
+            pTemp->nAllocLen = nOpBufSize;
+            pTemp->nFilledLen = nOpBufSize;
+            pTemp->nVersion.s.nVersionMajor = AACDEC_MAJOR_VER;
+            pTemp->nVersion.s.nVersionMinor = AACDEC_MINOR_VER;
 
-        pComponentPrivate->nVersion = pTemp->nVersion.nVersion;
+            pComponentPrivate->nVersion = pTemp->nVersion.nVersion;
 
-        pTemp->pPlatformPrivate = pHandle->pComponentPrivate;
-        pTemp->nTickCount = NOT_USED_AACDEC;
+            pTemp->pPlatformPrivate = pHandle->pComponentPrivate;
+            pTemp->nTickCount = NOT_USED_AACDEC;
 
-        pTemp_lcml->pBufHdr = pTemp;
-        pTemp_lcml->eDir = OMX_DirOutput;
-        pTemp_lcml->pOtherParams[i] = NULL;
+            pTemp_lcml->pBufHdr = pTemp;
+            pTemp_lcml->eDir = OMX_DirOutput;
+            pTemp_lcml->pOtherParams[i] = NULL;
 
-        AACDEC_OMX_MALLOC_SIZE(pTemp_lcml->pOpParam,
-                             (sizeof(AACDEC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
-                             AACDEC_UAlgOutBufParamStruct);
-        ptr = (char*)pTemp_lcml->pOpParam;
-        ptr += EXTRA_BYTES;
-        pTemp_lcml->pOpParam = (AACDEC_UAlgOutBufParamStruct*)ptr;
+            AACDEC_OMX_MALLOC_SIZE(pTemp_lcml->pOpParam,
+                                   (sizeof(AACDEC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
+                                   AACDEC_UAlgOutBufParamStruct);
+            ptr = (char*)pTemp_lcml->pOpParam;
+            ptr += EXTRA_BYTES;
+            pTemp_lcml->pOpParam = (AACDEC_UAlgOutBufParamStruct*)ptr;
 
-        pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
+            pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
 
-        pTemp->nFlags = NORMAL_BUFFER_AACDEC;
-        ((AACDEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
-        AACDEC_DPRINT("%d ::Comp:  >>>>>>>>>>>>> OutBuffHeader[%d] = %p\n",
-                      __LINE__, i, pTemp);
-        AACDEC_DPRINT("%d ::Comp:  >>>> OutBuffHeader[%d]->pBuffer = %p\n",
-                      __LINE__, i, pTemp->pBuffer);
-        AACDEC_DPRINT("%d ::Comp: Op : pTemp_lcml[%d] = %p\n", __LINE__, i, pTemp_lcml);
-        pTemp_lcml++;
+            pTemp->nFlags = NORMAL_BUFFER_AACDEC;
+            ((AACDEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
+            AACDEC_DPRINT("%d ::Comp:  >>>>>>>>>>>>> OutBuffHeader[%d] = %p\n",
+                          __LINE__, i, pTemp);
+            AACDEC_DPRINT("%d ::Comp:  >>>> OutBuffHeader[%d]->pBuffer = %p\n",
+                          __LINE__, i, pTemp->pBuffer);
+            AACDEC_DPRINT("%d ::Comp: Op : pTemp_lcml[%d] = %p\n", __LINE__, i, pTemp_lcml);
+            pTemp_lcml++;
+        }
     }
     pComponentPrivate->bPortDefsAllocated = 1;
 

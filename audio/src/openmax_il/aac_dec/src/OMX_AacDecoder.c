@@ -326,7 +326,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 #ifdef ANDROID
 /* force to use frame mode always because opencore does not call SetConfig */
-    pComponentPrivate->framemode = 1;
+    pComponentPrivate->framemode = 0;
 #endif
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
