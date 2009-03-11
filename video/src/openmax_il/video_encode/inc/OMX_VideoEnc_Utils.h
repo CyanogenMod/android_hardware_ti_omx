@@ -105,6 +105,26 @@
 #define  VIDENC_TIMEOUT_USEC 0;
 
 /*
+ * Definition of capabilities index and structure
+ * Needed to inform OpenCore about component capabilities.
+ */
+
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+/* OMX COMPONENT CAPABILITY RELATED MEMBERS*/
+OMX_BOOL iIsOMXComponentMultiThreaded;
+OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+OMX_BOOL iOMXComponentSupportsPartialFrames;
+OMX_BOOL iOMXComponentUsesNALStartCode;
+OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+OMX_BOOL iOMXComponentUsesFullAVCFrames;
+} PV_OMXComponentCapabilityFlagsType;
+
+/*
  * Redirects control flow in an error situation.
  * The OMX_CONF_CMD_BAIL label is defined inside the calling function.
  */
@@ -609,6 +629,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE{
 	#endif
 	OMX_BOOL bPreempted;
 	OMX_VIDEO_CODINGTYPE compressionFormats[3];
+	PV_OMXComponentCapabilityFlagsType* pCapabilityFlags;
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);

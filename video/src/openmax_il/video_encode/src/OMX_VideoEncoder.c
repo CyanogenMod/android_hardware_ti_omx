@@ -503,6 +503,10 @@ sDynamicFormat = getenv("FORMAT");
                   sizeof(OMX_VIDEO_PARAM_MOTIONVECTORTYPE),
                   OMX_VIDEO_PARAM_MOTIONVECTORTYPE, 
                   pMemoryListHead);
+    VIDENC_MALLOC(pComponentPrivate->pCapabilityFlags,
+                  sizeof(PV_OMXComponentCapabilityFlagsType),
+                  PV_OMXComponentCapabilityFlagsType,
+                  pMemoryListHead);
 
     /* Set pPortParamType defaults */
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pPortParamType, OMX_PORT_PARAM_TYPE);
@@ -827,9 +831,15 @@ sDynamicFormat = getenv("FORMAT");
 	pCompPortOut->pBitRateType->eControlRate = OMX_Video_ControlRateConstant;
 	pCompPortOut->pBitRateType->nTargetBitrate = 64000;
 
-
-
-
+    /*set the capability Flags needed by Opencore*/
+    pComponentPrivate->pCapabilityFlags->iIsOMXComponentMultiThreaded=OMX_TRUE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentCanHandleIncompleteFrames=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsExternalInputBufferAlloc=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsExternalOutputBufferAlloc=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsMovableInputBuffers=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsPartialFrames=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentUsesFullAVCFrames=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentUsesNALStartCode=OMX_FALSE;
 
 #ifndef UNDER_CE
     /* Initialize Mutex for Buffer Tracking */
@@ -1576,7 +1586,16 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
        //not supported yet
        case OMX_IndexConfigCommonRotate:
            break;
-        default:
+       case PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+           pTmp = memcpy(ComponentParameterStructure,
+                          pComponentPrivate->pCapabilityFlags,
+                          sizeof(PV_OMXComponentCapabilityFlagsType));
+            if (pTmp == NULL)
+            {
+                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            }
+            break;
+       default:
             eError = OMX_ErrorUnsupportedIndex;
             break;
     }
