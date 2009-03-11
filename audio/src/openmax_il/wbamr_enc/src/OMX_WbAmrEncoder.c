@@ -328,8 +328,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     WBAMRENC_OMX_MALLOC(pComponentPrivate->pCompPort[WBAMRENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_WBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[WBAMRENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
 
-	pComponentPrivate->bPreempted = OMX_FALSE; 
-	
+    pComponentPrivate->bPreempted = OMX_FALSE; 
+    
     /* Set input port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[WBAMRENC_INPUT_PORT]->pPortFormat;
     OMX_WBCONF_INIT_STRUCT(pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
@@ -407,7 +407,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->amrIf2Bytes[13] = WBAMRENC_FRAME_SIZE_0;
     pComponentPrivate->amrIf2Bytes[14] = WBAMRENC_FRAME_SIZE_1;
     pComponentPrivate->amrIf2Bytes[15] = WBAMRENC_FRAME_SIZE_1;
-	
+    
     pComponentPrivate->pMarkBuf = NULL;
     pComponentPrivate->pMarkData = NULL;
     pComponentPrivate->nEmptyBufferDoneCount = 0;
@@ -432,7 +432,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->nNumOfFramesSent = 0;
 
     pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
-	pComponentPrivate->bDspStoppedWhileExecuting 	= OMX_FALSE;
+    pComponentPrivate->bDspStoppedWhileExecuting    = OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->nOutStandingEmptyDones = 0;    
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
@@ -470,7 +470,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bIsInvalidState = OMX_FALSE;    
 
 #ifdef RESOURCE_MANAGER_ENABLED
-	eError = RMProxy_NewInitalize();
+    eError = RMProxy_NewInitalize();
     WBAMRENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
     if (eError != OMX_ErrorNone) {
         WBAMRENC_EPRINT("%d :: Error returned from loading ResourceManagerProxy thread\n",__LINE__);
@@ -828,7 +828,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamAudioAmr:
-        {                                
+        {                            
             WBAMRENC_DPRINT("%d :: GetParameter OMX_IndexParamAudioAmr \n",__LINE__);
             memcpy(ComponentParameterStructure, pComponentPrivate->amrParams, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
             pCompAmrParam = (OMX_AUDIO_PARAM_AMRTYPE *)ComponentParameterStructure;
@@ -1022,16 +1022,16 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                 memcpy(((WBAMRENC_COMPONENT_PRIVATE *)
                         pHandle->pComponentPrivate)->amrParams, pCompAmrParam, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
 
-				if (pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatConformance) {
-			        pComponentPrivate->frameMode = WBAMRENC_FORMATCONFORMANCE;
-			    } 
-			    else if(pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatFSF){
-				    pComponentPrivate->frameMode = WBAMRENC_MIMEMODE;
-				}
-				else {
-				    pComponentPrivate->frameMode = WBAMRENC_IF2;
-				}
-					
+                if (pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatConformance) {
+                    pComponentPrivate->frameMode = WBAMRENC_FORMATCONFORMANCE;
+                } 
+                else if(pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatFSF){
+                    pComponentPrivate->frameMode = WBAMRENC_MIMEMODE;
+                }
+                else {
+                    pComponentPrivate->frameMode = WBAMRENC_IF2;
+                }
+                    
             }
             else {
                 WBAMRENC_EPRINT("%d :: OMX_ErrorBadPortIndex from SetParameter",__LINE__);
@@ -1599,7 +1599,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     close(pComponentPrivate->fdread);
 #endif
 #ifdef RESOURCE_MANAGER_ENABLED
-	eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_WBAMR_Encoder_COMPONENT, 0, 3456, NULL);
+    eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_WBAMR_Encoder_COMPONENT, 0, 3456, NULL);
 
     if (eError != OMX_ErrorNone) {
         WBAMRENC_EPRINT ("%d ::Error returned from destroy ResourceManagerProxy thread\n",
@@ -1728,17 +1728,17 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     WBAMRENC_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     WBAMRENC_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, nSizeBytes + 256,OMX_U8);
 
-	if (pBufferHeader->pBuffer == NULL) {
-		/* Free previously allocated memory before bailing */
-		if (pBufferHeader) {
-			newfree(pBufferHeader);
-			pBufferHeader = NULL;
-		}
-		eError = OMX_ErrorInsufficientResources;
-		goto EXIT;
-	}
+    if (pBufferHeader->pBuffer == NULL) {
+        /* Free previously allocated memory before bailing */
+        if (pBufferHeader) {
+            newfree(pBufferHeader);
+            pBufferHeader = NULL;
+        }
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
 
-	pBufferHeader->pBuffer += 128;
+    pBufferHeader->pBuffer += 128;
 
     if (nPortIndex == WBAMRENC_INPUT_PORT) {
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1770,20 +1770,20 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     if (((pComponentPrivate->pPortDef[WBAMRENC_OUTPUT_PORT]->bPopulated == 
-            pComponentPrivate->pPortDef[WBAMRENC_OUTPUT_PORT]->bEnabled)&&
+          pComponentPrivate->pPortDef[WBAMRENC_OUTPUT_PORT]->bEnabled)&&
          (pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]->bPopulated == 
-            pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]->bEnabled) &&
+          pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]->bEnabled) &&
          (pComponentPrivate->InLoaded_readytoidle)))
-    {
-        pComponentPrivate->InLoaded_readytoidle = 0;                           
+        {
+            pComponentPrivate->InLoaded_readytoidle = 0;                           
 #ifndef UNDER_CE
-        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+            pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
+            pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
+            pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
 #else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
+            OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
 #endif
-    }
+        }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -1961,17 +1961,17 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     if ((!pComponentPrivate->pInputBufferList->numBuffers &&
          !pComponentPrivate->pOutputBufferList->numBuffers) &&
         pComponentPrivate->InIdle_goingtoloaded)
-    {
+        {
     
-        pComponentPrivate->InIdle_goingtoloaded = 0;                  
+            pComponentPrivate->InIdle_goingtoloaded = 0;                  
 #ifndef UNDER_CE
-        pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
+            pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
+            pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
 #else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
+            OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
 #endif
-    }
+        }
 
     if (pComponentPrivate->bDisableCommandPending && 
         (pComponentPrivate->pInputBufferList->numBuffers + 
