@@ -314,6 +314,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     OMX_MALLOC_STRUCT(pComponentPrivate->pH264, OMX_VIDEO_PARAM_AVCTYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     OMX_MALLOC_STRUCT(pComponentPrivate->pH263, OMX_VIDEO_PARAM_H263TYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     OMX_MALLOC_STRUCT(pComponentPrivate->pWMV, OMX_VIDEO_PARAM_WMVTYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
+    OMX_MALLOC_STRUCT(pComponentPrivate->pDeblockingParamType, OMX_PARAM_DEBLOCKINGTYPE, pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     
     OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->cComponentName, char, VIDDEC_MAX_NAMESIZE + 1,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     if (pComponentPrivate->cComponentName == NULL) {
@@ -1381,6 +1382,11 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             
             break;
 #endif
+        case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
+        {
+            memcpy(ComponentParameterStructure, pComponentPrivate->pDeblockingParamType, sizeof(OMX_PARAM_DEBLOCKINGTYPE));
+            break;
+        }
         default:
             eError = OMX_ErrorUnsupportedIndex;
             break;
@@ -1709,6 +1715,21 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
             }
             break;
         }
+        case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
+        {
+            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                    pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
+                    pComponentPrivate->pDeblockingParamType->bDeblocking = 
+                        ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;
+                    eError = VIDDEC_Set_Debocking(pComponentPrivate);
+                break;
+            }
+            else {
+                eError = OMX_ErrorUnsupportedIndex;
+                break;
+            }
+        }
+
         case OMX_IndexParamVideoMacroblocksPerFrame:
         case OMX_IndexParamNumAvailableStreams:
         case OMX_IndexParamActiveStream:
@@ -2833,6 +2854,10 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     if(pComponentPrivate->pWMV != NULL) {
         free(pComponentPrivate->pWMV);
         pComponentPrivate->pWMV = NULL;
+    }
+    if(pComponentPrivate->pDeblockingParamType != NULL) {
+        free(pComponentPrivate->pDeblockingParamType);
+        pComponentPrivate->pDeblockingParamType = NULL;
     }
     if(pComponentPrivate->cComponentName != NULL) {
         free(pComponentPrivate->cComponentName);
