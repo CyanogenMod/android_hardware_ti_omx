@@ -174,8 +174,6 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_U8 nBufferCount = -1;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    JPEGDEC_DPRINT("Entering function AllocateBuffer_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -183,18 +181,23 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
     pCompPort = pComponentPrivate->pCompPort[nPortIndex];
 
-    JPEGDEC_DPRINT("In AllocateBuffer_JPEGDec %d %d %d\n", nBufferCount, pPortDef->nBufferCountActual, nPortIndex);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering function AllocateBuffer_JPEGDec\n");
+
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "In AllocateBuffer_JPEGDec %d %lu %lu\n", 
+	    nBufferCount, pPortDef->nBufferCountActual, nPortIndex);
 
     if (nBufferCount >= pPortDef->nBufferCountActual) {
         eError = OMX_ErrorInsufficientResources;
-        JPEGDEC_DPRINT(" try to allocate more buffers that the port supports\n");
-        goto EXIT;     
+        OMX_PRBUFFER4(pComponentPrivate->dbg, " try to allocate more buffers that the port supports\n");
+	goto EXIT;
     }
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
         OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr, OMX_BUFFERHEADERTYPE)
         OMX_CONF_INIT_STRUCT(pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr, OMX_BUFFERHEADERTYPE);
-        JPEGDEC_DPRINT("pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr = %p\n", pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr = %p\n", pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr);
         pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nOutputPortIndex = OMX_NOPORT;
         pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nInputPortIndex = pPortDef->nPortIndex;
         pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nSize = sizeof(OMX_BUFFERHEADERTYPE);
@@ -210,7 +213,7 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
         OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr, OMX_BUFFERHEADERTYPE);
         OMX_CONF_INIT_STRUCT(pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr, OMX_BUFFERHEADERTYPE);
-        JPEGDEC_DPRINT("pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBuffCount]->pBufferHdr = %p\n", pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBuffCount]->pBufferHdr = %p\n", pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr);
         pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nOutputPortIndex = pPortDef->nPortIndex;
         pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nInputPortIndex = OMX_NOPORT;
         pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->nSize = sizeof(OMX_BUFFERHEADERTYPE);
@@ -220,12 +223,11 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
         pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->bAllocbyComponent = OMX_TRUE;
 
         *pBuffHead = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr;
-        JPEGDEC_DPRINT("JPEG-DEC: %d\n", __LINE__);
 
     }
     else {
-        eError = OMX_ErrorBadPortIndex;
-        goto EXIT;
+	eError = OMX_ErrorBadPortIndex;
+	goto EXIT;
     }
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
@@ -253,15 +255,15 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
     }
     else {
-        eError = OMX_ErrorBadPortIndex;
-        goto EXIT;
+	eError = OMX_ErrorBadPortIndex;
+	goto EXIT;
     }
 
     eError = Allocate_DSPResources_JPEGDec(pComponentPrivate, nPortIndex);
     if (eError != OMX_ErrorNone)    {
-        JPEGDEC_DPRINT("OMX_ErrorInsufficientResources\n");
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+	OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorInsufficientResources\n");
+	eError = OMX_ErrorInsufficientResources;
+	goto EXIT;
     }
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
@@ -287,9 +289,8 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
             pthread_mutex_lock(&(pComponentPrivate->mJpegDecMutex));
             pthread_cond_signal(&(pComponentPrivate->sPortPopulated_cond));
             pthread_mutex_unlock(&(pComponentPrivate->mJpegDecMutex));
-            JPEGDEC_DPRINT(" Port [%d] Populated!\n", nPortIndex);
+	    OMX_PRINT2(pComponentPrivate->dbg, " Port [%lu] Populated!\n", nPortIndex); 
     }
-        JPEGDEC_DPRINT("JPEG-DEC: %d\n", __LINE__);
 
 EXIT:
     return eError;
@@ -319,25 +320,28 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_U8* pTemp;
     OMX_U8 nBufferCount = -1;
 
-    JPEGDEC_DPRINT("JPEG-D: Entering funtion FreeBuffer_JPEGDec %d %p\n", nPortIndex, pBuffHead);
-
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pBuffHead);
 
     if (nPortIndex != 1 && nPortIndex != 0) {
-        eError = OMX_ErrorBadPortIndex;
-        goto EXIT;    }
-
+	    eError = OMX_ErrorBadPortIndex;
+	    goto EXIT;
+    }
 
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);  
+
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEG-D: Entering funtion FreeBuffer_JPEGDec %lu %p\n", nPortIndex, pBuffHead);
+    
     if(pComponentPrivate->nCurState == OMX_StateLoaded){
         eError = OMX_ErrorIncorrectStateOperation;
-        goto EXIT;
+	goto EXIT;
     }
     pPortDef = pComponentPrivate->pCompPort[nPortIndex]->pPortDef;
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
-    JPEGDEC_DPRINT("Trying to Free Header %x\nBuffer %x\n", pBuffHead, pBuffHead->pBuffer);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "Trying to Free Header %p\nBuffer %p\n", pBuffHead, pBuffHead->pBuffer);
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
 
@@ -362,8 +366,8 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
         }
     }
     else {
-        eError = OMX_ErrorBadPortIndex;
-        goto EXIT;
+        eError = OMX_ErrorBadPortIndex; 
+	goto EXIT;
     }
 
     if (pBuffPrivate->bAllocbyComponent == OMX_TRUE) {
@@ -376,7 +380,7 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
                               PERF_ModuleMemory);
 #endif
 
-            JPEGDEC_DPRINT("INTERNAL BUFFER USED , trying to free it.\n");
+            OMX_PRBUFFER1(pComponentPrivate->dbg, "INTERNAL BUFFER USED , trying to free it.\n");
             pBuffHead->pBuffer -= 128;
             free(pBuffHead->pBuffer);
             pBuffHead->pBuffer = NULL;
@@ -389,7 +393,7 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     }
 
         
-        JPEGDEC_DPRINT("Current state is %d and To State is %d\n", pComponentPrivate->nCurState, pComponentPrivate->nToState);
+    OMX_PRSTATE2(pComponentPrivate->dbg, "Current state is %d and To State is %d\n", pComponentPrivate->nCurState, pComponentPrivate->nToState);
         if ( pPortDef->bEnabled && 
             ((pComponentPrivate->nCurState == OMX_StateIdle && pComponentPrivate->nToState != OMX_StateLoaded) ||
             (pComponentPrivate->nCurState == OMX_StateExecuting  || 
@@ -405,10 +409,10 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
     nBufferCount = --pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
 
-    JPEGDEC_DPRINT("nBufferCount %d\n", nBufferCount);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "nBufferCount %d\n", nBufferCount);
     if (nBufferCount == 0) {
         pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated = OMX_FALSE;
-        JPEGDEC_DPRINT("port %d is %d\n", nPortIndex, pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "port %lu is %u\n", nPortIndex, pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated);
         pthread_mutex_lock(&(pComponentPrivate->mJpegDecMutex));
         pthread_cond_signal(&(pComponentPrivate->sPortPopulated_cond));
         pthread_mutex_unlock(&(pComponentPrivate->mJpegDecMutex));
@@ -435,8 +439,8 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
                                                 NULL);              
         }
     }
-EXIT:
-    JPEGDEC_DPRINT("Exit from FreeBuffer function error = %x\n", eError);
+EXIT: 
+    OMX_PRINT1(pComponentPrivate->dbg, "Exit from FreeBuffer function error = %x\n", eError);
     return eError;
 }   /* End of FreeBuffer_JPEGDec */
 
@@ -469,13 +473,13 @@ static OMX_ERRORTYPE UseBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_HANDLETYPE hTunnelComponent;
     OMX_U8 nBufferCount = -1;
 
-    JPEGDEC_DPRINT("Entering funtion UseBuffer_JPEGDec\n");
-
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     pPortDef = pComponentPrivate->pCompPort[nPortIndex]->pPortDef;
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
     hTunnelComponent = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->hTunnelComponent;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);                                                                                OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion UseBuffer_JPEGDec\n");
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -494,8 +498,8 @@ static OMX_ERRORTYPE UseBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
         *ppBufferHdr = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr;
     }
     else {
-        eError = OMX_ErrorBadPortIndex;
-        goto EXIT;
+	eError = OMX_ErrorBadPortIndex;
+	goto EXIT;
     }
     pComponentPrivate->pCompPort[nPortIndex]->pBufferPrivate[nBufferCount]->bAllocbyComponent = OMX_FALSE;
 
@@ -542,9 +546,9 @@ static OMX_ERRORTYPE UseBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
     eError = Allocate_DSPResources_JPEGDec(pComponentPrivate, nPortIndex);
     if (eError != OMX_ErrorNone) {
-        JPEGDEC_DPRINT("Error: Allocate_DSPResources_JPEGDec failed\n");
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+	OMX_PRDSP4(pComponentPrivate->dbg, "Error: Allocate_DSPResources_JPEGDec failed\n");
+	eError = OMX_ErrorInsufficientResources;
+	goto EXIT;
     }
     /* increment buffer count */
 
@@ -582,10 +586,15 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
 
-    JPEGDEC_DPRINT("Entering funtion OMX_ComponentInit\n");
     OMX_MALLOC_STRUCT(pHandle->pComponentPrivate, JPEGDEC_COMPONENT_PRIVATE);
 
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_JPEGDEC");
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion OMX_ComponentInit\n");
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERF = PERF_Create(PERF_FOURS("JPD "), PERF_ModuleLLMM | PERF_ModuleImageDecode);
@@ -788,17 +797,17 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
     /*Initialize Component mutex*/
     if (pthread_mutex_init(&(pComponentPrivate->mJpegDecMutex), NULL) != 0)
     {
-        perror("Error at Initialize fill this buffer mutex condition");
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+	OMX_TRACE4(pComponentPrivate->dbg, "Error at Initialize fill this buffer mutex condition");
+	eError = OMX_ErrorHardware;
+	goto EXIT;
     }
     
     /* initialize a condition variable to its default value */ 
     if (pthread_cond_init(&(pComponentPrivate->sStop_cond), NULL) != 0)
     {
-        perror("Error at Initialize fill this buffer mutex condition");
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+	OMX_TRACE4(pComponentPrivate->dbg, "Error at Initialize fill this buffer mutex condition");
+	eError = OMX_ErrorHardware;
+	goto EXIT;
     }
 
 #ifdef KHRONOS_1_1
@@ -810,8 +819,8 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
     /* load the ResourceManagerProxy thread */
     eError = RMProxy_NewInitalizeEx(OMX_COMPONENTTYPE_IMAGE);
     if (eError != OMX_ErrorNone) {
-        JPEGDEC_DPRINT ("Error returned from loading ResourceManagerProxy thread: %x\n", eError);
-        goto EXIT;
+	OMX_PRMGR4(pComponentPrivate->dbg, "Error returned from loading ResourceManagerProxy thread: %x\n", eError);                
+	goto EXIT;
     }
 #endif
 
@@ -875,18 +884,20 @@ static OMX_ERRORTYPE SetCallbacks_JPEGDec(OMX_HANDLETYPE pComponent,
     OMX_COMPONENTTYPE *pHandle = NULL;
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion SetCallbacks_JPEGDec\n");
-
     OMX_CHECK_PARAM(pComponent);
-
-    if (pCallBacks == NULL) {
-        eError = OMX_ErrorBadParameter;
-        JPEGDEC_DPRINT ("Received the empty callbacks from the application\n");
-        goto EXIT;
-    }
 
     pHandle = (OMX_COMPONENTTYPE*)pComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion SetCallbacks_JPEGDec\n");
+
+    if (pCallBacks == NULL) {
+        eError = OMX_ErrorBadParameter;
+        OMX_ERROR5(pComponentPrivate->dbg, "Entering funtion SetCallbacks_JPEGDec\n"); 
+        goto EXIT;
+    }
 
     /* Copy the callbacks of the application to the component private  */
     OMX_MEMCPY_CHECK(&(pComponentPrivate->cbInfo));
@@ -926,7 +937,7 @@ static OMX_ERRORTYPE GetComponentVersion_JPEGDec(OMX_HANDLETYPE hComp,
     OMX_COMPONENTTYPE    * pHandle           = NULL;
     JPEGDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_U8 *pTemp = NULL;
-    JPEGDEC_DPRINT("Entering funtion GetComponentVersion_JPEGDec\n");
+
     if (!hComp || !szComponentName || !pComponentVersion || !pSpecVersion || !pComponentUUID) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
@@ -937,6 +948,10 @@ static OMX_ERRORTYPE GetComponentVersion_JPEGDec(OMX_HANDLETYPE hComp,
         goto EXIT;
     }
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion GetComponentVersion_JPEGDec\n");
 
     strncpy(szComponentName, pComponentPrivate->cComponentName, COMP_MAX_NAMESIZE);
     pTemp = memcpy(pComponentVersion, &(pComponentPrivate->ComponentVersion.s), sizeof(pComponentPrivate->ComponentVersion.s));
@@ -972,23 +987,25 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = NULL;
-    JPEGDEC_COMPONENT_PRIVATE *pCompPrivate = NULL;
+    JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefIn= NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefOut = NULL;
     OMX_MARKTYPE* pMarkType = NULL;
     OMX_COMMANDTYPE eCmd = OMX_CustomCommandStopThread;
     int nRet = 0;
 
-    JPEGDEC_DPRINT("Entering funtion SendCommand_JPEGDec %d %d\n", Cmd, nParam);
-
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
-    pCompPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-    pPortDefIn = pCompPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef;
-    pPortDefOut = pCompPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef;
+    pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    pPortDefIn = pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef;
+    pPortDefOut = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef;
 
-    if (pCompPrivate->nCurState == OMX_StateInvalid) {
-        JPEGDEC_DPRINT("INVALID STATE\n");
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion SendCommand_JPEGDec %u %lu\n", Cmd, nParam);
+
+    if (pComponentPrivate->nCurState == OMX_StateInvalid) {
+	OMX_PRSTATE4(pComponentPrivate->dbg, "INVALID STATE\n"); 
         eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
@@ -996,44 +1013,44 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
 
     case OMX_CommandStateSet:
         eCmd = OMX_CommandStateSet;
-            pCompPrivate->nToState = nParam;
-            JPEGDEC_DPRINT("To state %d\n", pCompPrivate->nToState);
+            pComponentPrivate->nToState = nParam;
+            OMX_PRSTATE2(pComponentPrivate->dbg, "To state %d\n", pComponentPrivate->nToState);
         break;
 
     case OMX_CommandFlush:
         if ((nParam != JPEGDEC_INPUT_PORT) &&
             (nParam != JPEGDEC_OUTPUT_PORT) &&
-            (nParam != -1)) {
+	    ((int)nParam != -1)) {
             eError = OMX_ErrorBadPortIndex;
             goto EXIT;
         }
         eCmd = OMX_CommandFlush;
-        JPEGDEC_DPRINT("get OMX_CommandFlush\n");
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "get OMX_CommandFlush\n");
         break;
 
     case OMX_CommandPortDisable:
-        JPEGDEC_DPRINT("Get port disable command %d\n", nParam);
-        if (nParam == JPEGDEC_INPUT_PORT  || nParam == -1) {
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "Get port disable command %lu\n", nParam);
+	if (nParam == JPEGDEC_INPUT_PORT  || (int)nParam == -1) {
             pPortDefIn->bEnabled = OMX_FALSE;
-            pCompPrivate->bInportDisableComplete = OMX_FALSE;
-            JPEGDEC_DPRINT("pPortDefIn->bEnabled %d\n", pPortDefIn->bEnabled);
+            pComponentPrivate->bInportDisableComplete = OMX_FALSE;
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "pPortDefIn->bEnabled %d\n", pPortDefIn->bEnabled);
         }
-        if (nParam == JPEGDEC_OUTPUT_PORT  || nParam == -1) {
+        if (nParam == JPEGDEC_OUTPUT_PORT  || (int)nParam == -1) {
                 pPortDefOut->bEnabled = OMX_FALSE;
-                pCompPrivate->bOutportDisableComplete = OMX_FALSE;
-                JPEGDEC_DPRINT("pPortDefIn->bEnabled %d\n", pPortDefIn->bEnabled);
+                pComponentPrivate->bOutportDisableComplete = OMX_FALSE;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "pPortDefIn->bEnabled %d\n", pPortDefIn->bEnabled);
         }
-        if ((nParam != JPEGDEC_INPUT_PORT) && (nParam != JPEGDEC_OUTPUT_PORT) && (nParam != -1)) {
+        if ((nParam != JPEGDEC_INPUT_PORT) && (nParam != JPEGDEC_OUTPUT_PORT) && ((int)nParam != -1)) {
             eError = OMX_ErrorBadParameter;
-            JPEGDEC_DPRINT("OMX_ErrorBadParameter\n");
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
             goto EXIT;
         }
 
         if (!pPortDefIn->bPopulated) {
-            pCompPrivate->bInportDisableComplete = OMX_TRUE;
-            JPEGDEC_DPRINT("JPEGDEC_INPUT_PORT: OMX_CommandPortDisable\n");
-            pCompPrivate->cbInfo.EventHandler (pCompPrivate->pHandle,
-                                               pCompPrivate->pHandle->pApplicationPrivate,
+            pComponentPrivate->bInportDisableComplete = OMX_TRUE;
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEGDEC_INPUT_PORT: OMX_CommandPortDisable\n");
+            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventCmdComplete,
                                                OMX_CommandPortDisable,
                                                JPEGDEC_INPUT_PORT,
@@ -1041,10 +1058,10 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
         }
 
         if (!pPortDefOut->bPopulated) {
-            pCompPrivate->bOutportDisableComplete = OMX_TRUE;
-            JPEGDEC_DPRINT("JPEGDEC_OUTPUT_PORT : OMX_CommandPortDisable\n");
-            pCompPrivate->cbInfo.EventHandler (pCompPrivate->pHandle,
-                            pCompPrivate->pHandle->pApplicationPrivate,
+            pComponentPrivate->bOutportDisableComplete = OMX_TRUE;
+            OMX_PRBUFFER1(pComponentPrivate->dbg, "JPEGDEC_OUTPUT_PORT : OMX_CommandPortDisable\n");
+            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
+                            pComponentPrivate->pHandle->pApplicationPrivate,
                             OMX_EventCmdComplete,
                             OMX_CommandPortDisable,
                             JPEGDEC_OUTPUT_PORT,
@@ -1054,13 +1071,13 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
         break;
 
     case OMX_CommandPortEnable:
-        if (nParam == JPEGDEC_INPUT_PORT  || nParam == -1) {
+	if (nParam == JPEGDEC_INPUT_PORT  || (int)nParam == -1) {
                 pPortDefIn->bEnabled = OMX_TRUE;
         }
-        if (nParam == JPEGDEC_OUTPUT_PORT  || nParam == -1) {
+        if (nParam == JPEGDEC_OUTPUT_PORT  || (int)nParam == -1) {
                     pPortDefOut->bEnabled = OMX_TRUE;
         }
-        if ((nParam != JPEGDEC_INPUT_PORT) && (nParam != JPEGDEC_OUTPUT_PORT) && (nParam != -1)) {
+        if ((nParam != JPEGDEC_INPUT_PORT) && (nParam != JPEGDEC_OUTPUT_PORT) && ((int)nParam != -1)) {
             eError = OMX_ErrorBadParameter;
             goto EXIT;
         }
@@ -1068,7 +1085,7 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
         break;
 
     case OMX_CommandMarkBuffer:
-        JPEGDEC_DPRINT("JPEGDEC: Entered switch - Command Mark Buffer\n");
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEGDEC: Entered switch - Command Mark Buffer\n");
         eCmd = OMX_CommandMarkBuffer;
         /* we can only mark buffers on input port */
         if ( nParam != JPEGDEC_INPUT_PORT && nParam != JPEGDEC_OUTPUT_PORT){
@@ -1076,41 +1093,41 @@ static OMX_ERRORTYPE SendCommand_JPEGDec(OMX_HANDLETYPE hComponent,
             goto EXIT;
         }
         pMarkType =(OMX_MARKTYPE*)pCmdData;
-        pCompPrivate->pMarkData = pMarkType->pMarkData;
-        pCompPrivate->hMarkTargetComponent = pMarkType->hMarkTargetComponent;
-        pCompPrivate->nMarkPort = nParam;
+        pComponentPrivate->pMarkData = pMarkType->pMarkData;
+        pComponentPrivate->hMarkTargetComponent = pMarkType->hMarkTargetComponent;
+        pComponentPrivate->nMarkPort = nParam;
         break;
 
     default:
         break;
     }
 
-    JPEGDEC_DPRINT("JPEGDEC: eCmd = %d\n",(int)eCmd);
+    OMX_PRINT1(pComponentPrivate->dbg, "JPEGDEC: eCmd = %d\n",(int)eCmd);
 
 #ifdef __PERF_INSTRUMENTATION__
-    PERF_SendingCommand(pCompPrivate->pPERF,
+    PERF_SendingCommand(pComponentPrivate->pPERF,
                         eCmd, (eCmd == OMX_CommandMarkBuffer) ? (OMX_U32) pCmdData : nParam,
                         PERF_ModuleComponent);
 #endif
 
-    nRet = write(pCompPrivate->nCmdPipe[1], &eCmd, sizeof(eCmd));
+    nRet = write(pComponentPrivate->nCmdPipe[1], &eCmd, sizeof(eCmd));
     if (nRet == -1) {
-        JPEGDEC_DPRINT("Failed to write into nCmdPipe\n");
+	    OMX_PRCOMM4(pComponentPrivate->dbg, "Failed to write into nCmdPipe\n");
     }
 
     /* this needs to be fixed */
     /* port index is redundant for mark buffer as we have 1 input port */
     if (eCmd == OMX_CommandMarkBuffer) {
-        nRet = write(pCompPrivate->nCmdDataPipe[1], &pCmdData, sizeof(OMX_PTR));
+        nRet = write(pComponentPrivate->nCmdDataPipe[1], &pCmdData, sizeof(OMX_PTR));
         if (nRet == -1) {
-            JPEGDEC_DPRINT("Failed to write into nCmdDataPipe, eCmd = MarkBuf\n");
+		OMX_PRCOMM4(pComponentPrivate->dbg, "Failed to write into nCmdDataPipe, eCmd = MarkBuf\n");
         }
     }
     else {
-        nRet = write(pCompPrivate->nCmdDataPipe[1], &nParam, sizeof(nParam));
-        JPEGDEC_DPRINT("write param %d to pipe\n", nParam);
+        nRet = write(pComponentPrivate->nCmdDataPipe[1], &nParam, sizeof(nParam));
+        OMX_PRCOMM2(pComponentPrivate->dbg, "write param %lu to pipe\n", nParam);
         if (nRet == -1) {
-            JPEGDEC_DPRINT("Failed to write into nCmdDataPipe\n");
+		OMX_PRCOMM4(pComponentPrivate->dbg, "Failed to write into nCmdDataPipe\n");
         }
     }
 
@@ -1140,12 +1157,14 @@ static OMX_ERRORTYPE GetParameter_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_COMPONENTTYPE *pComp = NULL;
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion GetParameter_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(ComponentParameterStructure);
     pComp = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pComp->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion GetParameter_JPEGDec\n"); 
 
     if (pComponentPrivate->nCurState == OMX_StateInvalid) {
         eError = OMX_ErrorIncorrectStateOperation;
@@ -1178,9 +1197,9 @@ static OMX_ERRORTYPE GetParameter_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
         break;
 
     case OMX_IndexParamPortDefinition:
-        JPEGDEC_DPRINT("get param %d\n", ((OMX_PARAM_PORTDEFINITIONTYPE *)(ComponentParameterStructure))->nPortIndex);
-        JPEGDEC_DPRINT(" port 0 enable: %d\n", pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->bEnabled);
-        JPEGDEC_DPRINT(" port 1 enable: %d\n", pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->bEnabled);
+	OMX_PRINT1(pComponentPrivate->dbg, "get param %lu\n", ((OMX_PARAM_PORTDEFINITIONTYPE *)(ComponentParameterStructure))->nPortIndex);
+	OMX_PRINT1(pComponentPrivate->dbg, " port 0 enable: %d\n", pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->bEnabled);
+        OMX_PRINT1(pComponentPrivate->dbg, " port 1 enable: %d\n", pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->bEnabled);
        if (((OMX_PARAM_PORTDEFINITIONTYPE *)(ComponentParameterStructure))->nPortIndex == pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nPortIndex) {
             memcpy(ComponentParameterStructure, pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
         }
@@ -1279,7 +1298,7 @@ static OMX_ERRORTYPE GetParameter_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
 
 EXIT:
-    JPEGDEC_DPRINT("EXIT\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "EXIT\n");
     return eError;
 }   /* End of GetParameter_JPEGDec */
 
@@ -1305,13 +1324,15 @@ static OMX_ERRORTYPE SetParameter_JPEGDec(OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     JPEGDEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion SetParameter_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pCompParam);
 
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion SetParameter_JPEGDec\n");
 
     if (pComponentPrivate->nCurState != OMX_StateLoaded) {
         eError = OMX_ErrorIncorrectStateOperation;
@@ -1517,25 +1538,27 @@ EXIT:
 /* ========================================================================== */
 static OMX_ERRORTYPE GetConfig_JPEGDec(OMX_HANDLETYPE hComp,
                                        OMX_INDEXTYPE nConfigIndex,
-                                       OMX_PTR pConfigStructure)
+                                       OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = NULL;
     JPEGDEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion GetConfig_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComp);
-    OMX_CHECK_PARAM(pConfigStructure);
+    OMX_CHECK_PARAM(ComponentConfigStructure);
     pHandle = (OMX_COMPONENTTYPE*)hComp;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion GetConfig_JPEGDec\n"); 
 
     switch (nConfigIndex) {
 
     case OMX_IndexConfigCommonScale:
     {
         int scale=0;
-        OMX_CONFIG_SCALEFACTORTYPE* pScaleFactor = (OMX_CONFIG_SCALEFACTORTYPE *)pConfigStructure;
+        OMX_CONFIG_SCALEFACTORTYPE* pScaleFactor = (OMX_CONFIG_SCALEFACTORTYPE *)ComponentConfigStructure;
         memcpy(pScaleFactor, pComponentPrivate->pScalePrivate, sizeof(OMX_CONFIG_SCALEFACTORTYPE));
 
         scale =(int)pScaleFactor->xWidth;
@@ -1579,9 +1602,15 @@ static OMX_ERRORTYPE GetConfig_JPEGDec(OMX_HANDLETYPE hComp,
 
     case OMX_IndexCustomProgressiveFactor:
     {
-        int *pnProgressiveFlag = (int*)pConfigStructure;
+        int *pnProgressiveFlag = (int*)ComponentConfigStructure;
         pnProgressiveFlag = (int*)pComponentPrivate->nProgressive;
         break;
+    }
+
+    case OMX_IndexCustomDebug: 
+    {
+	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+	break;
     }
 
     default:
@@ -1608,25 +1637,27 @@ EXIT:
 /* ========================================================================== */
 static OMX_ERRORTYPE SetConfig_JPEGDec(OMX_HANDLETYPE hComp,
                                        OMX_INDEXTYPE nConfigIndex,
-                                       OMX_PTR pConfigStructure)
+                                       OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = NULL;
     JPEGDEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion SetConfig_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComp);
-    OMX_CHECK_PARAM(pConfigStructure);
+    OMX_CHECK_PARAM(ComponentConfigStructure);
     pHandle = (OMX_COMPONENTTYPE*)hComp;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion SetConfig_JPEGDec\n"); 
 
     switch (nConfigIndex) {
 
     case OMX_IndexConfigCommonScale:
     {
         int scale=0;
-        OMX_CONFIG_SCALEFACTORTYPE* pScaleFactor = (OMX_CONFIG_SCALEFACTORTYPE *)pConfigStructure;
+        OMX_CONFIG_SCALEFACTORTYPE* pScaleFactor = (OMX_CONFIG_SCALEFACTORTYPE *)ComponentConfigStructure;
         scale =(int)pScaleFactor->xWidth;
 
         switch (scale)
@@ -1671,25 +1702,30 @@ static OMX_ERRORTYPE SetConfig_JPEGDec(OMX_HANDLETYPE hComp,
 
     case OMX_IndexCustomProgressiveFactor:
     {
-        int *pnProgressive = (int*)pConfigStructure;
+        int *pnProgressive = (int*)ComponentConfigStructure;
         pComponentPrivate->nProgressive = (int)*pnProgressive;
         break;
     }
 
     case OMX_IndexCustomInputFrameWidth:
     {
-        int *pnInputFrameWidth = (int*)pConfigStructure;
+        int *pnInputFrameWidth = (int*)ComponentConfigStructure;
         pComponentPrivate->nInputFrameWidth = (int)*pnInputFrameWidth;
         break;
     }
 
     case OMX_IndexCustomOutputColorFormat:
     {
-        int *pnOutputColorFormat = (int*)pConfigStructure;
+        int *pnOutputColorFormat = (int*)ComponentConfigStructure;
         pComponentPrivate->nOutputColorFormat = (int)*pnOutputColorFormat;
         break;
     }
 
+    case OMX_IndexCustomDebug:
+    {
+	OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+	break;
+    }
     default:
         eError = OMX_ErrorUnsupportedIndex;
         break;
@@ -1717,8 +1753,12 @@ static OMX_ERRORTYPE GetState(OMX_HANDLETYPE pComponent,
     OMX_COMPONENTTYPE *pHandle = NULL;
     OMX_CHECK_PARAM(pComponent);
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
+    JPEGDEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
+    pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate; 
 
-    JPEGDEC_DPRINT("Entering funtion GetState\n");
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);  
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion GetState\n"); 
 
     if (!pState) {
         eError = OMX_ErrorBadParameter;
@@ -1759,11 +1799,13 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     int nRet;
     int i;
 
-    JPEGDEC_DPRINT("Entering funtion EmptyThisBuffer %p\n", pBuffHead);
-
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion EmptyThisBuffer %p\n", pBuffHead);
 
     if ( pComponentPrivate->nCurState != OMX_StateExecuting && 
         pComponentPrivate->nCurState != OMX_StatePause && 
@@ -1788,9 +1830,9 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 
     pBuffPrivate = pBuffHead->pInputPortPrivate;
 
-    JPEGDEC_DPRINT("pBuffHead->nAllocLen = %d\n",(int)pBuffHead->nAllocLen);
-    JPEGDEC_DPRINT("pBuffHead->nFilledLen = %d\n",(int)pBuffHead->nFilledLen);
-    JPEGDEC_DPRINT("pBuffHead->nFlags = %d\n",(int)pBuffHead->nFlags);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nAllocLen = %d\n",(int)pBuffHead->nAllocLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFilledLen = %d\n",(int)pBuffHead->nFilledLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFlags = %d\n",(int)pBuffHead->nFlags);
 
     if ((pBuffHead->nVersion.s.nVersionMajor != 0x1) ||
         (pBuffHead->nVersion.s.nVersionMinor != 0x0) ||
@@ -1808,10 +1850,10 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     pComponentPrivate->nInPortIn ++;
 
     if (pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) {
-        for (i = 0; i < pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual; i ++) {
+	for (i = 0; i < (int)pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual; i ++) {
             if (pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->sBufferFlagTrack[i].buffer_id == 0xFFFFFFFF) 
             {
-              JPEGDEC_DPRINT("record buffer id in array %d\n", i);
+	      OMX_PRBUFFER1(pComponentPrivate->dbg, "record buffer id in array %d\n", i);
               pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->sBufferFlagTrack[i].flag = pBuffHead->nFlags;
               pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->sBufferFlagTrack[i].buffer_id = pComponentPrivate->nInPortIn;
               break;
@@ -1822,7 +1864,7 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
      /* mark the first buffer from input port after receiving mark buffer command */
      if (pComponentPrivate->nMarkPort == JPEGDEC_INPUT_PORT) {
          if (pComponentPrivate->pMarkData) {
-            JPEGDEC_DPRINT("get mark buffer command, mark buffer %p\n", pBuffHead);
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "get mark buffer command, mark buffer %p\n", pBuffHead);
             pBuffHead->pMarkData = pComponentPrivate->pMarkData;
             pBuffHead->hMarkTargetComponent = pComponentPrivate->hMarkTargetComponent;
             pComponentPrivate->pMarkData = NULL;
@@ -1832,7 +1874,7 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 
      /* if a buffer from input port is marked, record this port # in the buffer queue */
      if (pBuffHead->pMarkData) {
-         for (i = 0; i < pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual; i ++) {
+	 for (i = 0; i < (int)pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual; i ++) {
              if (pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->sBufferMarkTrack[i].buffer_id == 0xFFFFFFFF)
              {
                 JPEGDEC_BUFFERMARK_TRACK *pMarkTrack;
@@ -1840,7 +1882,7 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
                 pMarkTrack->buffer_id = pComponentPrivate->nInPortIn;
                 pMarkTrack->pMarkData = pBuffHead->pMarkData;
                 pMarkTrack->hMarkTargetComponent = pBuffHead->hMarkTargetComponent;
-                JPEGDEC_DPRINT("mark buffer at ID %d\n", pComponentPrivate->nInPortIn);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "mark buffer at ID %lu\n", pComponentPrivate->nInPortIn);
                 break;
              }
          }
@@ -1860,7 +1902,7 @@ static OMX_ERRORTYPE EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 
     nRet = write (pComponentPrivate->nFilled_inpBuf_Q[1], &(pBuffHead), sizeof(pBuffHead));
     if (nRet == -1) {
-        JPEGDEC_DPRINT ("Error while writing to the nFilled_inpBuf_Q pipe\n");
+	    OMX_PRCOMM4(pComponentPrivate->dbg, "Error while writing to the nFilled_inpBuf_Q pipe\n");
     }
 
 EXIT:
@@ -1889,8 +1931,6 @@ static OMX_ERRORTYPE FillThisBuffer_JPEGDec(OMX_HANDLETYPE pComponent,
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
     int nRet;
 
-    JPEGDEC_DPRINT("Entering funtion FillThisBuffer_JPEGDec\n");
-
     if (pBuffHead == NULL) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
@@ -1900,7 +1940,10 @@ static OMX_ERRORTYPE FillThisBuffer_JPEGDec(OMX_HANDLETYPE pComponent,
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     pBuffPrivate = pBuffHead->pOutputPortPrivate;
-    JPEGDEC_DPRINT("OMx Enter\n");
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion FillThisBuffer_JPEGDec\n"); 
 
     if ( pBuffHead->nSize != sizeof(OMX_BUFFERHEADERTYPE) ) {
 
@@ -1910,7 +1953,7 @@ static OMX_ERRORTYPE FillThisBuffer_JPEGDec(OMX_HANDLETYPE pComponent,
 
     if (pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->bEnabled == OMX_FALSE) {
         eError = OMX_ErrorIncorrectStateOperation;
-        JPEGDEC_DPRINT("eError = OMX_ErrorIncorrectStateOperation\n");
+        OMX_PRSTATE4(pComponentPrivate->dbg, "eError = OMX_ErrorIncorrectStateOperation\n");
         goto EXIT;
         }
 
@@ -1925,7 +1968,7 @@ static OMX_ERRORTYPE FillThisBuffer_JPEGDec(OMX_HANDLETYPE pComponent,
         goto EXIT;
     }
 
-    JPEGDEC_DPRINT("pBuffHead->nOutputPortIndex %d\n", pBuffHead->nOutputPortIndex);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nOutputPortIndex %lu\n", pBuffHead->nOutputPortIndex);
 
     if (pBuffHead->nOutputPortIndex != 0x1) {
             eError = OMX_ErrorBadPortIndex;
@@ -1953,7 +1996,7 @@ static OMX_ERRORTYPE FillThisBuffer_JPEGDec(OMX_HANDLETYPE pComponent,
     pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_COMPONENT_IN;
     nRet = write (pComponentPrivate->nFree_outBuf_Q[1], &(pBuffHead), sizeof (pBuffHead));
     if (nRet == -1) {
-        JPEGDEC_DPRINT ("Error while writing in nFree_outBuf_Q pipe\n");
+	    OMX_PRCOMM4(pComponentPrivate->dbg, "Error while writing in nFree_outBuf_Q pipe\n");
     }
 
 EXIT:
@@ -1975,26 +2018,41 @@ OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE hComponent)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = NULL;
+    JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL; 
+    struct OMX_TI_Debug dbg;
+
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
 
-    JPEGDEC_DPRINT("Entering funtion ComponentDeInit\n");
+    pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;          
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    dbg = pComponentPrivate->dbg;    
+
+    OMX_PRINT1(dbg, "Entering funtion ComponentDeInit\n");
+
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Boundary(pComponentPrivate->pPERF,
+	    PERF_BoundaryComplete | PERF_BoundaryCleanup);
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
 
     Free_ComponentResourcesJpegDec(pHandle->pComponentPrivate);
 
 #ifdef RESOURCE_MANAGER_ENABLED
     eError= RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Decoder_COMPONENT, 0, 3456, NULL);
     if (eError != OMX_ErrorNone) {
-            JPEGDEC_DPRINT("Cannot Free RMProxy Resources\n");                    
+        OMX_PRMGR4(dbg, "Cannot Free RMProxy Resources\n");                    
     }
     eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_IMAGE);
     if (eError != OMX_ErrorNone) {
-        JPEGDEC_DPRINT ("Error returned from destroy ResourceManagerProxy thread\n");
+	OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
     }
 #endif
 
 EXIT:
-    JPEGDEC_DPRINT("Error from Component DeInit = %d\n",eError);
+    OMX_PRINT1(dbg, "Error from Component DeInit = %d\n",eError);
+    OMX_DBG_CLOSE(dbg);
     return eError;
 } /* End of ComponentDeInit */
 
@@ -2018,8 +2076,13 @@ static OMX_ERRORTYPE VerifyTunnelConnection_JPEGDec(JPEGDEC_PORT_TYPE *pPort,
     /* 1.4 Check if input port is compatible with output port */
     OMX_PARAM_PORTDEFINITIONTYPE sPortDef;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    OMX_COMPONENTTYPE *pHandle = NULL;
+    JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL; 
+    pHandle = (OMX_COMPONENTTYPE *)hTunneledComp; 
+    pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
-    JPEGDEC_DPRINT("Entering funtion VerifyTunnelConnection_JPEGDec\n");
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion VerifyTunnelConnection_JPEGDec\n");
 
     sPortDef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     sPortDef.nVersion.s.nVersionMajor = 0x01;
@@ -2029,7 +2092,7 @@ static OMX_ERRORTYPE VerifyTunnelConnection_JPEGDec(JPEGDEC_PORT_TYPE *pPort,
     eError = OMX_GetParameter(hTunneledComp, OMX_IndexParamPortDefinition, &sPortDef);
 
     if (eError != OMX_ErrorNone) {
-        JPEGDEC_DPRINT("Error \n");
+	    OMX_PRCOMM4(pComponentPrivate->dbg, "Error \n");
         return eError;
     }
 
@@ -2072,6 +2135,7 @@ static OMX_ERRORTYPE VerifyTunnelConnection_JPEGDec(JPEGDEC_PORT_TYPE *pPort,
         pPort->nTunnelPort = 0;
         return OMX_ErrorPortsNotCompatible; /* Our current port is not set up correctly */
     }
+EXIT:
     return eError;
 }   /* End of VerifyTunnelConnection_JPEGDec */
 
@@ -2102,32 +2166,34 @@ static OMX_ERRORTYPE ComponentTunnelRequest_JPEGDec(OMX_IN OMX_HANDLETYPE hCompo
     OMX_PARAM_BUFFERSUPPLIERTYPE sBufferSupplier;
     JPEGDEC_PORT_TYPE *pPort = NULL;
 
-    JPEGDEC_DPRINT("Entering funtion ComponentTunnelRequest_JPEGDec\n");
-
     OMX_CHECK_PARAM(hComponent);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-    JPEGDEC_DPRINT("nPort = %d\n",nPort);
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion ComponentTunnelRequest_JPEGDec\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "nPort = %lu\n",nPort); 
 
     pPort = pComponentPrivate->pCompPort[nPort];
     if (pTunnelSetup == NULL || hTunneledComp == 0) {
         /* cancel previous tunnel */
         pPort->hTunnelComponent = 0;
         pPort->nTunnelPort = 0;
-        JPEGDEC_DPRINT("OMX_BufferSupplyUnspecified\n");
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "OMX_BufferSupplyUnspecified\n");
         pPort->pParamBufSupplier->eBufferSupplier = OMX_BufferSupplyUnspecified;
     }
     else {
         if (pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->eDir != OMX_DirInput && pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->eDir != OMX_DirOutput) {
            
-        JPEGDEC_DPRINT("OMX_ErrorBadParameter\n");
+	    OMX_PRBUFFER4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
             return OMX_ErrorBadParameter;
         }
 
         /* Check if the other component is developed by TI */
         if(IsTIOMXComponent(hTunneledComp) != OMX_TRUE) 
         {
-        JPEGDEC_DPRINT("OMX_ErrorTunnelingUnsupported\n");
+	    OMX_PRCOMM4(pComponentPrivate->dbg, "OMX_ErrorTunnelingUnsupported\n");
         eError = OMX_ErrorTunnelingUnsupported;
         goto EXIT;
         }
@@ -2143,7 +2209,7 @@ static OMX_ERRORTYPE ComponentTunnelRequest_JPEGDec(OMX_IN OMX_HANDLETYPE hCompo
             /* Component is the input (sink of data) */
             eError = VerifyTunnelConnection_JPEGDec(pPort, hTunneledComp, pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef);
             if (OMX_ErrorNone != eError)    {
-                JPEGDEC_DPRINT("########### Error !! PP VerifyTunnelConnection_JPEGDec failed\n");
+		OMX_PRCOMM5(pComponentPrivate->dbg, "########### Error !! PP VerifyTunnelConnection_JPEGDec failed\n");
                 /* Invalid connection formats. Return eError */
                 return OMX_ErrorPortsNotCompatible;
             }
@@ -2193,7 +2259,9 @@ static OMX_ERRORTYPE Allocate_DSPResources_JPEGDec(OMX_IN JPEGDEC_COMPONENT_PRIV
     OMX_U8* pTemp;
     OMX_U8 nBufferCount = -1;
 
-    JPEGDEC_DPRINT("Entering funtion Allocate_DSPResources_JPEGDec\n");
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion Allocate_DSPResources_JPEGDec\n");
 
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
@@ -2233,7 +2301,7 @@ static void JPEGDEC_InitBufferFlagTrack(
      pPortType = pComponentPrivate->pCompPort[nPortIndex];
 
     /* assume  pPortType->pPortDef->nBufferCountActual <= NUM_OF_BUFFERSJPEG */
-    for (i = 0; i < pPortType->pPortDef->nBufferCountActual; i ++) {
+     for (i = 0; i < (int)pPortType->pPortDef->nBufferCountActual; i ++) {
         pPortType->sBufferFlagTrack[i].flag = 0;
         pPortType->sBufferFlagTrack[i].buffer_id = 0xFFFFFFFF;
         pPortType->sBufferMarkTrack[i].buffer_id = 0xFFFFFFFF;
@@ -2297,7 +2365,8 @@ OMX_ERRORTYPE GetExtensionIndex_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.decode.Config.OutputColorFormat", OMX_IndexCustomOutputColorFormat},
     {"OMX.TI.JPEG.decode.Param.SectionDecode", OMX_IndexCustomSectionDecode},
     {"OMX.TI.JPEG.decode.Param.SubRegionDecode", OMX_IndexCustomSubRegionDecode},
-	{"OMX.TI.JPEG.decode.Param.SetMaxResolution", OMX_IndexCustomSetMaxResolution},
+    {"OMX.TI.JPEG.decode.Param.SetMaxResolution", OMX_IndexCustomSetMaxResolution},
+    {"OMX.TI.JPEG.decode.Debug", OMX_IndexCustomDebug},
     {"",0x0}
     };
 

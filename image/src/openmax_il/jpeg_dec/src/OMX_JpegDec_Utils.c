@@ -117,9 +117,11 @@ OMX_ERRORTYPE GetLCMLHandleJpegDec(OMX_HANDLETYPE pComponent)
     void *handle = NULL;
     char *error = NULL;
 
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
-        if ((error = dlerror()) != NULL) {
+	if ((error = (char *)dlerror()) != NULL) {
             fputs(error, stderr);
         }
         eError = OMX_ErrorComponentNotFound;
@@ -128,7 +130,7 @@ OMX_ERRORTYPE GetLCMLHandleJpegDec(OMX_HANDLETYPE pComponent)
 
     fpGetHandle = dlsym(handle, "GetHandle");
 
-    if ((error = dlerror()) != NULL) {
+    if ((error = (char *)dlerror()) != NULL) {
         fputs(error, stderr);
         eError = OMX_ErrorInvalidComponent;
         goto EXIT;
@@ -138,7 +140,7 @@ OMX_ERRORTYPE GetLCMLHandleJpegDec(OMX_HANDLETYPE pComponent)
     eError = (*fpGetHandle)(&LCML_pHandle);
     if (eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
-        JPEGDEC_DPRINT("eError != OMX_ErrorNone... in (*fpGetHandle)(&LCML_pHandle);\n");
+        OMX_PRDSP5(pComponentPrivate->dbg, "eError != OMX_ErrorNone... in (*fpGetHandle)(&LCML_pHandle);\n");
         goto EXIT;
     }
 
@@ -204,10 +206,12 @@ OMX_ERRORTYPE DisablePortJpegDec(JPEGDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_CHECK_PARAM(pComponentPrivate);
 
-    JPEGDEC_DPRINT("In DisablePortJpegDec %d\n", nParam1);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "In DisablePortJpegDec %lu\n", nParam1);
 
     if (pComponentPrivate->nCurState == OMX_StateExecuting || pComponentPrivate->nCurState == OMX_StatePause) {
-        if ((nParam1 == 0) || (nParam1 == 1) || (nParam1 == -1)) {
+	if ((nParam1 == 0) || (nParam1 == 1) || ((int)nParam1 == -1)) {
             eError = HandleInternalFlush(pComponentPrivate, nParam1);
         }
     }
@@ -234,6 +238,8 @@ OMX_ERRORTYPE EnablePortJpegDec(JPEGDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_CHECK_PARAM(pComponentPrivate);
 
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
     while (1) {
         if ((nParam1 == 0x0) &&
             ((pComponentPrivate->nCurState == OMX_StateLoaded) ||
@@ -259,7 +265,7 @@ OMX_ERRORTYPE EnablePortJpegDec(JPEGDEC_COMPONENT_PRIVATE* pComponentPrivate,
                                                    NULL);
             break;
         }
-        else if ((nParam1 == -1) &&
+        else if (((int)nParam1 == -1) &&
                 ((pComponentPrivate->nCurState == OMX_StateLoaded) ||
                  ((pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->bPopulated) &&
                   (pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->bPopulated)))) {
@@ -284,7 +290,7 @@ OMX_ERRORTYPE EnablePortJpegDec(JPEGDEC_COMPONENT_PRIVATE* pComponentPrivate,
                 JPEGDEC_WAIT_PORT_POPULATION(pComponentPrivate);
         }
     }
-    JPEGDEC_DPRINT("Exiting EnablePortJpegDec(), Ports are enabled if no error\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Exiting EnablePortJpegDec(), Ports are enabled if no error\n");
 EXIT:
     return eError;
 }   /* End of EnablePort */
@@ -318,6 +324,8 @@ OMX_ERRORTYPE Start_ComponentThreadJpegDec(OMX_HANDLETYPE pComponent)
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
     /* create the pipe used to maintain free output buffers*/
     eError = pipe (pComponentPrivate->nFree_outBuf_Q);
     if (eError) {
@@ -346,7 +354,7 @@ OMX_ERRORTYPE Start_ComponentThreadJpegDec(OMX_HANDLETYPE pComponent)
         goto EXIT;
     }
 
-    JPEGDEC_DPRINT ("JPEG Start_ComponentThread\n");
+    OMX_PRINT2(pComponentPrivate->dbg, "JPEG Start_ComponentThread\n");
     /* Create the Component Thread */
 #ifdef UNDER_CE
     eError = pthread_create (&(pComponentPrivate->pComponentThread), &attr, OMX_JpegDec_Thread, pComponent);
@@ -391,24 +399,29 @@ OMX_ERRORTYPE Free_ComponentResourcesJpegDec(JPEGDEC_COMPONENT_PRIVATE *pCompone
     int pthreadError = 0, nRet = 0;
     OMX_U8 nCount = 0;
     OMX_COMMANDTYPE eCmd = OMX_CustomCommandStopThread;
+    struct OMX_TI_Debug dbg;
 
     if (!pComponentPrivate) {
-        JPEGDEC_DPRINT("pComponentPrivate is NULL.\n");
+	OMXDBG_PRINT(stderr, ERROR, 5, 0, "pComponentPrivate is NULL.\n");
         goto EXIT;
     }
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    dbg = pComponentPrivate->dbg; 
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Boundary(pComponentPrivate->pPERF,
                   PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif
 
-    JPEGDEC_DPRINT ("Inside Free_ComponentResourcesJpegDec \n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Inside Free_ComponentResourcesJpegDec \n");
     /* should clean up in case of crash - implement*/
 
 
 
     if (pComponentPrivate->nIsLCMLActive ==1) {
-        JPEGDEC_DPRINT ("EMMCodecControlDestroy inside Free_ComponentResourcesJpegDec\n");
+	OMX_PRINT1(pComponentPrivate->dbg, "EMMCodecControlDestroy inside Free_ComponentResourcesJpegDec\n");
         LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,EMMCodecControlDestroy,NULL);
         pComponentPrivate->nIsLCMLActive = 0;
 #ifdef UNDER_CE
@@ -425,81 +438,81 @@ OMX_ERRORTYPE Free_ComponentResourcesJpegDec(JPEGDEC_COMPONENT_PRIVATE *pCompone
                         eCmd, 0, PERF_ModuleComponent);
 #endif
 
-    JPEGDEC_DPRINT("Freeing resources\n");
+    OMX_PRINT2(pComponentPrivate->dbg, "Freeing resources\n");
 
     nRet = write(pComponentPrivate->nCmdPipe[1], &eCmd, sizeof(eCmd));
     if (nRet == -1) {
-        JPEGDEC_DPRINT("Error while writing into nCmdPipe\n");
+        OMX_PRCOMM4(pComponentPrivate->dbg, "Error while writing into nCmdPipe\n");
         eError = OMX_ErrorHardware;
     }
 
     nRet = write(pComponentPrivate->nCmdDataPipe[1], &eCmd, sizeof(eCmd));
     if (nRet == -1) {
-                     JPEGDEC_DPRINT("Error while writing into nCmdDataPipe\n");
+        OMX_PRCOMM4(pComponentPrivate->dbg, "Error while writing into nCmdDataPipe\n");
         eError = OMX_ErrorHardware;
     }
 
     pthreadError = pthread_join(pComponentPrivate->pComponentThread, (void*)&threadError);
     if (0 != pthreadError)    {
         eError = OMX_ErrorHardware;
-        JPEGDEC_DPRINT ("Error while closing Component Thread\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "Error while closing Component Thread\n");
     }
 
     if (OMX_ErrorNone != threadError && OMX_ErrorNone != eError) {
-        JPEGDEC_DPRINT("OMX_ErrorInsufficientResources\n");
+	OMX_TRACE5(pComponentPrivate->dbg, "OMX_ErrorInsufficientResources\n");
         eError = OMX_ErrorInsufficientResources;
-        JPEGDEC_DPRINT ("Error while closing Component Thread\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "Error while closing Component Thread\n");
     }
 
     /* close the data pipe handles*/
     eErr = close(pComponentPrivate->nFree_outBuf_Q[0]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-        JPEGDEC_DPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing data pipe\n");
     }
 
     eErr = close(pComponentPrivate->nFilled_inpBuf_Q[0]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-        JPEGDEC_DPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing data pipe\n");
     }
 
     eErr = close(pComponentPrivate->nFree_outBuf_Q[1]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-        JPEGDEC_DPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing data pipe\n");
     }
 
     eErr = close(pComponentPrivate->nFilled_inpBuf_Q[1]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-       JPEGDEC_DPRINT ("Error while closing data pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing data pipe\n");
     }
 
     /*Close the command pipe handles*/
     eErr = close(pComponentPrivate->nCmdPipe[0]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-      JPEGDEC_DPRINT ("Error while closing cmd pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing cmd pipe\n");
     }
 
     eErr = close(pComponentPrivate->nCmdPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-      JPEGDEC_DPRINT ("Error while closing cmd pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing cmd pipe\n");
     }
 
     /*Close the command data pipe handles*/
     eErr = close(pComponentPrivate->nCmdDataPipe[0]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-      JPEGDEC_DPRINT ("Error while closing cmd pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing cmd pipe\n");
     }
 
     eErr = close(pComponentPrivate->nCmdDataPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError) {
         eError = OMX_ErrorHardware;
-      JPEGDEC_DPRINT ("Error while closing cmd pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while closing cmd pipe\n");
     }
 
     /* Free Resources */
@@ -623,11 +636,11 @@ OMX_ERRORTYPE Free_ComponentResourcesJpegDec(JPEGDEC_COMPONENT_PRIVATE *pCompone
     }
 
      if (pthread_mutex_destroy(&(pComponentPrivate->mJpegDecMutex)) != 0){
-        perror("Error with pthread_mutex_destroy");
+         OMX_TRACE4(pComponentPrivate->dbg, "Error with pthread_mutex_destroy");
     }
 
     if(pthread_cond_destroy(&(pComponentPrivate->sStop_cond)) != 0){
-        perror("Error with pthread_cond_desroy");
+	OMX_TRACE4(pComponentPrivate->dbg, "Error with pthread_cond_desroy");
     }
 
 
@@ -643,7 +656,7 @@ OMX_ERRORTYPE Free_ComponentResourcesJpegDec(JPEGDEC_COMPONENT_PRIVATE *pCompone
     }
 
 EXIT:
-  JPEGDEC_DPRINT ("Exiting Successfully After Freeing All Resources Errror %x, \n", eError);
+    OMX_PRINT1(dbg, "Exiting Successfully After Freeing All Resources Errror %x, \n", eError);
     return eError;
 }   /* End of Free_ComponentResourcesJpegDec */
 
@@ -679,6 +692,8 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     pPortDefIn = pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef;
     pPortDefOut = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
     lcml_dsp->In_BufInfo.DataTrMethod = DMM_METHOD;
     lcml_dsp->Out_BufInfo.DataTrMethod = DMM_METHOD;
@@ -787,7 +802,7 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     arr[6] = JPGDEC_SNTEST_OUTBUFCNT;
 
     if (pComponentPrivate->nProgressive == 1) {
-        JPEGDEC_DPRINT("JPEGdec:: nProgressive IMAGE");
+	OMX_PRINT2(pComponentPrivate->dbg, "JPEGdec:: nProgressive IMAGE");
         //arr[7] = pComponentPrivate->sMaxResolution.nHeight;
         //arr[8] = pComponentPrivate->sMaxResolution.nWidth;
         arr[7] = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;
@@ -797,7 +812,7 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
     else {
-		printf("****** Max Width %d Max Height %d\n",(int)pComponentPrivate->sMaxResolution.nWidth,(int)pComponentPrivate->sMaxResolution.nHeight);
+        OMX_PRINT2(pComponentPrivate->dbg, "****** Max Width %d Max Height %d\n",(int)pComponentPrivate->sMaxResolution.nWidth,(int)pComponentPrivate->sMaxResolution.nHeight);
 
         arr[7] = pComponentPrivate->sMaxResolution.nHeight;
         arr[8] = pComponentPrivate->sMaxResolution.nWidth;
@@ -845,12 +860,12 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
 
     lcml_dsp->pCrPhArgs = arr;
 
-    JPEGDEC_DPRINT("Image Width\t= %d\n", arr[8]);
-    JPEGDEC_DPRINT("Image Height\t= %d\n", arr[7]);
-    JPEGDEC_DPRINT("Progressive\t= %d\n", arr[9]);
-    JPEGDEC_DPRINT("Color Format\t= %d\n", arr[10]);
-    JPEGDEC_DPRINT("Section Decode(Input)\t= %d\n", arr[12]);
-    JPEGDEC_DPRINT("Section Decode(Output)\t= %d\n", arr[13]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Image Width\t= %d\n", arr[8]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Image Height\t= %d\n", arr[7]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Progressive\t= %d\n", arr[9]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Color Format\t= %d\n", arr[10]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Section Decode(Input)\t= %d\n", arr[12]);
+    OMX_PRINT2(pComponentPrivate->dbg, "Section Decode(Output)\t= %d\n", arr[13]);
     
 EXIT:
     return eError;
@@ -884,7 +899,9 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 #endif
     OMX_CHECK_PARAM(pComponentPrivate);
 
-    if ( nParam1 == 0x0 || nParam1 == -1 ) {
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    if ( nParam1 == 0x0 || (int)nParam1 == -1 ) {
 
         aParam[0] = USN_STRMCMD_FLUSH;
         aParam[1] = 0;
@@ -903,7 +920,7 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 #ifdef UNDER_CE
             sched_yield();
             if (nTimeout++ > 200000) {
-                JPEGDEC_DPRINT("Flush input Timeout Error\n");
+		OMX_PRDSP4(pComponentPrivate->dbg, "Flush input Timeout Error\n");
                 break;
             }
 #else
@@ -924,11 +941,11 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 #endif
         
                 if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                    JPEGDEC_DPRINT("disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
+			OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
                     nRet = read(pComponentPrivate->nFilled_inpBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                 } 
                 pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
-                JPEGDEC_DPRINT("return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
                 pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                                              pComponentPrivate->pHandle->pApplicationPrivate,
                                              pBuffPrivate->pBufferHdr);
@@ -937,7 +954,7 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 
         pComponentPrivate->bFlushComplete = OMX_FALSE;
     }
-    if ( nParam1 == 0x1 || nParam1 == -1 ) {
+    if ( nParam1 == 0x1 || (int)nParam1 == -1 ) {
 
         aParam[0] = USN_STRMCMD_FLUSH;
         aParam[1] = 1;
@@ -956,7 +973,7 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 #ifdef UNDER_CE
             sched_yield();
             if (nTimeout++ > 200000) {
-                JPEGDEC_DPRINT("Flush output Timeout Error\n");
+		OMX_PRDSP4(pComponentPrivate->dbg, "Flush output Timeout Error\n");
                 break;
             }
 #else
@@ -978,17 +995,17 @@ OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, 
 #endif
 
             if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                JPEGDEC_DPRINT("discard %p from InDir\n", pBuffPrivate->pBufferHdr);
+	        OMX_PRBUFFER2(pComponentPrivate->dbg, "discard %p from InDir\n", pBuffPrivate->pBufferHdr);
                 pComponentPrivate->nOutPortOut ++;
                  nRet = read(pComponentPrivate->nFree_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
               } 
 #if 0  /* since we don't have this queue anymore, there is nothing to flush.  Buffers are handled immediately */
             else if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_OUT) {
-                 JPEGDEC_DPRINT("disgard %p from OutDir\n", pBuffPrivate->pBufferHdr);
+		 OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from OutDir\n", pBuffPrivate->pBufferHdr);
                  nRet = read(pComponentPrivate->nFilled_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
               } 
 #endif            
-              JPEGDEC_DPRINT("return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
               pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
               pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
                                              pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1031,21 +1048,22 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
 
     OMX_CHECK_PARAM(pComponentPrivate);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     pHandle = pComponentPrivate->pHandle;
     
     nBuffersIn = pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual;
     nBuffersOut = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->nBufferCountActual;
 
-    if ( nParam1 == JPEGDEC_INPUT_PORT || nParam1 == -1 )   {
+    if ( nParam1 == JPEGDEC_INPUT_PORT || (int)nParam1 == -1 )   {
 
         aParam[0] = USN_STRMCMD_FLUSH;
         aParam[1] = 0;
         aParam[2] = 0;
         pLcmlHandle = (LCML_DSP_INTERFACE*)(pComponentPrivate->pLCML);
         pComponentPrivate->bFlushComplete = OMX_FALSE;
-        JPEGDEC_DPRINT("pLcmlHandle %p\n", pLcmlHandle);
+        OMX_PRDSP2(pComponentPrivate->dbg, "pLcmlHandle %p\n", pLcmlHandle);
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
-        JPEGDEC_DPRINT("eError %x\n", eError); 
+        OMX_PRDSP2(pComponentPrivate->dbg, "eError %x\n", eError); 
         if (eError != OMX_ErrorNone) {
             goto EXIT;
         }
@@ -1056,7 +1074,7 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef UNDER_CE
         sched_yield();
          if (nTimeOut++ > 200000){
-            perror("Flushing Input port timeout Error\n");
+	    OMX_PRDSP4(pComponentPrivate->dbg, "Flushing Input port timeout Error\n");
             break;
         }
 #else
@@ -1079,11 +1097,11 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
         
                 if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                   JPEGDEC_DPRINT("disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
+		     OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
                      nRet = read(pComponentPrivate->nFilled_inpBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                   } 
                   pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
-          JPEGDEC_DPRINT("return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
+		  OMX_PRBUFFER2(pComponentPrivate->dbg, "return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
                   pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                                                  pComponentPrivate->pHandle->pApplicationPrivate,
                                                  pBuffPrivate->pBufferHdr);
@@ -1099,16 +1117,16 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         }
 
     
-    if ( nParam1 == JPEGDEC_OUTPUT_PORT|| nParam1 == -1 ){
+    if ( nParam1 == JPEGDEC_OUTPUT_PORT|| (int)nParam1 == -1 ){
         /* return all output buffers */
         aParam[0] = USN_STRMCMD_FLUSH;
         aParam[1] = 1;
         aParam[2] = 0;
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         pComponentPrivate->bFlushComplete = OMX_FALSE;
-        JPEGDEC_DPRINT("pLcmlHandle %p\n", pLcmlHandle);
+        OMX_PRDSP2(pComponentPrivate->dbg, "pLcmlHandle %p\n", pLcmlHandle);
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
-         JPEGDEC_DPRINT("eError %x\n", eError); 
+	OMX_PRDSP2(pComponentPrivate->dbg, "eError %x\n", eError); 
        if (eError != OMX_ErrorNone) {
             goto EXIT;
         }
@@ -1119,7 +1137,7 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef UNDER_CE
             sched_yield();
             if (nTimeOut++ > 200000) {
-                perror("Flushing Input port timeout Error\n");
+		    OMX_PRDSP4(pComponentPrivate->dbg, "Flushing Input port timeout Error\n");
                 break;
             }
 #else
@@ -1143,18 +1161,18 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
 
             if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                JPEGDEC_DPRINT("disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
+		OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
                 pComponentPrivate->nOutPortOut ++;
                  nRet = read(pComponentPrivate->nFree_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
             }
 
 #if 0  /* since we don't have this queue anymore, there is nothing to flush.  Buffers are handled immediately */
             else if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_OUT) {
-                 JPEGDEC_DPRINT("disgard %p from OutDir\n", pBuffPrivate->pBufferHdr);
+		 OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from OutDir\n", pBuffPrivate->pBufferHdr);
                  nRet = read(pComponentPrivate->nFilled_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
             }
 #endif            
-            JPEGDEC_DPRINT("return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
             pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
             pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
                                          pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1170,7 +1188,7 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                        NULL);
     }
 EXIT:
-    JPEGDEC_DPRINT ("Exiting HandleCommand nFlush Function\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand nFlush Function\n");
     return eError;
 
 }   /* End of HandleCommandFlush */
@@ -1206,6 +1224,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
     OMX_U32 lImageResolution = 0;
 #endif
 
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
     OMX_CHECK_PARAM(pComponentPrivate);
     pHandle = (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
@@ -1216,8 +1235,8 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
     switch ((OMX_STATETYPE)(nParam1))
     {
     case OMX_StateIdle:
-        JPEGDEC_DPRINT("JPEG HandleCommand: Cmd Idle \n");
-        JPEGDEC_DPRINT("CURRENT STATE IS %d\n",pComponentPrivate->nCurState);
+	OMX_PRINT2(pComponentPrivate->dbg, "JPEG HandleCommand: Cmd Idle \n");
+        OMX_PRSTATE2(pComponentPrivate->dbg, "CURRENT STATE IS %d\n",pComponentPrivate->nCurState);
         if (pComponentPrivate->nCurState == OMX_StateIdle) {
             eError = OMX_ErrorSameState;
             break;
@@ -1230,20 +1249,20 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                            PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
 
-            JPEGDEC_DPRINT("Transition state from loaded to idle\n");
+            OMX_PRSTATE2(pComponentPrivate->dbg, "Transition state from loaded to idle\n");
 
 #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
             pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *)ResourceManagerCallback;
             lImageResolution = pPortDefIn->format.image.nFrameWidth * pPortDefIn->format.image.nFrameHeight;
             OMX_GET_RM_VALUE(lImageResolution, nMHzRM);
-            JPEGDEC_DPRINT("Value sent to RM = %d\n", nMHzRM);
+            OMX_PRMGR2(pComponentPrivate->dbg, "Value sent to RM = %d\n", nMHzRM);
             if (pComponentPrivate->nCurState != OMX_StateWaitForResources) {
 
                 eError = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_JPEG_Decoder_COMPONENT, nMHzRM, 3456, &(pComponentPrivate->rmproxyCallback));
 
                 if (eError != OMX_ErrorNone) {
                     /* resource is not available, need set state to OMX_StateWaitForResources*/
-                    JPEGDEC_DPRINT("Resource is not available\n");
+                    OMX_PRMGR4(pComponentPrivate->dbg, "Resource is not available\n");
                     eError = OMX_ErrorInsufficientResources;
                     break;
                 }
@@ -1263,41 +1282,41 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                     }
                 }
                 if(eError != OMX_ErrorNone){
-                    perror("Port population time out\n");
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Port population time out\n");
                     goto EXIT;
                 }
             }
 
             eError =  GetLCMLHandleJpegDec(pHandle);
             if (eError != OMX_ErrorNone) {
-                perror("GetLCMLHandle failed...\n");
+		OMX_PRDSP5(pComponentPrivate->dbg, "GetLCMLHandle failed...\n");
                 goto EXIT;
             }
 
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             lcml_dsp = (((LCML_DSP_INTERFACE*)pLcmlHandle)->dspCodec);
 
-            JPEGDEC_DPRINT("Fill_LCMLInitParams in JPEG\n");
+            OMX_PRDSP2(pComponentPrivate->dbg, "Fill_LCMLInitParams in JPEG\n");
             Fill_LCMLInitParamsJpegDec(lcml_dsp,arr, pHandle);
 
             cb.LCML_Callback = (void *) LCML_CallbackJpegDec;
 
             if (pComponentPrivate->nIsLCMLActive == 1) {
-                JPEGDEC_DPRINT("nIsLCMLActive is active\n");
+		OMX_PRDSP2(pComponentPrivate->dbg, "nIsLCMLActive is active\n");
             }
             /*calling initMMCodec to init codec with details filled earlier */
             eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, NULL, &pLcmlHandle, NULL, &cb);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("InitMMCodec failed...\n");
+	        OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed...\n");
                 goto EXIT;
             }
             else {
                 pComponentPrivate->nIsLCMLActive = 1;
             }
-            JPEGDEC_DPRINT("LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle %p\n" , ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
+            OMX_PRDSP1(pComponentPrivate->dbg, "LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle %p\n" , ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlUsnEos, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("Enable EOS at LCML failed...\n");
+                OMX_PRDSP4(pComponentPrivate->dbg, "Enable EOS at LCML failed...\n");
                 goto EXIT;
             }
             /* need check the resource with RM */
@@ -1310,7 +1329,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef RESOURCE_MANAGER_ENABLED
             eError= RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_JPEG_Decoder_COMPONENT, OMX_StateIdle,  3456, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("Resources not available Loaded ->Idle\n");
+		OMX_PRMGR4(pComponentPrivate->dbg, "Resources not available Loaded ->Idle\n");
                 break;
             }
 #endif
@@ -1323,7 +1342,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                                    pComponentPrivate->nCurState,
                                                    NULL);
             break;
-            JPEGDEC_DPRINT("JPEGDEC: State has been Set to Idle\n");
+            OMX_PRSTATE2(pComponentPrivate->dbg, "JPEGDEC: State has been Set to Idle\n");
         }
         else if ((pComponentPrivate->nCurState == OMX_StateExecuting) ||
                  (pComponentPrivate->nCurState == OMX_StatePause)) {
@@ -1333,7 +1352,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 */            
             nCount = 0;
             pComponentPrivate->ExeToIdleFlag = 0;
-            JPEGDEC_DPRINT("OMX_StateIdle->OMX_StateExecuting-THE CODEC IS STOPPING!!!\n");
+            OMX_PRDSP2(pComponentPrivate->dbg, "OMX_StateIdle->OMX_StateExecuting-THE CODEC IS STOPPING!!!\n");
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, MMCodecControlStop, NULL);
 #ifdef __PERF_INSTRUMENTATION__
@@ -1341,7 +1360,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                           PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif
 
-        JPEGDEC_DPRINT("before stop lock\n");
+	    OMX_TRACE2(pComponentPrivate->dbg, "before stop lock\n");
         pthread_mutex_lock(&pComponentPrivate->mJpegDecMutex);
         while ((pComponentPrivate->ExeToIdleFlag & JPEGD_DSPSTOP) == 0) {
             pthread_cond_wait(&pComponentPrivate->sStop_cond, &pComponentPrivate->mJpegDecMutex);
@@ -1354,7 +1373,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                 (pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pParamBufSupplier->eBufferSupplier == OMX_BufferSupplyInput)) {
                 for (nCount = 0; nCount < pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pPortDef->nBufferCountActual ; nCount++) {
                    JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nCount];
-                   JPEGDEC_DPRINT("Jpeg Returning buffers to Display\n");
+                   OMX_PRBUFFER2(pComponentPrivate->dbg, "Jpeg Returning buffers to Display\n");
 
                    if (pBuffPrivate->eBufferOwner != JPEGDEC_BUFFER_CLIENT) {
                        OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
@@ -1368,17 +1387,17 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
 
                        if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                          JPEGDEC_DPRINT("disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
+			  OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
                           nRet = read(pComponentPrivate->nFree_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                        } 
 
 #if 0  /* since we don't have this queue anymore, there is nothing to discard.  Buffers are handled immediately */
                        else if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_OUT) {
-                          JPEGDEC_DPRINT("discard %p from OutDir\n", pBuffPrivate->pBufferHdr);
+			  OMX_PRBUFFER2(pComponentPrivate->dbg, "discard %p from OutDir\n", pBuffPrivate->pBufferHdr);
                           nRet = read(pComponentPrivate->nFilled_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                        } 
 #endif                       
-                       JPEGDEC_DPRINT("return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
+                       OMX_PRBUFFER2(pComponentPrivate->dbg, "return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
                        pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
 
                        eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->hTunnelComponent,
@@ -1401,17 +1420,17 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
         
                 if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                     JPEGDEC_DPRINT("discard %p from InDir\n", pBuffPrivate->pBufferHdr);
+		     OMX_PRBUFFER2(pComponentPrivate->dbg, "discard %p from InDir\n", pBuffPrivate->pBufferHdr);
                      pComponentPrivate->nOutPortOut ++;
                      nRet = read(pComponentPrivate->nFree_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                 }
 #if 0  /* since we don't have this queue anymore, there is nothing to discard.  Buffers are handled immediately */                
                 else if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_OUT) {
-                     JPEGDEC_DPRINT("discard %p from OutDir\n", pBuffPrivate->pBufferHdr);
+		     OMX_PRBUFFER2(pComponentPrivate->dbg, "discard %p from OutDir\n", pBuffPrivate->pBufferHdr);
                      nRet = read(pComponentPrivate->nFilled_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                 }
 #endif                
-                JPEGDEC_DPRINT("return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "return output buffer %p in idle (%d)\n", pBuffPrivate->pBufferHdr, pBuffPrivate->eBufferOwner);
                 pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
                 pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
                                                  pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1420,7 +1439,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             }
         }
 
-        JPEGDEC_DPRINT("all buffers are returned\n");
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "all buffers are returned\n");
 
         nBufToReturn = 0;
         for (nCount = 0; nCount < pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pPortDef->nBufferCountActual; nCount++) {
@@ -1438,11 +1457,11 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         
                   nBufToReturn ++;
                   if (pBuffPrivate->eBufferOwner == JPEGDEC_BUFFER_COMPONENT_IN) {
-                     JPEGDEC_DPRINT("disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
+		     OMX_PRBUFFER2(pComponentPrivate->dbg, "disgard %p from InDir\n", pBuffPrivate->pBufferHdr);
                      nRet = read(pComponentPrivate->nFilled_inpBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
                   } 
                   pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
-                  JPEGDEC_DPRINT("return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
+                  OMX_PRBUFFER2(pComponentPrivate->dbg, "return input buffer %p in idle\n", pBuffPrivate->pBufferHdr);
                   pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                                                  pComponentPrivate->pHandle->pApplicationPrivate,
                                                  pBuffPrivate->pBufferHdr);
@@ -1452,7 +1471,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef RESOURCE_MANAGER_ENABLED
             eError= RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_JPEG_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("Resources not available Executing ->Idle\n");
+                OMX_PRMGR4(pComponentPrivate->dbg, "Resources not available Executing ->Idle\n");
                 pComponentPrivate->nCurState = OMX_StateWaitForResources;
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                        pHandle->pApplicationPrivate,
@@ -1465,7 +1484,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             }
 #endif
          pComponentPrivate->nCurState = OMX_StateIdle;
-         JPEGDEC_DPRINT("current state is %d\n", pComponentPrivate->nCurState);
+         OMX_PRSTATE2(pComponentPrivate->dbg, "current state is %d\n", pComponentPrivate->nCurState);
          pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                    OMX_EventCmdComplete,
@@ -1473,16 +1492,16 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                                    OMX_StateIdle,
                                                    NULL);
          pComponentPrivate->ExeToIdleFlag = 0;
-         JPEGDEC_DPRINT("JPEG-DEC in idle\n");
+         OMX_PRSTATE2(pComponentPrivate->dbg, "JPEG-DEC in idle\n");
         }
         else { /* This means, it is invalid state from application */
-            JPEGDEC_DPRINT("Error: Invalid State Given by Application\n");
+	    OMX_PRSTATE4(pComponentPrivate->dbg, "Error: Invalid State Given by Application\n");
             eError = OMX_ErrorInvalidState;
         }
         break;
 
     case OMX_StateExecuting:
-        JPEGDEC_DPRINT("HandleCommand: Cmd Executing \n");
+	OMX_PRINT1(pComponentPrivate->dbg, "HandleCommand: Cmd Executing \n");
         if (pComponentPrivate->nCurState == OMX_StateExecuting) {
             eError = OMX_ErrorSameState;
         }
@@ -1497,11 +1516,11 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlStart, NULL);
 
-            JPEGDEC_DPRINT("eError is %x\n", eError);
+            OMX_PRDSP2(pComponentPrivate->dbg, "eError is %x\n", eError);
 #ifdef RESOURCE_MANAGER_ENABLED
             eError= RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_JPEG_Decoder_COMPONENT, OMX_StateExecuting, 3456, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("Resources not available\n");
+		OMX_PRMGR4(pComponentPrivate->dbg, "Resources not available\n");
                 pComponentPrivate->nCurState = OMX_StateWaitForResources;
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                        pHandle->pApplicationPrivate,
@@ -1521,7 +1540,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                                    OMX_CommandStateSet,
                                                    pComponentPrivate->nCurState,
                                                    NULL);
-         JPEGDEC_DPRINT("JPEG-DEC in OMX_StateExecuting\n");
+	    OMX_PRSTATE2(pComponentPrivate->dbg, "JPEG-DEC in OMX_StateExecuting\n");
         }
         else {
             eError = OMX_ErrorIncorrectStateTransition;
@@ -1530,7 +1549,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 
 
     case OMX_StatePause:
-        JPEGDEC_DPRINT("HandleCommand: Cmd Pause\n");
+	OMX_PRINT1(pComponentPrivate->dbg, "HandleCommand: Cmd Pause\n");
         if (pComponentPrivate->nCurState == OMX_StatePause) {
             eError = OMX_ErrorSameState;
         }
@@ -1539,7 +1558,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlPause, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("Error during EMMCodecControlPause.. error is %d.\n", eError);
+		OMX_PRDSP4(pComponentPrivate->dbg, "Error during EMMCodecControlPause.. error is %d.\n", eError);
                 break;
             }
 
@@ -1551,27 +1570,27 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             pComponentPrivate->nCurState = OMX_StatePause;
         }
         else {
-            JPEGDEC_DPRINT ("Error: Invalid State Given by Application\n");
+	    OMX_PRSTATE4(pComponentPrivate->dbg, "Error: Invalid State Given by Application\n");
             eError = OMX_ErrorIncorrectStateTransition;
         }
         break;
 
     case OMX_StateInvalid:
-        JPEGDEC_DPRINT("HandleCommand: Cmd OMX_StateInvalid::\n");
+	OMX_PRINT1(pComponentPrivate->dbg, "HandleCommand: Cmd OMX_StateInvalid::\n");
         if (pComponentPrivate->nCurState == OMX_StateInvalid) {
             eError = OMX_ErrorSameState;
             break;
         }
         if (pComponentPrivate->nCurState == OMX_StateExecuting 
                 || pComponentPrivate->nCurState == OMX_StatePause){
-            JPEGDEC_DPRINT("HandleInternalFlush\n\n");
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "HandleInternalFlush\n\n");
             eError = HandleInternalFlush(pComponentPrivate, OMX_ALL); /*OMX_ALL = -1 OpenMax 1.1*/
             if(eError != OMX_ErrorNone){
-                JPEGDEC_DPRINT("eError from HandleInternalFlush = %x\n", eError);
+		OMX_PRBUFFER4(pComponentPrivate->dbg, "eError from HandleInternalFlush = %x\n", eError);
                 eError = OMX_ErrorNone; /* Clean error, already sending the component to Invalid state*/
             }
         }
-        JPEGDEC_DPRINT("OMX_StateInvalid\n\n");
+        OMX_PRSTATE2(pComponentPrivate->dbg, "OMX_StateInvalid\n\n");
         pComponentPrivate->nCurState = OMX_StateInvalid;
 
         if(pComponentPrivate->nToState == OMX_StateInvalid){ /*if the IL client call directly send to invalid state*/
@@ -1588,7 +1607,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         break;
 
     case OMX_StateLoaded:
-            JPEGDEC_DPRINT("go to loaded state\n");
+       OMX_PRSTATE2(pComponentPrivate->dbg, "go to loaded state\n");
        if (pComponentPrivate->nCurState == OMX_StateLoaded) {
             eError = OMX_ErrorSameState;
         }
@@ -1604,7 +1623,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             if (pComponentPrivate->nCurState == OMX_StateWaitForResources) {
                 eError= RMProxy_NewSendCommand(pHandle,  RMProxy_CancelWaitForResource, OMX_JPEG_Decoder_COMPONENT, 0, 3456, NULL);
                 if (eError != OMX_ErrorNone) {
-                    JPEGDEC_DPRINT("CancelWaitForResource Failed\n");
+		    OMX_PRMGR4(pComponentPrivate->dbg, "CancelWaitForResource Failed\n");
                     break;
                 }
             }
@@ -1629,7 +1648,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             if (pComponentPrivate->nCurState != OMX_StateWaitForResources) {
                 eError= RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Decoder_COMPONENT, 0, 3456, NULL);
                 if (eError != OMX_ErrorNone) {
-                    JPEGDEC_DPRINT("Cannot Free Resources\n");
+		    OMX_PRMGR4(pComponentPrivate->dbg, "Cannot Free Resources\n");
                     break;
                 }
             }
@@ -1691,7 +1710,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef RESOURCE_MANAGER_ENABLED
             eError= RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_JPEG_Decoder_COMPONENT, OMX_StateWaitForResources, 3456, NULL);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT("RMProxy_NewSendCommand(OMX_StateWaitForResources) failed\n");
+		OMX_PRMGR4(pComponentPrivate->dbg, "RMProxy_NewSendCommand(OMX_StateWaitForResources) failed\n");
                 break;
             }
 #endif
@@ -1710,12 +1729,12 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         break;
 
     case OMX_StateMax:
-        JPEGDEC_DPRINT("HandleCommand: Cmd OMX_StateMax::\n");
+        OMX_PRINT2(pComponentPrivate->dbg, "HandleCommand: Cmd OMX_StateMax::\n"); 
         break;
     } /* End of Switch */
 
 EXIT:
-    JPEGDEC_DPRINT ("Exiting HandleCommand Function %x\n", eError);
+    OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand Function %x\n", eError);
     return eError;
 } 
   /* End of HandleCommandJpegDec */
@@ -1741,14 +1760,15 @@ OMX_ERRORTYPE HandleFreeOutputBufferFromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pC
     int nRet;
 
     OMX_CHECK_PARAM(pComponentPrivate);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
 
-    JPEGDEC_DPRINT("%s: read outport (in) buff header %p\n", __FUNCTION__, pBuffHead);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "%s: read outport (in) buff header %p\n", __FUNCTION__, pBuffHead);
 
     nRet = read(pComponentPrivate->nFree_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
 
     if (nRet == -1) {
-        JPEGDEC_DPRINT ("Error while reading from the pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
         goto EXIT;
     }
 
@@ -1758,7 +1778,7 @@ OMX_ERRORTYPE HandleFreeOutputBufferFromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pC
 
     if ((pComponentPrivate->nCurState == OMX_StateIdle) || (pComponentPrivate->nToState == OMX_StateIdle)) {
         if (pBuffPrivate->eBufferOwner != JPEGDEC_BUFFER_CLIENT) {
-        JPEGDEC_DPRINT("Going to state %d, return buffer %p to client\n", pComponentPrivate->nToState, pBuffHead);
+	OMX_PRBUFFER2(pComponentPrivate->dbg, "Going to state %d, return buffer %p to client\n", pComponentPrivate->nToState, pBuffHead);
         pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
         pComponentPrivate->nOutPortOut ++;
         pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
@@ -1820,21 +1840,21 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
     int nRet;
 
-
     OMX_CHECK_PARAM(pComponentPrivate);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
 
     nRet = read(pComponentPrivate->nFilled_inpBuf_Q[0], &(pBuffHead), sizeof(pBuffHead));
     if (nRet == -1) {
-        JPEGDEC_DPRINT("Error while reading from the pipe\n");
+	OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
     }
 
-    JPEGDEC_DPRINT("HandleDataBuf_FromAppJpegDec: read inport (in) buff header %p\n", pBuffHead);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "HandleDataBuf_FromAppJpegDec: read inport (in) buff header %p\n", pBuffHead);
 
     pBuffPrivate = pBuffHead->pInputPortPrivate;
     if ((pComponentPrivate->nCurState == OMX_StateIdle) || (pComponentPrivate->nToState == OMX_StateIdle)) {
         pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
-        JPEGDEC_DPRINT("Going to state %d, return buffer %p to client\n", pComponentPrivate->nToState, pBuffHead);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "Going to state %d, return buffer %p to client\n", pComponentPrivate->nToState, pBuffHead);
 
         pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                     pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1880,7 +1900,7 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
         ptJPGDecUALGInBufParam->forceChromaFormat = 1;
         ptJPGDecUALGInBufParam->RGB_Format = 9; /*RGB_Format should be set even if it's not use*/
     }
-    JPEGDEC_DPRINT("ptJPGDecUALGInBufParam->forceChromaFormat = %d\n", ptJPGDecUALGInBufParam->forceChromaFormat );
+    OMX_PRDSP0(pComponentPrivate->dbg, "ptJPGDecUALGInBufParam->forceChromaFormat = %lu\n", ptJPGDecUALGInBufParam->forceChromaFormat );
     pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_DSP;
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -1890,19 +1910,19 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
                       PERF_ModuleCommonLayer);
 #endif
 
-    JPEGDEC_DPRINT("forceChromaFormat\t= %d\n", ptJPGDecUALGInBufParam->forceChromaFormat);
-    JPEGDEC_DPRINT("RGB_Format\t= %d\n", ptJPGDecUALGInBufParam->RGB_Format);
-    JPEGDEC_DPRINT("ulInFrameSize\t= %d\n", ptJPGDecUALGInBufParam->ulInFrameSize);
-    JPEGDEC_DPRINT("ulInDisplayWidth\t= %d\n", ptJPGDecUALGInBufParam->ulInDisplayWidth);
-    JPEGDEC_DPRINT("ulInResizeOption\t= %d\n", ptJPGDecUALGInBufParam->ulInResizeOption);
-    JPEGDEC_DPRINT("ulNumMCURow\t= %d\n", ptJPGDecUALGInBufParam->ulNumMCURow);
-    JPEGDEC_DPRINT("ulnumAU\t= %d\n", ptJPGDecUALGInBufParam->ulnumAU);
-    JPEGDEC_DPRINT("ulXOrg\t= %d    ", ptJPGDecUALGInBufParam->ulXOrg);
-    JPEGDEC_DPRINT("ulYOrg\t= %d\n", ptJPGDecUALGInBufParam->ulYOrg);
-    JPEGDEC_DPRINT("ulXLength\t= %d    ", ptJPGDecUALGInBufParam->ulXLength);
-    JPEGDEC_DPRINT("ulXLenght\t= %d\n", ptJPGDecUALGInBufParam->ulYLength);
-    JPEGDEC_DPRINT("pBuffHead->nFlags\t= %d\n", pBuffHead->nFlags);
-    JPEGDEC_DPRINT("Queue INPUT bufheader %p\n", pBuffHead);
+    OMX_PRDSP0(pComponentPrivate->dbg, "forceChromaFormat\t= %lu\n", ptJPGDecUALGInBufParam->forceChromaFormat);
+    OMX_PRDSP0(pComponentPrivate->dbg, "RGB_Format\t= %lu\n", ptJPGDecUALGInBufParam->RGB_Format);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulInFrameSize\t= %lu\n", ptJPGDecUALGInBufParam->ulInFrameSize);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulInDisplayWidth\t= %lu\n", ptJPGDecUALGInBufParam->ulInDisplayWidth);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulInResizeOption\t= %lu\n", ptJPGDecUALGInBufParam->ulInResizeOption);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulNumMCURow\t= %lu\n", ptJPGDecUALGInBufParam->ulNumMCURow);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulnumAU\t= %lu\n", ptJPGDecUALGInBufParam->ulnumAU);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulXOrg\t= %lu    ", ptJPGDecUALGInBufParam->ulXOrg);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulYOrg\t= %lu\n", ptJPGDecUALGInBufParam->ulYOrg);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulXLength\t= %lu    ", ptJPGDecUALGInBufParam->ulXLength);
+    OMX_PRDSP0(pComponentPrivate->dbg, "ulXLenght\t= %lu\n", ptJPGDecUALGInBufParam->ulYLength);
+    OMX_PRBUFFER0(pComponentPrivate->dbg, "pBuffHead->nFlags\t= %lu\n", pBuffHead->nFlags);
+    OMX_PRBUFFER0(pComponentPrivate->dbg, "Queue INPUT bufheader %p\n", pBuffHead);
     eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                               EMMCodecInputBuffer,
                               pBuffHead->pBuffer,
@@ -1937,13 +1957,15 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
 
-    JPEGDEC_DPRINT ("Buffer Came From DSP (output port)\n");
     OMX_CHECK_PARAM(pComponentPrivate);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "Buffer Came From DSP (output port)\n");
 
     pBuffPrivate = pBuffHead->pOutputPortPrivate;
 
     if (pBuffHead->pMarkData && pBuffHead->hMarkTargetComponent == pComponentPrivate->pHandle) {
-        JPEGDEC_DPRINT("send OMX_MarkEvent\n");
+	OMX_PRBUFFER2(pComponentPrivate->dbg, "send OMX_MarkEvent\n");
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                         pComponentPrivate->pHandle->pApplicationPrivate,
                                         OMX_EventMark,
@@ -1954,7 +1976,7 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
 
     /*TUNNEL HERE*/
     if (pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->hTunnelComponent != NULL) {
-        JPEGDEC_DPRINT ("Jpeg Sending Output buffer to TUNNEL component\n");
+	OMX_PRBUFFER2(pComponentPrivate->dbg, "Jpeg Sending Output buffer to TUNNEL component\n");
 
 #ifdef __PERF_INSTRUMENTATION__
         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -1977,7 +1999,7 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
 
 
         if (pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) {
-            JPEGDEC_DPRINT("%s::%d:Received OMX_BUFFERFLAG_EOS, nFalgs= %x\n", __FUNCTION__, __LINE__, pBuffHead->nFlags);
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "%s::%d:Received OMX_BUFFERFLAG_EOS, nFalgs= %lx\n", __FUNCTION__, __LINE__, pBuffHead->nFlags);
             pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
                                                 pComponentPrivate->pHandle->pApplicationPrivate,
                                                 OMX_EventBufferFlag,
@@ -1986,7 +2008,7 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
                                                 NULL);
         }
 
-        JPEGDEC_DPRINT("HandleDataBuf_FromDspJpegDec: buf %p pBuffPrivate->eBufferOwner %d\n", pBuffHead, pBuffPrivate->eBufferOwner);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "HandleDataBuf_FromDspJpegDec: buf %p pBuffPrivate->eBufferOwner %d\n", pBuffHead, pBuffPrivate->eBufferOwner);
         if (pBuffPrivate->eBufferOwner != JPEGDEC_BUFFER_CLIENT) {
             pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
 
@@ -1998,7 +2020,7 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
 
 
 EXIT:
-    JPEGDEC_DPRINT("Exit\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Exit\n");
     return eError;
 }   /* End of HandleDataBuf_FromDspJpegDec */
 
@@ -2020,8 +2042,10 @@ OMX_ERRORTYPE HandleFreeDataBufJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPriv
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
 
-    JPEGDEC_DPRINT ("JPEG Entering HandleFreeBuf Function\n");
     OMX_CHECK_PARAM(pComponentPrivate);
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    OMX_PRINT1(pComponentPrivate->dbg, "JPEG Entering HandleFreeBuf Function\n");
 
     pBuffPrivate = pBuffHead->pInputPortPrivate;
 
@@ -2035,7 +2059,7 @@ OMX_ERRORTYPE HandleFreeDataBufJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPriv
                       PERF_ModuleHLMM);
 #endif
 
-        JPEGDEC_DPRINT("emptydone buf %p\n", pBuffHead);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "emptydone buf %p\n", pBuffHead);
 
         pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                                               pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2043,7 +2067,7 @@ OMX_ERRORTYPE HandleFreeDataBufJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPriv
     }
 
 EXIT:
-    JPEGDEC_DPRINT("JPEGexiting\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "JPEGexiting\n");
     return eError;
 }   /* End of HandleFreeDataBufJpegDec */
 
@@ -2075,9 +2099,11 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
         pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)argsCb[6])->pComponentPrivate;
     }
     else {
-        JPEGDEC_DPRINT("wrong in LCML callback, exit\n");
+        OMXDBG_PRINT(stderr, ERROR, 5, 0, "wrong in LCML callback, exit\n");
         goto EXIT;
     }
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
     if (event == EMMCodecBufferProcessed) {
         if ((int)argsCb [0] == EMMCodecOuputBuffer) {
@@ -2085,7 +2111,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
             pBuffer = (OMX_U8*)argsCb[1];
             pBuffPrivate = pBuffHead->pOutputPortPrivate;
             pBuffHead->nFilledLen = (int)argsCb[8];
-            JPEGDEC_DPRINT("nFilled Len from DSP = %d\n",(int)argsCb[8]);
+            OMX_PRDSP1(pComponentPrivate->dbg, "nFilled Len from DSP = %d\n",(int)argsCb[8]);
 
 #ifdef __PERF_INSTRUMENTATION__
             PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
@@ -2098,16 +2124,16 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
             pComponentPrivate->nOutPortOut ++;
         }
 
-        JPEGDEC_DPRINT("Filled Data from DSP \n");
-        JPEGDEC_DPRINT("buffer summary (LCML for output buffer %p) %d %d\n", pBuffHead, 
+        OMX_PRDSP2(pComponentPrivate->dbg, "Filled Data from DSP \n");
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "buffer summary (LCML for output buffer %p) %lu %lu\n", pBuffHead, 
                     pComponentPrivate->nInPortIn,
                     pComponentPrivate->nOutPortOut);
 
         pPortType = pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT];
         if((pBuffHead->nFlags == OMX_FALSE) && (pComponentPrivate->pSectionDecode->nMCURow == OMX_FALSE)){
-            for (i = 0; i < pPortType->pPortDef->nBufferCountActual; i ++) {
+		for (i = 0; i < (int)(pPortType->pPortDef->nBufferCountActual); i ++) {
                 if (pPortType->sBufferFlagTrack[i].buffer_id == pComponentPrivate->nOutPortOut) {
-                    JPEGDEC_DPRINT("JPEGdec:: %d: output buffer %d has flag %x\n", __LINE__,
+		    OMX_PRBUFFER1(pComponentPrivate->dbg, "JPEGdec:: %d: output buffer %lu has flag %lx\n", __LINE__,
                                pPortType->sBufferFlagTrack[i].buffer_id, 
                                pPortType->sBufferFlagTrack[i].flag);
                     pBuffHead->nFlags = pPortType->sBufferFlagTrack[i].flag;
@@ -2117,9 +2143,9 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
                 }
             }
         }else{
-            for (i = 0; i < pPortType->pPortDef->nBufferCountActual; i ++) {
+		for (i = 0; i < (int)pPortType->pPortDef->nBufferCountActual; i ++) {
                 if (pPortType->sBufferFlagTrack[i].buffer_id == pComponentPrivate->nOutPortOut) {
-                    JPEGDEC_DPRINT("JPEGdec:: %d: OUTPUT buffer %d has flag %x\n", __LINE__,
+		    OMX_PRBUFFER1(pComponentPrivate->dbg, "JPEGdec:: %d: OUTPUT buffer %lu has flag %lx\n", __LINE__,
                                pPortType->sBufferFlagTrack[i].buffer_id, 
                                pPortType->sBufferFlagTrack[i].flag);
                     if(pPortType->sBufferFlagTrack[i].flag & OMX_BUFFERFLAG_EOS){
@@ -2132,9 +2158,9 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
                 }
             }
         }
-        for (i = 0; i < pPortType->pPortDef->nBufferCountActual; i ++) {
+        for (i = 0; i < (int)pPortType->pPortDef->nBufferCountActual; i ++) {
             if (pPortType->sBufferMarkTrack[i].buffer_id == pComponentPrivate->nOutPortOut) {
-                JPEGDEC_DPRINT("buffer ID %d has mark (output port)\n", pPortType->sBufferMarkTrack[i].buffer_id);
+		OMX_PRBUFFER2(pComponentPrivate->dbg, "buffer ID %lu has mark (output port)\n", pPortType->sBufferMarkTrack[i].buffer_id);
                 pBuffHead->pMarkData = pPortType->sBufferMarkTrack[i].pMarkData;
                 pBuffHead->hMarkTargetComponent = pPortType->sBufferMarkTrack[i].hMarkTargetComponent;
                 pPortType->sBufferMarkTrack[i].buffer_id = 0xFFFFFFFF;
@@ -2145,7 +2171,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
             pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_COMPONENT_OUT;
             eError = HandleDataBuf_FromDspJpegDec(pComponentPrivate, pBuffHead);
             if (eError != OMX_ErrorNone) {
-                JPEGDEC_DPRINT ("Error while reading dsp out q\n");
+		OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while reading dsp out q\n");
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventError,
@@ -2171,7 +2197,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
                 pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_COMPONENT_OUT;
                 eError = HandleFreeDataBufJpegDec(pComponentPrivate, pBuffHead);
                 if (eError != OMX_ErrorNone) {
-                    JPEGDEC_DPRINT ("Error while processing free input Buffers\n");
+		    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free input Buffers\n");
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -2184,7 +2210,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
     }
 
     if (event == EMMCodecProcessingStoped) {
-        JPEGDEC_DPRINT("ENTERING TO EMMCodecProcessingStoped \n\n");
+	OMX_PRDSP2(pComponentPrivate->dbg, "ENTERING TO EMMCodecProcessingStoped \n\n");
         if (pComponentPrivate->nToState == OMX_StateIdle) {
             pComponentPrivate->ExeToIdleFlag |= JPEGD_DSPSTOP;
         }
@@ -2196,8 +2222,8 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
         goto EXIT;
     }
     if (event == EMMCodecDspError) {
-        JPEGDEC_DPRINT("LCML_Callback : DSP [0]->%x, [4]->%x, [5]->%x\n", (int)argsCb[0] ,(int)argsCb[4], (int)argsCb[5]);
-        JPEGDEC_DPRINT("Play compleated if: 0x500 = %x\n", (int)argsCb[5]);
+	OMX_PRDSP1(pComponentPrivate->dbg, "LCML_Callback : DSP [0]->%x, [4]->%x, [5]->%x\n", (int)argsCb[0] ,(int)argsCb[4], (int)argsCb[5]);
+        OMX_PRDSP1(pComponentPrivate->dbg, "Play compleated if: 0x500 = %x\n", (int)argsCb[5]);
         if(!((int)argsCb[5] == 0x500)){
             eError = OMX_ErrorHardware;
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2212,7 +2238,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
 
     if (event == EMMCodecInternalError) {
         eError = OMX_ErrorHardware;
-        JPEGDEC_DPRINT("JPEG-D: EMMCodecInternalError\n");
+        OMX_PRDSP4(pComponentPrivate->dbg, "JPEG-D: EMMCodecInternalError\n");
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,
@@ -2224,7 +2250,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
     if (event == EMMCodecProcessingPaused) {
         pComponentPrivate->nCurState = OMX_StatePause;
         /* Send StateChangeNotification to application */
-        JPEGDEC_DPRINT("ENTERING TO EMMCodecProcessingPaused \n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "ENTERING TO EMMCodecProcessingPaused \n");
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventCmdComplete,
@@ -2233,9 +2259,9 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
                                                NULL);
     }
     if (event == EMMCodecStrmCtrlAck) {
-        JPEGDEC_DPRINT("event = EMMCodecStrmCtrlAck\n");
+	OMX_PRDSP1(pComponentPrivate->dbg, "event = EMMCodecStrmCtrlAck\n");
         if ((int)argsCb [0] == USN_ERR_NONE) {
-            JPEGDEC_DPRINT("Callback: no error\n");
+	    OMX_PRDSP1(pComponentPrivate->dbg, "Callback: no error\n");
             pComponentPrivate->bFlushComplete = OMX_TRUE;
             pthread_mutex_lock(&(pComponentPrivate->mJpegDecFlushMutex));
             pthread_cond_signal(&(pComponentPrivate->sFlush_cond));
@@ -2244,7 +2270,7 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
     }
 
 
-    JPEGDEC_DPRINT("Exiting the LCML_Callback function\n");
+    OMX_PRDSP1(pComponentPrivate->dbg, "Exiting the LCML_Callback function\n");
 EXIT:
     return eError;
 }   /* End of LCML_CallbackJpegDec */
@@ -2267,9 +2293,11 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_ERRORTYPE RM_Error = *(cbData.RM_Error);
     
-    JPEGDEC_DPRINT("%s: %d: RM_Error = %x\n", __FUNCTION__, __LINE__, RM_Error);
-
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "RM_Error = %x\n", RM_Error);
 
     if (RM_Error == OMX_RmProxyCallback_ResourcesPreempted) {
 
@@ -2286,11 +2314,11 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                                                    NULL);
             
             pComponentPrivate->nToState = OMX_StateIdle;
-            JPEGDEC_DPRINT("Component Preempted. Going to IDLE State.\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "Component Preempted. Going to IDLE State.\n");
         }
         else if (pComponentPrivate->nCurState == OMX_StateIdle){
             pComponentPrivate->nToState = OMX_StateLoaded;
-            JPEGDEC_DPRINT("Component Preempted. Going to LOADED State.\n");            
+            OMX_PRMGR2(pComponentPrivate->dbg, "Component Preempted. Going to LOADED State.\n");            
         }
         
 #ifdef __PERF_INSTRUMENTATION__
@@ -2318,7 +2346,7 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         
             write (pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             write (pComponentPrivate->nCmdDataPipe[1], &(pComponentPrivate->nToState) ,sizeof(OMX_U32));
-            JPEGDEC_DPRINT("OMX_RmProxyCallback_ResourcesAcquired.\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "OMX_RmProxyCallback_ResourcesAcquired.\n");
         }            
         
     }

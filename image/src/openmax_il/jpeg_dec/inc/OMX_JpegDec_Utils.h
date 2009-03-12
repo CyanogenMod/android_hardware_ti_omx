@@ -48,7 +48,8 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <errno.h>
-#include<OMX_TI_Common.h>
+#include "OMX_TI_Common.h"
+#include "OMX_TI_Debug.h"
 
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
@@ -61,13 +62,6 @@
 
 #ifdef UNDER_CE
     #include <oaf_debug.h>
-#else
-    /*#define OMX_DEB*/
-    #ifdef OMX_DEB
-    #define JPEGDEC_DPRINT(str,args...) fprintf(stdout,"[%s] %s():%d: *** "str"",__FILE__,__FUNCTION__,__LINE__,##args)
-    #else
-    #define JPEGDEC_DPRINT(str, args...)
-    #endif
 #endif
 
 
@@ -107,11 +101,13 @@
     }   \
 }
 
-#define OMX_CONF_SET_ERROR_BAIL(_eError, _eCode)\
-{                       \
-    _eError = _eCode;               \
-    goto OMX_CONF_CMD_BAIL;         \
-}
+#define JPEGDEC_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)\
+do {					       \
+    if(!_ptr1 || !_ptr2 || !_ptr3){	       \
+        eError = OMX_ErrorBadParameter;        \
+        goto EXIT;                             \
+    }					       \
+} while(0)
 
 #define OMX_MALLOC_STRUCT(_pStruct_, _sName_)   \
     _pStruct_ = (_sName_*)malloc(sizeof(_sName_));  \
@@ -154,7 +150,7 @@
                                   &ts);                                 \
     if (nRet == ETIMEDOUT)                                              \
     {                                                                   \
-        JPEGDEC_DPRINT("Wait for port to be Populated time-out");    \
+        OMX_PRBUFFER4((_pComponentPrivate_)->dbg, "Wait for port to be Populated time-out"); \
         pthread_mutex_unlock(&((_pComponentPrivate_)->mJpegDecMutex));\
         \
         eError = OMX_ErrorPortUnresponsiveDuringAllocation;\
@@ -181,7 +177,7 @@
                                   &ts);                                 \
     if (nRet == ETIMEDOUT)                                              \
     {                                                                   \
-        JPEGDEC_DPRINT("Wait for port to be Unpopulated time-out");    \
+        OMX_PRBUFFER4((_pComponentPrivate_)->dbg, "Wait for port to be Unpopulated time-out"); \
         pthread_mutex_unlock(&((_pComponentPrivate_)->mJpegDecMutex));\
         \
         eError = OMX_ErrorPortUnresponsiveDuringDeallocation;\
@@ -208,7 +204,7 @@
                                   &ts);                                 \
     if (nRet == ETIMEDOUT)                                              \
     {                                                                   \
-        JPEGDEC_DPRINT("Wait for port to be Unpopulated time-out");    \
+	OMX_PRBUFFER4((_pComponentPrivate_)->dbg, "Wait for port to be Unpopulated time-out"); \
         pthread_mutex_unlock(&((_pComponentPrivate_)->mJpegDecFlushMutex));\
         _pComponentPrivate_->cbInfo.EventHandler(_pComponentPrivate_->pHandle,\
                                                _pComponentPrivate_->pHandle->pApplicationPrivate,\
@@ -223,7 +219,7 @@
 
 
 #define OMX_DPRINT_ADDRESS(_s_, _ptr_)  \
-    JPEGDEC_DPRINT("%s = %p\n", _s_, _ptr_);
+    OMX_PRINT2((_pComponentPrivate_)->dbg, "%s = %p\n", _s_, _ptr_);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 #define OMX_GET_RM_VALUE(_Res_, _RM_) \
@@ -244,7 +240,7 @@
         _RM_ = 90;  \
         }   \
         \
-    JPEGDEC_DPRINT("Value in MHz requested to RM = %d\n",_RM_); \
+    OMX_PRMGR2((_pComponentPrivate_)->dbg, "Value in MHz requested to RM = %d\n",_RM_); \
 }
 #endif
 
@@ -453,7 +449,8 @@ typedef struct JPEGDEC_COMPONENT_PRIVATE
 #endif
     OMX_CUSTOM_IMAGE_DECODE_SECTION* pSectionDecode;
     OMX_CUSTOM_IMAGE_DECODE_SUBREGION* pSubRegionDecode;
-	OMX_CUSTOM_RESOLUTION sMaxResolution;
+    OMX_CUSTOM_RESOLUTION sMaxResolution;
+    struct OMX_TI_Debug dbg;
 } JPEGDEC_COMPONENT_PRIVATE;
 
 
@@ -519,7 +516,8 @@ typedef enum OMX_INDEXIMAGETYPE
     OMX_IndexCustomOutputColorFormat,
     OMX_IndexCustomSectionDecode,
     OMX_IndexCustomSubRegionDecode,
-	OMX_IndexCustomSetMaxResolution
+    OMX_IndexCustomSetMaxResolution,
+    OMX_IndexCustomDebug
 }OMX_INDEXIMAGETYPE;
 
 typedef struct _JPEGDEC_CUSTOM_PARAM_DEFINITION

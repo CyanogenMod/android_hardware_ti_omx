@@ -48,6 +48,7 @@
 #define OMX_TI_DEBUG__H
 
 #include <ctype.h>
+#include <utils/Log.h>
 /* 
     The OMX TI Debug interface allows debug messages to be classified by
     domain and importance.  There are no preset classifications required, but
