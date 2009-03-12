@@ -174,7 +174,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
                     if (eError != OMX_ErrorNone) {
                         eError = OMX_ErrorHardware;
-                        VIDDECODER_EPRINT("Error on flush at out\n");
+                        OMX_PRDSP4(pComponentPrivate->dbg, "Error on flush at out\n");
                     }
                     VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
                     VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
@@ -215,7 +215,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
             ;
         } 
         else if (-1 == status) {
-            VIDDECODER_EPRINT ("%d :: Error in Select\n", __LINE__);
+            OMX_TRACE4(pComponentPrivate->dbg, "Error in Select\n");
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                    OMX_EventError,
@@ -240,7 +240,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
 #endif
                 if (eCmd == OMX_CommandStateSet) {
                     if ((OMX_S32)nParam1 < -2) {
-                        VIDDECODER_EPRINT ("Incorrect variable value used\n");
+                        OMX_ERROR2(pComponentPrivate->dbg, "Incorrect variable value used\n");
                     }
                     if ((OMX_S32)nParam1 != -1 && (OMX_S32)nParam1 != -2) {
                         eError = VIDDEC_HandleCommand(pComponentPrivate, nParam1);
@@ -314,7 +314,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     }
                     eError = VIDDEC_HandleDataBuf_FromDsp(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
-                        VIDDECODER_EPRINT ("%d :: Error while handling filled DSP output buffer\n",__LINE__);
+                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled DSP output buffer\n");
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventError,
@@ -325,7 +325,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     pComponentPrivate->nOutputBCountDsp--;
                 }
                 if ((FD_ISSET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds))){
-                    VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
+                    OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
                     /* When doing a reconfiguration, don't send input buffers to SN & wait for SN to be ready*/
                     if(pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE || 
                             pComponentPrivate->eLCMLState != VidDec_LCML_State_Start){
@@ -335,7 +335,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     else{
                    eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);     
                     if (eError != OMX_ErrorNone) {
-                        VIDDECODER_EPRINT ("%d :: Error while handling filled input buffer\n",__LINE__);
+                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled input buffer\n");
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventError,
@@ -353,7 +353,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     }
                     eError = VIDDEC_HandleFreeDataBuf(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
-                        VIDDECODER_EPRINT ("%d :: Error while processing free input buffers\n",__LINE__);
+                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free input buffers\n");
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventError,
@@ -368,10 +368,10 @@ void* OMX_VidDec_Thread (void* pThreadData)
                         VIDDEC_WAIT_CODE();
                           continue;
                      }
-                    VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
+                    OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
                     eError = VIDDEC_HandleFreeOutputBufferFromApp(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
-                        VIDDECODER_EPRINT ("%d :: Error while processing free output buffer\n",__LINE__);
+                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free output buffer\n");
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventError,
@@ -459,7 +459,7 @@ void* OMX_VidDec_Return (void* pThreadData)
             }
         } 
         else if (-1 == status) {
-            VIDDECODER_EPRINT ("%d :: Error in Select\n", __LINE__);
+            OMX_PRINT2(pComponentPrivate->dbg, "Error in Select\n");
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                    OMX_EventError,
@@ -472,7 +472,7 @@ void* OMX_VidDec_Return (void* pThreadData)
             if (FD_ISSET(pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
                 eError = VIDDEC_HandleDataBuf_FromDsp(pComponentPrivate);
                 if (eError != OMX_ErrorNone) {
-                    VIDDECODER_EPRINT ("%d :: Error while handling filled DSP output buffer\n",__LINE__);
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled DSP output buffer\n");
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -483,11 +483,11 @@ void* OMX_VidDec_Return (void* pThreadData)
                 pComponentPrivate->nOutputBCountDsp--;
             }
             if ((FD_ISSET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds))){
-                VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
+                OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
                 if(!(pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE && pComponentPrivate->bInPortSettingsChanged == OMX_FALSE)){
                 eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);     
                 if (eError != OMX_ErrorNone) {
-                    VIDDECODER_EPRINT ("%d :: Error while handling filled input buffer\n",__LINE__);
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled input buffer\n");
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -501,7 +501,7 @@ void* OMX_VidDec_Return (void* pThreadData)
             if (FD_ISSET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
                 eError = VIDDEC_HandleFreeDataBuf(pComponentPrivate);
                 if (eError != OMX_ErrorNone) {
-                    VIDDECODER_EPRINT ("%d :: Error while processing free input buffers\n",__LINE__);
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free input buffers\n");
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -512,10 +512,10 @@ void* OMX_VidDec_Return (void* pThreadData)
                 pComponentPrivate->nInputBCountDsp--;
             }
             if (FD_ISSET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
-                VIDDEC_BUFFERPRINT("eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
+                OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
                 eError = VIDDEC_HandleFreeOutputBufferFromApp(pComponentPrivate);
                 if (eError != OMX_ErrorNone) {
-                    VIDDECODER_EPRINT ("%d :: Error while processing free output buffer\n",__LINE__);
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free output buffer\n");
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventError,
