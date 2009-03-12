@@ -221,12 +221,12 @@ struct OMX_TI_Debug
                 if (!strcmp(out, "stdout")) {} \
                 else if (!strcmp(out, "stderr")) (dbg).out = stderr; \
                 else if (!strcmp(out, "null")) (dbg).out = NULL; \
-                else (dbg).out_opened = (dbg).out = fopen(out, "w"); \
+                else if (*out) (dbg).out_opened = (dbg).out = fopen(out, "w"); \
                 if (!strcmp(err, "stderr")) {} \
                 else if (!strcmp(err, "stdout")) (dbg).err = stdout; \
                 else if (!strcmp(err, "null")) (dbg).err = NULL; \
                 else if (!strcmp(err, out)) (dbg).err = (dbg).out; \
-                else (dbg).err_opened = (dbg).err = fopen(err, "w"); \
+                else if (*err) (dbg).err_opened = (dbg).err = fopen(err, "w"); \
             } \
             fclose(config); \
         } \
