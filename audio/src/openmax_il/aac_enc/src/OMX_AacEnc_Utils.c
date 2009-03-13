@@ -1993,10 +1993,11 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 
         pComponentPrivate->nUnhandledFillThisBuffers--;
 
-#if 1
+#ifdef ANDROID
         if (pComponentPrivate->bFirstOutputBuffer){
         // if this is the first output buffer, fill the config data, then return the buffer (skip DSP)
             AACENCWriteConfigHeader(pComponentPrivate, pBufHeader);
+                AACENC_DPRINT ("%d :: UTIL: AACENCWriteConfigHeader = %p\n",__LINE__, pBufHeader->pBuffer);
             pComponentPrivate->cbInfo.FillBufferDone (
                                    pComponentPrivate->pHandle,
                                    pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3124,6 +3125,7 @@ EXIT:
 
 
 OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr){
+
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nPosition = 0;
     OMX_U32 nNumBitsWritten = 0;
@@ -3133,7 +3135,9 @@ OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivat
     OMX_U32 tempData = 0;
     OMX_U8 rateIndex = 0;
     OMX_U16 nBuf = 0;
- 
+	OMX_U16 nBuf2 = 0;
+    //nBytePosition = nPosition / 8;  //add this back if we need to handle more than 4 bytes (U32).
+    //nBitPosition =  nPosition % 8;
     memset(pBufHdr->pBuffer, 0x0, pBufHdr->nAllocLen); // make sure we start with zeroes
 
     nBits = 5; //audioObjectType
@@ -3153,27 +3157,31 @@ OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivat
         tempData = AACENC_OBJ_TYP_PS << (16-nPosition);
     }
     nBuf = tempData;
- 
+
     nBits = 4; //SamplingFrequencyIndex
     nPosition += nBits;
     rateIndex = AACEnc_GetSampleRateIndexL(pComponentPrivate->aacParams[OUTPUT_PORT]->nSampleRate);
     tempData = rateIndex << (16-nPosition);
     nBuf |= tempData;
     AACENC_DPRINT("CONFIG BUFFER = %p\n\n", nBuf);
- 
+
     nBits = 4; //channelConfiguration
     nPosition += nBits;
     tempData = pComponentPrivate->aacParams[OUTPUT_PORT]->nChannels << (16-nPosition);
     nBuf |= tempData;
- 
+
     //@TODO add the rest of the AudioSpecificConfigData
-    nBuf = 0x8815;   //flipping the header due to PV reports
-    AACENC_DPRINT("CONFIG BUFFER = %p\n\n", nBuf);
-    memcpy(pBufHdr->pBuffer, &nBuf, sizeof(OMX_U16));
+
+	nBuf2 =	(nBuf>> 8) | (nBuf << 8); /* Changing Endianess */
+
+    AACENC_DPRINT("CONFIG BUFFER = %p\n\n", nBuf2);
+
+    memcpy(pBufHdr->pBuffer, &nBuf2, sizeof(OMX_U16));
     pBufHdr->nFlags = NORMAL_BUFFER;  // clear any other flags then add the needed ones
     pBufHdr->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
     pBufHdr->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
     pBufHdr->nFilledLen = sizeof(OMX_U16); //need make this dynamic for non basic LC cases.
+
     return eError;
 }
 

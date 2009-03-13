@@ -55,7 +55,7 @@
  *     M A C R O S
  */
 
-#define APP_DEBUG  
+#undef APP_DEBUG  
 #define APP_INFO
 #define APP_ERROR
 #define DASF
