@@ -30,6 +30,7 @@
 #ifdef ANDROID
 /* Log for Android system*/
 #include <utils/Log.h>
+#define LOG_TAG "TI_Video_Decoder"
 #endif
 
 #ifdef UNDER_CE
@@ -94,6 +95,7 @@
 
 #include <sched.h>
 #include <OMX_Core.h>
+#include <OMX_TI_Debug.h>
 #include "OMX_VideoDecoder.h"
 #include "OMX_VidDec_CustomCmd.h"
 #include "OMX_TI_Common.h"
@@ -418,19 +420,20 @@ typedef enum VIDDEC_CUSTOM_PARAM_INDEX
  #ifdef VIDDEC_SPARK_CODE
     VideoDecodeCustomParamIsNALBigEndian,
     VideoDecodeCustomParambUseFlaggedEos,
-    VideoDecodeCustomParamIsSparkInput
+    VideoDecodeCustomParamIsSparkInput,
  #else
     VideoDecodeCustomParamIsNALBigEndian,
-    VideoDecodeCustomParambUseFlaggedEos
+    VideoDecodeCustomParambUseFlaggedEos,
  #endif
 #else
  #ifdef VIDDEC_SPARK_CODE
     VideoDecodeCustomParamIsNALBigEndian,
-    VideoDecodeCustomParamIsSparkInput
+    VideoDecodeCustomParamIsSparkInput,
  #else
-    VideoDecodeCustomParamIsNALBigEndian
+    VideoDecodeCustomParamIsNALBigEndian,
  #endif
 #endif
+    VideoDecodeCustomConfigDebug
 } VIDDEC_CUSTOM_PARAM_INDEX;
 
 typedef enum VIDDEC_LCML_STATES
@@ -996,152 +999,10 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL bConfigBufferCompleteAVC;
     OMX_PTR pInternalConfigBufferAVC;
     OMX_U32 nInternalConfigBufferFilledAVC;
-
+    struct OMX_TI_Debug dbg;
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/
-
-/*#ifndef UNDER_CE Start Linux logging definitions */
-#if 0
-    #define OMX_PRINT_COLOR
-#endif
-/*
- *  ANSI escape sequences for outputing text in various colors
- */
-#ifdef OMX_PRINT_COLOR
-    #define DBG_TEXT_WHITE   "\x1b[1;37;40m"
-    #define DBG_TEXT_YELLOW  "\x1b[1;33;40m"
-    #define DBG_TEXT_MAGENTA "\x1b[1;35;40m"
-    #define DBG_TEXT_GREEN   "\x1b[1;32;40m"
-    #define DBG_TEXT_CYAN    "\x1b[1;36;40m"
-    #define DBG_TEXT_RED     "\x1b[1;31;40m"
-#else
-    #define DBG_TEXT_WHITE   ""
-    #define DBG_TEXT_YELLOW  ""
-    #define DBG_TEXT_MAGENTA ""
-    #define DBG_TEXT_GREEN   ""
-    #define DBG_TEXT_CYAN    ""
-    #define DBG_TEXT_RED     ""
-#endif
-
-#if 0
-    #define VIDDEC_BUFFERPRINT_DEBUG
-    #define VIDDEC_PRINT_DEBUG
-    #define VIDDEC_VERSIONPRINT_DEBUG
-#endif
-
-#if 1
-    #define VIDDEC_ERROR_DEBUG
-#endif
-
-#ifdef UNDER_CE
-    #include <oaf_debug.h>
-    #ifndef VIDDEC_DPRINT
-        #define VIDDEC_DPRINT
-    #endif
-    #ifndef VIDDECODER_DPRINT
-        #define VIDDECODER_DPRINT
-    #endif
-    #ifndef VIDDEC_EPRINT
-        #define VIDDEC_EPRINT
-    #endif
-    #ifndef VIDDECODER_EPRINT
-        #define VIDDECODER_EPRINT
-    #endif
-    #ifndef OMX_DPRINT
-        #define OMX_DPRINT
-    #endif
-    #ifndef OMX_BUFFERPRINT
-        #define OMX_BUFFERPRINT
-    #endif
-    #ifndef VIDDEC_BUFFERPRINT
-        #define VIDDEC_BUFFERPRINT
-    #endif
-    #ifndef VIDDEC_VERSIONPRINT
-        #define VIDDEC_VERSIONPRINT
-    #endif
-
-#else /* Linux Only */
-    #ifdef  VIDDEC_ERROR_DEBUG
-       #define VIDDECODER_EPRINT(STR, ARG...) VIDDEC_eprint(__LINE__, __FUNCTION__, STR, ##ARG)
-       #define VIDDEC_EPRINT(STR, ARG...)     VIDDEC_eprint(__LINE__, __FUNCTION__, STR, ##ARG)
-    #else
-        #define VIDDECODER_EPRINT(...)
-        #define VIDDEC_EPRINT(...)
-    #endif
-    #ifdef VIDDEC_BUFFERPRINT_DEBUG
-        #ifdef ANDROID
-            #define VIDDEC_BUFFERPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s:", __FUNCTION__); \
-                                                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-        #else
-            #define VIDDEC_BUFFERPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-        #endif
-
-    #else
-        #define VIDDEC_BUFFERPRINT(...)
-    #endif
-    #ifdef VIDDEC_VERSIONPRINT_DEBUG
-        #ifdef ANDROID
-            #define VIDDEC_VERSIONPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-        #else
-            #define VIDDEC_VERSIONPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-        #endif
-    #else
-        #define VIDDEC_VERSIONPRINT(...)
-    #endif
-
-    #ifdef __OMX_DPRINT__
-        #ifdef ANDROID
-            #define OMX_DPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-        #else
-            #define OMX_DPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-        #endif
-    #else
-        #define OMX_DPRINT(...)
-    #endif
-    #ifdef  VIDDEC_PRINT_DEBUG
-        #ifdef ANDROID
-            #define VIDDECODER_DPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-        #else
-            #define VIDDECODER_DPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-        #endif
-        #ifndef VIDDEC_BUFFERPRINT_DEBUG
-            #ifdef ANDROID
-                #define VIDDEC_BUFFERPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-            #else
-                #define VIDDEC_BUFFERPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-            #endif
-        #endif
-        #ifdef VIDDEC_VERSIONPRINT_DEBUG
-            #ifdef ANDROID
-                #define VIDDEC_VERSIONPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-            #else
-                #define VIDDEC_VERSIONPRINT(STR, ARG...) VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-            #endif
-        #endif
-        #ifndef VIDDEC_DPRINT
-            #ifdef ANDROID
-                #define VIDDEC_DPRINT(STR, ARG...) __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,STR, ##ARG);
-            #else
-                #define VIDDEC_DPRINT(STR, ARG...)     VIDDEC_Log(__FILE__, __LINE__, __FUNCTION__, STR, ##ARG)
-            #endif
-        #endif
-    #else
-        #define VIDDECODER_DPRINT(...)
-        #ifndef VIDDEC_BUFFERPRINT_DEBUG
-            #define VIDDEC_BUFFERPRINT(...)
-        #endif
-        #ifndef VIDDEC_VERSIONPRINT_DEBUG
-            #define VIDDEC_VERSIONPRINT(...)
-        #endif
-        #ifndef VIDDEC_DPRINT
-                #define VIDDEC_DPRINT(...)
-        #endif
-    #endif
-
-#endif
-
-
 #define OMX_MALLOC_STRUCT(_pStruct_, _sName_, _memusage_)           \
     _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
     if(_pStruct_ == NULL){                                          \
@@ -1169,19 +1030,19 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]*/
 
 
-#define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
+#define OMX_CONF_INIT_STRUCT(_s_, _name_, dbg)       \
     memset((_s_), 0x0, sizeof(_name_));         \
     (_s_)->nSize = sizeof(_name_);              \
     (_s_)->nVersion.s.nVersionMajor = VERSION_MAJOR;      \
     (_s_)->nVersion.s.nVersionMinor = VERSION_MINOR;      \
     (_s_)->nVersion.s.nRevision = VERSION_REVISION;       \
     (_s_)->nVersion.s.nStep = VERSION_STEP;                                             \
-    VIDDEC_VERSIONPRINT("INIT_STRUCT Major 0x%x Minor 0x%x nRevision 0x%x nStep 0x%x\n", \
+    OMX_PRINT0(dbg, "INIT_STRUCT Major 0x%x Minor 0x%x nRevision 0x%x nStep 0x%x\n", \
         (_s_)->nVersion.s.nVersionMajor, (_s_)->nVersion.s.nVersionMinor, \
         (_s_)->nVersion.s.nRevision, (_s_)->nVersion.s.nStep);
 
-#define OMX_CONF_CHK_VERSION(_s_, _name_, _e_)              \
-    VIDDEC_VERSIONPRINT("CHK_VERSION Size 0x%x Major 0x%x Minor 0x%x nRevision 0x%x nStep 0x%x\n", \
+#define OMX_CONF_CHK_VERSION(_s_, _name_, _e_, dbg)              \
+    OMX_PRINT0(dbg, "CHK_VERSION Size 0x%lx Major 0x%x Minor 0x%x nRevision 0x%x nStep 0x%x\n", \
         (_s_)->nSize, (_s_)->nVersion.s.nVersionMajor, (_s_)->nVersion.s.nVersionMinor, \
         (_s_)->nVersion.s.nRevision, (_s_)->nVersion.s.nStep);              \
     if((_s_)->nSize != sizeof(_name_)) _e_ = OMX_ErrorBadParameter; \
@@ -1375,8 +1236,6 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec (VIDDEC_COMPONENT_PRIVATE* pComponentPriva
 OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bRetDSP);
 OMX_ERRORTYPE VIDDEC_HandleCommandMarkBuffer(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_PTR pCmdData);
 OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bPass);
-void VIDDEC_Log(const char *szFileName, int iLineNum, const char *szFunctionName, const char *strFormat, ...);
-void VIDDEC_eprint(int iLineNum, const char *szFunctionName, const char *strFormat, ...);
 OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing);
 OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
