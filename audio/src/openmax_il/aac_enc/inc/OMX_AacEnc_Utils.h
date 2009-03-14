@@ -39,6 +39,13 @@
 #define _ERROR_PROPAGATION__ 
 #define MPEG4AACENC_MAX_OUTPUT_FRAMES 24
 
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+
+#ifndef ANDROID
+    #define ANDROID
+#endif
+
 #define EXTRA_BYTES 128 
 #define DSP_CACHE_ALIGNMENT 256 
 
@@ -110,7 +117,7 @@
 #undef SWAT_ANALYSIS
 
 /* debug message */ 
-#define AACENC_DEBUG        
+#undef AACENC_DEBUG        
 #define AACENC_ERROR
 
 
@@ -151,6 +158,17 @@ typedef struct
 }AACENC_UAlgOutBufParamStruct;
 
 
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+        ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)
+        OMX_BOOL iIsOMXComponentMultiThreaded;
+        OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+        OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+        OMX_BOOL iOMXComponentSupportsPartialFrames;
+        OMX_BOOL iOMXComponentNeedsNALStartCode;
+        OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
 
 /*This enum must not be changed.*/
 typedef enum COMP_PORT_TYPE 
@@ -566,6 +584,8 @@ typedef struct AACENC_COMPONENT_PRIVATE
     /** Keep buffer tickcount **/
     OMX_U32 tickcountBufIndex[MAX_NUM_OF_BUFS];
     
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
+
 } AACENC_COMPONENT_PRIVATE;
 
 OMX_ERRORTYPE AACENCGetCorresponding_LCMLHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer,
@@ -614,6 +634,7 @@ OMX_ERRORTYPE AACENC_TransitionToPause(AACENC_COMPONENT_PRIVATE *pComponentPriva
 OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 
 OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr);
+
 /* void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
 
 #ifndef UNDER_CE

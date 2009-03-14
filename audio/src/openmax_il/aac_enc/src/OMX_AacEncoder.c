@@ -205,7 +205,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_STRUCT(pHandle->pComponentPrivate, AACENC_COMPONENT_PRIVATE);
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     AACENC_DPRINT("AACENC: pComponentPrivate %p \n",pHandle->pComponentPrivate);
-
     
     /* Initialize component data structures to default values */
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->sPortParam.nPorts = 0x2;
@@ -261,6 +260,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 
     pComponentPrivate = pHandle->pComponentPrivate;
+
+#ifdef ANDROID /* leave this now, we may need them later. */
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
+#endif
     
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERF = PERF_Create(PERF_FOURCC('A','A','E','_'),
@@ -294,7 +303,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     strcpy((char*)pComponentPrivate->sDeviceString,"/rtmdn:i2:o1/codec\0");
 
     /*Safety value for frames per output buffer ( for Khronos)  */
-    pComponentPrivate->FramesPer_OutputBuffer = 3; 
+    pComponentPrivate->FramesPer_OutputBuffer = 1; 
     pComponentPrivate->CustomConfiguration = OMX_FALSE;
     
     pComponentPrivate->dasfmode                     = 0;
@@ -907,6 +916,23 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
          
             break;
 
+#ifdef ANDROID
+    case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+    {
+	AACENC_EPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
+        PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+        if (NULL == pCap_flags)
+        {
+            AACENC_EPRINT ("%d :: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+            eError =  OMX_ErrorBadParameter;
+            goto EXIT;
+        }
+        AACENC_EPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+        memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
+	eError = OMX_ErrorNone;
+    }
+    break;
+#endif          
             
 
         case OMX_IndexParamPriorityMgmt:
