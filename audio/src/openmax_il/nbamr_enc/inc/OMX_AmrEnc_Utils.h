@@ -953,6 +953,8 @@ typedef struct AMRENC_COMPONENT_PRIVATE
 	OMX_U8 IpBufindex;
 	/** Index to arrBufIndex[], used for output buffer timestamps */
 	OMX_U8 OpBufindex;	
+    OMX_TICKS TimeStamp;
+    OMX_BOOL bFirstInputBufReceived;
 
     OMX_S8 ProcessingInputBuf;
     OMX_S8 ProcessingOutputBuf; 

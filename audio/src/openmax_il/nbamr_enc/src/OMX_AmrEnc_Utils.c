@@ -1857,7 +1857,13 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 pLcmlHdr->pBufferParam->usNbFrames = nFrames;                
 /*---------------------------------------------------------------*/
 			/* Store time stamp information */
-						pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
+                /*pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;*/
+                if (!pComponentPrivate->bFirstInputBufReceived) {
+                    /* Reset TimeStamp when first input buffer received */
+                    pComponentPrivate->TimeStamp = 0;
+                    /* First Input buffer received */
+                    pComponentPrivate->bFirstInputBufReceived = OMX_TRUE;
+                }
 			/* Store nTickCount information */
 						pComponentPrivate->arrTickCount[pComponentPrivate->IpBufindex] = pBufHeader->nTickCount;
 						pComponentPrivate->IpBufindex++;
@@ -2186,6 +2192,8 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     OMX_COMPONENTTYPE *pHandle;
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U8 nFrames;
+    double num_samples = 0;
+    OMX_U32 buffer_duration = 0;
 
 	NBAMRENC_BUFDATA* OutputFrames = NULL;
 
@@ -2389,7 +2397,14 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
 				
                 if( !pComponentPrivate_CC->dasfMode){
                         /* Copying time stamp information to output buffer */
-	    		        pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate_CC->arrBufIndex[pComponentPrivate_CC->OpBufindex];
+                        /*pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate_CC->arrBufIndex[pComponentPrivate_CC->OpBufindex];*/
+                        pLcmlHdr->buffer->nTimeStamp = pComponentPrivate_CC->TimeStamp;
+                        num_samples = pLcmlHdr->buffer->nFilledLen / (pComponentPrivate_CC->pcmParams->nChannels
+                                                                      * (pComponentPrivate_CC->pcmParams->nBitPerSample / 8));
+                        buffer_duration = (num_samples / pComponentPrivate_CC->pcmParams->nSamplingRate) * 10000;
+                        /* Update time stamp information */
+                        pComponentPrivate_CC->TimeStamp += (OMX_TICKS)buffer_duration;
+                        /*pComponentPrivate_CC->TimeStamp += 20 * nFrames;*/
                         /* Copying nTickCount information to output buffer */
 	    		        pLcmlHdr->buffer->nTickCount = pComponentPrivate_CC->arrTickCount[pComponentPrivate_CC->OpBufindex];
 		    	        pComponentPrivate_CC->OpBufindex++;
