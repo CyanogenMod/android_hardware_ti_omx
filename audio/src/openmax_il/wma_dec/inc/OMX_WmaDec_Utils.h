@@ -47,23 +47,24 @@
 #include <OMX_Component.h>
 #include <TIDspOmx.h>
 #include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
-#define _ERROR_PROPAGATION__ 
+#define _ERROR_PROPAGATION__
 
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
 #endif
 
-#include <OMX_Component.h> 
+#include <OMX_Component.h>
 
 #ifdef UNDER_CE
 #ifndef _OMX_EVENT_
 #define _OMX_EVENT_
 typedef struct OMX_Event {
         HANDLE event;
-    } OMX_Event;	
+    } OMX_Event;
 #endif
-	
+
 int OMX_CreateEvent(OMX_Event *event);
 int OMX_SignalEvent(OMX_Event *event);
 int OMX_WaitForEvent(OMX_Event *event);
@@ -81,7 +82,11 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+
+#ifndef ANDROID
 #define ANDROID
+#endif
+
 #define OBJECTTYPE_LC 2
 #define OBJECTTYPE_HE 5
 #define OBJECTTYPE_HE2 29
@@ -102,26 +107,26 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 #define  WMADEC_MINOR_VER 0xF2
 /* ======================================================================= */
 /**
- * @def    INPUT_WMADEC_BUFFER_SIZE   Default input buffer size 
- *                                     
+ * @def    INPUT_WMADEC_BUFFER_SIZE   Default input buffer size
+ *
  */
 /* ======================================================================= */
 #define INPUT_WMADEC_BUFFER_SIZE 8192
 /* ======================================================================= */
 /**
- * @def    OUTPUT_WMADEC_BUFFER_SIZE   Default output buffer size          
+ * @def    OUTPUT_WMADEC_BUFFER_SIZE   Default output buffer size
  */
 /* ======================================================================= */
 #define OUTPUT_WMADEC_BUFFER_SIZE 40960
 /* ======================================================================= */
 /**
- * @def    NUM_WMADEC_INPUT_BUFFERS   Default number of input buffers               
+ * @def    NUM_WMADEC_INPUT_BUFFERS   Default number of input buffers       
  */
 /* ======================================================================= */
 #define NUM_WMADEC_INPUT_BUFFERS 1
 /* ======================================================================= */
 /**
- * @def    NUM_WMADEC_OUTPUT_BUFFERS   Default number of output buffers                                   
+ * @def    NUM_WMADEC_OUTPUT_BUFFERS   Default number of output buffers
  */
 /* ======================================================================= */
 #ifdef UNDER_CE
@@ -405,30 +410,34 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  *  M A C R O FOR ALLOCATE MEMORY 
  */
 /* ======================================================================= */
+#define WMA_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3) \
+{                                               \
+    if(!_ptr1 || !_ptr2 || !_ptr3){             \
+        eError = OMX_ErrorBadParameter;         \
+        goto EXIT;                 \
+    }                                           \
+}
+
 #define WMAD_OMX_MALLOC(_pStruct_, _sName_)   \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
     if(_pStruct_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
+	OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_pStruct_,0,sizeof(_sName_));\
-    WMADEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 
 #define WMAD_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
     _ptr_ = (_name_ *)newmalloc(_size_);      \
     if(_ptr_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_ptr_,0,_size_); \
-    WMADEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 
 /* ======================================================================= */
@@ -438,7 +447,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* ======================================================================= */
 
 #define OMX_WMADECMEMFREE_STRUCT(_pStruct_)\
-	WMADEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
+	OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
@@ -838,7 +847,7 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     OMX_AUDIO_PARAM_PCMMODETYPE *wma_op;
      
     StreamData pStreamData;
-        
+    struct OMX_TI_Debug dbg;
 } WMADEC_COMPONENT_PRIVATE;
 /* ===========================================================  */
 /**
@@ -1229,7 +1238,8 @@ typedef enum OMX_WMADEC_INDEXAUDIOTYPE {
 	OMX_IndexCustomWMADECHeaderInfoConfig,
 	OMX_IndexCustomWmaDecLowLatencyConfig,
 	OMX_IndexCustomWmaDecStreamIDConfig,
-	OMX_IndexCustomWmaDecDataPath
+	OMX_IndexCustomWmaDecDataPath,
+	OMX_IndexCustomDebug
 }OMX_WMADEC_INDEXAUDIOTYPE;
 
 

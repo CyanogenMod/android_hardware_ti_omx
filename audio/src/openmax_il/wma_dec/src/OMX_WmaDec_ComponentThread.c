@@ -89,10 +89,10 @@ void* ComponentThread (void* pThreadData)
 
     WMADEC_COMPONENT_PRIVATE* pComponentPrivate = (WMADEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
-
-    WMADEC_DPRINT("OMX_WmaDec_ComponentThread:%d\n",__LINE__);
+    WMA_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+    OMX_PRINT1(pComponentPrivate->dbg, "OMX_WmaDec_ComponentThread:%d\n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
-WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
+OMX_PRINT1(pComponentPrivate->dbg, "PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('W', 'M', 'A', 'D'),
                                                PERF_ModuleComponent |
                                                PERF_ModuleAudioDecode);
@@ -112,26 +112,25 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
         tv.tv_nsec = 0;/*WMAD_TIMEOUT * 1000;*/
 
 #ifndef UNDER_CE
-		sigset_t set;
-		sigemptyset (&set);
-		sigaddset (&set, SIGALRM);
-		status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
+	sigset_t set;
+	sigemptyset (&set);
+	sigaddset (&set, SIGALRM);
+	status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
 #else
         status = select (fdmax+1, &rfds, NULL, NULL, &tv);
 #endif
 
         if (pComponentPrivate->bIsStopping == 1) {
-            WMADEC_DPRINT(":: Comp Thrd Exiting here...\n");
+            OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
             goto EXIT;
         }
 
         if (0 == status) {
 
-        WMADEC_DPRINT("%d : bIsStopping = %d\n",__LINE__, pComponentPrivate->bIsStopping);
+        OMX_PRDSP4(pComponentPrivate->dbg, "%d : bIsStopping = %ld\n",__LINE__, pComponentPrivate->bIsStopping);
 
             if (pComponentPrivate->bIsStopping == 1)  {
-
-                WMADEC_DPRINT("%d:WmaComponentThread \n",__LINE__);
+		OMX_PRINT2(pComponentPrivate->dbg, "%d:WmaComponentThread \n",__LINE__);
                 /*if(eError != OMX_ErrorNone) {
                    WMADEC_DPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
                     break;
@@ -150,15 +149,15 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
                 pComponentPrivate->bIsEOFSent = 0;
                 
                 if (pComponentPrivate->curState != OMX_StateIdle) {
-                   WMADEC_DPRINT("%d:WmaComponentThread \n",__LINE__);
+                   OMX_ERROR4(pComponentPrivate->dbg, "%d:WmaComponentThread \n",__LINE__);
                     goto EXIT;
                 }
             }
-            WMADEC_DPRINT ("%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
+            OMX_PRINT2(pComponentPrivate->dbg, "%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
         } 
         else if (-1 == status) {
 
-            WMADEC_DPRINT ("%d :: Error in Select\n", __LINE__);
+            OMX_ERROR5(pComponentPrivate->dbg, "%d :: Error in Select\n", __LINE__);
             
             pComponentPrivate->cbInfo.EventHandler ( pHandle,
                                                      pHandle->pApplicationPrivate,
@@ -173,15 +172,15 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
         
 
 
-            WMADEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                WMADEC_DPRINT ("%d :: Error while reading from the pipe\n",__LINE__);
+                OMX_ERROR5(pComponentPrivate->dbg, "%d :: Error while reading from the pipe\n",__LINE__);
             }
 
             eError = WMADECHandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                WMADEC_DPRINT ("%d :: Error From WMADECHandleDataBuf_FromApp\n");
+		OMX_ERROR5(pComponentPrivate->dbg, "%d:: Error From WMADECHandleDataBuf_FromApp\n",__LINE__);
                 break;
             }
 
@@ -189,21 +188,21 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
 
             /* Do not accept any command when the component is stopping */
-            WMADEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: CMD pipe is set in Component Thread\n",__LINE__);
 
 
             nRet = WMADECHandleCommand (pComponentPrivate);
 
             if (nRet == EXIT_COMPONENT_THRD) {
-                WMADEC_DPRINT ("Exiting from Component thread\n");
+                OMX_PRINT2(pComponentPrivate->dbg, "Exiting from Component thread\n");
 
                 WMADEC_CleanupInitParams(pHandle);
                 if(eError != OMX_ErrorNone) {
-                    WMADEC_DPRINT("%d :: Function Mp3Dec_FreeCompResources returned\
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Function Mp3Dec_FreeCompResources returned\
                                                                 error\n",__LINE__);
                     goto EXIT;
                 }
-                WMADEC_DPRINT("%d :: ARM Side Resources Have Been Freed\n",__LINE__);
+                OMX_PRINT2(pComponentPrivate->dbg, "%d :: ARM Side Resources Have Been Freed\n",__LINE__);
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
@@ -223,7 +222,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
                                                                 OMX_ErrorNone,
                                                                 pComponentPrivate->curState, 
                                                                 NULL);
-                        WMADEC_DPRINT("%d %s Component loaded (OMX_StateLoaded)\n",__LINE__,__FUNCTION__);
+                        OMX_PRINT2(pComponentPrivate->dbg, "%d %s Component loaded (OMX_StateLoaded)\n",__LINE__,__FUNCTION__);
                 }
                 else{
                     pComponentPrivate->cbInfo.EventHandler( pHandle, 
@@ -241,9 +240,9 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
     }
 EXIT:
 #ifdef __PERF_INSTRUMENTATION__
-WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
+OMX_PRINT2(pComponentPrivate->dbg, "PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    WMADEC_DPRINT("%d::Exiting ComponentThread\n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d::Exiting ComponentThread\n",__LINE__);
     return (void*)OMX_ErrorNone;
 }
