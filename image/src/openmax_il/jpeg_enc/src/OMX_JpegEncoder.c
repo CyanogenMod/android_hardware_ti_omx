@@ -132,7 +132,8 @@ static OMX_ERRORTYPE JPEGENC_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComp
 
 static OMX_ERRORTYPE JPEGENC_VerifyTunnelConnection(JPEG_PORT_TYPE*pPort, 
                                             OMX_HANDLETYPE hTunneledComp,
-                                            OMX_PARAM_PORTDEFINITIONTYPE* pPortDef);
+					    OMX_PARAM_PORTDEFINITIONTYPE* pPortDef,
+					    struct OMX_TI_Debug *dbg);
 
 static OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                OMX_INOUT OMX_BUFFERHEADERTYPE** ppBufferHdr,
@@ -185,11 +186,11 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pBuffer);
     
-    JPEGENC_DPRINT("JPEGENC_FreeBuffer %p at port %d\n", pBuffer, nPortIndex);
-
     pHandle = (OMX_COMPONENTTYPE *) hComponent;
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *) pHandle->pComponentPrivate;
     pCompPort = pComponentPrivate->pCompPort[nPortIndex];
+
+    OMX_PRINT1(pComponentPrivate->dbg, "JPEGENC_FreeBuffer %p at port %d\n", pBuffer, (int)nPortIndex);
 
 #ifdef __PERF_INSTRUMENTATION__
     /* never frees buffer */
@@ -239,7 +240,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         }
 
     pCompPort->nBuffCount--;
-        JPEGENC_DPRINT("JPEGE: bPopulated %d\n", pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEGE: bPopulated %d\n", pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated);
     if (pCompPort->nBuffCount == 0) {
         pComponentPrivate->pCompPort[nPortIndex]->pPortDef->bPopulated = OMX_FALSE;
 
@@ -273,7 +274,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    JPEGENC_DPRINT("Exit from FreeBuffer\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Exit from FreeBuffer\n");
 
     return eError;
 }
@@ -303,7 +304,7 @@ OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_CHECK_PARAM(ppBufferHdr);
     OMX_CHECK_PARAM(pBuffer);
     
-    if (nPortIndex < 0 || nPortIndex > 1) {
+    if (/*nPortIndex < 0 || */nPortIndex > 1) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -327,13 +328,13 @@ OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     nInpIndex = pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortFormat->nPortIndex;
     nOutIndex = pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortFormat->nPortIndex;
 
-    if ( nPortIndex == nInpIndex ) {
+    if ( (int)nPortIndex == nInpIndex ) {
         OMX_MALLOC_STRUCT(pBuffHeader, OMX_BUFFERHEADERTYPE);
         OMX_CONF_INIT_STRUCT(pBuffHeader, OMX_BUFFERHEADERTYPE);
         pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr = pBuffHeader;
         *ppBufferHdr = pBuffHeader;
     } 
-    else if ( nPortIndex == nOutIndex ) {
+    else if ( (int)nPortIndex == nOutIndex ) {
         OMX_MALLOC_STRUCT(pBuffHeader, OMX_BUFFERHEADERTYPE);
         OMX_CONF_INIT_STRUCT(pBuffHeader, OMX_BUFFERHEADERTYPE);
         pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr = pBuffHeader;
@@ -426,15 +427,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     OMX_ERRORTYPE eError            = OMX_ErrorNone;
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_U8 i = 0;
-    /* Allocate memory for component's private data area */
-    
+
     OMX_CHECK_PARAM(hComponent);
     
-    JPEGENC_DPRINT("in jpeg-enc OMX_ComponentInit\n");
-
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
     OMX_MALLOC_STRUCT (pHandle->pComponentPrivate, JPEGENC_COMPONENT_PRIVATE);
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    /* get default settings for debug */
+    OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_JPGENC");
+    /* Allocate memory for component's private data area */
+    OMX_PRINT1(pComponentPrivate->dbg, "in jpeg-enc OMX_ComponentInit\n");
 
 #ifdef __PERF_INSTRUMENTATION__
         pComponentPrivate->pPERF = PERF_Create(PERF_FOURCC('J','P','E',' '),
@@ -442,11 +445,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
         pComponentPrivate->pPERFcomp = NULL;
 #endif
 
-    /**Assigning address of Component Structure point to place holder inside comp
-    nentprivate structure
-    */
-    ((JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
-
+    /*
+     * Assigning address of Component Structure point to place holder
+     * inside componentprivate structure
+     */
+    pComponentPrivate->pHandle = pHandle;
     pComponentPrivate->nCurState = OMX_StateLoaded;
    
     pHandle->SetCallbacks               = JPEGENC_SetCallbacks;
@@ -468,7 +471,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 #ifdef KHRONOS_1_1
     pHandle->ComponentRoleEnum          = ComponentRoleEnum;
 #endif
-    JPEGENC_DPRINT("Inside Component Init JPEG encoder\n");
+    OMX_PRINT2(pComponentPrivate->dbg, "Inside Component Init JPEG encoder\n");
     pComponentPrivate->ComponentVersion.s.nVersionMajor = 0x01;
     pComponentPrivate->ComponentVersion.s.nVersionMinor = 0x00;
     pComponentPrivate->ComponentVersion.s.nRevision = 0x00;
@@ -678,21 +681,19 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     /* load the ResourceManagerProxy thread */
     eError = RMProxy_NewInitalizeEx(OMX_COMPONENTTYPE_IMAGE);
     if ( eError != OMX_ErrorNone ) {
-        JPEGENC_DPRINT ("Error returned from loading ResourceManagerProxy thread\n");
+        OMX_PRMGR4(pComponentPrivate->dbg, "Error returned from loading ResourceManagerProxy thread\n");
         goto EXIT;
     }
 
 #endif
     eError = JPEGEnc_Start_ComponentThread(pHandle);
     if (eError) {
-        JPEGENC_DPRINT("Error while initializing thread\n");
+        OMX_PRINT4(pComponentPrivate->dbg, "Error while initializing thread\n");
         goto EXIT;
     }
 
-
-
-JPEGENC_DPRINT("JPEG-ENC: actual buffer %d\n", pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual);
-    EXIT:
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEG-ENC: actual buffer %d\n", (int)(pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual));
+ EXIT:
     if(eError != OMX_ErrorNone){
         FREE(pComponentPrivate->cComponentName);
         FREE(pComponentPrivate->pPortParamType);
@@ -794,7 +795,6 @@ static OMX_ERRORTYPE JPEGENC_GetComponentVersion (OMX_HANDLETYPE hComp,
     OMX_COMPONENTTYPE    * pHandle           = NULL;
     JPEGENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_U8 *pTemp = NULL;
-    JPEGENC_DPRINT ("Inside JPEGENC_GetComponentVersion function\n");
     if (!hComp || !szComponentName || !pComponentVersion || !pSpecVersion || !pComponentUUID) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
@@ -859,7 +859,7 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
     pPortDefIn   = pCompPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef;
     pPortDefOut  = pCompPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortDef;
    
-    JPEGENC_DPRINT("Print nParam = %d\n", (int)nParam);
+    OMX_PRINT2(pCompPrivate->dbg, "Print nParam = %d\n", (int)nParam);
 
     if ( pCompPrivate->nCurState == OMX_StateInvalid ) {
         eError = OMX_ErrorInvalidState;
@@ -872,22 +872,22 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
         pCompPrivate->nToState = nParam;
         break;
     case OMX_CommandFlush:
-        if ((nParam != 0) && (nParam != 1) && (nParam != -1)) {
+	if ((nParam != 0) && (nParam != 1) && ((int)nParam != -1)) {
             eError = OMX_ErrorBadPortIndex;
             goto EXIT;
         }
         eCmd = Flush;
         break;
     case OMX_CommandPortDisable:
-        if (nParam == JPEGENC_INP_PORT  || nParam == -1) {
+	if (nParam == JPEGENC_INP_PORT  || (int)nParam == -1) {
             pPortDefIn->bEnabled = OMX_FALSE;
             pCompPrivate->bInportDisableIncomplete = OMX_FALSE;
         }
-        if (nParam == JPEGENC_OUT_PORT  || nParam == -1) {
+        if (nParam == JPEGENC_OUT_PORT  || (int)nParam == -1) {
             pPortDefOut->bEnabled = OMX_FALSE;
             pCompPrivate->bOutportDisableIncomplete = OMX_FALSE;
         }
-        if ((nParam != JPEGENC_INP_PORT) && (nParam != JPEGENC_OUT_PORT) && (nParam != -1))
+        if ((nParam != JPEGENC_INP_PORT) && (nParam != JPEGENC_OUT_PORT) && ((int)nParam != -1))
         {
             eError = OMX_ErrorBadParameter;
             goto EXIT;
@@ -916,13 +916,13 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
         break; 
 
     case OMX_CommandPortEnable:
-        if (nParam == JPEGENC_INP_PORT  || nParam == -1) {
+	if (nParam == JPEGENC_INP_PORT  || (int)nParam == -1) {
             pPortDefIn->bEnabled = OMX_TRUE;
         }
-        if (nParam == JPEGENC_OUT_PORT  || nParam == -1) {
+        if (nParam == JPEGENC_OUT_PORT  || (int)nParam == -1) {
             pPortDefOut->bEnabled = OMX_TRUE;
         }
-        if ((nParam != JPEGENC_INP_PORT) && (nParam != JPEGENC_OUT_PORT) && (nParam != -1)) {
+        if ((nParam != JPEGENC_INP_PORT) && (nParam != JPEGENC_OUT_PORT) && ((int)nParam != -1)) {
             eError = OMX_ErrorBadParameter;
             goto EXIT;
         }
@@ -938,7 +938,7 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
         pCompPrivate->pMarkData = pMarkType->pMarkData;
         pCompPrivate->hMarkTargetComponent = pMarkType->hMarkTargetComponent;
         pCompPrivate->nMarkPort = nParam;
-        JPEGENC_DPRINT("IN SendCommand, port %d mark %x\n", pCompPrivate->nMarkPort, pCompPrivate->pMarkData);
+        OMX_PRBUFFER2(pCompPrivate->dbg, "IN SendCommand, port %d mark %p\n", pCompPrivate->nMarkPort, pCompPrivate->pMarkData);
         goto EXIT;
         break;
     default:
@@ -948,7 +948,7 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
 
     nRet = write(pCompPrivate->nCmdPipe[1], &eCmd, sizeof(eCmd));
     if (nRet == -1) {
-        JPEGENC_DPRINT("%d :: Error while writing to the pipe.\n", __LINE__);
+        OMX_PRCOMM4(pCompPrivate->dbg, "%d :: Error while writing to the pipe.\n", __LINE__);
         eError = OMX_ErrorUndefined;
     }
 
@@ -962,10 +962,10 @@ static OMX_ERRORTYPE JPEGENC_SendCommand (
    
     nRet = write(pCompPrivate->nCmdDataPipe[1], &nParam, sizeof(nParam));
     if (nRet == -1) {
-        JPEGENC_DPRINT("%d :: Error while writing to the pipe.\n", __LINE__);
+        OMX_PRCOMM4(pCompPrivate->dbg, "%d :: Error while writing to the pipe.\n", __LINE__);
         eError = OMX_ErrorUndefined;
     }
-    JPEGENC_DPRINT("Writing into Cmd Pipe\n");
+    OMX_PRINT1(pCompPrivate->dbg, "Writing into Cmd Pipe\n");
     
     EXIT:
     
@@ -997,13 +997,12 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     JPEG_PORT_TYPE            *pInpPortType      = NULL;
     JPEG_PORT_TYPE            *pOutPortType      = NULL;
 
-    JPEGENC_DPRINT("Entering function\n");
-    
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pComponentParameterStructure);
-    
+
     pComp = (OMX_COMPONENTTYPE *)hComponent;
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE*)pComp->pComponentPrivate;
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering function\n");
 
     if ( pComponentPrivate->nCurState == OMX_StateInvalid ) {
         eError = OMX_ErrorInvalidState;
@@ -1034,19 +1033,19 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
        OMX_PARAM_PORTDEFINITIONTYPE *pParamPortDef  = NULL;
 
        pParamPortDef = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParameterStructure;
-       JPEGENC_DPRINT("index is %d (%d) (%d)\n", 
-            pParamPortDef->nPortIndex,
-            pInpPortType->pPortDef->nPortIndex,
-            pOutPortType->pPortDef->nPortIndex);
+       OMX_PRINT2(pComponentPrivate->dbg, "index is %d (%d) (%d)\n", 
+		  (int)(pParamPortDef->nPortIndex),
+		  (int)(pInpPortType->pPortDef->nPortIndex),
+		  (int)(pOutPortType->pPortDef->nPortIndex));
         if (pParamPortDef->nPortIndex == pInpPortType->pPortDef->nPortIndex)
         {
-            JPEGENC_DPRINT("nBufferCountActual %d (0) \n", pInpPortType->pPortDef->nBufferCountActual);
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "nBufferCountActual %d (0) \n", (int)(pInpPortType->pPortDef->nBufferCountActual));
             /* pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->bPopulated = OMX_FALSE; */
             memcpy(pComponentParameterStructure, pInpPortType->pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
             OMX_MEMCPY_CHECK(pComponentParameterStructure);
         } else if (pParamPortDef->nPortIndex == pOutPortType->pPortDef->nPortIndex)
         {
-            JPEGENC_DPRINT("nBufferCountActual %d (1)\n", pOutPortType->pPortDef->nBufferCountActual);
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "nBufferCountActual %d (1)\n", (int)(pOutPortType->pPortDef->nBufferCountActual));
             /* pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortDef->bPopulated = OMX_FALSE; */
             memcpy(pComponentParameterStructure, pOutPortType->pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
             OMX_MEMCPY_CHECK(pComponentParameterStructure);
@@ -1131,7 +1130,7 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    JPEGENC_DPRINT("Exit function eError = %x\n", eError);
+    OMX_PRINT1(pComponentPrivate->dbg, "Exit function eError = %x\n", eError);
     return eError;
 
 }
@@ -1317,7 +1316,21 @@ static OMX_ERRORTYPE JPEGENC_GetConfig (OMX_HANDLETYPE hComp,
                                         OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    JPEGENC_DPRINT ("Inside JPEGENC_GetConfig function\n");
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)hComp;
+    OMX_CHECK_PARAM(hComp);
+
+    JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate; 
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Inside JPEGENC_GetConfig function\n");
+    switch ( nConfigIndex ) {
+    case OMX_IndexCustomDebug:
+	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+	break;
+    default:
+        eError = OMX_ErrorUnsupportedIndex;
+        break;
+    }
+ EXIT:
     return eError;
 }
 
@@ -1551,14 +1564,14 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
         int *nWidth= (int*)ComponentConfigStructure;
 
         pPortDefIn = ((JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pCompPort[JPEGENC_INP_PORT]->pPortDef;
-        JPEGENC_DPRINT("INIT nFrameHeight = %d\n", pPortDefIn->format.image.nFrameHeight);
-        JPEGENC_DPRINT("INIT nFrameWidth = %d\n", pPortDefIn->format.image.nFrameWidth);
+        OMX_PRINT1(pComponentPrivate->dbg, "INIT nFrameHeight = %d\n", (int)(pPortDefIn->format.image.nFrameHeight));
+        OMX_PRINT1(pComponentPrivate->dbg, "INIT nFrameWidth = %d\n", (int)(pPortDefIn->format.image.nFrameWidth));
         pPortDefIn->format.image.nFrameWidth = *nWidth;
-        JPEGENC_DPRINT("nFrameWidth = %d\n", pPortDefIn->format.image.nFrameWidth);
+        OMX_PRINT1(pComponentPrivate->dbg, "nFrameWidth = %d\n", (int)(pPortDefIn->format.image.nFrameWidth));
 #if 0
         eError = SendDynamicParam(pComponentPrivate);
             if (eError != OMX_ErrorNone ) {
-                JPEGENC_DPRINT("SETSTATUS failed...  %x\n", eError);
+                OMX_PRDSP4(pComponentPrivate->dbg, "SETSTATUS failed...  %x\n", eError);
                 goto EXIT;
         }
 #endif
@@ -1571,11 +1584,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 
         pPortDefIn = ((JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pCompPort[JPEGENC_INP_PORT]->pPortDef;
         pPortDefIn->format.image.nFrameHeight = *nHeight;
-        JPEGENC_DPRINT("nFrameHeight = %d\n", pPortDefIn->format.image.nFrameHeight);
+        OMX_PRINT1(pComponentPrivate->dbg, "nFrameHeight = %d\n", (int)(pPortDefIn->format.image.nFrameHeight));
 #if 0
         eError = SendDynamicParam(pComponentPrivate);
             if (eError != OMX_ErrorNone ) {
-                JPEGENC_DPRINT("SETSTATUS failed...  %x\n", eError);
+                OMX_PRDSP4(pComponentPrivate->dbg, "SETSTATUS failed...  %x\n", eError);
                 goto EXIT;
         }
 #endif
@@ -1600,7 +1613,9 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
         }
         break;
     }
-    
+    case OMX_IndexCustomDebug:
+        OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+	break;
     default:
         eError = OMX_ErrorUnsupportedIndex;
         break;
@@ -1609,13 +1624,13 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
     if (pComponentPrivate->nCurState == OMX_StateExecuting || pComponentPrivate->nCurState == OMX_StatePause) {
         eError = SendDynamicParam(pComponentPrivate);
             if (eError != OMX_ErrorNone ) {
-                JPEGENC_DPRINT("SETSTATUS failed...  %x\n", eError);
+                OMX_PRDSP4(pComponentPrivate->dbg, "SETSTATUS failed...  %x\n", eError);
                 goto EXIT;
         }
     }
 
 EXIT:
-    JPEGENC_DPRINT ("Inside JPEGENC_SetConfig function\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Inside JPEGENC_SetConfig function\n");
     return eError;
 }
 
@@ -1639,11 +1654,12 @@ static OMX_ERRORTYPE JPEGENC_GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE*
     OMX_ERRORTYPE eError        = OMX_ErrorNone;
     OMX_ERRORTYPE error         = OMX_ErrorUndefined;
     OMX_COMPONENTTYPE *pHandle  = NULL;
+    JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_CHECK_PARAM(pComponent);
-    
+
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    
-    JPEGENC_DPRINT ("Inside JPEGENC_GetState function\n");
+    pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    OMX_PRINT1(pComponentPrivate->dbg, "Inside JPEGENC_GetState function\n");
     if( !pState )
     {
         error = OMX_ErrorBadParameter;
@@ -1651,7 +1667,7 @@ static OMX_ERRORTYPE JPEGENC_GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE*
     }
 
     if ( pHandle && pHandle->pComponentPrivate ) {
-        *pState =  ((JPEGENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->nCurState;
+        *pState =  pComponentPrivate->nCurState;
     }       
     else 
     {
@@ -1693,10 +1709,9 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 
     OMX_CHECK_PARAM(pComponent);
 
-    JPEGENC_DPRINT("inside JPEGENC_EmptyThisBuffer\n");
-
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "inside JPEGENC_EmptyThisBuffer\n");
     hTunnelComponent = pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->hTunnelComponent;
     pBuffPrivate = pBuffHead->pInputPortPrivate;
 
@@ -1714,7 +1729,7 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 
     if ( pBuffHead->nSize != sizeof(OMX_BUFFERHEADERTYPE) ) {
         eError = OMX_ErrorBadParameter;
-        JPEGENC_DPRINT("JPEG-ENC: buffer header size is not correct\n");
+        OMX_PRBUFFER4(pComponentPrivate->dbg, "JPEG-ENC: buffer header size is not correct\n");
         goto EXIT;
     }
 
@@ -1744,22 +1759,22 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                            PERF_ModuleHLMM);
 #endif
 
-    JPEGENC_DPRINT("pBuffHead->nAllocLen = %d\n",(int)pBuffHead->nAllocLen);
-    JPEGENC_DPRINT("pBuffHead->nFilledLen = %d\n",(int)pBuffHead->nFilledLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nAllocLen = %lu\n", pBuffHead->nAllocLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFilledLen = %lu\n", pBuffHead->nFilledLen);
 
     pComponentPrivate->nInPortIn ++;
 
-    JPEGENC_DPRINT("EmptyThisBuffer nInPortIn %d\n", pComponentPrivate->nInPortIn);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "EmptyThisBuffer nInPortIn %lu\n", pComponentPrivate->nInPortIn);
 
     if (pBuffHead->nFlags == OMX_BUFFERFLAG_EOS) {
-        JPEGENC_DPRINT("END OF STREAM DETECTED\n");
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "END OF STREAM DETECTED\n");
         pComponentPrivate->nFlags = OMX_BUFFERFLAG_EOS;
          /* pBuffHead->nFlags = 0; */
-        JPEGENC_DPRINT("record EOS flag on buffer ID %d\n", pComponentPrivate->nInPortIn);
-        for (i = 0; i < pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual; i ++) {
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "record EOS flag on buffer ID %lu\n", pComponentPrivate->nInPortIn);
+        for (i = 0; i < (int)(pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual); i ++) {
             if (pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->sBufferFlagTrack[i].buffer_id == 0xFFFFFFFF) 
             {
-                 JPEGENC_DPRINT("record buffer id in array %d\n", i);
+                 OMX_PRBUFFER2(pComponentPrivate->dbg, "record buffer id in array %d\n", i);
                  pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->sBufferFlagTrack[i].flag = pBuffHead->nFlags;
                  pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->sBufferFlagTrack[i].buffer_id = 
                  pComponentPrivate->nInPortIn;
@@ -1771,7 +1786,7 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
      /* mark the first buffer from input port after receiving mark buffer command */
      if (pComponentPrivate->nMarkPort == JPEGENC_INP_PORT) {
          if (pComponentPrivate->pMarkData) {
-               JPEGENC_DPRINT("get mark buffer command, mark buffer %p\n", pBuffHead);
+               OMX_PRBUFFER2(pComponentPrivate->dbg, "get mark buffer command, mark buffer %p\n", pBuffHead);
                pBuffHead->pMarkData = pComponentPrivate->pMarkData;
                pBuffHead->hMarkTargetComponent = pComponentPrivate->hMarkTargetComponent;
                pComponentPrivate->pMarkData = NULL;
@@ -1781,7 +1796,7 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 
      /* if a buffer from input port is marked, record this port # in the buffer queue */
      if (pBuffHead->pMarkData) {
-         for (i = 0; i < pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual; i ++) {
+	     for (i = 0; i < (int)(pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual); i ++) {
              if (pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->sBufferMarkTrack[i].buffer_id == 0xFFFFFFFF)
              {
                  JPEGENC_BUFFERMARK_TRACK *pMarkTrack;
@@ -1789,7 +1804,7 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                  pMarkTrack->buffer_id = pComponentPrivate->nInPortIn;
                  pMarkTrack->pMarkData = pBuffHead->pMarkData;
                  pMarkTrack->hMarkTargetComponent = pBuffHead->hMarkTargetComponent;
-                 JPEGENC_DPRINT("mark buffer at ID %u\n", pComponentPrivate->nInPortIn);
+                 OMX_PRBUFFER2(pComponentPrivate->dbg, "mark buffer at ID %lu\n", pComponentPrivate->nInPortIn);
                  break;
              }
          }
@@ -1798,7 +1813,7 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 #if 0
     eError = SendDynamicParam(pComponentPrivate);
     if (eError != OMX_ErrorNone ) {
-            JPEGENC_DPRINT("SETSTATUS failed...  %x\n", eError);
+            JOMX_PRDSP4(pComponentPrivate->dbg, "SETSTATUS failed...  %x\n", eError);
             goto EXIT;
     }
 #endif
@@ -1806,19 +1821,19 @@ static OMX_ERRORTYPE JPEGENC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
      pBuffPrivate->eBufferOwner = JPEGENC_BUFFER_COMPONENT_IN;
      pBuffPrivate->bReadFromPipe = OMX_FALSE;
 
-     JPEGENC_DPRINT("buffer summary (get filled input buffer) %d %d %d %d (%p)\n",
+     OMX_PRBUFFER1(pComponentPrivate->dbg, "buffer summary (get filled input buffer) %lu %lu %lu %lu (%p)\n",
                     pComponentPrivate->nInPortIn,
                     pComponentPrivate->nInPortOut,
                     pComponentPrivate->nOutPortIn,
                     pComponentPrivate->nOutPortOut, pBuffHead);       
 
      /*Writing the component buffer corresponding to input buffer to infill_q  */
-     JPEGENC_DPRINT("EmptyThisBuffer: write to the queue %p \n", pBuffHead);
+     OMX_PRCOMM2(pComponentPrivate->dbg, "EmptyThisBuffer: write to the queue %p \n", pBuffHead);
 
      ret = write (pComponentPrivate->filled_inpBuf_Q[1], &(pBuffHead),sizeof(pBuffHead));
     
      if ( ret == -1 ) {
-         JPEGENC_DPRINT ("Error in Writing to the Data pipe\n");
+         OMX_PRCOMM4(pComponentPrivate->dbg, "Error in Writing to the Data pipe\n");
          eError = OMX_ErrorHardware;
          goto EXIT;
      }
@@ -1846,12 +1861,10 @@ static OMX_ERRORTYPE JPEGENC_FillThisBuffer (OMX_HANDLETYPE pComponent,
                                      OMX_BUFFERHEADERTYPE* pBuffHead)
 {
     OMX_ERRORTYPE eError        = OMX_ErrorNone;
-    OMX_ERRORTYPE err           = OMX_ErrorNone;
+    int err = 0;
     OMX_COMPONENTTYPE *pHandle = NULL;
     JPEGENC_BUFFER_PRIVATE* pBuffPrivate = NULL;
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
-
-
     
     OMX_CHECK_PARAM(pComponent);
     OMX_CHECK_PARAM(pBuffHead);
@@ -1860,7 +1873,7 @@ static OMX_ERRORTYPE JPEGENC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     pBuffPrivate = pBuffHead->pOutputPortPrivate;
 
-    JPEGENC_DPRINT("Inside JPEGENC_FillThisBuffer function (%p) (state %d -> %d)\n", pBuffHead, pComponentPrivate->nCurState, pComponentPrivate->nToState);
+    OMX_PRINT1(pComponentPrivate->dbg, "Inside JPEGENC_FillThisBuffer function (%p) (state %d -> %d)\n", pBuffHead, pComponentPrivate->nCurState, pComponentPrivate->nToState);
 
     if ( pComponentPrivate->nCurState != OMX_StateExecuting && 
         pComponentPrivate->nCurState != OMX_StatePause && 
@@ -1871,7 +1884,7 @@ static OMX_ERRORTYPE JPEGENC_FillThisBuffer (OMX_HANDLETYPE pComponent,
 
     if ( pBuffHead->nSize != sizeof(OMX_BUFFERHEADERTYPE) ) {
         eError = OMX_ErrorBadParameter;
-        JPEGENC_DPRINT("JPEG-ENC: buffer header size is not correct\n");
+        OMX_PRBUFFER4(pComponentPrivate->dbg, "JPEG-ENC: buffer header size is not correct\n");
         goto EXIT;
     }
 
@@ -1908,26 +1921,24 @@ static OMX_ERRORTYPE JPEGENC_FillThisBuffer (OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->nOutPortIn ++;
 
-    JPEGENC_DPRINT("FillThisBuffer nOutPortIn %d\n", pComponentPrivate->nOutPortIn);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "FillThisBuffer nOutPortIn %lu\n", pComponentPrivate->nOutPortIn);
 
-    JPEGENC_DPRINT("buffer summary (get empty output buffer) %d %d %d %d\n",
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "buffer summary (get empty output buffer) %lu %lu %lu %lu\n",
                     pComponentPrivate->nInPortIn,
                     pComponentPrivate->nInPortOut,
                     pComponentPrivate->nOutPortIn,
                     pComponentPrivate->nOutPortOut);       
 
-    JPEGENC_DPRINT("Inside JPEGENC_FillThisBuffer function writing to pipe\n");
     /*  writing the component structure corresponding to output buffer    */
-     JPEGENC_DPRINT("FillThisBuffer: write to the queue %p \n", pBuffHead);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "FillThisBuffer: write to the queue %p \n", pBuffHead);
     err = write (pComponentPrivate->free_outBuf_Q[1], &(pBuffHead), sizeof (pBuffHead));
     if (err == -1) {
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-    JPEGENC_DPRINT("Error is %x\n",eError);
-    EXIT:
+    OMX_PRINT1(pComponentPrivate->dbg, "Error is %x\n",eError);
+ EXIT:
     return eError;
-
 }
 
 
@@ -1948,26 +1959,35 @@ static OMX_ERRORTYPE JPEGENC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 {
 	OMX_ERRORTYPE eError        = OMX_ErrorNone;
 	OMX_COMPONENTTYPE *pHandle  = NULL;
-
+	JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
+	struct OMX_TI_Debug dbg;
+    OMX_DBG_INIT_BASE(dbg);
 	OMX_CHECK_PARAM(hComponent);
 	pHandle = (OMX_COMPONENTTYPE *)hComponent;
-
-	JPEGEnc_Free_ComponentResources(pHandle->pComponentPrivate);
+	pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+	memcpy(&dbg, &(pComponentPrivate->dbg), sizeof(dbg));
+	JPEGEnc_Free_ComponentResources(pComponentPrivate);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 	eError = RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
 	if (eError != OMX_ErrorNone) {
-		JPEGENC_DPRINT("Cannot Free RMProxy Resources\n");
+		OMX_PRMGR4(dbg, "Cannot Free RMProxy Resources\n");
 	}
 
 	eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_IMAGE);
 	if ( eError != OMX_ErrorNone )  {
-		JPEGENC_DPRINT ("Error returned from destroy ResourceManagerProxy thread\n");
+		OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
 	}
 
 #endif
     
 EXIT:
+#ifdef __PERF_INSTRUMENTATION__
+	PERF_Boundary(pComponentPrivate->pPERF,
+		      PERF_BoundaryComplete | PERF_BoundaryCleanup);
+	PERF_Done(pComponentPrivate->pPERF);
+#endif
+	OMX_DBG_CLOSE(dbg);
 	return eError;
 }
 
@@ -1992,13 +2012,14 @@ EXIT:
 
 OMX_ERRORTYPE JPEGENC_VerifyTunnelConnection (JPEG_PORT_TYPE *pPort, 
                                               OMX_HANDLETYPE hTunneledComp, 
-                                              OMX_PARAM_PORTDEFINITIONTYPE* pPortDef) 
+                                              OMX_PARAM_PORTDEFINITIONTYPE* pPortDef,
+                                              struct OMX_TI_Debug *dbg) 
 {
    OMX_PARAM_PORTDEFINITIONTYPE sPortDef;
    OMX_ERRORTYPE eError = OMX_ErrorNone;
    /*sPortDef.format.image.eCompressionFormat = OMX_IMAGE_CodingJPEG;*/
 
-   JPEGENC_DPRINT("Inside JPEG JPEGENC_VerifyTunnelConnection..\n");
+   OMX_PRINT1(*dbg, "Inside JPEG JPEGENC_VerifyTunnelConnection..\n");
    sPortDef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
    sPortDef.nVersion.s.nVersionMajor = 0x1;
    sPortDef.nVersion.s.nVersionMinor = 0x0;
@@ -2006,7 +2027,7 @@ OMX_ERRORTYPE JPEGENC_VerifyTunnelConnection (JPEG_PORT_TYPE *pPort,
    
    eError = OMX_GetParameter(hTunneledComp, OMX_IndexParamPortDefinition, &sPortDef);
    if (eError != OMX_ErrorNone) {
-       JPEGENC_DPRINT("error 1\n");
+       OMX_ERROR4(*dbg, "error 1\n");
        return eError;
    }
 
@@ -2092,7 +2113,7 @@ OMX_ERRORTYPE JPEGENC_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
     pPortType = pComponentPrivate->pCompPort[nPort];
     
-    JPEGENC_DPRINT("nPort = %d nTunneledPort = %d\n",(int)nPort, (int)nTunneledPort);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "nPort = %d nTunneledPort = %d\n",(int)nPort, (int)nTunneledPort);
  
     if (pTunnelSetup == NULL || hTunneledComp == 0) 
     {
@@ -2117,7 +2138,7 @@ OMX_ERRORTYPE JPEGENC_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
 
     pPortType->hTunnelComponent = hTunneledComp;
     pPortType->nTunnelPort = nTunneledPort;
-    JPEGENC_DPRINT("PP comp = %x, tunneled comp = %x\n",(int)hComponent, (int)pPortType->hTunnelComponent);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "PP comp = %x, tunneled comp = %x\n",(int)hComponent, (int)pPortType->hTunnelComponent);
 
     if (pPortType->pPortDef->eDir == OMX_DirOutput) {
         /* Component is the output (source of data) */
@@ -2127,9 +2148,9 @@ OMX_ERRORTYPE JPEGENC_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
 /*      Component is the input (sink of data) */
         eError = JPEGENC_VerifyTunnelConnection(pPortType, 
                                                hTunneledComp, 
-                                               pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef); 
+						pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef, &(pComponentPrivate->dbg)); 
         if (OMX_ErrorNone != eError) {
-            JPEGENC_DPRINT("########### Error !! PP JPEGENC_VerifyTunnelConnection inside JPEGfailed\n");
+            OMX_PRCOMM4(pComponentPrivate->dbg, "PP JPEGENC_VerifyTunnelConnection inside JPEGfailed\n");
             /* Invalid connection formats. Return eError */
             return OMX_ErrorPortsNotCompatible;
         }
@@ -2150,7 +2171,7 @@ OMX_ERRORTYPE JPEGENC_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
 
         eError = OMX_GetParameter(hTunneledComp, OMX_IndexParamCompBufferSupplier, &sBufferSupplier);
         if (sBufferSupplier.eBufferSupplier != pPortType->pBufSupplier) {
-            JPEGENC_DPRINT("- JPEGENC_SetParameter: OMX_IndexParamCompBufferSupplier failed to change setting\n" );
+            OMX_PRCOMM4(pComponentPrivate->dbg, "- JPEGENC_SetParameter: OMX_IndexParamCompBufferSupplier failed to change setting\n" );
             return OMX_ErrorUndefined;
         }
     }
@@ -2197,13 +2218,13 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
   
     if (nBufferCount >= pPortDef->nBufferCountActual) {
         eError = OMX_ErrorInsufficientResources;
-        JPEGENC_DPRINT(" try to allocate more buffers that the port supports\n");
+        OMX_PRBUFFER4(pComponentPrivate->dbg, " try to allocate more buffers that the port supports\n");
         goto EXIT;     
     }
 
     if(nPortIndex == JPEGENC_INP_PORT) {
         OMX_MALLOC_STRUCT(pBufferHdr, OMX_BUFFERHEADERTYPE);
-        JPEGENC_DPRINT("Allocate Buffer Input pBufferPrivate = %p\n",pBufferHdr);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "Allocate Buffer Input pBufferPrivate = %p\n",pBufferHdr);
 
         OMX_CONF_INIT_STRUCT(pBufferHdr, OMX_BUFFERHEADERTYPE);
         pBufferHdr->nOutputPortIndex = OMX_NOPORT;  
@@ -2218,7 +2239,7 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }
     else if(nPortIndex == JPEGENC_OUT_PORT) {
         OMX_MALLOC_STRUCT(pBufferHdr, OMX_BUFFERHEADERTYPE);
-        JPEGENC_DPRINT("Allocate Buffer Output pBufferPrivate[0] = %p\n", pBufferHdr);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "Allocate Buffer Output pBufferPrivate[0] = %p\n", pBufferHdr);
         OMX_CONF_INIT_STRUCT(pBufferHdr, OMX_BUFFERHEADERTYPE); 
         pBufferHdr->nInputPortIndex = OMX_NOPORT;  
         pBufferHdr->nOutputPortIndex = nPortIndex;
@@ -2245,7 +2266,7 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 #endif
   
     if (!pBufferHdr->pBuffer) {
-        JPEGENC_DPRINT("Error: Malloc failed\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -2254,7 +2275,7 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pTemp = (OMX_U8 *)(pBufferHdr->pBuffer);
     pTemp += 128;
     pBufferHdr->pBuffer = pTemp;
-    JPEGENC_DPRINT("Allocate Buffer Input pBufferPrivate[0]-pBuffer = %p\n",pBufferHdr->pBuffer);
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "Allocate Buffer Input pBufferPrivate[0]-pBuffer = %p\n",pBufferHdr->pBuffer);
     
 
     if (nPortIndex == JPEGENC_INP_PORT) {
@@ -2274,7 +2295,7 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     
   
    pComponentPrivate->pCompPort[nPortIndex]->nBuffCount++;
-   JPEGENC_DPRINT("JPEG-ENC: actual %d ask %d\n", 
+   OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEG-ENC: actual %d ask %lu\n", 
         pComponentPrivate->pCompPort[nPortIndex]->nBuffCount, 
         pPortDef->nBufferCountActual);
     
@@ -2286,11 +2307,11 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
        pthread_mutex_unlock(&pComponentPrivate->jpege_mutex_app);
 
        JPEGENC_InitBufferFlagTrack(pComponentPrivate, nPortIndex);
-       JPEGENC_DPRINT(" Port [%d] Populated!\n", nPortIndex);
+       OMX_PRBUFFER2(pComponentPrivate->dbg, " Port [%d] Populated!\n", (int)(nPortIndex));
    }
     
 EXIT:
-    JPEGENC_DPRINT("Exiting pHandle = %d\n", (int)pHandle);
+    OMX_PRINT1(pComponentPrivate->dbg, "Exiting pHandle = %d\n", (int)pHandle);
     return eError;
 }
 
@@ -2303,10 +2324,10 @@ static void JPEGENC_InitBufferFlagTrack(
     JPEG_PORT_TYPE *pPortType = NULL;
     int i;
         
-     pPortType = pComponentPrivate->pCompPort[nPortIndex];
+    pPortType = pComponentPrivate->pCompPort[nPortIndex];
 
     /* assume  pPortType->pPortDef->nBufferCountActual <= NUM_OF_BUFFERSJPEG */
-    for (i = 0; i < pPortType->pPortDef->nBufferCountActual; i ++) {
+    for (i = 0; i < (int)(pPortType->pPortDef->nBufferCountActual); i ++) {
         pPortType->sBufferFlagTrack[i].flag = 0;
         pPortType->sBufferFlagTrack[i].buffer_id = 0xFFFFFFFF;
         pPortType->sBufferMarkTrack[i].buffer_id = 0xFFFFFFFF;
@@ -2337,7 +2358,6 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     return eError;
 };
 #endif
-
 
 
 /*-------------------------------------------------------------------*/
@@ -2374,6 +2394,7 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.encoder.Config.ThumbnailAPP13_BUF", OMX_IndexCustomThumbnailAPP13_BUF},
     {"OMX.TI.JPEG.encoder.Config.QFactor", OMX_IndexCustomQFactor},
     {"OMX.TI.JPEG.encoder.Config.DRI", OMX_IndexCustomDRI},
+    {"OMX.TI.JPEG.encoder.Config.Debug", OMX_IndexCustomDebug},
     {"",0x0}
     };
 
@@ -2397,6 +2418,3 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
 EXIT:
     return eError;
 }
-
-
-
