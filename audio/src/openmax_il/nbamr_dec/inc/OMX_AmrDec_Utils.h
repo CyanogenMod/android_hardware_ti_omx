@@ -45,6 +45,7 @@
 #include <OMX_Component.h>
 #include "OMX_TI_Common.h"
 #include "OMX_AmrDecoder.h"
+#include "OMX_TI_Debug.h"
 
 /* ======================================================================= */
 /**
@@ -135,6 +136,14 @@
 #define EXTRA_BYTES 128 
 #define DSP_CACHE_ALIGNMENT 256 
 
+#define NBAMR_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)\
+do {					       \
+    if(!_ptr1 || !_ptr2 || !_ptr3){	       \
+        eError = OMX_ErrorBadParameter;        \
+	goto EXIT;                             \
+    }					       \
+} while(0)
+
 /* ======================================================================= */
 /**
  * @def    NBAMR_DEC_OMX_MALLOC   Macro to allocate Memory
@@ -143,14 +152,12 @@
 #define NBAMR_DEC_OMX_MALLOC(_pStruct_, _sName_)                         \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__);                   \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-   AMRDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+   OMX_PRDSP4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
    /* ======================================================================= */
 /**
@@ -160,14 +167,12 @@
 #define NBAMR_DEC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__);               \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    AMRDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMX_PRDSP4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 
 /* ======================================================================= */
@@ -177,7 +182,7 @@
 /* ======================================================================= */
 
 #define OMX_NBDECMEMFREE_STRUCT(_pStruct_)\
-	AMRDEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
+	OMX_PRDSP4(pComponentPrivate->dbg, "%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
