@@ -224,6 +224,7 @@ int channel = 0;
 int ObjectType=0;
 
 int preempted = 0;
+int firstbuffer = 1;
 
 #ifdef DSP_RENDERING_ON
 AM_COMMANDDATATYPE cmd_data;
@@ -1995,6 +1996,12 @@ int Aacenc_fdread;
 				{
 					OMX_BUFFERHEADERTYPE* pBuf;
 					read(OpBuf_Pipe[0], &pBuf, sizeof(pBuf));
+
+					if (firstbuffer){   /* Discard first buffer - Config audio (PV) */
+						memset(pBuf->pBuffer, 0x0, pBuf->nAllocLen);
+	                    pBuf->nFilledLen=0;
+						firstbuffer = 0;
+					}
 					APP_DPRINT("%d :: App: Buffer to write to the file: %p \n",__LINE__,pBuf);
 					APP_DPRINT("%d :: ------------- App File Write --------------\n",__LINE__);
 					APP_DPRINT("%d :: App: %ld bytes are being written\n",__LINE__,(pBuf->nFilledLen));
