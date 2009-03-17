@@ -83,8 +83,8 @@
 #define WBAMRENC_NUM_OUTPUT_BUFFERS 1
 /* ======================================================================= */
 /**
- * @def WBAMRENC_INPUT_BUFFER_SIZE   	 Default input buffer size
- *		WBAMRENC_INPUT_BUFFER_SIZE_DASF  Default input buffer size DASF
+ * @def WBAMRENC_INPUT_BUFFER_SIZE       Default input buffer size
+ *      WBAMRENC_INPUT_BUFFER_SIZE_DASF  Default input buffer size DASF
  *      WBAMRENC_INPUT_FRAME_SIZE        Default input Frame Size
  */
 /* ======================================================================= */
@@ -94,7 +94,7 @@
 /* ======================================================================= */
 /**
  * @def WBAMRENC_OUTPUT_BUFFER_SIZE   Default output buffer size
- *      WBAMRENC_OUTPUT_FRAME_SIZE	  Default output frame size
+ *      WBAMRENC_OUTPUT_FRAME_SIZE    Default output frame size
  */
 /* ======================================================================= */
 #define WBAMRENC_OUTPUT_BUFFER_SIZE 116
@@ -114,7 +114,7 @@
 
 /* ======================================================================= */
 /*
- * @def	WBAMRENC_APP_ID  App ID Value setting
+ * @def WBAMRENC_APP_ID  App ID Value setting
  */
 /* ======================================================================= */
 #define WBAMRENC_APP_ID 100
@@ -136,14 +136,14 @@
 */
 /* ======================================================================= */
 typedef enum WBAMRENC_OMX_INDEXAUDIOTYPE {
-	OMX_WbIndexCustomModeEfrConfig = 0xFF000001,
-	OMX_WbIndexCustomModeAmrConfig,
-	OMX_WbIndexCustomModeAcdnConfig,
-	OMX_WbIndexCustomModeDasfConfig,
-	OMX_WbIndexCustomModeMimeConfig,
-	OMX_WbIndexCustomModeMultiFrameConfig,
-	OMX_IndexCustomWbAmrEncHeaderInfoConfig,
-	OMX_IndexCustomWbAmrEncStreamIDConfig,
+    OMX_WbIndexCustomModeEfrConfig = 0xFF000001,
+    OMX_WbIndexCustomModeAmrConfig,
+    OMX_WbIndexCustomModeAcdnConfig,
+    OMX_WbIndexCustomModeDasfConfig,
+    OMX_WbIndexCustomModeMimeConfig,
+    OMX_WbIndexCustomModeMultiFrameConfig,
+    OMX_IndexCustomWbAmrEncHeaderInfoConfig,
+    OMX_IndexCustomWbAmrEncStreamIDConfig,
     OMX_WbIndexCustomDataPath
 }WBAMRENC_OMX_INDEXAUDIOTYPE;
 

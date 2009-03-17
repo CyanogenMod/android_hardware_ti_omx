@@ -140,7 +140,7 @@ int myfree(void *dp, int line, char *s){
     }    
     if(500==q)
         WBAMRENC_DPRINT("\n\nPointer not found. Line:%d    File%s!!\n\n",line, s);
-	return 1;
+    return 1;
 }
 #else
 #define newmalloc(x) malloc(x)
@@ -285,13 +285,13 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         WBAMRENC_DPRINT("%d :: Codec is configuring MIME mode\n",__LINE__);
         arr[8] = WBAMRENC_MIMEMODE;
     }
-	else if(pComponentPrivate->frameMode == WBAMRENC_IF2 ){
-		WBAMRENC_DPRINT("%d :: Codec is configuring IF2 mode\n",__LINE__);
-		arr[8] = WBAMRENC_IF2;	
-	}
-	else {
-		WBAMRENC_DPRINT("%d :: Codec is configuring FORMAT CONFORMANCE mode\n",__LINE__);
-		arr[8] = WBAMRENC_FORMATCONFORMANCE;
+    else if(pComponentPrivate->frameMode == WBAMRENC_IF2 ){
+        WBAMRENC_DPRINT("%d :: Codec is configuring IF2 mode\n",__LINE__);
+        arr[8] = WBAMRENC_IF2;  
+    }
+    else {
+        WBAMRENC_DPRINT("%d :: Codec is configuring FORMAT CONFORMANCE mode\n",__LINE__);
+        arr[8] = WBAMRENC_FORMATCONFORMANCE;
     }
 
     arr[9] = END_OF_CR_PHASE_ARGS;
@@ -310,7 +310,7 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         WBAMRENC_DPRINT("%d :: INPUT--------- Inside Ip Loop\n",__LINE__);
         pTemp = pComponentPrivate->pInputBufferList->pBufHdr[i];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
-         pTemp->nFilledLen = nIpBufSize;
+        pTemp->nFilledLen = nIpBufSize;
         pTemp->nVersion.s.nVersionMajor = WBAMRENC_MAJOR_VER;
         pTemp->nVersion.s.nVersionMinor = WBAMRENC_MINOR_VER;
         pTemp->pPlatformPrivate = pHandle->pComponentPrivate;
@@ -320,7 +320,7 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
 
         WBAMRENC_OMX_MALLOC_SIZE(pBufferParamTemp,(sizeof(WBAMRENC_ParamStruct) + DSP_CACHE_ALIGNMENT),
-                                OMX_U8);
+                                 OMX_U8);
 
         pTemp_lcml->pBufferParam =  (WBAMRENC_ParamStruct*)(pBufferParamTemp + EXTRA_BYTES);
  
@@ -356,14 +356,14 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         WBAMRENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
    
- 		WBAMRENC_OMX_MALLOC_SIZE(pTemp_lcml->pBufferParam,
-								(sizeof(WBAMRENC_ParamStruct)+DSP_CACHE_ALIGNMENT),
-								WBAMRENC_ParamStruct); 
+        WBAMRENC_OMX_MALLOC_SIZE(pTemp_lcml->pBufferParam,
+                                 (sizeof(WBAMRENC_ParamStruct)+DSP_CACHE_ALIGNMENT),
+                                 WBAMRENC_ParamStruct); 
 
-		pTemp_char = (char*)pTemp_lcml->pBufferParam;
-		pTemp_char += EXTRA_BYTES;
-		pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp_char;
-		
+        pTemp_char = (char*)pTemp_lcml->pBufferParam;
+        pTemp_char += EXTRA_BYTES;
+        pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp_char;
+        
 
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
@@ -561,7 +561,7 @@ OMX_ERRORTYPE WBAMRENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     WBAMRENC_LCML_BUFHEADERTYPE *pTemp_lcml;
     OMX_U8* pAlgParmTemp;
     OMX_U8* pBufParmsTemp;
-	char *pTemp = NULL;
+    char *pTemp = NULL;
 
     LCML_DSP_INTERFACE *pLcmlHandle;
     LCML_DSP_INTERFACE *pLcmlHandleAux;
@@ -606,13 +606,13 @@ OMX_ERRORTYPE WBAMRENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
             pTemp_lcml->pFrameParam = NULL;                               
         }        
  
-	pTemp = (char*)pTemp_lcml->pBufferParam;
-    if (pTemp != NULL) {        
-		pTemp -= EXTRA_BYTES;
-    }
-    pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp;
-    OMX_WBMEMFREE_STRUCT(pTemp_lcml->pBufferParam);
-	
+        pTemp = (char*)pTemp_lcml->pBufferParam;
+        if (pTemp != NULL) {        
+            pTemp -= EXTRA_BYTES;
+        }
+        pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp;
+        OMX_WBMEMFREE_STRUCT(pTemp_lcml->pBufferParam);
+    
 
         if(pTemp_lcml->pDmmBuf!=NULL){
             OMX_WBMEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
@@ -642,13 +642,13 @@ OMX_ERRORTYPE WBAMRENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
                                              
         }
  
-	pTemp = (char*)pTemp_lcml->pBufferParam;
-    if (pTemp != NULL) {        
-		pTemp -= EXTRA_BYTES;
-    }
-    pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp;
-	OMX_WBMEMFREE_STRUCT(pTemp_lcml->pBufferParam);
-	
+        pTemp = (char*)pTemp_lcml->pBufferParam;
+        if (pTemp != NULL) {        
+            pTemp -= EXTRA_BYTES;
+        }
+        pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)pTemp;
+        OMX_WBMEMFREE_STRUCT(pTemp_lcml->pBufferParam);
+    
         if(pTemp_lcml->pDmmBuf!=NULL){
             OMX_WBMEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
             pTemp_lcml->pDmmBuf = NULL;
@@ -862,55 +862,55 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 #ifdef RESOURCE_MANAGER_ENABLED
                     /* Need check the resource with RM */
 
-					pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) WBAMRENC_ResourceManagerCallback;
+                    pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) WBAMRENC_ResourceManagerCallback;
 
                     if (pComponentPrivate->curState != OMX_StateWaitForResources){
-					
-						rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_WBAMR_Encoder_COMPONENT, WBAMRENC_CPU_LOAD, 3456, &(pComponentPrivate->rmproxyCallback));
-	                    if(rm_error == OMX_ErrorNone) {
-	                        /* resource is available */
+                    
+                        rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_WBAMR_Encoder_COMPONENT, WBAMRENC_CPU_LOAD, 3456, &(pComponentPrivate->rmproxyCallback));
+                        if(rm_error == OMX_ErrorNone) {
+                            /* resource is available */
 #ifdef __PERF_INSTRUMENTATION__
-	                        PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySetup);
+                            PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySetup);
 #endif
-					pComponentPrivate->curState = OMX_StateIdle;
-                    pComponentPrivate->cbInfo.EventHandler( pHandle,
-	                                                                pHandle->pApplicationPrivate,
-	                                                                OMX_EventCmdComplete,
-	                                                                OMX_CommandStateSet,
-	                                                                pComponentPrivate->curState,
-	                                                                NULL);
-	
-					rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
-                    }
-	                    else if(rm_error == OMX_ErrorInsufficientResources) {
-	                        /* resource is not available, need set state to OMX_StateWaitForResources */
-	                        pComponentPrivate->curState = OMX_StateWaitForResources;
-	                        pComponentPrivate->cbInfo.EventHandler( pHandle,
-	                                                                pHandle->pApplicationPrivate,
-	                                                                OMX_EventCmdComplete,
-	                                                                OMX_CommandStateSet,
-	                                                                pComponentPrivate->curState,
-	                                                                NULL);
-	                        WBAMRENC_EPRINT("%d :: Comp: OMX_ErrorInsufficientResources\n", __LINE__);
-	                    }
-					}else{
+                            pComponentPrivate->curState = OMX_StateIdle;
+                            pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                    pHandle->pApplicationPrivate,
+                                                                    OMX_EventCmdComplete,
+                                                                    OMX_CommandStateSet,
+                                                                    pComponentPrivate->curState,
+                                                                    NULL);
+    
+                            rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
+                        }
+                        else if(rm_error == OMX_ErrorInsufficientResources) {
+                            /* resource is not available, need set state to OMX_StateWaitForResources */
+                            pComponentPrivate->curState = OMX_StateWaitForResources;
+                            pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                    pHandle->pApplicationPrivate,
+                                                                    OMX_EventCmdComplete,
+                                                                    OMX_CommandStateSet,
+                                                                    pComponentPrivate->curState,
+                                                                    NULL);
+                            WBAMRENC_EPRINT("%d :: Comp: OMX_ErrorInsufficientResources\n", __LINE__);
+                        }
+                    }else{
 
-	                    pComponentPrivate->curState = OMX_StateIdle;
-	                    pComponentPrivate->cbInfo.EventHandler( pHandle,
-	                                                            pHandle->pApplicationPrivate,
-	                                                            OMX_EventCmdComplete,
-	                                                            OMX_CommandStateSet,
-	                                                            pComponentPrivate->curState,
-	                                                            NULL);
+                        pComponentPrivate->curState = OMX_StateIdle;
+                        pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                pHandle->pApplicationPrivate,
+                                                                OMX_EventCmdComplete,
+                                                                OMX_CommandStateSet,
+                                                                pComponentPrivate->curState,
+                                                                NULL);
                         rm_error = RMProxy_NewSendCommand(pHandle,
-                                                       RMProxy_StateSet,
-                                                       OMX_WBAMR_Encoder_COMPONENT,
-                                                       OMX_StateIdle,
-                                                       3456,
-                                                       NULL);
+                                                          RMProxy_StateSet,
+                                                          OMX_WBAMR_Encoder_COMPONENT,
+                                                          OMX_StateIdle,
+                                                          3456,
+                                                          NULL);
 
-					}
-					
+                    }
+                    
 #else
                     pComponentPrivate->curState = OMX_StateIdle;
                     pComponentPrivate->cbInfo.EventHandler( pHandle,
@@ -937,11 +937,11 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)pArgs);
 
-					pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
-					                if (pAlgParmTemp != NULL)
-        	        pAlgParmTemp -= EXTRA_BYTES;
-    	            pComponentPrivate->pAlgParam = (WBAMRENC_TALGCtrl*)pAlgParmTemp;
-					OMX_WBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+                    pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
+                    if (pAlgParmTemp != NULL)
+                        pAlgParmTemp -= EXTRA_BYTES;
+                    pComponentPrivate->pAlgParam = (WBAMRENC_TALGCtrl*)pAlgParmTemp;
+                    OMX_WBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
                     if (pComponentPrivate->pHoldBuffer) {
                         OMX_WBMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
                         pComponentPrivate->pHoldBuffer = NULL;
@@ -957,12 +957,12 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     pComponentPrivate->pParams = (WBAMRENC_AudioCodecParams*)pParmsTemp;
                     OMX_WBMEMFREE_STRUCT(pComponentPrivate->pParams);
 
-					if(eError != OMX_ErrorNone) {
+                    if(eError != OMX_ErrorNone) {
                         WBAMRENC_EPRINT("%d :: Error from LCML_ControlCodec MMCodecControlStop..\n",__LINE__);
                         goto EXIT;
-                    }					
-					
-					if(eError != OMX_ErrorNone) {
+                    }                   
+                    
+                    if(eError != OMX_ErrorNone) {
                         WBAMRENC_EPRINT(": Error Occurred in Codec Stop..\n");
                         pComponentPrivate->curState = OMX_StateInvalid;
                         pComponentPrivate->cbInfo.EventHandler( pHandle, 
@@ -982,7 +982,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif
 #ifdef RESOURCE_MANAGER_ENABLED
-					rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
+                    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
 #endif              
                     WBAMRENC_DPRINT ("%d :: The component is stopped\n",__LINE__);
                     pComponentPrivate->cbInfo.EventHandler ( pHandle,
@@ -1013,14 +1013,14 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                         WBAMRENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pComponentPrivate->pAlgParam);
                     
                     }
-			        pComponentPrivate->nNumInputBufPending = 0;
-     		        pComponentPrivate->nNumOutputBufPending = 0;
-					
+                    pComponentPrivate->nNumInputBufPending = 0;
+                    pComponentPrivate->nNumOutputBufPending = 0;
+                    
                     pComponentPrivate->nNumOfFramesSent=0;
 
-					pComponentPrivate->nEmptyBufferDoneCount = 0;
- 		            pComponentPrivate->nEmptyThisBufferCount =0;
-				
+                    pComponentPrivate->nEmptyBufferDoneCount = 0;
+                    pComponentPrivate->nEmptyThisBufferCount =0;
+                
                     pComponentPrivate->pAlgParam->iBitrate = pComponentPrivate->amrParams->eAMRBandMode;
                     pComponentPrivate->pAlgParam->iDTX = pComponentPrivate->amrParams->eAMRDTXMode;
                     pComponentPrivate->pAlgParam->iSize = sizeof (WBAMRENC_TALGCtrl);
@@ -1135,7 +1135,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                 }
 #ifdef RESOURCE_MANAGER_ENABLED            
-				rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateExecuting, 3456, NULL);
+                rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateExecuting, 3456, NULL);
 #endif            
                 pComponentPrivate->curState = OMX_StateExecuting;
 #ifdef __PERF_INSTRUMENTATION__
@@ -1252,9 +1252,9 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                 if (pComponentPrivate->curState == OMX_StateLoaded) {
 
 #ifdef RESOURCE_MANAGER_ENABLED         
-			rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateWaitForResources, 3456, NULL);
+                    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateWaitForResources, 3456, NULL);
 #endif 
-					
+                    
                     pComponentPrivate->curState = OMX_StateWaitForResources;
                     pComponentPrivate->cbInfo.EventHandler( pHandle,
                                                             pHandle->pApplicationPrivate,
@@ -1377,25 +1377,25 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                 pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]->bEnabled = OMX_TRUE;
 
                 if(pComponentPrivate->AlloBuf_waitingsignal)
-                {
-                    pComponentPrivate->AlloBuf_waitingsignal = 0;
-                }
+                    {
+                        pComponentPrivate->AlloBuf_waitingsignal = 0;
+                    }
             }
             if(commandData == 0x1 || commandData == -1){
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal)
-                {
-                    pComponentPrivate->AlloBuf_waitingsignal = 0;
+                    {
+                        pComponentPrivate->AlloBuf_waitingsignal = 0;
 #ifndef UNDER_CE
-                    pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-                    pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-                    pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
+                        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+                        pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
 #else
-                    OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
+                        OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
 #endif
-                }
+                    }
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
-					pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
+                    pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStart,(void *)pArgs);
                 }
@@ -1490,7 +1490,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                                                            pComponentPrivate->pInputBufferList->pBufHdr[i]
                                                            );
                 pComponentPrivate->nEmptyBufferDoneCount++;
-				pComponentPrivate->nOutStandingEmptyDones--;
+                pComponentPrivate->nOutStandingEmptyDones--;
             }
             pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                    OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_INPUT_PORT, NULL);   
@@ -1566,7 +1566,7 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
 
     if (eDir == OMX_DirInput) {
-		                pComponentPrivate->nEmptyThisBufferCount++;
+        pComponentPrivate->nEmptyThisBufferCount++;
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if (pBufHeader->nFilledLen > 0) {
             if (pComponentPrivate->nHoldLength == 0) {
@@ -1772,25 +1772,25 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->IpBufindex %= pComponentPrivate->pPortDef[OMX_DirOutput]->nBufferCountActual;            
 
             if (pComponentPrivate->curState == OMX_StateExecuting) {
-				if(!pComponentPrivate->bDspStoppedWhileExecuting) {
-	                if (!WBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
-	                    WBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
-	                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
-	                                               EMMCodecInputBuffer,
-	                                               (OMX_U8 *)pBufHeader->pBuffer,
-	                                               frameLength*nFrames,
-	                                               pBufHeader->nFilledLen,
-	                                               (OMX_U8 *) pLcmlHdr->pBufferParam,
-	                                               sizeof(WBAMRENC_ParamStruct),
-	                                               NULL);
-	                    if (eError != OMX_ErrorNone) {
-	                        eError = OMX_ErrorHardware;
-	                        goto EXIT;
-	                    }
-	                    pComponentPrivate->lcml_nCntIp++;
-	                    pComponentPrivate->lcml_nIpBuf++;
-	                }
-            	}
+                if(!pComponentPrivate->bDspStoppedWhileExecuting) {
+                    if (!WBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
+                        WBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
+                        eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
+                                                   EMMCodecInputBuffer,
+                                                   (OMX_U8 *)pBufHeader->pBuffer,
+                                                   frameLength*nFrames,
+                                                   pBufHeader->nFilledLen,
+                                                   (OMX_U8 *) pLcmlHdr->pBufferParam,
+                                                   sizeof(WBAMRENC_ParamStruct),
+                                                   NULL);
+                        if (eError != OMX_ErrorNone) {
+                            eError = OMX_ErrorHardware;
+                            goto EXIT;
+                        }
+                        pComponentPrivate->lcml_nCntIp++;
+                        pComponentPrivate->lcml_nIpBuf++;
+                    }
+                }
             }
             else if (pComponentPrivate->curState == OMX_StatePause){
                 pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
@@ -2138,174 +2138,174 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     }
 
     if(event == EMMCodecBufferProcessed)
-    {
-        if((OMX_U32)args[0] == EMMCodecInputBuffer) {
-			pComponentPrivate->nOutStandingEmptyDones++;
-            eError = WBAMRENC_GetCorrespondingLCMLHeader(pComponentPrivate,pBuffer, OMX_DirInput, &pLcmlHdr);            
-            if (eError != OMX_ErrorNone) {
-                WBAMRENC_EPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
-            }
+        {
+            if((OMX_U32)args[0] == EMMCodecInputBuffer) {
+                pComponentPrivate->nOutStandingEmptyDones++;
+                eError = WBAMRENC_GetCorrespondingLCMLHeader(pComponentPrivate,pBuffer, OMX_DirInput, &pLcmlHdr);            
+                if (eError != OMX_ErrorNone) {
+                    WBAMRENC_EPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
+                    goto EXIT;
+                }
 #ifdef __PERF_INSTRUMENTATION__
-            PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
-                               PREF(pLcmlHdr->buffer,pBuffer),
-                               0,
-                               PERF_ModuleCommonLayer);
+                PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
+                                   PREF(pLcmlHdr->buffer,pBuffer),
+                                   0,
+                                   PERF_ModuleCommonLayer);
 #endif
 
-            WBAMRENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirInput,__LINE__);
+                WBAMRENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirInput,__LINE__);
 
-            WBAMRENC_DPRINT("%d :: Calling EmptyBufferDone\n",__LINE__);
-#ifdef __PERF_INSTRUMENTATION__
-            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                              pLcmlHdr->buffer->pBuffer,
-                              0,
-                              PERF_ModuleHLMM);
-#endif              
-            pComponentPrivate->cbInfo.EmptyBufferDone(pHandle,
-                                                      pHandle->pApplicationPrivate,
-                                                      pLcmlHdr->buffer);
-
-
-            pComponentPrivate->nEmptyBufferDoneCount++;
-            pComponentPrivate->nOutStandingEmptyDones--;
-            pComponentPrivate->lcml_nIpBuf--;
-            pComponentPrivate->app_nBuf++;
-        } 
-        else if((OMX_U32)args[0] == EMMCodecOuputBuffer) {
-
-            if (!WBAMRENC_IsValid(pComponentPrivate,pBuffer,OMX_DirOutput)) {
-
-				for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+                WBAMRENC_DPRINT("%d :: Calling EmptyBufferDone\n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                  pComponentPrivate->pOutputBufferList->pBufHdr[i]->pBuffer,
-                                  pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen,
+                                  pLcmlHdr->buffer->pBuffer,
+                                  0,
                                   PERF_ModuleHLMM);
-#endif
-		            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                                          pComponentPrivate->pHandle->pApplicationPrivate,
-                                                          pComponentPrivate->pOutputBufferList->pBufHdr[i++]
-                                                          );
-				}
-            } else {
-            WBAMRENC_DPRINT("%d :: OUTPUT: pBuffer = %p\n",__LINE__, pBuffer);
-            pComponentPrivate->nOutStandingFillDones++;
-            eError = WBAMRENC_GetCorrespondingLCMLHeader(pComponentPrivate, pBuffer, OMX_DirOutput, &pLcmlHdr);
-            if (eError != OMX_ErrorNone) {
-                WBAMRENC_EPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
-            }
-    
-            WBAMRENC_DPRINT("%d :: Output: pLcmlHdr->buffer->pBuffer = %p\n",__LINE__, pLcmlHdr->buffer->pBuffer);
-            pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
-            pComponentPrivate->lcml_nCntOpReceived++;
+#endif              
+                pComponentPrivate->cbInfo.EmptyBufferDone(pHandle,
+                                                          pHandle->pApplicationPrivate,
+                                                          pLcmlHdr->buffer);
+
+
+                pComponentPrivate->nEmptyBufferDoneCount++;
+                pComponentPrivate->nOutStandingEmptyDones--;
+                pComponentPrivate->lcml_nIpBuf--;
+                pComponentPrivate->app_nBuf++;
+            } 
+            else if((OMX_U32)args[0] == EMMCodecOuputBuffer) {
+
+                if (!WBAMRENC_IsValid(pComponentPrivate,pBuffer,OMX_DirOutput)) {
+
+                    for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
 #ifdef __PERF_INSTRUMENTATION__
-            PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
-                               PREF(pLcmlHdr->buffer,pBuffer),
-                               PREF(pLcmlHdr->buffer,nFilledLen),
-                               PERF_ModuleCommonLayer);
-            pComponentPrivate->nLcml_nCntOpReceived++;
-            if ((pComponentPrivate->nLcml_nCntIp >= 1) && (pComponentPrivate->nLcml_nCntOpReceived == 1)) {
-                PERF_Boundary(pComponentPrivate->pPERFcomp,
-                              PERF_BoundaryStart | PERF_BoundarySteadyState);
-            }
-#endif            
-            WBAMRENC_DPRINT("%d :: Output: pBuffer = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
-
-            WBAMRENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirOutput,__LINE__);
-
-            pComponentPrivate->LastOutbuf = pLcmlHdr->buffer;  
-            if((pComponentPrivate->frameMode == WBAMRENC_MIMEMODE)&&(pLcmlHdr->buffer->nFilledLen)) {
-                nFrames = (OMX_U8)(pLcmlHdr->buffer->nFilledLen / WBAMRENC_OUTPUT_BUFFER_SIZE_MIME);
-                frameLength=0;
-                length=0;
-                for(i=0;i<nFrames;i++){
-                    index = (pLcmlHdr->buffer->pBuffer[i*WBAMRENC_OUTPUT_BUFFER_SIZE_MIME] >> 3) & 0x0F;
-                    if(pLcmlHdr->buffer->nFilledLen == 0)
-                        length = 0;
-                    else 
-                        length = (OMX_U16)pComponentPrivate->amrMimeBytes[index];
-                    if (i){
-                        memmove( pLcmlHdr->buffer->pBuffer + frameLength,
-                                 pLcmlHdr->buffer->pBuffer + (i * WBAMRENC_OUTPUT_BUFFER_SIZE_MIME),
-                                 length);
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]->pBuffer,
+                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen,
+                                          PERF_ModuleHLMM);
+#endif
+                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                  pComponentPrivate->pOutputBufferList->pBufHdr[i++]
+                                                                  );
                     }
-                    frameLength += length;
-                }
-                pLcmlHdr->buffer->nFilledLen= frameLength;
-
-            }
-
-			else if((pComponentPrivate->frameMode == WBAMRENC_IF2)&&(pLcmlHdr->buffer->nFilledLen)) {
-			    nFrames = (OMX_U8)( pLcmlHdr->buffer->nFilledLen / WBAMRENC_OUTPUT_BUFFER_SIZE_IF2);
-				frameLength=0;
-				length=0;
-				for(i=0;i<nFrames;i++){
-				    index = (pLcmlHdr->buffer->pBuffer[i*WBAMRENC_OUTPUT_BUFFER_SIZE_IF2] >> 4) & 0x0F;
-					if(pLcmlHdr->buffer->nFilledLen == 0)
-					    length = 0;
-					else
-					    length = (OMX_U16)pComponentPrivate->amrIf2Bytes[index];
-					if (i){
-					    memmove( pLcmlHdr->buffer->pBuffer + frameLength,
-						pLcmlHdr->buffer->pBuffer + (i * WBAMRENC_OUTPUT_BUFFER_SIZE_IF2),
-						length);
-					}
-
-					frameLength += length;
-				}
-				pLcmlHdr->buffer->nFilledLen= frameLength;
-			}
-			else{
-			    nFrames = pLcmlHdr->buffer->nFilledLen/WBAMRENC_OUTPUT_FRAME_SIZE;
-			}
-			
-            if( !pComponentPrivate->dasfMode ){
-                /* Copying time stamp information to output buffer */
-                pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->OpBufindex];
-                /* Copying nTickCount information to output buffer */
-                pLcmlHdr->buffer->nTickCount = pComponentPrivate->arrTickCount[pComponentPrivate->OpBufindex];
-                pComponentPrivate->OpBufindex++;
-                pComponentPrivate->OpBufindex %= pComponentPrivate->pPortDef[OMX_DirOutput]->nBufferCountActual;  
-            }    
-
-            if(pComponentPrivate->InBuf_Eos_alreadysent){
-                if(!pLcmlHdr->buffer->nFilledLen){
-                    pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
-                }
-                pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                       pHandle->pApplicationPrivate,
-                                                       OMX_EventBufferFlag,
-                                                       pLcmlHdr->buffer->nOutputPortIndex,
-                                                       pLcmlHdr->buffer->nFlags, 
-                                                       NULL);
-                pComponentPrivate->InBuf_Eos_alreadysent = 0;
-            }
-        
-            /* Non Multi Frame Mode has been tested here */         
+                } else {
+                    WBAMRENC_DPRINT("%d :: OUTPUT: pBuffer = %p\n",__LINE__, pBuffer);
+                    pComponentPrivate->nOutStandingFillDones++;
+                    eError = WBAMRENC_GetCorrespondingLCMLHeader(pComponentPrivate, pBuffer, OMX_DirOutput, &pLcmlHdr);
+                    if (eError != OMX_ErrorNone) {
+                        WBAMRENC_EPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
+                        goto EXIT;
+                    }
+    
+                    WBAMRENC_DPRINT("%d :: Output: pLcmlHdr->buffer->pBuffer = %p\n",__LINE__, pLcmlHdr->buffer->pBuffer);
+                    pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
+                    pComponentPrivate->lcml_nCntOpReceived++;
 #ifdef __PERF_INSTRUMENTATION__
-            PERF_SendingBuffer(pComponentPrivate->pPERFcomp,
-                               pLcmlHdr->buffer->pBuffer,
-                               pLcmlHdr->buffer->nFilledLen,
-                               PERF_ModuleHLMM);
+                    PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
+                                       PREF(pLcmlHdr->buffer,pBuffer),
+                                       PREF(pLcmlHdr->buffer,nFilledLen),
+                                       PERF_ModuleCommonLayer);
+                    pComponentPrivate->nLcml_nCntOpReceived++;
+                    if ((pComponentPrivate->nLcml_nCntIp >= 1) && (pComponentPrivate->nLcml_nCntOpReceived == 1)) {
+                        PERF_Boundary(pComponentPrivate->pPERFcomp,
+                                      PERF_BoundaryStart | PERF_BoundarySteadyState);
+                    }
+#endif            
+                    WBAMRENC_DPRINT("%d :: Output: pBuffer = %ld\n",__LINE__, pLcmlHdr->buffer->nFilledLen);
+
+                    WBAMRENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirOutput,__LINE__);
+
+                    pComponentPrivate->LastOutbuf = pLcmlHdr->buffer;  
+                    if((pComponentPrivate->frameMode == WBAMRENC_MIMEMODE)&&(pLcmlHdr->buffer->nFilledLen)) {
+                        nFrames = (OMX_U8)(pLcmlHdr->buffer->nFilledLen / WBAMRENC_OUTPUT_BUFFER_SIZE_MIME);
+                        frameLength=0;
+                        length=0;
+                        for(i=0;i<nFrames;i++){
+                            index = (pLcmlHdr->buffer->pBuffer[i*WBAMRENC_OUTPUT_BUFFER_SIZE_MIME] >> 3) & 0x0F;
+                            if(pLcmlHdr->buffer->nFilledLen == 0)
+                                length = 0;
+                            else 
+                                length = (OMX_U16)pComponentPrivate->amrMimeBytes[index];
+                            if (i){
+                                memmove( pLcmlHdr->buffer->pBuffer + frameLength,
+                                         pLcmlHdr->buffer->pBuffer + (i * WBAMRENC_OUTPUT_BUFFER_SIZE_MIME),
+                                         length);
+                            }
+                            frameLength += length;
+                        }
+                        pLcmlHdr->buffer->nFilledLen= frameLength;
+
+                    }
+
+                    else if((pComponentPrivate->frameMode == WBAMRENC_IF2)&&(pLcmlHdr->buffer->nFilledLen)) {
+                        nFrames = (OMX_U8)( pLcmlHdr->buffer->nFilledLen / WBAMRENC_OUTPUT_BUFFER_SIZE_IF2);
+                        frameLength=0;
+                        length=0;
+                        for(i=0;i<nFrames;i++){
+                            index = (pLcmlHdr->buffer->pBuffer[i*WBAMRENC_OUTPUT_BUFFER_SIZE_IF2] >> 4) & 0x0F;
+                            if(pLcmlHdr->buffer->nFilledLen == 0)
+                                length = 0;
+                            else
+                                length = (OMX_U16)pComponentPrivate->amrIf2Bytes[index];
+                            if (i){
+                                memmove( pLcmlHdr->buffer->pBuffer + frameLength,
+                                         pLcmlHdr->buffer->pBuffer + (i * WBAMRENC_OUTPUT_BUFFER_SIZE_IF2),
+                                         length);
+                            }
+
+                            frameLength += length;
+                        }
+                        pLcmlHdr->buffer->nFilledLen= frameLength;
+                    }
+                    else{
+                        nFrames = pLcmlHdr->buffer->nFilledLen/WBAMRENC_OUTPUT_FRAME_SIZE;
+                    }
+            
+                    if( !pComponentPrivate->dasfMode ){
+                        /* Copying time stamp information to output buffer */
+                        pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->OpBufindex];
+                        /* Copying nTickCount information to output buffer */
+                        pLcmlHdr->buffer->nTickCount = pComponentPrivate->arrTickCount[pComponentPrivate->OpBufindex];
+                        pComponentPrivate->OpBufindex++;
+                        pComponentPrivate->OpBufindex %= pComponentPrivate->pPortDef[OMX_DirOutput]->nBufferCountActual;  
+                    }    
+
+                    if(pComponentPrivate->InBuf_Eos_alreadysent){
+                        if(!pLcmlHdr->buffer->nFilledLen){
+                            pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+                        }
+                        pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                               pHandle->pApplicationPrivate,
+                                                               OMX_EventBufferFlag,
+                                                               pLcmlHdr->buffer->nOutputPortIndex,
+                                                               pLcmlHdr->buffer->nFlags, 
+                                                               NULL);
+                        pComponentPrivate->InBuf_Eos_alreadysent = 0;
+                    }
+        
+                    /* Non Multi Frame Mode has been tested here */         
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_SendingBuffer(pComponentPrivate->pPERFcomp,
+                                       pLcmlHdr->buffer->pBuffer,
+                                       pLcmlHdr->buffer->nFilledLen,
+                                       PERF_ModuleHLMM);
 #endif
 
 
 
-            pComponentPrivate->nFillBufferDoneCount++;
-            pComponentPrivate->nOutStandingFillDones--;
-            pComponentPrivate->lcml_nOpBuf--;
-            pComponentPrivate->app_nBuf++;
+                    pComponentPrivate->nFillBufferDoneCount++;
+                    pComponentPrivate->nOutStandingFillDones--;
+                    pComponentPrivate->lcml_nOpBuf--;
+                    pComponentPrivate->app_nBuf++;
 
-            pComponentPrivate->cbInfo.FillBufferDone(pHandle,
-                                                    pHandle->pApplicationPrivate,
-                                                    pLcmlHdr->buffer);
-			
-            WBAMRENC_DPRINT("%d :: Incrementing app_nBuf = %ld\n",__LINE__,pComponentPrivate->app_nBuf);
+                    pComponentPrivate->cbInfo.FillBufferDone(pHandle,
+                                                             pHandle->pApplicationPrivate,
+                                                             pLcmlHdr->buffer);
+            
+                    WBAMRENC_DPRINT("%d :: Incrementing app_nBuf = %ld\n",__LINE__,pComponentPrivate->app_nBuf);
+                }
+            }
         }
-    }
-}
     else if (event == EMMCodecStrmCtrlAck) {
         WBAMRENC_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL \n",__LINE__);
         if (args[1] == (void *)USN_STRMCMD_FLUSH) {
@@ -2323,18 +2323,18 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
 #endif                        
 
                         pComponentPrivate->cbInfo.EmptyBufferDone (
-                                                                      pHandle,
-                                                                      pHandle->pApplicationPrivate,
-                                                                      pComponentPrivate->pInputBufHdrPending[i]
-                                                                      );
+                                                                   pHandle,
+                                                                   pHandle->pApplicationPrivate,
+                                                                   pComponentPrivate->pInputBufHdrPending[i]
+                                                                   );
                         pComponentPrivate->nEmptyBufferDoneCount++;
                         pComponentPrivate->nOutStandingEmptyDones--;
 
                     }
 
                     pComponentPrivate->cbInfo.EventHandler(
-                                                              pHandle, pHandle->pApplicationPrivate,
-                                                              OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_INPUT_PORT, NULL);    
+                                                           pHandle, pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_INPUT_PORT, NULL);    
                 } else {
                     WBAMRENC_EPRINT("LCML reported error while flushing input port\n");
                     goto EXIT;                            
@@ -2351,17 +2351,17 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                           PERF_ModuleHLMM);
 #endif                        
                         pComponentPrivate->cbInfo.FillBufferDone (
-                                                                     pHandle,
-                                                                     pHandle->pApplicationPrivate,
-                                                                     pComponentPrivate->pOutputBufHdrPending[i]
-                                                                     );
+                                                                  pHandle,
+                                                                  pHandle->pApplicationPrivate,
+                                                                  pComponentPrivate->pOutputBufHdrPending[i]
+                                                                  );
                         pComponentPrivate->nFillBufferDoneCount++;                                       
                         pComponentPrivate->nOutStandingFillDones--;                     
                         
                     }
                     pComponentPrivate->cbInfo.EventHandler(
-                                                              pHandle, pHandle->pApplicationPrivate,
-                                                              OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_OUTPUT_PORT, NULL);
+                                                           pHandle, pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_OUTPUT_PORT, NULL);
                 } else {
                     WBAMRENC_EPRINT("LCML reported error while flushing output port\n");
                     goto EXIT;                            
@@ -2392,8 +2392,8 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                               PERF_ModuleHLMM);
 #endif          
             pComponentPrivate->cbInfo.FillBufferDone( pComponentPrivate->pHandle,
-                                                         pComponentPrivate->pHandle->pApplicationPrivate,
-                                                         pComponentPrivate->iMMFDataLastBuffer);
+                                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                                      pComponentPrivate->iMMFDataLastBuffer);
             pComponentPrivate->nFillBufferDoneCount++;
             pComponentPrivate->nOutStandingFillDones--;
             pComponentPrivate->lcml_nOpBuf--;
@@ -2402,21 +2402,21 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             WBAMRENC_DPRINT("%d :: Incrementing app_nBuf = %ld\n",__LINE__,pComponentPrivate->app_nBuf);
         }
 
-		for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
+        for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
 
             if (pComponentPrivate->pInputBufferList->bBufferPending[i]) {
 #ifdef __PERF_INSTRUMENTATION__
-		                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-		                                      pComponentPrivate->pInputBufferList->pBufHdr[i]->pBuffer,
-		                                      0,
-		                                      PERF_ModuleHLMM);
+                PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                  pComponentPrivate->pInputBufferList->pBufHdr[i]->pBuffer,
+                                  0,
+                                  PERF_ModuleHLMM);
 #endif
 
                 pComponentPrivate->cbInfo.EmptyBufferDone (
-                                       pComponentPrivate->pHandle,
-                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                       pComponentPrivate->pInputBufferList->pBufHdr[i]
-                                       );
+                                                           pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           pComponentPrivate->pInputBufferList->pBufHdr[i]
+                                                           );
                 pComponentPrivate->nEmptyBufferDoneCount++;
 
                 pComponentPrivate->nOutStandingEmptyDones--;
@@ -2426,16 +2426,16 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
         for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pComponentPrivate->pOutputBufferList->bBufferPending[i]) {
 #ifdef __PERF_INSTRUMENTATION__
-		              PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-		                     pComponentPrivate->pOutputBufferList->pBufHdr[i]->pBuffer,
-		                     pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen,
-		                     PERF_ModuleHLMM);
+                PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                  pComponentPrivate->pOutputBufferList->pBufHdr[i]->pBuffer,
+                                  pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen,
+                                  PERF_ModuleHLMM);
 #endif                                                                         
                 pComponentPrivate->cbInfo.FillBufferDone (
-                                       pComponentPrivate->pHandle,
-                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                       pComponentPrivate->pOutputBufferList->pBufHdr[i]
-                                       );
+                                                          pComponentPrivate->pHandle,
+                                                          pComponentPrivate->pHandle->pApplicationPrivate,
+                                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]
+                                                          );
                 pComponentPrivate->nFillBufferDoneCount++;                                       
                 pComponentPrivate->nOutStandingFillDones--;
 
@@ -2452,29 +2452,29 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pComponentPrivate->InBuf_Eos_alreadysent  =0;
             pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED        
-			eError = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
+            eError = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_WBAMR_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL);
 #endif
 
-			if (pComponentPrivate->bPreempted == 0) {
-	            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-	                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-	                                                      OMX_EventCmdComplete,
-	                                                      OMX_CommandStateSet,
-	                                                      pComponentPrivate->curState,
-	                                                      NULL);
-			}
-			else {
-				pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-	                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-	                                                      OMX_EventError,
-					   									  OMX_ErrorResourcesPreempted,
-														  OMX_TI_ErrorSevere,
-	                                                      NULL);
-			}
+            if (pComponentPrivate->bPreempted == 0) {
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventCmdComplete,
+                                                       OMX_CommandStateSet,
+                                                       pComponentPrivate->curState,
+                                                       NULL);
+            }
+            else {
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventError,
+                                                       OMX_ErrorResourcesPreempted,
+                                                       OMX_TI_ErrorSevere,
+                                                       NULL);
+            }
 
         }else{
             pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
-	        pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE; 			
+            pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;            
         }
     }
 
@@ -2498,11 +2498,11 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pComponentPrivate->curState = OMX_StateInvalid;
             pHandle = pComponentPrivate->pHandle;
             pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorInvalidState, 
-                                                      OMX_TI_ErrorSevere,
-                                                      NULL);
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventError,
+                                                   OMX_ErrorInvalidState, 
+                                                   OMX_TI_ErrorSevere,
+                                                   NULL);
         }
 #endif               
         if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
@@ -2512,11 +2512,11 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                 pComponentPrivate->LastOutbuf->nFlags = OMX_BUFFERFLAG_EOS;
 
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,                  
-                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                  OMX_EventBufferFlag,
-                                                  (OMX_U32)NULL,
-                                                  OMX_BUFFERFLAG_EOS,
-                                                  NULL);
+                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                   OMX_EventBufferFlag,
+                                                   (OMX_U32)NULL,
+                                                   OMX_BUFFERFLAG_EOS,
+                                                   NULL);
         }
         if((int)args[5] == IUALG_ERR_GENERAL) {
             char *pArgs = "damedesuStr";
@@ -2535,12 +2535,12 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             WBAMRENC_DPRINT("%d :: AMRENC: Codec has been Stopped here\n",__LINE__);
             pComponentPrivate->curState = OMX_StateIdle;
             pComponentPrivate->cbInfo.EventHandler(
-                                                      pHandle, pHandle->pApplicationPrivate,
-                                                      OMX_EventCmdComplete, OMX_ErrorNone,0, NULL);
+                                                   pHandle, pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete, OMX_ErrorNone,0, NULL);
 #else
             pComponentPrivate->cbInfo.EventHandler(
-                                                      pHandle, pHandle->pApplicationPrivate,
-                                                      OMX_EventError, OMX_ErrorUndefined,OMX_TI_ErrorSevere, NULL);
+                                                   pHandle, pHandle->pApplicationPrivate,
+                                                   OMX_EventError, OMX_ErrorUndefined,OMX_TI_ErrorSevere, NULL);
 #endif
         }
         if( (int)args[5] == IUALG_ERR_DATA_CORRUPT ){
@@ -2560,12 +2560,12 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             WBAMRENC_DPRINT("%d :: AMRENC: Codec has been Stopped here\n",__LINE__);
             pComponentPrivate->curState = OMX_StateIdle;
             pComponentPrivate->cbInfo.EventHandler(
-                                                      pHandle, pHandle->pApplicationPrivate,
-                                                      OMX_EventCmdComplete, OMX_ErrorNone,0, NULL);
+                                                   pHandle, pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete, OMX_ErrorNone,0, NULL);
 #else
             pComponentPrivate->cbInfo.EventHandler(
-                                                      pHandle, pHandle->pApplicationPrivate,
-                                                      OMX_EventError, OMX_ErrorUndefined,OMX_TI_ErrorSevere, NULL);
+                                                   pHandle, pHandle->pApplicationPrivate,
+                                                   OMX_EventError, OMX_ErrorUndefined,OMX_TI_ErrorSevere, NULL);
 #endif
         }
     }
@@ -2586,11 +2586,11 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pComponentPrivate->curState = OMX_StateInvalid;
             pHandle = pComponentPrivate->pHandle;
             pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorInvalidState, 
-                                                      OMX_TI_ErrorSevere,
-                                                      NULL);
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventError,
+                                                   OMX_ErrorInvalidState, 
+                                                   OMX_TI_ErrorSevere,
+                                                   NULL);
         }   
     }
     else if (event ==EMMCodecInternalError){
@@ -2601,11 +2601,11 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pComponentPrivate->curState = OMX_StateInvalid;
             pHandle = pComponentPrivate->pHandle;
             pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorInvalidState, 
-                                                      OMX_TI_ErrorSevere,
-                                                      NULL);
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventError,
+                                                   OMX_ErrorInvalidState, 
+                                                   OMX_TI_ErrorSevere,
+                                                   NULL);
         }
 
     }
@@ -2861,7 +2861,7 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf,nIpBufSize,nOpBuf,nOpBufSize;
     OMX_BUFFERHEADERTYPE *pTemp;
-	char *ptr;
+    char *ptr;
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate;
     WBAMRENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
@@ -2940,15 +2940,15 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         WBAMRENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
         
-		WBAMRENC_OMX_MALLOC_SIZE(pTemp_lcml->pBufferParam,
-								(sizeof(WBAMRENC_ParamStruct)+DSP_CACHE_ALIGNMENT),
-								WBAMRENC_ParamStruct); 
-								
-		ptr = (char*)pTemp_lcml->pBufferParam;
-		ptr += EXTRA_BYTES;
-		pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)ptr;
+        WBAMRENC_OMX_MALLOC_SIZE(pTemp_lcml->pBufferParam,
+                                 (sizeof(WBAMRENC_ParamStruct)+DSP_CACHE_ALIGNMENT),
+                                 WBAMRENC_ParamStruct); 
+                                
+        ptr = (char*)pTemp_lcml->pBufferParam;
+        ptr += EXTRA_BYTES;
+        pTemp_lcml->pBufferParam = (WBAMRENC_ParamStruct*)ptr;
 
-		
+        
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
@@ -3112,9 +3112,9 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
     }
     else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
         pCompPrivate->cbInfo.EventHandler (
-	                        pHandle, pHandle->pApplicationPrivate,
-	                        OMX_EventResourcesAcquired, 0,0,
-	                        NULL);
+                            pHandle, pHandle->pApplicationPrivate,
+                            OMX_EventResourcesAcquired, 0,0,
+                            NULL);
             
         
     }

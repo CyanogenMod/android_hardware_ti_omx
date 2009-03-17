@@ -95,14 +95,14 @@ void* WBAMRENC_CompThread(void* pThreadData)
     int ret = 0;
     fd_set rfds;
     OMX_U32 nRet;
-	OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
+    OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
     WBAMRENC_COMPONENT_PRIVATE* pComponentPrivate = (WBAMRENC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
     
     OMX_U32 commandData;
     OMX_COMMANDTYPE command;
     
-	WBAMRENC_DPRINT("%d :: Entering WBAMRENC_CompThread\n", __LINE__);
+    WBAMRENC_DPRINT("%d :: Entering WBAMRENC_CompThread\n", __LINE__);
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('W', 'B', 'E', '_'),
@@ -152,20 +152,20 @@ void* WBAMRENC_CompThread(void* pThreadData)
         } else if(-1 == status) {
             WBAMRENC_EPRINT("%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler ( pHandle,
-                             						 pHandle->pApplicationPrivate,
-                             						 OMX_EventError,
-                             						 OMX_ErrorInsufficientResources,
-                             						 OMX_TI_ErrorSevere,
-                             						 "Error from Component Thread in select");
+                                                     pHandle->pApplicationPrivate,
+                                                     OMX_EventError,
+                                                     OMX_ErrorInsufficientResources,
+                                                     OMX_TI_ErrorSevere,
+                                                     "Error from Component Thread in select");
             exit(1);
         } 
-		else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
+        else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
             WBAMRENC_DPRINT("%d :: DATA pipe is set in Component Thread\n",__LINE__);
 
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
                 WBAMRENC_EPRINT("%d :: Error while reading from the pipe\n",__LINE__);
-				goto EXIT;
+                goto EXIT;
             }
             eError = WBAMRENC_HandleDataBufFromApp(pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
@@ -192,31 +192,31 @@ void* WBAMRENC_CompThread(void* pThreadData)
             if (nRet == WBAMRENC_EXIT_COMPONENT_THRD) {
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
-				PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
+                PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
 #endif
 
-				if (pComponentPrivate->bPreempted == 0) {
-	                pComponentPrivate->cbInfo.EventHandler( pHandle,
-															pHandle->pApplicationPrivate,
-															OMX_EventCmdComplete,
-															OMX_ErrorNone,
-															pComponentPrivate->curState,
-															NULL);
-				}
-				else {
-					pComponentPrivate->cbInfo.EventHandler( pHandle,
-															pHandle->pApplicationPrivate,
-															OMX_EventError,
-															OMX_ErrorResourcesLost,
-															OMX_TI_ErrorMajor,
-															NULL);
-					pComponentPrivate->bPreempted = 0;
-				}
-					
+                if (pComponentPrivate->bPreempted == 0) {
+                    pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                            pHandle->pApplicationPrivate,
+                                                            OMX_EventCmdComplete,
+                                                            OMX_ErrorNone,
+                                                            pComponentPrivate->curState,
+                                                            NULL);
+                }
+                else {
+                    pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                            pHandle->pApplicationPrivate,
+                                                            OMX_EventError,
+                                                            OMX_ErrorResourcesLost,
+                                                            OMX_TI_ErrorMajor,
+                                                            NULL);
+                    pComponentPrivate->bPreempted = 0;
+                }
+                    
             }
         }
     }
-EXIT:
+ EXIT:
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif

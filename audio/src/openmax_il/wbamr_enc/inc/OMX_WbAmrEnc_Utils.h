@@ -70,11 +70,11 @@
 #include <OMX_Component.h>
 #include "OMX_TI_Common.h"
 #ifdef DSP_RENDERING_ON
-	#include <AudioManagerAPI.h>
+    #include <AudioManagerAPI.h>
 #endif
 
 #ifdef UNDER_CE
-	#define sleep Sleep
+    #define sleep Sleep
 #endif
 
 
@@ -108,7 +108,7 @@
 #ifndef  UNDER_CE
         #define WBAMRENC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
 #else
-        #define WBAMRENC_EPRINT		printf
+        #define WBAMRENC_EPRINT     printf
 #endif
 
 
@@ -142,7 +142,7 @@
  */
 /* ======================================================================= */
 #ifdef  WBAMRENC_DEBUG
- 		#define WBAMRENC_DPRINT(STR, ARG...) printf()
+        #define WBAMRENC_DPRINT(STR, ARG...) printf()
 #else
 
 #endif
@@ -152,7 +152,7 @@
  */
 /* ======================================================================= */
 #ifdef  WBAMRENC_MEMCHECK
-		#define WBAMRENC_MEMPRINT(STR, ARG...) printf()
+        #define WBAMRENC_MEMPRINT(STR, ARG...) printf()
 #else
 
 #endif
@@ -160,14 +160,14 @@
 #ifdef UNDER_CE
 
 #ifdef DEBUG
-		#define WBAMRENC_DPRINT     printf
-		#define WBAMRENC_MEMPRINT   printf
+        #define WBAMRENC_DPRINT     printf
+        #define WBAMRENC_MEMPRINT   printf
 #else
-		#define WBAMRENC_DPRINT
-		#define WBAMRENC_MEMPRINT
+        #define WBAMRENC_DPRINT
+        #define WBAMRENC_MEMPRINT
 #endif
 
-#endif	/*UNDER_CE*/
+#endif  /*UNDER_CE*/
 
 #endif
 
@@ -177,29 +177,29 @@
  */
 /* ======================================================================= */
 
-#define OMX_WBCONF_INIT_STRUCT(_s_, _name_)	\
-    memset((_s_), 0x0, sizeof(_name_));	\
-    (_s_)->nSize = sizeof(_name_);		\
-    (_s_)->nVersion.s.nVersionMajor = 0x1;	\
-    (_s_)->nVersion.s.nVersionMinor = 0x0;	\
-    (_s_)->nVersion.s.nRevision = 0x0;		\
+#define OMX_WBCONF_INIT_STRUCT(_s_, _name_) \
+    memset((_s_), 0x0, sizeof(_name_)); \
+    (_s_)->nSize = sizeof(_name_);      \
+    (_s_)->nVersion.s.nVersionMajor = 0x1;  \
+    (_s_)->nVersion.s.nVersionMinor = 0x0;  \
+    (_s_)->nVersion.s.nRevision = 0x0;      \
     (_s_)->nVersion.s.nStep = 0x0
 
 #define OMX_WBMEMFREE_STRUCT(_pStruct_)\
-	WBAMRENC_MEMPRINT("%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
+    WBAMRENC_MEMPRINT("%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
-    	newfree(_pStruct_);\
-	    _pStruct_ = NULL;\
-	}
+        newfree(_pStruct_);\
+        _pStruct_ = NULL;\
+    }
 
 #define OMX_WBCLOSE_PIPE(_pStruct_,err)\
-	WBAMRENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
-	err = close (_pStruct_);\
+    WBAMRENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
+    err = close (_pStruct_);\
     if(0 != err && OMX_ErrorNone == eError){\
-		eError = OMX_ErrorHardware;\
-		printf("%d :: Error while closing pipe\n",__LINE__);\
-		goto EXIT;\
-	}
+        eError = OMX_ErrorHardware;\
+        printf("%d :: Error while closing pipe\n",__LINE__);\
+        goto EXIT;\
+    }
 
 #define WBAMRENC_OMX_MALLOC(_pStruct_, _sName_)   \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
@@ -243,8 +243,8 @@
 
 /* ======================================================================= */
 /**
- * @def EXTRA_BYTES   	 Extra bytes For Cache alignment
- *		DSP_CACHE_ALIGNMENT    Cache alignment value
+ * @def EXTRA_BYTES      Extra bytes For Cache alignment
+ *      DSP_CACHE_ALIGNMENT    Cache alignment value
  */
 /* ======================================================================= */
 
@@ -323,9 +323,9 @@
  */
 /* ======================================================================= */
 #ifdef UNDER_CE
-	#define WBAMRENC_USN_DLL_NAME "\\windows\\usn.dll64P"
+    #define WBAMRENC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-	#define WBAMRENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+    #define WBAMRENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -334,19 +334,19 @@
  */
 /* ======================================================================= */
 #ifdef UNDER_CE
-	#define WBAMRENC_DLL_NAME "\\windows\\wbamrenc_sn.dll64P"
+    #define WBAMRENC_DLL_NAME "\\windows\\wbamrenc_sn.dll64P"
 #else
-	#define WBAMRENC_DLL_NAME "/lib/dsp/wbamrenc_sn.dll64P"
+    #define WBAMRENC_DLL_NAME "/lib/dsp/wbamrenc_sn.dll64P"
 #endif
 
 /* ======================================================================= */
 /** WBAMRENC_StreamType  Stream types
 *
-*  @param  WBAMRENC_DMM					DMM
+*  @param  WBAMRENC_DMM                 DMM
 *
-*  @param  WBAMRENC_INSTRM				Input stream
+*  @param  WBAMRENC_INSTRM              Input stream
 *
-*  @param  WBAMRENC_OUTSTRM				Output stream
+*  @param  WBAMRENC_OUTSTRM             Output stream
 */
 /* ======================================================================= */
 enum WBAMRENC_StreamType {
@@ -357,42 +357,42 @@ enum WBAMRENC_StreamType {
 /* ======================================================================= */
 /** WBAMRENC_EncodeType  coding types
 *
-*  @param  WBAMRENC_WBAMR			WBAMR mode
+*  @param  WBAMRENC_WBAMR           WBAMR mode
 *
-*  @param  WBAMRENC_EFR				EFR mode
+*  @param  WBAMRENC_EFR             EFR mode
 *
 */
 /* ======================================================================= */
 enum WBAMRENC_EncodeType {
-	WBAMRENC_WBAMR = 0,
-	WBAMRENC_EFR
+    WBAMRENC_WBAMR = 0,
+    WBAMRENC_EFR
 };
 /* ======================================================================= */
 /** WBAMRENC_MimeMode  format types
 *
-*  @param  WBAMRENC_MIMEMODE				MIME
+*  @param  WBAMRENC_MIMEMODE                MIME
 *
-*  @param  WBAMRENC_FORMATCONFORMANCE		WBAMR mode
+*  @param  WBAMRENC_FORMATCONFORMANCE       WBAMR mode
 *
-*  @param  WBAMRENC_IF2						IF2 mode
+*  @param  WBAMRENC_IF2                     IF2 mode
 *
 */
 /* ======================================================================= */
 enum WBAMRENC_MimeMode {
-	WBAMRENC_FORMATCONFORMANCE = 0,
-	WBAMRENC_MIMEMODE, 
-	WBAMRENC_IF2
-	};
+    WBAMRENC_FORMATCONFORMANCE = 0,
+    WBAMRENC_MIMEMODE, 
+    WBAMRENC_IF2
+    };
 
 /* ======================================================================= */
 /*
  * Different Frame sizes for different index in MIME Mode
  */
 /* ======================================================================= */
-#define WBAMRENC_FRAME_SIZE_0	0
-#define WBAMRENC_FRAME_SIZE_1	1
-#define WBAMRENC_FRAME_SIZE_6	6
-#define WBAMRENC_FRAME_SIZE_18	18
+#define WBAMRENC_FRAME_SIZE_0   0
+#define WBAMRENC_FRAME_SIZE_1   1
+#define WBAMRENC_FRAME_SIZE_6   6
+#define WBAMRENC_FRAME_SIZE_18  18
 #define WBAMRENC_FRAME_SIZE_23  23
 #define WBAMRENC_FRAME_SIZE_24  24
 #define WBAMRENC_FRAME_SIZE_33  33
@@ -401,7 +401,7 @@ enum WBAMRENC_MimeMode {
 #define WBAMRENC_FRAME_SIZE_47  47
 #define WBAMRENC_FRAME_SIZE_51  51
 #define WBAMRENC_FRAME_SIZE_59  59
-#define WBAMRENC_FRAME_SIZE_61	61
+#define WBAMRENC_FRAME_SIZE_61  61
 
 
 
@@ -413,10 +413,10 @@ enum WBAMRENC_MimeMode {
 #define WBAMRENC_TIMEOUT 1000
 /* ======================================================================= */
 /*
- * @def	WBAMRENC_OMX_MAX_TIMEOUTS   Max Time Outs
- * @def	WBAMRENC_DONT_CARE 			Dont Care Condition
- * @def	WBAMRENC_NUM_CHANNELS 		Number of Channels
- * @def	WBAMRENC_APP_ID 			App ID Value setting
+ * @def WBAMRENC_OMX_MAX_TIMEOUTS   Max Time Outs
+ * @def WBAMRENC_DONT_CARE          Dont Care Condition
+ * @def WBAMRENC_NUM_CHANNELS       Number of Channels
+ * @def WBAMRENC_APP_ID             App ID Value setting
  */
 /* ======================================================================= */
 #define WBAMRENC_OMX_MAX_TIMEOUTS 20
@@ -425,7 +425,7 @@ enum WBAMRENC_MimeMode {
 /* ======================================================================= */
 /**
  * @def    WBAMRENC_STREAM_COUNT    Number of streams
- * 		   WBAMRENC_INPUT_STREAM_ID Stream ID for Input Buffer
+ *         WBAMRENC_INPUT_STREAM_ID Stream ID for Input Buffer
  */
 /* ======================================================================= */
 #define WBAMRENC_STREAM_COUNT 2
@@ -439,9 +439,9 @@ enum WBAMRENC_MimeMode {
 #define _ERROR_PROPAGATION__
 /** WBAMRENC_COMP_PORT_TYPE  Port types
  *
- *  @param  WBAMRENC_INPUT_PORT				Input port
+ *  @param  WBAMRENC_INPUT_PORT             Input port
  *
- *  @param  WBAMRENC_OUTPUT_PORT			Output port
+ *  @param  WBAMRENC_OUTPUT_PORT            Output port
  */
 /*  ====================================================================== */
 /*This enum must not be changed. */
@@ -473,9 +473,9 @@ typedef enum AUDIO_SN_WBAMRBANDMODETYPE {
 /* ======================================================================= */
 /** WBAMRENC_BUFFER_Dir  Buffer Direction
 *
-*  @param  WBAMRENC_DIRECTION_INPUT		Input direction
+*  @param  WBAMRENC_DIRECTION_INPUT     Input direction
 *
-*  @param  WBAMRENC_DIRECTION_OUTPUT	Output direction
+*  @param  WBAMRENC_DIRECTION_OUTPUT    Output direction
 *
 */
 /* ======================================================================= */
@@ -489,7 +489,7 @@ typedef enum {
 *
 *  @param  BufHeader Buffer header
 *
-*  @param  Buffer	Buffer
+*  @param  Buffer   Buffer
 *
 */
 /* ======================================================================= */
@@ -521,35 +521,35 @@ typedef OMX_ERRORTYPE (*WBAMRENC_fpo)(OMX_HANDLETYPE);
 */
 /* =================================================================================== */
 typedef struct WBAMRENC_AudioCodecParams {
-	unsigned long  iSamplingRate;
-	unsigned long  iStrmId;
-	unsigned short iAudioFormat;
+    unsigned long  iSamplingRate;
+    unsigned long  iStrmId;
+    unsigned short iAudioFormat;
 }WBAMRENC_AudioCodecParams;
 
 /* =================================================================================== */
 /**
-* WBAMRENC_TALGCtrl 				Socket Node Alg Control parameters.
-* WBAMRENC_UAlgInBufParamStruct		Input Buffer Param Structure
-* WBAMRENC_UAlgOutBufParamStruct	Output Buffer Param Structure
+* WBAMRENC_TALGCtrl                 Socket Node Alg Control parameters.
+* WBAMRENC_UAlgInBufParamStruct     Input Buffer Param Structure
+* WBAMRENC_UAlgOutBufParamStruct    Output Buffer Param Structure
 */
 /* =================================================================================== */
 /* Algorithm specific command parameters */
 typedef struct {
-	unsigned int iSize;
-	unsigned int iBitrate;
-	unsigned int iDTX;
-	unsigned int iMode;
-	unsigned int iFrameSize;
-	unsigned int iNoiseSuppressionMode;
-	unsigned int ittyTddMode;
-	unsigned int idtmfMode;
-	unsigned int idataTransmit;
+    unsigned int iSize;
+    unsigned int iBitrate;
+    unsigned int iDTX;
+    unsigned int iMode;
+    unsigned int iFrameSize;
+    unsigned int iNoiseSuppressionMode;
+    unsigned int ittyTddMode;
+    unsigned int idtmfMode;
+    unsigned int idataTransmit;
 }WBAMRENC_TALGCtrl;
 
 /* =================================================================================== */
 /**
-* WBAMRENC_UAlgInBufParamStruct		Input Buffer Param Structure
-* usLastFrame 						To Send Last Buufer Flag
+* WBAMRENC_UAlgInBufParamStruct     Input Buffer Param Structure
+* usLastFrame                       To Send Last Buufer Flag
 */
 /* =================================================================================== */
 typedef struct {
@@ -563,12 +563,12 @@ typedef struct{
 
 /* =================================================================================== */
 /**
-* WBAMRENC_UAlgOutBufParamStruct	Output Buffer Param Structure
+* WBAMRENC_UAlgOutBufParamStruct    Output Buffer Param Structure
 * ulFrameCount No.of Frames Encoded
 */
 /* =================================================================================== */
 typedef struct {
-	unsigned long ulFrameCount;
+    unsigned long ulFrameCount;
 }WBAMRENC_UAlgOutBufParamStruct;
 
 /* =================================================================================== */
@@ -592,11 +592,11 @@ typedef struct _WBAMRENC_BUFFERLIST WBAMRENC_BUFFERLIST;
 */
 /* ================================================================================== */
 struct _WBAMRENC_BUFFERLIST{
-	OMX_BUFFERHEADERTYPE sBufHdr;
+    OMX_BUFFERHEADERTYPE sBufHdr;
     OMX_BUFFERHEADERTYPE *pBufHdr[WBAMRENC_MAX_NUM_OF_BUFS];
-	OMX_U32 bufferOwner[WBAMRENC_MAX_NUM_OF_BUFS];
-	OMX_U32 bBufferPending[WBAMRENC_MAX_NUM_OF_BUFS];
-	OMX_U32 numBuffers;
+    OMX_U32 bufferOwner[WBAMRENC_MAX_NUM_OF_BUFS];
+    OMX_U32 bBufferPending[WBAMRENC_MAX_NUM_OF_BUFS];
+    OMX_U32 numBuffers;
     WBAMRENC_BUFFERLIST *pNextBuf;
     WBAMRENC_BUFFERLIST *pPrevBuf;
 };
@@ -610,21 +610,21 @@ typedef struct WBAMRENC_PORT_TYPE {
     OMX_HANDLETYPE hTunnelComponent;
     OMX_U32 nTunnelPort;
     OMX_BUFFERSUPPLIERTYPE eSupplierSetting;
-	OMX_U8 nBufferCnt;
-	OMX_AUDIO_PARAM_PORTFORMATTYPE* pPortFormat;
+    OMX_U8 nBufferCnt;
+    OMX_AUDIO_PARAM_PORTFORMATTYPE* pPortFormat;
 } WBAMRENC_PORT_TYPE;
 
 #ifdef UNDER_CE
-	#ifndef _OMX_EVENT_
-		#define _OMX_EVENT_
-		typedef struct OMX_Event {
-			HANDLE event;
-		} OMX_Event;
-	#endif
-	int OMX_CreateEvent(OMX_Event *event);
-	int OMX_SignalEvent(OMX_Event *event);
-	int OMX_WaitForEvent(OMX_Event *event);
-	int OMX_DestroyEvent(OMX_Event *event);
+    #ifndef _OMX_EVENT_
+        #define _OMX_EVENT_
+        typedef struct OMX_Event {
+            HANDLE event;
+        } OMX_Event;
+    #endif
+    int OMX_CreateEvent(OMX_Event *event);
+    int OMX_SignalEvent(OMX_Event *event);
+    int OMX_WaitForEvent(OMX_Event *event);
+    int OMX_DestroyEvent(OMX_Event *event);
 #endif
 
 typedef struct WBAMRENC_BUFDATA {
@@ -638,10 +638,10 @@ typedef struct WBAMRENC_BUFDATA {
 typedef struct WBAMRENC_COMPONENT_PRIVATE
 {
     /** Array of pointers to BUFFERHEADERTYPE structues
-       This pBufHeader[INPUT_PORT] will point to all the
-       BUFFERHEADERTYPE structures related to input port,
-       not just one structure. Same is the case for output
-       port also. */
+        This pBufHeader[INPUT_PORT] will point to all the
+        BUFFERHEADERTYPE structures related to input port,
+        not just one structure. Same is the case for output
+        port also. */
     OMX_BUFFERHEADERTYPE* pBufHeader[WBAMRENC_NUM_OF_PORTS];
     /** Number of input buffers at runtime */
     OMX_U32 nRuntimeInputBuffers;
@@ -652,14 +652,14 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
     OMX_CALLBACKTYPE cbInfo;
     OMX_PORT_PARAM_TYPE* sPortParam;
     OMX_PRIORITYMGMTTYPE* sPriorityMgmt;
-	
-/*	RMPROXY_CALLBACKTYPE rmproxyCallback; */
+    
+    /*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
     OMX_BOOL bPreempted;
 
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef[WBAMRENC_NUM_OF_PORTS];
     OMX_PORT_PARAM_TYPE* pPortParamType;
     OMX_AUDIO_PARAM_AMRTYPE* amrParams;
-	OMX_AUDIO_PARAM_PCMMODETYPE* pcmParams;
+    OMX_AUDIO_PARAM_PCMMODETYPE* pcmParams;
 
     WBAMRENC_BUFFERHEADERTYPE_INFO BufInfo[WBAMRENC_NUM_OF_PORTS];
     WBAMRENC_PORT_TYPE *pCompPort[WBAMRENC_NUM_OF_PORTS];
@@ -681,17 +681,17 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
 
     OMX_U32 amrMode;
 
-	OMX_U32 dasfMode;
+    OMX_U32 dasfMode;
 
-	OMX_U32 frameMode;
+    OMX_U32 frameMode;
 
-	OMX_U32 acdnMode;
+    OMX_U32 acdnMode;
 
-	OMX_U32 nMultiFrameMode;
+    OMX_U32 nMultiFrameMode;
 
     OMX_U32 fdwrite;
 
-	OMX_U32 fdread;
+    OMX_U32 fdread;
 
     /** Set to indicate component is stopping */
     OMX_U32 bIsThreadstop;
@@ -710,29 +710,29 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
 
     OMX_U32 bIsBufferOwned[WBAMRENC_NUM_OF_PORTS];
 
-	OMX_U32 streamID;
+    OMX_U32 streamID;
 
     OMX_U32 bCompThreadStarted;
 
     OMX_U32 nVersion;
 
-	OMX_U32 amrMimeBytes[16];
+    OMX_U32 amrMimeBytes[16];
 
-	OMX_U32 amrIf2Bytes[16];	 
-	
-	OMX_U32 iHoldLen;
+    OMX_U32 amrIf2Bytes[16];     
+    
+    OMX_U32 iHoldLen;
 
-	OMX_U32 nHoldLength;
+    OMX_U32 nHoldLength;
 
-	OMX_U32 nFillThisBufferCount;
+    OMX_U32 nFillThisBufferCount;
 
-	OMX_U32 nFillBufferDoneCount;
+    OMX_U32 nFillBufferDoneCount;
 
-	OMX_U32 nEmptyThisBufferCount;
+    OMX_U32 nEmptyThisBufferCount;
 
-	OMX_U32 nEmptyBufferDoneCount;
+    OMX_U32 nEmptyBufferDoneCount;
 
-	OMX_U32 bInitParamsInitialized;
+    OMX_U32 bInitParamsInitialized;
 
     OMX_U32 nNumInputBufPending;
 
@@ -758,40 +758,40 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
 
     WBAMRENC_BUFFERLIST *pOutputBufferList;
 
-	LCML_STRMATTR *strmAttr;
+    LCML_STRMATTR *strmAttr;
 
-	WBAMRENC_TALGCtrl *pAlgParam;
+    WBAMRENC_TALGCtrl *pAlgParam;
 
-	WBAMRENC_AudioCodecParams *pParams;
+    WBAMRENC_AudioCodecParams *pParams;
 
-	OMX_STRING cComponentName;
+    OMX_STRING cComponentName;
 
-	OMX_VERSIONTYPE ComponentVersion;
+    OMX_VERSIONTYPE ComponentVersion;
 
     OMX_BUFFERHEADERTYPE *pInputBufHdrPending[WBAMRENC_MAX_NUM_OF_BUFS];
 
     OMX_BUFFERHEADERTYPE *pOutputBufHdrPending[WBAMRENC_MAX_NUM_OF_BUFS];
 
-	OMX_BUFFERHEADERTYPE *iMMFDataLastBuffer;
+    OMX_BUFFERHEADERTYPE *iMMFDataLastBuffer;
 
-	OMX_U8* pHoldBuffer,*pHoldBuffer2;
+    OMX_U8* pHoldBuffer,*pHoldBuffer2;
 
-	OMX_U8* iHoldBuffer;
+    OMX_U8* iHoldBuffer;
 
     /** Flag to set when socket node stop callback should not transition
-    component to OMX_StateIdle */
+        component to OMX_StateIdle */
     OMX_U32 bNoIdleOnStop;
 
-	/** Flag set when socket node is stopped */
-	OMX_U32 bDspStoppedWhileExecuting;	
-	
+    /** Flag set when socket node is stopped */
+    OMX_U32 bDspStoppedWhileExecuting;  
+    
     /** Number of outstanding FillBufferDone() calls */
     OMX_S32 nOutStandingFillDones;
     
     OMX_S32 nOutStandingEmptyDones;
 
 #ifndef UNDER_CE
-	pthread_mutex_t AlloBuf_mutex;
+    pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
 
@@ -803,12 +803,12 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
 
-	pthread_mutex_t ToLoaded_mutex;
-/*    
-    sem_t allobuf;
-    sem_t inloaded;
-    sem_t inidle;
-*/
+    pthread_mutex_t ToLoaded_mutex;
+    /*    
+          sem_t allobuf;
+          sem_t inloaded;
+          sem_t inidle;
+    */
 #else
     OMX_Event AlloBuf_event;
     OMX_U8 AlloBuf_waitingsignal;
@@ -831,20 +831,20 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
 #endif
 
     OMX_BUFFERHEADERTYPE *LastOutbuf;
-   	OMX_BOOL bIsInvalidState;
+    OMX_BOOL bIsInvalidState;
 
-   	OMX_STRING* sDeviceString;
- 	void* ptrLibLCML;
- 	
+    OMX_STRING* sDeviceString;
+    void* ptrLibLCML;
+    
     /** Circular array to keep buffer timestamps */
-	OMX_S64 arrBufIndex[WBAMRENC_MAX_NUM_OF_BUFS]; 
+    OMX_S64 arrBufIndex[WBAMRENC_MAX_NUM_OF_BUFS]; 
     /** Circular array to keep buffer nTickCounts */
-	OMX_S64 arrTickCount[WBAMRENC_MAX_NUM_OF_BUFS]; 
-	/** Index to arrBufIndex[], used for input buffer timestamps */
-	OMX_U8 IpBufindex;
-	/** Index to arrBufIndex[], used for output buffer timestamps */
-	OMX_U8 OpBufindex;	
- 	
+    OMX_S64 arrTickCount[WBAMRENC_MAX_NUM_OF_BUFS]; 
+    /** Index to arrBufIndex[], used for input buffer timestamps */
+    OMX_U8 IpBufindex;
+    /** Index to arrBufIndex[], used for output buffer timestamps */
+    OMX_U8 OpBufindex;  
+    
     OMX_S8 ProcessingInputBuf;
     OMX_S8 ProcessingOutputBuf;    
     
@@ -860,7 +860,7 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
 *  OMX_ComponentInit()  Initializes component
 *
 *
-*  @param hComp			OMX Handle
+*  @param hComp         OMX Handle
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -873,7 +873,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
 *  WBAMRENC_StartComponentThread()  Starts component thread
 *
 *
-*  @param hComp			OMX Handle
+*  @param hComp         OMX Handle
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -886,7 +886,7 @@ OMX_ERRORTYPE WBAMRENC_StartComponentThread(OMX_HANDLETYPE pHandle);
 *  WBAMRENC_StopComponentThread()  Stops component thread
 *
 *
-*  @param hComp			OMX Handle
+*  @param hComp         OMX Handle
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -899,7 +899,7 @@ OMX_ERRORTYPE WBAMRENC_StopComponentThread(OMX_HANDLETYPE pHandle);
 *  WBAMRENC_FreeCompResources()  Frees allocated memory
 *
 *
-*  @param hComp			OMX Handle
+*  @param hComp         OMX Handle
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -912,7 +912,7 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 *  WBAMRENC_GetCorrespondingLCMLHeader()  Returns LCML header
 * that corresponds to the given buffer
 *
-*  @param pComponentPrivate	Component private data
+*  @param pComponentPrivate Component private data
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -920,15 +920,15 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 /* =================================================================================== */
 OMX_ERRORTYPE WBAMRENC_GetCorrespondingLCMLHeader(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                                                   OMX_U8 *pBuffer,
-                                          		  OMX_DIRTYPE eDir,
-                                          		  WBAMRENC_LCML_BUFHEADERTYPE **ppLcmlHdr);
+                                                  OMX_DIRTYPE eDir,
+                                                  WBAMRENC_LCML_BUFHEADERTYPE **ppLcmlHdr);
 /* =================================================================================== */
 /**
 *  WBAMRENC_LCMLCallback() Callback from LCML
 *
-*  @param event		Codec Event
+*  @param event     Codec Event
 *
-*  @param args		Arguments from LCML
+*  @param args      Arguments from LCML
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -957,23 +957,23 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pHandle,
 /**
 *  WBAMRENC_GetBufferDirection() Returns direction of pBufHeader
 *
-*  @param pBufHeader		Buffer header
+*  @param pBufHeader        Buffer header
 *
-*  @param eDir				Buffer direction
+*  @param eDir              Buffer direction
 *
-*  @param pComponentPrivate	Component private data
+*  @param pComponentPrivate Component private data
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
 */
 /* =================================================================================== */
 OMX_ERRORTYPE WBAMRENC_GetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
-										  OMX_DIRTYPE *eDir);
+                                          OMX_DIRTYPE *eDir);
 /* ===========================================================  */
 /**
 *  WBAMRENC_HandleCommand()  Handles commands sent via SendCommand()
 *
-*  @param pComponentPrivate	Component private data
+*  @param pComponentPrivate Component private data
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -989,7 +989,7 @@ OMX_U32 WBAMRENC_HandleCommand(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 *  WBAMRENC_HandleDataBufFromApp()  Handles data buffers received
 * from the IL Client
 *
-*  @param pComponentPrivate	Component private data
+*  @param pComponentPrivate Component private data
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -998,7 +998,7 @@ OMX_U32 WBAMRENC_HandleCommand(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 */
 /* =================================================================================== */
 OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE *pBufHeader,
-        									WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate);
+                                            WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate);
 /* =================================================================================== */
 /**
 *  WBAMRENC_GetLCMLHandle()  Get the handle to the LCML
@@ -1023,7 +1023,7 @@ OMX_ERRORTYPE WBAMRENC_FreeLCMLHandle(WBAMRENC_COMPONENT_PRIVATE *pComponentPriv
 /**
 *  WBAMRENC_CleanupInitParams()  Starts component thread
 *
-*  @param pComponent		OMX Handle
+*  @param pComponent        OMX Handle
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
@@ -1035,57 +1035,57 @@ OMX_ERRORTYPE WBAMRENC_CleanupInitParams(OMX_HANDLETYPE pHandle);
 *  WBAMRENC_SetPending()  Called when the component queues a buffer
 * to the LCML
 *
-*  @param pComponentPrivate		Component private data
+*  @param pComponentPrivate     Component private data
 *
-*  @param pBufHdr				Buffer header
+*  @param pBufHdr               Buffer header
 *
-*  @param eDir					Direction of the buffer
+*  @param eDir                  Direction of the buffer
 *
 *  @return None
 */
 /* =================================================================================== */
 void WBAMRENC_SetPending(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
-						 OMX_BUFFERHEADERTYPE *pBufHdr,
-						 OMX_DIRTYPE eDir,
-						 OMX_U32 lineNumber);
+                         OMX_BUFFERHEADERTYPE *pBufHdr,
+                         OMX_DIRTYPE eDir,
+                         OMX_U32 lineNumber);
 /* =================================================================================== */
 /**
 *  WBAMRENC_ClearPending()  Called when a buffer is returned
 * from the LCML
 *
-*  @param pComponentPrivate		Component private data
+*  @param pComponentPrivate     Component private data
 *
-*  @param pBufHdr				Buffer header
+*  @param pBufHdr               Buffer header
 *
-*  @param eDir					Direction of the buffer
+*  @param eDir                  Direction of the buffer
 *
 *  @return None
 */
 /* =================================================================================== */
 void WBAMRENC_ClearPending(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
-						   OMX_BUFFERHEADERTYPE *pBufHdr,
-						   OMX_DIRTYPE eDir,
-						   OMX_U32 lineNumber);
+                           OMX_BUFFERHEADERTYPE *pBufHdr,
+                           OMX_DIRTYPE eDir,
+                           OMX_U32 lineNumber);
 /* =================================================================================== */
 /**
 *  WBAMRENC_IsPending()
 *
 *
-*  @param pComponentPrivate		Component private data
+*  @param pComponentPrivate     Component private data
 *
 *  @return OMX_ErrorNone = Successful
 *          Other error code = fail
 */
 /* =================================================================================== */
 OMX_U32 WBAMRENC_IsPending(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
-						   OMX_BUFFERHEADERTYPE *pBufHdr,
-						   OMX_DIRTYPE eDir);
+                           OMX_BUFFERHEADERTYPE *pBufHdr,
+                           OMX_DIRTYPE eDir);
 /* =================================================================================== */
 /**
 *  WBAMRENC_FillLCMLInitParamsEx()  Fills the parameters needed
 * to initialize the LCML without recreating the socket node
 *
-*  @param pComponent			OMX Handle
+*  @param pComponent            OMX Handle
 *
 *  @return None
 */
@@ -1096,19 +1096,19 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 *  WBAMRENC_IsValid() Returns whether a buffer is valid
 *
 *
-*  @param pComponentPrivate		Component private data
+*  @param pComponentPrivate     Component private data
 *
-*  @param pBuffer				Data buffer
+*  @param pBuffer               Data buffer
 *
-*  @param eDir					Buffer direction
+*  @param eDir                  Buffer direction
 *
 *  @return OMX_True = Valid
 *          OMX_False= Invalid
 */
 /* =================================================================================== */
 OMX_U32 WBAMRENC_IsValid(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
-						 OMX_U8 *pBuffer,
-						 OMX_DIRTYPE eDir);
+                         OMX_U8 *pBuffer,
+                         OMX_DIRTYPE eDir);
 
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr);
