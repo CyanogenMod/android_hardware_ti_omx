@@ -63,7 +63,6 @@
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
 #include "OMX_TI_Common.h"
-#include "OMX_TI_Debug.h"
 #include <TIDspOmx.h>
 /* #include <ResourceManagerProxyAPI.h> */
 
@@ -211,15 +210,7 @@
  */
 /* ======================================================================= */
 
-#define NBAMR_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)\
-do {                                      \
-    if(!_ptr1 || !_ptr2 || !_ptr3){       \
-    eError = OMX_ErrorBadParameter;       \
-    goto EXIT;                            \
-    }                                     \
-} while(0)
-
-#define OMX_NBCONF_INIT_STRUCT(_s_, _name_)	 \
+#define OMX_NBCONF_INIT_STRUCT(_s_, _name_)	\
     memset((_s_), 0x0, sizeof(_name_));	\
     (_s_)->nSize = sizeof(_name_);		\
     (_s_)->nVersion.s.nVersionMajor = 0x1;	\
@@ -228,7 +219,7 @@ do {                                      \
     (_s_)->nVersion.s.nStep = 0x0
 
 #define OMX_NBMEMFREE_STRUCT(_pStruct_)\
-    OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: [FREE] %p\n",__LINE__,_pStruct_); \
+	AMRENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
         newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
@@ -236,44 +227,50 @@ do {                                      \
 
 
 #define OMX_NBCLOSE_PIPE(_pStruct_,err)\
-    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: CLOSING PIPE \n",__LINE__);\
-    err = close (_pStruct_);\
+	AMRENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
+	err = close (_pStruct_);\
     if(0 != err && OMX_ErrorNone == eError){\
 		eError = OMX_ErrorHardware;\
-		OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error while closing pipe\n",__LINE__);\
+		printf("%d :: Error while closing pipe\n",__LINE__);\
 		goto EXIT;\
 	}
 
 #define NBAMRENC_OMX_MALLOC(_pStruct_, _sName_)   \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
     if(_pStruct_ == NULL){      \
-        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__); \
+        printf("***********************************\n"); \
+        printf("%d :: Malloc Failed\n",__LINE__); \
+        printf("***********************************\n"); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_pStruct_,0,sizeof(_sName_));\
-    OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    AMRENC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 
 
 #define NBAMRENC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
     _ptr_ = (_name_ *)newmalloc(_size_);      \
     if(_ptr_ == NULL){      \
-        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__); \
+        printf("***********************************\n"); \
+        printf("%d :: Malloc Failed\n",__LINE__); \
+        printf("***********************************\n"); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_ptr_,0,_size_); \
-    OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: Malloced = %p\n",__LINE__,_ptr_);
+    AMRENC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 #define NBAMRENC_OMX_ERROR_EXIT(_e_, _c_, _s_)\
     _e_ = _c_;\
-    OMX_ERROR4(pComponent->dbg, "%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_); \
+    printf("\n**************** OMX ERROR ************************\n");\
+    printf("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);\
+    printf("\n**************** OMX ERROR ************************\n");\
     goto EXIT;
 
 #define NBAMRENC_OMX_FREE(ptr) \
     if(NULL != ptr) { \
-        OMX_PRBUFFER4(pComponentPrivate->dbg, "%d :: Freeing Address = %p\n",__LINE__,ptr); \
+        AMRENC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr); \
         newfree(ptr); \
         ptr = NULL; \
     }
@@ -966,7 +963,7 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     OMX_U32 teeMode;
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
-    struct OMX_TI_Debug dbg;
+    
 } AMRENC_COMPONENT_PRIVATE;
 
 
@@ -1230,7 +1227,7 @@ OMX_U32 NBAMRENC_IsValid(AMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 						 OMX_DIRTYPE eDir);
 
 						 
-/* void NBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);*/
+/* void NBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 
 /* ======================================================================= */
 /** OMX_NBAMRENC_INDEXAUDIOTYPE  Defines the custom configuration settings
@@ -1244,8 +1241,7 @@ OMX_U32 NBAMRENC_IsValid(AMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 typedef enum OMX_NBAMRENC_INDEXAUDIOTYPE {
 	OMX_IndexCustomNBAMRENCModeConfig = 0xFF000001,
 	OMX_IndexCustomNBAMRENCStreamIDConfig,
-	OMX_IndexCustomNBAMRENCDataPath,
-        OMX_IndexCustomDebug
+    OMX_IndexCustomNBAMRENCDataPath	
 }OMX_NBAMRENC_INDEXAUDIOTYPE;
 
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
