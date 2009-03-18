@@ -78,7 +78,7 @@
 #include "OMX_WbAmrDecoder.h"
 #include "OMX_WbAmrDec_Utils.h"
 #include "wbamrdecsocket_ti.h"
-#include "decode_common_ti.h"
+#include <decode_common_ti.h>
 #include "OMX_WbAmrDec_ComponentThread.h"
 #include "usn.h"
 #include "LCML_DspCodec.h"
@@ -190,7 +190,7 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[1].DllName,WBAMR_DEC_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[1].eDllType = DLL_DEPENDENT;
 
-    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &DECODE_COMMON_TI_UUID;
+    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &USN_TI_UUID;
     strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[2].DllName,WBAMR_DEC_USN_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[2].eDllType = DLL_DEPENDENT;
 

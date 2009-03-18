@@ -79,7 +79,7 @@
 #include "LCML_DspCodec.h"
 #include "OMX_Mp3Dec_Utils.h"
 #include "mp3decsocket_ti.h"
-#include "decode_common_ti.h"
+#include <decode_common_ti.h>
 #include "usn.h"
 
 /*#ifdef MP3D_RM_MANAGER*/

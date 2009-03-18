@@ -77,7 +77,7 @@
 #include "OMX_WbAmrEncoder.h"
 #include "OMX_WbAmrEnc_Utils.h"
 #include "wbamrencsocket_ti.h"
-#include "encode_common_ti.h"
+#include <encode_common_ti.h>
 #include "OMX_WbAmrEnc_CompThread.h"
 #include "usn.h"
 #include "LCML_DspCodec.h"

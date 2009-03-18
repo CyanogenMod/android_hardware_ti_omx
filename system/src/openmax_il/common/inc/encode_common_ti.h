@@ -27,7 +27,7 @@
 * ============================================================================
 * */
 /**
-* @file decode_common_ti.h
+* @file encode_common_ti.h
 *
 * Auto-generated UUID structures for DSP/BIOS Bridge nodes.
 * Do not modify.
@@ -39,34 +39,35 @@
 /* ---------------------------------------------------------------------------
  * */
 
-#ifndef DECODE_COMMON_TI_H
-#define DECODE_COMMON_TI_H
-#if 0
-/* DECODE_COMMON_TI_UUID = 7EDB9451_966F_11D7_B150_00C04F0F0EB6 */
- struct DSP_UUID DECODE_COMMON_TI_UUID = {
-    0x7edb9451, 0x966f, 0x11d7, 0xb1, 0x50, {
-    0x00, 0xc0, 0x4f, 0x0f, 0x0e, 0xb6
-    }
-};
-#endif
+#ifndef ENCODE_COMMON_TI_H
+#define ENCODE_COMMON_TI_H
+
 /* This is USN UUID */
-struct DSP_UUID DECODE_COMMON_TI_UUID = {
+struct DSP_UUID USN_TI_UUID = {
    0x79A3C8B3, 0x95F2, 0x403F, 0x9A, 0x4B, {
    0xCF, 0x80, 0x57, 0x73, 0x05, 0x41
    }
 };
-/* This is DCTN UUID */
+
+/* This is MDN UUID*/
 struct DSP_UUID DCTN_TI_UUID = {
 	0xa62dc01d, 0x0c11, 0x4bdc, 0xaa, 0xf5, {
 	0xa9, 0xda, 0x67, 0x45, 0x99, 0x6e
     }
 };
-/* This is ACDN UUID */
+
+/* This is ACDN UUID*/
 struct DSP_UUID ACDN_TI_UUID = {
 	0xb87e457e, 0x0cb6, 0x49e4, 0x84, 0x05, {
 	0x1f, 0x58, 0x2f, 0xc7, 0xb1, 0xb8
     }
 };
-#endif /* DECODE_COMMON_TI_H */
 
+/* This is TeeDN UUID */
+struct DSP_UUID TEEDN_TI_UUID = {
+	0xf5c5f851, 0xdfb0, 0x43d5, 0x84, 0xa2, {
+	0x97, 0xe4, 0x2c, 0xb4, 0xcb, 0x9d
+    }
+};
 
+#endif /* ENCODE_COMMON_TI_H */

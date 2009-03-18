@@ -90,7 +90,7 @@
 #include "OMX_AacEncoder.h"
 #define  AAC_ENC_ROLE "audio_encoder.aac"
 #include "OMX_AacEnc_Utils.h"
-#include "TIDspOmx.h"
+#include <TIDspOmx.h>
 
 
 /****************************************************************

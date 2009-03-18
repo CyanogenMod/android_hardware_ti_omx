@@ -5,12 +5,12 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
 LOCAL_SRC_FILES:= \
-	OMX_WbAmrEnc_CompThread.c		\
-	OMX_WbAmrEnc_Utils.c		\
+	OMX_WbAmrEnc_CompThread.c \
+	OMX_WbAmrEnc_Utils.c \
 	OMX_WbAmrEncoder.c
 
 LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
-	$(TI_OMX_SYSTEM)/common/inc		\
+	$(TI_OMX_SYSTEM)/common/inc \
 	$(TI_OMX_AUDIO)/wbamr_enc/inc
 	
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES) \

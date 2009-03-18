@@ -77,7 +77,7 @@
 #include <stdio.h>
 #include "OMX_AacEnc_Utils.h"
 #include "Aacencsocket_ti.h"
-#include "encode_common_ti.h"
+#include <encode_common_ti.h>
 #include "OMX_AacEnc_CompThread.h"
 #include "usn.h"
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -186,7 +186,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     plcml_Init->NodeInfo.AllUUIDs[1].eDllType = DLL_DEPENDENT;
 
 
-    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &ENCODE_COMMON_TI_UUID;
+    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &USN_TI_UUID;
 #ifndef UNDER_CE
     strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[2].DllName,"/lib/dsp/usn.dll64P");
 #else

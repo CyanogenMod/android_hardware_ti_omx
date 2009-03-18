@@ -85,7 +85,7 @@
 /*-------program files ----------------------------------------*/
 #include "OMX_AmrEnc_Utils.h"
 #include "amrencsocket_ti.h"
-#include "encode_common_ti.h"
+#include <encode_common_ti.h>
 #include "OMX_AmrEnc_ComponentThread.h"
 #include "usn.h"
 #include "LCML_DspCodec.h"
@@ -218,7 +218,7 @@ OMX_ERRORTYPE NBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[1].DllName,NBAMRENC_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[1].eDllType = DLL_DEPENDENT;
 
-    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &ENCODE_COMMON_TI_UUID;
+    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &USN_TI_UUID;
     strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[2].DllName,NBAMRENC_USN_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[2].eDllType = DLL_DEPENDENT;
 	plcml_Init->DeviceInfo.TypeofDevice = 0;

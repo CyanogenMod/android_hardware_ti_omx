@@ -77,7 +77,7 @@
 
 #include "OMX_WmaDec_Utils.h"
 #include "wmadecsocket_ti.h"
-#include "decode_common_ti.h"
+#include <decode_common_ti.h>
 #include "usn.h"
 
 #ifdef UNDER_CE
@@ -172,7 +172,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     strcpy ((char *) plcml_Init->NodeInfo.AllUUIDs[1].DllName,WMADEC_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[1].eDllType = DLL_DEPENDENT;
 
-    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &DECODE_COMMON_TI_UUID;
+    plcml_Init->NodeInfo.AllUUIDs[2].uuid = &USN_TI_UUID;
     strcpy ((char *) plcml_Init->NodeInfo.AllUUIDs[2].DllName,WMADEC_USN_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[2].eDllType = DLL_DEPENDENT;
 
