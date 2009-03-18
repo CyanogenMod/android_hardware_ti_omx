@@ -44,7 +44,6 @@
 
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
-#include <OMX_TI_Debug.h>
 #include <pthread.h>
 /* #include <ResourceManagerProxyAPI.h> */
 
@@ -59,6 +58,9 @@
 #ifndef UNDER_CE
 /*#include <ResourceManagerProxyAPI.h> */
 #endif
+
+/* Log for Android system*/
+#include <utils/Log.h>
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -209,8 +211,33 @@
 
 #ifndef UNDER_CE
 
-#else /*UNDER_CE*/
+#define AMRDEC_EPRINT(...)	__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ERROR	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
 
+#ifdef  AMRDEC_DEBUG
+        #define AMRDEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+#else
+        #define AMRDEC_DPRINT(...)
+#endif
+
+#ifdef  AMRDEC_MEMCHECK
+        #define AMRDEC_MEMPRINT(...)    fprintf(stderr,__VA_ARGS__)
+#else
+        #define AMRDEC_MEMPRINT(...)
+#endif
+
+
+#ifdef  AMRDEC_DEBUG_MCP
+        #define AMRDEC_MCP_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: MCP	",__FUNCTION__, __LINE__);\
+	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
+    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
+#else
+        #define AMRDEC_MCP_DPRINT(...)
+#endif
+#else /*UNDER_CE*/
 #define AMRDEC_EPRINT	printf
 #ifdef  AMRDEC_DEBUG
  #define AMRDEC_DPRINT(STR, ARG...) printf()
@@ -773,7 +800,7 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     OMX_BOOL bFrameLost;
 
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
-    struct OMX_TI_Debug dbg;
+
 } AMRDEC_COMPONENT_PRIVATE;
 
 typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
@@ -785,8 +812,7 @@ typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
         OMX_IndexCustomNbAmrDecHeaderInfoConfig,
         OMX_IndexCustomNbAmrDecStreamIDConfig,
         OMX_IndexCustomNbAmrDecDataPath,
-        OMX_IndexCustomNbAmrDecNextFrameLost,
-	OMX_IndexCustomDebug
+        OMX_IndexCustomNbAmrDecNextFrameLost        
 }OMX_NBAMRDEC_INDEXAUDIOTYPE;
 
 #endif /* OMX_AMRDECODER_H */
