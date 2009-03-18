@@ -1721,7 +1721,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
                     pComponentPrivate->pDeblockingParamType->bDeblocking = 
                         ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;
-                    eError = VIDDEC_Set_Debocking(pComponentPrivate);
                 break;
             }
             else {
