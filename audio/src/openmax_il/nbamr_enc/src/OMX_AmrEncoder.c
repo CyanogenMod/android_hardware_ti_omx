@@ -224,7 +224,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_AUDIO_PARAM_PORTFORMATTYPE *pPortFormat = NULL;
 	int i = 0;
 
-	printf("%d :: Entering OMX_ComponentInit\n", __LINE__);
 	/*Set the all component function pointer to the handle */
     pHandle->SetCallbacks = SetCallbacks;
     pHandle->GetComponentVersion = GetComponentVersion;
@@ -443,6 +442,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pComponentPrivate->iHoldBuffer = NULL;
 	pComponentPrivate->pHoldBuffer = NULL;
 	pComponentPrivate->nHoldLength = 0;
+    pComponentPrivate->bFirstInputBufReceived = OMX_FALSE;
+    pComponentPrivate->TimeStamp = 0;
 
 	pComponentPrivate->nUnhandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
