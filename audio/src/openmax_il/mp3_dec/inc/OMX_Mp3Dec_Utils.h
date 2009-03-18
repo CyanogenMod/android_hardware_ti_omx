@@ -97,10 +97,10 @@
 
 /* #define DSP_RENDERING_ON*/ /* Enable to use DASF functionality */
 /* #define MP3DEC_MEMDEBUG */ /* Enable memory leaks debuf info */
-#define MP3DEC_DEBUG    /* See all debug statement of the component */
+//#define MP3DEC_DEBUG    /* See all debug statement of the component */
 /* #define MP3DEC_MEMDETAILS */  /* See memory details of the component */
 /* #define MP3DEC_BUFDETAILS */  /* See buffers details of the component */
- #define MP3DEC_STATEDETAILS /* See all state transitions of the component*/
+// #define MP3DEC_STATEDETAILS /* See all state transitions of the component*/
 
 #define MP3_APP_ID  100 /* Defines MP3 Dec App ID, App must use this value */
 #define MP3D_MAX_NUM_OF_BUFS 10 /* Max number of buffers used */
@@ -108,7 +108,7 @@
 #define MP3D_NUM_OUTPUT_BUFFERS 4 /* Default number of output buffers */
 
 #define MP3D_INPUT_BUFFER_SIZE  2000*4 /* Default size of input buffer */
-#define MP3D_OUTPUT_BUFFER_SIZE 8192*6 /* Default size of output buffer */
+#define MP3D_OUTPUT_BUFFER_SIZE 8192*10 /* Default size of output buffer */
 #define MP3D_DEFAULT_FREQUENCY 44100 /* Default sample frequency*/
 
 #define OUTPUT_PORT_MP3DEC 1
