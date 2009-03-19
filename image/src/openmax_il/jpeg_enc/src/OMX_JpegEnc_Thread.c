@@ -102,7 +102,6 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
     OMX_U32 nParam1;
     sigset_t set; 	
 
-
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pThreadData;
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
@@ -124,7 +123,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
         fdmax = pComponentPrivate->filled_inpBuf_Q[0];
     }
 
-    JPEGENC_DPRINT("fd max is %d\n",fdmax);
+    OMX_TRACE2(pComponentPrivate->dbg, "fd max is %d\n",fdmax);
 
     while ( 1 ) {
         FD_ZERO (&rfds);
@@ -138,14 +137,14 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 		
-	 sigemptyset(&set)	;
-	 sigaddset(&set,SIGALRM);
+	sigemptyset(&set);
+	sigaddset(&set,SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, NULL,&set);
 
         if ( 0 == status ) {
-            JPEGENC_DPRINT ("Component Thread Time Out!!!\n");
+            OMX_TRACE2(pComponentPrivate->dbg, "Component Thread Time Out!!!\n");
         } else if ( -1 == status ) {
-            JPEGENC_DPRINT ("Error in Select\n");
+            OMX_TRACE4(pComponentPrivate->dbg, "Error in Select\n");
 
             pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
                                                     OMX_EventError, OMX_ErrorInsufficientResources, OMX_TI_ErrorSevere,
@@ -155,12 +154,12 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
         } else {
             if ( (FD_ISSET (pComponentPrivate->filled_inpBuf_Q[0], &rfds))
                  && (pComponentPrivate->nCurState != OMX_StatePause) ) {
-                JPEGENC_DPRINT ("filled_inpBuf_Q pipe is set\n");
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "filled_inpBuf_Q pipe is set\n");
 
                 eError = HandleJpegEncDataBuf_FromApp (pComponentPrivate);
 
                 if ( eError != OMX_ErrorNone ) {
-                    JPEGENC_DPRINT ("Error while processing free queue buffers\n");
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free queue buffers\n");
                     pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
                                                             OMX_EventError, OMX_ErrorUndefined, OMX_TI_ErrorSevere,
                                                             "1-Error from Component Thread while processing free Q\n");
@@ -168,10 +167,10 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
             }
 
             if ( FD_ISSET (pComponentPrivate->free_outBuf_Q[0], &rfds) ) {
-                JPEGENC_DPRINT ("free_outBuf_Q has some buffers in Component Thread\n");
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "free_outBuf_Q has some buffers in Component Thread\n");
                 eError = HandleJpegEncFreeOutputBufferFromApp(pComponentPrivate);
                 if ( eError != OMX_ErrorNone ) {
-                    JPEGENC_DPRINT ("Error while processing free Q Buffers\n");
+                    OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free Q Buffers\n");
                     pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
                                                             OMX_EventError, OMX_ErrorUndefined, OMX_TI_ErrorSevere,
                                                             "3-Error from Component Thread while processing free Q\n");
@@ -179,7 +178,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
             }
             if ( FD_ISSET (pComponentPrivate->nCmdPipe[0], &rfds) ) {
                 /* Do not accept any command when the component is stopping */
-                JPEGENC_DPRINT ("CMD pipe is set in Component Thread\n");
+		OMX_PRCOMM2(pComponentPrivate->dbg, "CMD pipe is set in Component Thread\n");
                 eCmd = 0;
                 read (pComponentPrivate->nCmdPipe[0], &eCmd, sizeof(eCmd));
                 read (pComponentPrivate->nCmdDataPipe[0], &nParam1, sizeof (nParam1));
@@ -190,16 +189,16 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                                                      PERF_ModuleLLMM);
 #endif
 
-                JPEGENC_DPRINT("eCmd %d, nParam1 %d\n", (int)eCmd, (int)nParam1);
+                OMX_PRINT2(pComponentPrivate->dbg, "eCmd %d, nParam1 %d\n", (int)eCmd, (int)nParam1);
                 if ( eCmd == OMX_CommandStateSet ) {
-                    JPEGENC_DPRINT("processing OMX_CommandStateSet\n");
-                    if ( nParam1 != -1 ){
+                    OMX_PRINT2(pComponentPrivate->dbg, "processing OMX_CommandStateSet\n");
+                    if ( (int)nParam1 != -1 ){
                         if(nParam1 == OMX_StateInvalid){
                             pComponentPrivate->nToState = OMX_StateInvalid;
                         }
                         eError = HandleJpegEncCommand (pComponentPrivate, nParam1);
                         if ( eError != OMX_ErrorNone ) {
-                            JPEGENC_DPRINT ("Error returned by HandleJpegEncCommand\n");
+                            OMX_PRINT4(pComponentPrivate->dbg, "Error returned by HandleJpegEncCommand\n");
                             pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
                                                                     OMX_EventError, OMX_ErrorHardware, OMX_TI_ErrorSevere,
                                                                     "Error returned by HandleJpegEncCommand\n");
@@ -211,9 +210,9 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                     }
                 } 
                 else if ( eCmd == OMX_CommandPortDisable ) {
-                    JPEGENC_DPRINT("Before Disable Port function Port %d\n",(int)nParam1);
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Before Disable Port function Port %d\n",(int)nParam1);
                     eError = JpegEncDisablePort(pComponentPrivate, nParam1);
-                    JPEGENC_DPRINT("After JPEG Encoder Sisable Port error = %d\n", eError);
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "After JPEG Encoder Sisable Port error = %d\n", eError);
                     if (eError != OMX_ErrorNone ) {
                         break;
                         }
@@ -230,7 +229,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                     goto EXIT;
                     }
                 else if ( eCmd == OMX_CommandFlush ) {
-                      JPEGENC_DPRINT("eCmd =  OMX_CommandFlush\n");
+                      OMX_PRBUFFER2(pComponentPrivate->dbg, "eCmd =  OMX_CommandFlush\n");
                       eError = HandleJpegEncCommandFlush (pComponentPrivate, nParam1);
                       if (eError != OMX_ErrorNone) {
                           break;
@@ -243,7 +242,7 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
 
         }
     }
-    JPEGENC_DPRINT("Component Thread Exit while loop\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Component Thread Exit while loop\n");
 
 EXIT:
 
@@ -251,7 +250,7 @@ EXIT:
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
 
-    JPEGENC_DPRINT("Component Thread Exit while loop from EXIT label\n");
+    OMX_PRINT1(pComponentPrivate->dbg, "Component Thread Exit while loop from EXIT label\n");
     return(void*)eError; /*OMX_ErrorNone;*/
 
 }

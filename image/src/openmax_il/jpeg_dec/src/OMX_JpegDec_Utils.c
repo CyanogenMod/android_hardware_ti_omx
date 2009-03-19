@@ -685,7 +685,8 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut       = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn        = NULL;
     OMX_U16 nScaleFactor;
-
+    OMX_U16 nFrameWidth;
+    OMX_U16 nFrameHeight;
 
     OMX_CHECK_PARAM(pComponent);
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
@@ -745,41 +746,44 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
             break;
     }
 
+    nFrameWidth = pPortDefIn->format.image.nFrameWidth * nScaleFactor / 100;
+    nFrameHeight = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;    
+    
     if (pComponentPrivate->nProgressive == 1) {
-        if (pPortDefIn->format.image.nFrameHeight <= 144 &&
-            pPortDefIn->format.image.nFrameWidth<= 176) {
+        if (nFrameHeight <= 144 &&
+            nFrameWidth<= 176) {
             lcml_dsp->ProfileID = 0;
         }
-        else if (pPortDefIn->format.image.nFrameHeight <= 288 &&
-            pPortDefIn->format.image.nFrameWidth<= 352) {
+        else if (nFrameHeight <= 288 &&
+            nFrameWidth<= 352) {
             lcml_dsp->ProfileID = 1;
         }
-        else if (pPortDefIn->format.image.nFrameHeight <= 480 &&
-            pPortDefIn->format.image.nFrameWidth <= 640) {
+        else if (nFrameHeight <= 480 &&
+            nFrameWidth <= 640) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (pPortDefIn->format.image.nFrameHeight<= 1024 &&
-            pPortDefIn->format.image.nFrameWidth <= 1280) {
+        else if (nFrameHeight<= 1024 &&
+            nFrameWidth <= 1280) {
             lcml_dsp->ProfileID = 4;
         }
-        else if (pPortDefIn->format.image.nFrameHeight <= 1200 &&
-            pPortDefIn->format.image.nFrameWidth<= 1920) {
+        else if (nFrameHeight <= 1200 &&
+            nFrameWidth<= 1920) {
             lcml_dsp->ProfileID = 5;
         }
-        else if (pPortDefIn->format.image.nFrameHeight<= 1536 &&
-            pPortDefIn->format.image.nFrameWidth<= 2048) {
+        else if (nFrameHeight<= 1536 &&
+            nFrameWidth<= 2048) {
             lcml_dsp->ProfileID = 6;
         }
-        else if (pPortDefIn->format.image.nFrameHeight<= 1600 &&
-            pPortDefIn->format.image.nFrameWidth<= 2560) {
+        else if (nFrameHeight<= 1600 &&
+            nFrameWidth<= 2560) {
             lcml_dsp->ProfileID = 7;
         }
-        else if (pPortDefIn->format.image.nFrameHeight <= 2048 &&
-            pPortDefIn->format.image.nFrameWidth<= 2560) {
+        else if (nFrameHeight <= 2048 &&
+            nFrameWidth<= 2560) {
             lcml_dsp->ProfileID = 8;
         }
-        else if (pPortDefIn->format.image.nFrameHeight <= 2048 &&
-            pPortDefIn->format.image.nFrameWidth<= 3200) {
+        else if (nFrameHeight <= 2048 &&
+            nFrameWidth<= 3200) {
             lcml_dsp->ProfileID = 9;
         }
         else {
@@ -789,7 +793,6 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     else if (pComponentPrivate->nProgressive == 0) {
         lcml_dsp->ProfileID = -1;
     }
-    
     pComponentPrivate->nProfileID = lcml_dsp->ProfileID;
 
     /*filling create phase params*/
@@ -802,13 +805,12 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     arr[6] = JPGDEC_SNTEST_OUTBUFCNT;
 
     if (pComponentPrivate->nProgressive == 1) {
-	OMX_PRINT2(pComponentPrivate->dbg, "JPEGdec:: nProgressive IMAGE");
-        //arr[7] = pComponentPrivate->sMaxResolution.nHeight;
-        //arr[8] = pComponentPrivate->sMaxResolution.nWidth;
-        arr[7] = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;
+        OMX_PRINT2(pComponentPrivate->dbg, "JPEGdec:: nProgressive IMAGE");
+        arr[7] = nFrameHeight;
         if ((arr[7]%2) != 0) arr[7]++;
-        arr[8] = pPortDefIn->format.image.nFrameWidth * nScaleFactor / 100;
-        if ((arr[8]%2) != 0) arr[8]++;        
+        arr[8] = nFrameWidth;
+        if ((arr[8]%2) != 0) arr[8]++; 
+        
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
     else {
@@ -831,6 +833,9 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     else if (pPortDefOut->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888) {
         arr[10] = 11;
     }
+    else if (pPortDefOut->format.image.eColorFormat == OMX_COLOR_Format32bitBGRA8888) {
+        arr[10] = 11;
+    }
     else { /*Set DEFAULT (Original) color format*/
         arr[10] = 1;
     }
@@ -850,6 +855,7 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
         arr[13] = 0;
     }
 
+	/* RGB or ARGB output format for RGB32 images */
     arr[14] = 0;
     if (pPortDefOut->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888)
     {

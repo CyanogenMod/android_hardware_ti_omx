@@ -64,7 +64,8 @@
 #include <OMX_Core.h>
 #include <OMX_Types.h>
 #include <OMX_Image.h>
-#include<OMX_TI_Common.h>
+#include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
@@ -86,27 +87,6 @@
 #define COMP_MAX_NAMESIZE 127
 
 #define OMX_CustomCommandStopThread (OMX_CommandMax - 1)
-
-
-#ifdef UNDER_CE
-
-#undef JPEGENC_DPRINT
-#define JPEGENC_DPRINT printf
-
-#undef JPEGENC_ERRPRINT
-#define JPEGENC_ERRPRINT printf
-
-#else /* UNDER_CE */
-
-/* #define OMX_DEB */
-#ifdef OMX_DEB
-#define JPEGENC_DPRINT(str,args...) fprintf(stdout,"[%s] %s():%d: *** "str"",__FILE__,__FUNCTION__,__LINE__,##args)
-#else
-#define JPEGENC_DPRINT(str, args...)
-#endif
-
-
-#endif /* UNDER_CE */ 
 
 
 #ifdef UNDER_CE
@@ -182,21 +162,18 @@
     }                \
 }
 
-#define OMX_DPRINT_ADDRESS(_s_, _ptr_)  \
-    JPEGENC_DPRINT("%s = %p\n", _s_, _ptr_);
-
 #ifdef RESOURCE_MANAGER_ENABLED
-#define OMX_GET_RM_VALUE(_Res_, _RM_) \
+#define OMX_GET_RM_VALUE(_Res_, _RM_, _dbg_) \
 {   \
-    if (_Res_ <= JPEGENC1MPImage){  \
-        _RM_ = 30;  \
+    if ((_Res_) <= JPEGENC1MPImage){  \
+        (_RM_) = 30;  \
         }   \
     else {  \
-        _RM_ = 60;  \
+        (_RM_) = 60;  \
         }   \
     \
         \
-    JPEGENC_DPRINT("Value in MHz requested to RM = %d\n",_RM_); \
+    OMX_PRMGR2((_dbg_), "Value in MHz requested to RM = %d\n", (_RM_)); \
 }
 #endif
 
@@ -452,10 +429,10 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     pthread_cond_t  populate_cond;
     pthread_cond_t  unpopulate_cond;
     
-
 #ifdef __PERF_INSTRUMENTATION__
     PERF_OBJHANDLE pPERF, pPERFcomp;
 #endif
+    struct OMX_TI_Debug dbg;
 
 } JPEGENC_COMPONENT_PRIVATE;
 
@@ -531,7 +508,8 @@ typedef enum OMX_JPEGE_INDEXTYPE  {
     OMX_IndexCustomThumbnailAPP13_BUF,
     OMX_IndexCustomQFactor,
     OMX_IndexCustomDRI,
-    OMX_IndexCustomHuffmanTable   
+    OMX_IndexCustomHuffmanTable,
+    OMX_IndexCustomDebug,
 }OMX_INDEXIMAGETYPE;
 
 typedef struct IUALG_Buf {
