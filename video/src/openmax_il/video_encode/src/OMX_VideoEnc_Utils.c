@@ -77,12 +77,8 @@
 /*------- Program Header Files -----------------------------------------------*/
 #include "OMX_VideoEnc_Utils.h"
 #include "OMX_VideoEnc_Thread.h"
-#include "OMX_VideoEnc_Debug.h"
 #include "OMX_VideoEnc_DSP.h"
 
-#ifdef RESOURCE_MANAGER_ENABLED
-    #include <ResourceManagerProxyAPI.h>
-#endif
 #define DSP_MMU_FAULT_HANDLING
 
 #ifdef UNDER_CE
@@ -112,8 +108,6 @@ void sleep(DWORD Duration)
 *  PRIVATE DECLARATIONS Defined here, used only here
 *******************************************************************************/
 /*--------data declarations --------------------------------------------------*/
-#define LOG_TAG " TI_VideoEncoderUtils"
-
 struct DSP_UUID H264VESOCKET_TI_UUID = {
     0x63A3581A, 0x09D7, 0x4AD0, 0x80, 0xB8, {
     0x5F, 0x2C, 0x4D, 0x4D, 0x59, 0xC9
@@ -147,18 +141,18 @@ struct DSP_UUID USN_UUID = {
   *         
   **/
 /*-----------------------------------------------------------------------------*/
-OMX_ERRORTYPE OMX_VIDENC_ListCreate(struct VIDENC_NODE** pListHead)
+OMX_ERRORTYPE OMX_VIDENC_ListCreate(struct OMX_TI_Debug *dbg, struct VIDENC_NODE** pListHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     *pListHead = (VIDENC_NODE*)malloc(sizeof(VIDENC_NODE)); /* need to malloc!!! */
     if (*pListHead == NULL) 
     {                                      
-        OMX_EPRINT("malloc() error.\n");
+        OMX_TRACE4(*dbg, "malloc() out of memory error\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
     
-    OMX_TRACE("Create MemoryListHeader[%p]\n", *pListHead);
+    OMX_TRACE1(*dbg, "Create MemoryListHeader[%p]\n", *pListHead);
     memset(*pListHead, 0x0, sizeof(VIDENC_NODE));
     
 OMX_CONF_CMD_BAIL:
@@ -179,24 +173,21 @@ OMX_CONF_CMD_BAIL:
   **/
 /*-----------------------------------------------------------------------------*/
 
-OMX_ERRORTYPE OMX_VIDENC_ListAdd(struct VIDENC_NODE* pListHead, OMX_PTR pData)
+OMX_ERRORTYPE OMX_VIDENC_ListAdd(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead, OMX_PTR pData)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDENC_NODE* pTmp = NULL;
     VIDENC_NODE* pNewNode = NULL;
-
     pNewNode = (VIDENC_NODE*)malloc(sizeof(VIDENC_NODE)); /* need to malloc!!! */
     if (pNewNode == NULL) 
     {
-        OMX_EPRINT("malloc() error.\n"); 
+        OMX_TRACE4(*dbg, "malloc() out of memory error\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
-    
     memset(pNewNode, 0x0, sizeof(VIDENC_NODE)); 
     pNewNode->pData = pData;
     pNewNode->pNext = NULL;
-    OMX_TRACE("Add MemoryNode[%p] -> [%p]\n", pNewNode, pNewNode->pData);
-    
+    OMX_TRACE1(*dbg, "Add MemoryNode[%p] -> [%p]\n", pNewNode, pNewNode->pData);
     pTmp = pListHead;
     
     while (pTmp->pNext != NULL)
@@ -223,7 +214,7 @@ OMX_CONF_CMD_BAIL:
   **/
 /*-----------------------------------------------------------------------------*/
 
-OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct VIDENC_NODE* pListHead, 
+OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead, 
                                     OMX_PTR pData)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -238,7 +229,7 @@ OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct VIDENC_NODE* pListHead,
         {
             pTmp = pNode->pNext;
             pNode->pNext = pTmp->pNext;
-            OMX_TRACE("Remove MemoryNode[%p] -> [%p]\n", pTmp, pTmp->pData);
+            OMX_TRACE1(*dbg, "Remove MemoryNode[%p] -> [%p]\n", pTmp, pTmp->pData);
             free(pTmp->pData);
             free(pTmp);
             pTmp = NULL;
@@ -264,7 +255,7 @@ OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct VIDENC_NODE* pListHead,
   **/
 /*-----------------------------------------------------------------------------*/
 
-OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct VIDENC_NODE* pListHead)
+OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDENC_NODE* pTmp = NULL;
@@ -277,7 +268,7 @@ OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct VIDENC_NODE* pListHead)
 		pNode->pNext=pTmp->pNext;
         if (pTmp->pData != NULL)
         {
-			OMX_TRACE("Remove MemoryNode[%p] -> [%p]\n", pTmp, pTmp->pData);
+            OMX_TRACE0(*dbg, "Remove MemoryNode[%p] -> [%p]\n", pTmp, pTmp->pData);
 			free(pTmp->pData);		
 			pTmp->pData = NULL;            
         } 
@@ -285,7 +276,7 @@ OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct VIDENC_NODE* pListHead)
 		pTmp = NULL;        
     }
     
-    OMX_TRACE("Destroy MemoryListHeader[%p]\n", pListHead);
+    OMX_TRACE1(*dbg, "Destroy MemoryListHeader[%p]\n", pListHead);
     free(pListHead);
     return eError;
 }
@@ -338,7 +329,7 @@ OMX_ERRORTYPE OMX_VIDENC_EmptyDataPipes (void* pThreadData)
 
         if (0 == status) 
         {
-            OMX_TRACE("selectEmpty() = 0\n");
+            OMX_TRACE2(pComponentPrivate->dbg, "selectEmpty() = 0\n");
             break;
         }
         else if (-1 == status)
@@ -352,22 +343,22 @@ OMX_ERRORTYPE OMX_VIDENC_EmptyDataPipes (void* pThreadData)
                 nRet = read(pComponentPrivate->nFilled_iPipe[0],
                             &pBufHead, 
                             sizeof(pBufHead));
-                OMX_TRACE("Flusing pipe nFilled_iPipe[0]!\n");
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "Flusing pipe nFilled_iPipe[0]!\n");
                 if (nRet == -1)
                 {
-                    OMX_EPRINT ("Error while reading from cmdDataPipe\n");
+                    OMX_PRBUFFER3(pComponentPrivate->dbg, "Error while reading from nFilled_iPipe\n");
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
                 }
             }
             if (FD_ISSET(pComponentPrivate->nFree_oPipe[0], &rfds))
             {
-                OMX_TRACE("Flusing pipe nFree_oPipe[0]!\n");
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "Flusing pipe nFree_oPipe[0]!\n");
                 nRet = read(pComponentPrivate->nFree_oPipe[0],
                             &pBufHead,
                             sizeof(pBufHead));
                 if (nRet == -1)
                 {
-                    OMX_EPRINT ("Error while reading from cmdDataPipe\n");
+                    OMX_PRBUFFER3(pComponentPrivate->dbg, "Error while reading from nFree_oPipe\n");
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
                 }
             }
@@ -417,18 +408,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleError(VIDENC_COMPONENT_PRIVATE* pComponentPrivate
     
     pComponentPrivate->bHideEvents = OMX_TRUE;
 
-    /*switch (pComponentPrivate->eState)
-    {
-        case OMX_StatePause: 
-        case OMX_StateExecuting:
-            OMX_TRACE("Enter OMX_VIDENC_HandleCommandStateSetIdle()\n");
-        case OMX_StateIdle:
-            OMX_TRACE("Enter OMX_VIDENC_HandleCommandStateSetLoaded\n");
-        default:
-            ;
-    }
-    */
-
     eError = eErrorCmp;
     pComponentPrivate->eState = OMX_StateInvalid;
 
@@ -463,34 +442,34 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
     switch(eEvent)
     {
     case EMMCodecDspMessageRecieved:
-        OMX_TRACE("EMMCodecDspMessageRecieved\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecDspMessageRecieved\n");
         break;
     case EMMCodecBufferProcessed:
-		OMX_TRACE("EMMCodecBufferProcessed\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecBufferProcessed\n");
         break;
     case EMMCodecProcessingStarted:
-        OMX_TRACE("EMMCodecProcessingStarted\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecProcessingStarted\n");
         break;
     case EMMCodecProcessingPaused:
-        OMX_TRACE("EMMCodecProcessingPaused\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecProcessingPaused\n");
         break;
     case EMMCodecProcessingStoped:
-        OMX_TRACE("EMMCodecProcessingStoped\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecProcessingStoped\n");
         break;
     case EMMCodecProcessingEof:
-        OMX_TRACE("EMMCodecProcessingEof\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecProcessingEof\n");
         break;
     case EMMCodecBufferNotProcessed:
-        OMX_TRACE("EMMCodecBufferNotProcessed\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecBufferNotProcessed\n");
         break;
     case EMMCodecAlgCtrlAck:
-        OMX_TRACE("EMMCodecAlgCtrlAck\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecAlgCtrlAck\n");
         break;
     case EMMCodecStrmCtrlAck:
-        OMX_TRACE("EMMCodecStrmCtrlAck\n");
+        OMX_PRDSP1(pComponentPrivate->dbg, "EMMCodecStrmCtrlAck\n");
         break;
 	case EMMCodecInternalError:
-		OMX_TRACE("EMMCodecInternalError\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecInternalError\n");
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)USN_ERR_UNKNOWN_MSG) && (argsCb[5] == (void*)NULL))
         {
@@ -515,7 +494,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
 #endif
         break;
 	case EMMCodecInitError:
-		OMX_TRACE("EMMCodecInitError\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecInitError\n");
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)USN_ERR_UNKNOWN_MSG) && (argsCb[5] == (void*)NULL))
         {
@@ -540,7 +519,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
 #endif
         break;
     case EMMCodecDspError:
-        OMX_TRACE("EMMCodecDspError\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecDspError\n");
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)NULL) && (argsCb[5] == (void*)NULL))
         {
@@ -604,7 +583,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
     pPortDefOut     = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortDef;
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
     
-    OMX_CONF_CHECK_CMD(pHandle, pPortDefIn, pPortDefOut);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pHandle, pPortDefIn, pPortDefOut);
 
     if (nParam1 == VIDENC_INPUT_PORT || nParam1 == -1)
     {
@@ -621,7 +600,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
         if(bFlushFlag == OMX_TRUE)
         {
             eError = OMX_VIDENC_HandleCommandFlush(pComponentPrivate, VIDENC_INPUT_PORT, OMX_TRUE);
-            OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
+                                  "Flush command failed (%x)\n", eError);
             bFlushFlag = OMX_FALSE;
         }
         
@@ -662,7 +642,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
 #endif
                     eError = OMX_FillThisBuffer(pCompPortIn->hTunnelComponent, 
                                                 pCompPortIn->pBufferPrivate[i]->pBufferHdr);
-                    OMX_CONF_BAIL_IF_ERROR(eError);
+                    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                          "FillThisBuffer failed (%x)\n", eError);
                 }
             }
         }
@@ -682,7 +663,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
         if(bFlushFlag == OMX_TRUE)
         {
             eError = OMX_VIDENC_HandleCommandFlush(pComponentPrivate, VIDENC_OUTPUT_PORT, OMX_TRUE);
-            OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
+                                  "Flush command failed (%x)\n", eError);
             bFlushFlag = OMX_FALSE;
         }
         
@@ -707,7 +689,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
                                       PERF_ModuleHLMM);
 #endif
                     OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pCompPortOut->pBufferPrivate[i]->pBufferHdr, 
-                                                       pComponentPrivate->sCircularBuffer);
+                                                       pComponentPrivate->sCircularBuffer,
+                                                       pComponentPrivate);
                     /* trigger event handler if we are supposed to */ 
                     if (pCompPortOut->pBufferPrivate[i]->pBufferHdr->hMarkTargetComponent == pComponentPrivate->pHandle && 
                         pCompPortOut->pBufferPrivate[i]->pBufferHdr->pMarkData) 
@@ -737,9 +720,10 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
         }
     }
     
-    OMX_TRACE("Flushing Pipes!\n");
+    OMX_PRBUFFER2(pComponentPrivate->dbg, "Flushing Pipes!\n");
     eError = OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
-    OMX_CONF_BAIL_IF_ERROR(eError);
+    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
+                          "Flushing pipes failed (%x).\n", eError);
     
     /*while (1) 
     {*/
@@ -856,11 +840,11 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandEnablePort (VIDENC_COMPONENT_PRIVATE* pCom
     {*/
         if(nParam1 == VIDENC_INPUT_PORT)
         {
-		if (pComponentPrivate->eState != OMX_StateLoaded) {
+        if (pComponentPrivate->eState != OMX_StateLoaded)
+        {
 		pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
             while (!pPortDefIn->bPopulated)
                {
-
 #ifndef UNDER_CE
 		pthread_cond_wait(&pComponentPrivate->populate_cond, &pComponentPrivate->videoe_mutex_app);
 #else
@@ -880,7 +864,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandEnablePort (VIDENC_COMPONENT_PRIVATE* pCom
         }
         else if(nParam1 == VIDENC_OUTPUT_PORT)
         {
-	if (pComponentPrivate->eState != OMX_StateLoaded) {
+        if (pComponentPrivate->eState != OMX_StateLoaded)
+        {
 			pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
             while(!pPortDefOut->bPopulated)
             {
@@ -903,7 +888,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandEnablePort (VIDENC_COMPONENT_PRIVATE* pCom
         }
         else if(nParam1 == -1)
         {
-	if (pComponentPrivate->eState != OMX_StateLoaded) {
+        if (pComponentPrivate->eState != OMX_StateLoaded)
+        {
 			pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
             while(!pPortDefOut->bPopulated && !pPortDefIn->bPopulated)
             {
@@ -973,7 +959,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
     pHandle         = (OMX_COMPONENTTYPE*)pComponentPrivate->pHandle;
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
 
-    if (nParam1 == VIDENC_INPUT_PORT || nParam1 == -1) {
+    if (nParam1 == VIDENC_INPUT_PORT || nParam1 == -1)
+    {
         aParam[0] = USN_STRMCMD_FLUSH; 
         aParam[1] = VIDENC_INPUT_PORT; 
         aParam[2] = 0x0; 
@@ -981,16 +968,19 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                     EMMCodecControlStrmCtrl, 
                                     (void*)aParam);
-        OMX_CONF_BAIL_IF_ERROR(eError);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                              "DSP Input flush failed (%x).\n", eError);
 
 #ifndef UNDER_CE
 		pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-		while (pComponentPrivate->bFlushComplete == OMX_FALSE) {
+        while (pComponentPrivate->bFlushComplete == OMX_FALSE)
+        {
 			pthread_cond_wait(&pComponentPrivate->flush_cond, &pComponentPrivate->videoe_mutex_app);
 		}
 		pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
-        while (pComponentPrivate->bFlushComplete == OMX_FALSE) {
+        while (pComponentPrivate->bFlushComplete == OMX_FALSE)
+        {
             sched_yield();
         }
 #endif
@@ -1035,7 +1025,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
 #endif
                     eError = OMX_FillThisBuffer(pCompPortIn->hTunnelComponent, 
                                                 pCompPortIn->pBufferPrivate[i]->pBufferHdr);
-                    OMX_CONF_BAIL_IF_ERROR(eError);
+                    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                          "FillThisBuffer failed (%x)\n", eError);
                 }
             }
         }
@@ -1057,16 +1048,18 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                    EMMCodecControlStrmCtrl, 
                                    (void*)aParam);
-        OMX_CONF_BAIL_IF_ERROR(eError);
-
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                              "DSP Output flush failed (%x).\n", eError);
 #ifndef UNDER_CE
 		pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-		while (pComponentPrivate->bFlushComplete == OMX_FALSE) {
+        while (pComponentPrivate->bFlushComplete == OMX_FALSE)
+        {
 			pthread_cond_wait(&pComponentPrivate->flush_cond, &pComponentPrivate->videoe_mutex_app);
 		}
 		pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
-        while (pComponentPrivate->bFlushComplete == OMX_FALSE) {
+        while (pComponentPrivate->bFlushComplete == OMX_FALSE)
+        {
             sched_yield();
         }
 #endif
@@ -1090,7 +1083,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
 #endif
                     /*Copy Buffer Data to be propagated*/        
                     OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pCompPortOut->pBufferPrivate[i]->pBufferHdr, 
-                                                       pComponentPrivate->sCircularBuffer);
+                                                       pComponentPrivate->sCircularBuffer,
+                                                       pComponentPrivate);
                      /* trigger event handler if we are supposed to */ 
                     if (pCompPortOut->pBufferPrivate[i]->pBufferHdr->hMarkTargetComponent == pComponentPrivate->pHandle && 
                         pCompPortOut->pBufferPrivate[i]->pBufferHdr->pMarkData)
@@ -1153,23 +1147,27 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSet (VIDENC_COMPONENT_PRIVATE* pCompo
   
     switch (nParam1)
     {
-        case OMX_StateIdle:
-            eError = OMX_VIDENC_HandleCommandStateSetIdle (pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
-            break;
-        case OMX_StateExecuting:
-            eError = OMX_VIDENC_HandleCommandStateSetExecuting (pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
-            break;
-        case OMX_StateLoaded:
-            eError = OMX_VIDENC_HandleCommandStateSetLoaded (pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
-            break;
-        case OMX_StatePause:
-            eError = OMX_VIDENC_HandleCommandStateSetPause (pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
-            break;
-        case OMX_StateInvalid:
+    case OMX_StateIdle:
+        eError = OMX_VIDENC_HandleCommandStateSetIdle (pComponentPrivate);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRSTATE3,
+                              "Failed to move to Idle state (%x).\n", eError);
+        break;
+    case OMX_StateExecuting:
+        eError = OMX_VIDENC_HandleCommandStateSetExecuting (pComponentPrivate);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRSTATE3,
+                              "Failed to move to Execute state (%x).\n", eError);
+        break;
+    case OMX_StateLoaded:
+        eError = OMX_VIDENC_HandleCommandStateSetLoaded (pComponentPrivate);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRSTATE3,
+                              "Failed to move to Loaded state (%x).\n", eError);
+        break;
+    case OMX_StatePause:
+        eError = OMX_VIDENC_HandleCommandStateSetPause (pComponentPrivate);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRSTATE3,
+                              "Failed to move to Pause state (%x).\n", eError);
+        break;
+    case OMX_StateInvalid:
             if (pComponentPrivate->eState == OMX_StateInvalid)
             {
                 OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, 
@@ -1281,9 +1279,11 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 PERF_Boundary(pComponentPrivate->pPERFcomp,
                               PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
-		if ( pPortDefIn->bEnabled == OMX_TRUE || pPortDefOut->bEnabled == OMX_TRUE ) {
-			pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-			while ( (!pPortDefIn->bPopulated) || (!pPortDefOut->bPopulated)) {
+        if ( pPortDefIn->bEnabled == OMX_TRUE || pPortDefOut->bEnabled == OMX_TRUE )
+        {
+            pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
+            while ( (!pPortDefIn->bPopulated) || (!pPortDefOut->bPopulated))
+            {
 #ifndef UNDER_CE
 				pthread_cond_wait(&pComponentPrivate->populate_cond, &pComponentPrivate->videoe_mutex_app);
 #else
@@ -1298,13 +1298,14 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             if (pComponentPrivate->bCodecStarted == OMX_TRUE || 
                 pComponentPrivate->bCodecLoaded == OMX_TRUE) 
             {
-                OMX_TRACE("Attempting to destroy the node...\n");
+            OMX_PRDSP2(pComponentPrivate->dbg, "Attempting to destroy the node...\n");
                 pLcmlHandle = NULL;
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML; 
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy,
                                            NULL);
-                OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
+                                  "Failed to destroy socket node (%x).\n", eError);
 
 
                 /*Unload LCML */
@@ -1327,7 +1328,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             }
             
             eError = OMX_VIDENC_InitLCML(pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                              "Failed to initialize LCML (%x).\n", eError);
 
 #ifdef __PERF_INSTRUMENTATION__ 
             pComponentPrivate->nLcml_nCntIp = 0;
@@ -1336,22 +1338,26 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
             {
                 eError = OMX_VIDENC_InitDSP_H264Enc(pComponentPrivate);
-                OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                                  "Failed to initialize H264 SN (%x).\n", eError);
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 || 
                      pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
             {
                 eError = OMX_VIDENC_InitDSP_Mpeg4Enc(pComponentPrivate);
-                OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                                  "Failed to initialize MPEG4 SN (%x).\n", eError);
             }
             else
             {
+            OMX_PRSTATE4(pComponentPrivate->dbg, "Unsupported compression format (%d)\n",
+                         pPortDefOut->format.video.eCompressionFormat);
                 OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
             }
                 
 #ifdef RESOURCE_MANAGER_ENABLED
 
-             OMX_TRACE("Setting CallBack In Video Encoder component\n");
+        OMX_PRMGR2(pComponentPrivate->dbg, "Setting CallBack In Video Encoder component\n");
              pComponentPrivate->cRMCallBack.RMPROXY_Callback = (void*)OMX_VIDENC_ResourceManagerCallBack;
             switch (pPortDefOut->format.video.eCompressionFormat)
             {
@@ -1454,6 +1460,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                     }
                     break;
                 default:
+                OMX_PRSTATE4(pComponentPrivate->dbg, "Unsupported compression format (%d)\n",
+                             pPortDefOut->format.video.eCompressionFormat);
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
             }
 
@@ -1462,7 +1470,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 {
                     /* TODO: Disable RM Send for now */
                     /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
-					OMX_TRACE("RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                                  RMProxy_StateSet, 
                                                  OMX_H264_Encode_COMPONENT, 
@@ -1474,7 +1482,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 {
                     /* TODO: Disable RM Send for now */
                     /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
-					OMX_TRACE("RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
 					eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                                  RMProxy_StateSet, 
                                                  OMX_MPEG4_Encode_COMPONENT, 
@@ -1486,7 +1494,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 {
                     /* TODO: Disable RM Send for now */
                     /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-			        OMX_TRACE("RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                                  RMProxy_StateSet, 
                                                  OMX_H263_Encode_COMPONENT, 
@@ -1494,7 +1502,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                                                  3456,
                                                  NULL);                  
                 }
-                if (eError != OMX_ErrorNone) {
+        if (eError != OMX_ErrorNone)
+        {
                     OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, 
                                              OMX_EventError, 
                                              OMX_ErrorHardware, 
@@ -1549,18 +1558,21 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
                                        MMCodecControlStop, 
                                        NULL);
-            OMX_CONF_BAIL_IF_ERROR(eError);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
+                              "Failed to stop socket node (%x).\n", eError);
             pComponentPrivate->bCodecStarted = OMX_FALSE; 
-            OMX_TRACE("MMCodecControlStop called...\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "MMCodecControlStop called...\n");
 
 #ifndef UNDER_CE
 		    pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-		    while (pComponentPrivate->bDSPStopAck == OMX_FALSE) {
+        while (pComponentPrivate->bDSPStopAck == OMX_FALSE)
+        {
      			pthread_cond_wait(&pComponentPrivate->stop_cond, &pComponentPrivate->videoe_mutex_app);
 	    	}
 		    pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
-            while (pComponentPrivate->bDSPStopAck == OMX_FALSE) {
+        while (pComponentPrivate->bDSPStopAck == OMX_FALSE)
+        {
                 sched_yield();
             }
 #endif
@@ -1568,7 +1580,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
  
             for (nCount = 0; nCount < pPortDefIn->nBufferCountActual; nCount++)
             {
-                OMX_TRACE("Buffer[%d]:port[%d] -> %p [OWNER = %d]\n", 
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [OWNER = %d]\n", 
                           nCount,
                           VIDENC_INPUT_PORT,
                           pCompPortIn->pBufferPrivate[nCount]->pBufferHdr,
@@ -1577,7 +1589,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 if (pCompPortIn->pBufferPrivate[nCount]->eBufferOwner == VIDENC_BUFFER_WITH_DSP ||
                     pCompPortIn->pBufferPrivate[nCount]->eBufferOwner == VIDENC_BUFFER_WITH_COMPONENT)
                 {
-                    OMX_TRACE("Buffer[%d]:port[%d] -> %p [SEND BACK TO SUPPLIER]\n", 
+                OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [SEND BACK TO SUPPLIER]\n", 
                               nCount,
                               VIDENC_INPUT_PORT, 
                               pCompPortIn->pBufferPrivate[nCount]->pBufferHdr);
@@ -1586,7 +1598,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                     {
                         
                         pCompPortIn->pBufferPrivate[nCount]->pBufferHdr->nFilledLen = 0; 
-                        OMX_TRACE("Buffer[%d]:port[%d] -> %p [memset %d bytes]\n", 
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [memset %lu bytes]\n", 
                                   nCount,
                                   VIDENC_INPUT_PORT, 
                                   pCompPortIn->pBufferPrivate[nCount]->pBufferHdr,
@@ -1619,14 +1631,15 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
 #endif
                         eError = OMX_FillThisBuffer(pCompPortIn->hTunnelComponent, 
                                                     pCompPortIn->pBufferPrivate[nCount]->pBufferHdr);
-                        OMX_CONF_BAIL_IF_ERROR(eError);
+                    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                          "FillThisBuffer failed (%x).\n", eError);
                     }
                 }
             }
 
             for (nCount = 0; nCount < pPortDefOut->nBufferCountActual; nCount++)
             {
-                OMX_TRACE("Buffer[%d]:port[%d] -> %p [OWNER = %d]\n", 
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [OWNER = %d]\n", 
                           nCount,
                           VIDENC_OUTPUT_PORT,
                           pCompPortOut->pBufferPrivate[nCount]->pBufferHdr,
@@ -1638,7 +1651,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
 
                     if (pCompPortOut->hTunnelComponent == NULL)
                     {
-                        OMX_TRACE("Buffer[%d]:port[%d] -> %p [memset %d bytes]\n", 
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [memset %lu bytes]\n", 
                                   nCount,
                                   VIDENC_OUTPUT_PORT, 
                                   pCompPortOut->pBufferPrivate[nCount]->pBufferHdr,
@@ -1649,7 +1662,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                                pCompPortOut->pBufferPrivate[nCount]->pBufferHdr->nAllocLen); 
                     }
 
-                    OMX_TRACE("Buffer[%d]:port[%d] -> %p [SEND BACK TO SUPPLIER]\n", nCount,
+                OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer[%d]:port[%d] -> %p [SEND BACK TO SUPPLIER]\n", nCount,
                                                          VIDENC_OUTPUT_PORT, 
                                                          pCompPortOut->pBufferPrivate[nCount]->pBufferHdr);
 
@@ -1663,7 +1676,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
 #endif
                     /*Propagate pBufferHeader Data*/
                     OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pCompPortOut->pBufferPrivate[nCount]->pBufferHdr, 
-                                                       pComponentPrivate->sCircularBuffer);
+                                                   pComponentPrivate->sCircularBuffer,
+                                                   pComponentPrivate);
                     /* trigger event handler if we are supposed to */ 
                     if (pCompPortOut->pBufferPrivate[nCount]->pBufferHdr->hMarkTargetComponent == pComponentPrivate->pHandle && 
                         pCompPortOut->pBufferPrivate[nCount]->pBufferHdr->pMarkData)
@@ -1708,7 +1722,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 {
                     /* TODO: Disable RM Send for now */
                     /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-					OMX_TRACE("Setting Idle state from Executing to RMProxy\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "Setting Idle state from Executing to RMProxy\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                                  RMProxy_StateSet, 
                                                  OMX_H263_Encode_COMPONENT, 
@@ -1716,7 +1730,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                                                  3456,
                                                  NULL);                  
                 }
-                if (eError != OMX_ErrorNone) {
+        if (eError != OMX_ErrorNone)
+        {
                     OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, 
                                              OMX_EventError, 
                                              OMX_ErrorHardware, 
@@ -1725,9 +1740,10 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 }
                 
 #endif                
-            OMX_TRACE("Flushing Pipes!\n");
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "Flushing Pipes!\n");
             eError = OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
-            OMX_CONF_BAIL_IF_ERROR(eError);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
+                              "Flushing pipes failed (%x).\n", eError);
 
             pComponentPrivate->eState = OMX_StateIdle;
             OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, 
@@ -1785,11 +1801,12 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
                 pLcmlHandle->pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pComponentPrivate;
 
-                OMX_TRACE("Starting the codec...\n");
+            OMX_PRDSP2(pComponentPrivate->dbg, "Starting the codec...\n");
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlStart,
                                            NULL);
-                OMX_CONF_BAIL_IF_ERROR(eError);
+            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                                  "Failed to start socket node (%x).\n", eError);
                 
                 pComponentPrivate->bCodecStarted = OMX_TRUE;
             }
@@ -1798,7 +1815,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
             {
                 /* TODO: Disable RM Send for now */
-				OMX_TRACE("Setting executing state to RMProxy\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                              RMProxy_StateSet, 
@@ -1810,7 +1827,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
             {
                 /* TODO: Disable RM Send for now */
-                OMX_TRACE("Setting executing state to RMProxy\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                              RMProxy_StateSet, 
@@ -1824,7 +1841,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
             {
                 /* TODO: Disable RM Send for now */
                 /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-				OMX_TRACE("Setting executing state to RMProxy\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
                                              RMProxy_StateSet, 
                                              OMX_H263_Encode_COMPONENT, 
@@ -1910,21 +1927,25 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetPause (VIDENC_COMPONENT_PRIVATE* p
             pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
                                        EMMCodecControlPause, 
-                                       NULL);
-            OMX_CONF_BAIL_IF_ERROR(eError);
-            
-            pComponentPrivate->bCodecStarted = OMX_FALSE; 
-            OMX_TRACE("MMCodecControlPaused called...\n");
+                                   NULL);
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                              "Failed to pause socket node (%x).\n", eError);
+
+
+        pComponentPrivate->bCodecStarted = OMX_FALSE; 
+        OMX_PRDSP2(pComponentPrivate->dbg, "MMCodecControlPaused called...\n");
 
             
 #ifndef UNDER_CE
 			pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-			while (pComponentPrivate->bDSPStopAck == OMX_FALSE) {
+        while (pComponentPrivate->bDSPStopAck == OMX_FALSE)
+        {
 				pthread_cond_wait(&pComponentPrivate->stop_cond, &pComponentPrivate->videoe_mutex_app);
 			}
 			pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
-			while (pComponentPrivate->bDSPStopAck == OMX_FALSE) {
+        while (pComponentPrivate->bDSPStopAck == OMX_FALSE)
+        {
 				sched_yield();
 			}
 #endif
@@ -1986,13 +2007,13 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
                                      NULL);
             break;        
 		case OMX_StateWaitForResources:
-			OMX_PRINT("Utils: Transitioning from WFR to Loaded\n");
+        OMX_PRSTATE2(pComponentPrivate->dbg, "Transitioning from WFR to Loaded\n");
 	#ifdef RESOURCE_MANAGER_ENABLED         
 			if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
 			{
 				/* TODO: Disable RM Send for now */
 				/* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
-				OMX_TRACE("RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
 				eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
 											 RMProxy_StateSet, 
 											 OMX_H264_Encode_COMPONENT, 
@@ -2004,7 +2025,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
 			{
 				/* TODO: Disable RM Send for now */
 				/* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
-				OMX_TRACE("RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
 				eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
 											 RMProxy_StateSet, 
 											 OMX_MPEG4_Encode_COMPONENT, 
@@ -2016,7 +2037,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
 			{
 				/* TODO: Disable RM Send for now */
 				/* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-				OMX_TRACE("RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
 				eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, 
 											 RMProxy_StateSet, 
 											 OMX_H263_Encode_COMPONENT, 
@@ -2047,15 +2068,17 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
 									 NULL);
 			break;
 		case OMX_StateIdle:
-			OMX_PRINT("Utils: Transitioning from Idle to Loaded\n");
+        OMX_PRSTATE2(pComponentPrivate->dbg, "Transitioning from Idle to Loaded\n");
             pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
 	#ifdef __PERF_INSTRUMENTATION__
             PERF_Boundary(pComponentPrivate->pPERFcomp,
                           PERF_BoundaryStart | PERF_BoundaryCleanup); 
 	#endif
-			if ( pPortDefIn->bEnabled == OMX_TRUE || pPortDefOut->bEnabled == OMX_TRUE ) {
-				pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
-				while ( (pPortDefIn->bPopulated) || (pPortDefOut->bPopulated)) {
+        if ( pPortDefIn->bEnabled == OMX_TRUE || pPortDefOut->bEnabled == OMX_TRUE )
+        {
+            pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
+            while ( (pPortDefIn->bPopulated) || (pPortDefOut->bPopulated))
+            {
 	#ifndef UNDER_CE
 					pthread_cond_wait(&pComponentPrivate->unpopulate_cond, &pComponentPrivate->videoe_mutex_app);
 	#else
@@ -2112,16 +2135,16 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
              /* Make sure the DSP node has been deleted */
              if (pComponentPrivate->bCodecStarted == OMX_TRUE || pComponentPrivate->bCodecLoaded == OMX_TRUE)
              {
-                 OMX_TRACE("LCML_ControlCodec EMMCodecControlDestroy\n");
+                 OMX_TRACE2(pComponentPrivate->dbg, "LCML_ControlCodec EMMCodecControlDestroy\n");
                  eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                              EMMCodecControlDestroy,
                                              NULL);
                  OMX_CONF_BAIL_IF_ERROR(eError);
-                 OMX_TRACE("Atempting to Unload LCML");
+                 OMX_TRACE2(pComponentPrivate->dbg,"Atempting to Unload LCML");
                  /*Unload LCML */
                  if(pComponentPrivate->pModLcml != NULL)
                  {
-                     OMX_TRACE("Unloading LCML");
+                     OMX_TRACE2(pComponentPrivate->dbg,"Unloading LCML");
                      dlclose(pComponentPrivate->pModLcml);
                      pComponentPrivate->pModLcml = NULL;
                      pComponentPrivate->pLCML = NULL;
@@ -2195,30 +2218,30 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeOutBuf(VIDENC_COMPONENT_PRIVATE* pComponent
 #ifndef UNDER_CE
     if (pthread_mutex_lock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_lock() failed.\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "pthread_mutex_lock() failed.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
     nRet = read(pComponentPrivate->nFree_oPipe[0], &pBufHead, sizeof(pBufHead));
     if (nRet == -1)
     {
     	pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex));
-        OMX_EPRINT("Error while reading from the pipe\n");
+        OMX_ERROR4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
-	OMX_CONF_CHECK_CMD(pBufHead, 1, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
     pBufferPrivate = pBufHead->pOutputPortPrivate;
     
     pBufferPrivate->bReadFromPipe = OMX_TRUE;
     if (pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_unlock() failed.\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "pthread_mutex_unlock() failed.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
 #else
     nRet = read(pComponentPrivate->nFree_oPipe[0], &pBufHead, sizeof(pBufHead));
     if (nRet == -1)
     {
-        OMX_EPRINT("Error while reading from the pipe\n");
+        OMX_ERROR4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
     if (pBufHead != NULL)
@@ -2236,7 +2259,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeOutBuf(VIDENC_COMPONENT_PRIVATE* pComponent
 #endif
 
 if (pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_DSP ||
-	pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_CLIENT) {
+        pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_CLIENT)
+    {
 goto EXIT;
 	
 }
@@ -2247,7 +2271,7 @@ goto EXIT;
     if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
     {
             pUalgOutParams =(H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam;
-            OMX_TRACE(" %p \n", (void*)pBufHead);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, " %p \n", (void*)pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
                                       EMMCodecOuputBuffer, 
@@ -2258,7 +2282,10 @@ goto EXIT;
                                       sizeof(H264VE_GPP_SN_UALGOutputParams), 
                                       (void*)pBufHead);
             if (eError != OMX_ErrorNone)
+        {
+            OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        }
                 
     }
     else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
@@ -2266,7 +2293,7 @@ goto EXIT;
     {
             pUalgOutParams = (MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam;
 
-            OMX_TRACE(" %p\n", (void*)pBufHead);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
 
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
@@ -2278,9 +2305,15 @@ goto EXIT;
                                       sizeof(MP4VE_GPP_SN_UALGOutputParams), 
                                       (void*)pBufHead);
             if (eError != OMX_ErrorNone)
+        {
+            OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        }
     }
-    else {
+    else
+    {
+        OMX_PRBUFFER4(pComponentPrivate->dbg, "Unsupported compression format (%d)\n",
+                      pPortDefOut->format.video.eCompressionFormat);
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
 	EXIT:
@@ -2325,43 +2358,44 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
 	
-    OMX_CONF_CHECK_CMD(pLcmlHandle, pPortDefIn, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pLcmlHandle, pPortDefIn, 1);
 
 #ifndef UNDER_CE
     if (pthread_mutex_lock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_lock() failed.\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "pthread_mutex_lock() failed.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
     nRet = read(pComponentPrivate->nFilled_iPipe[0], &(pBufHead), sizeof(pBufHead));
     if (nRet == -1)
     {
     	pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex));
-        OMX_EPRINT("Error while reading from the pipe\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
 
-   if (pBufHead != NULL) {
+    if (pBufHead != NULL)
+    {
     pBufferPrivate = (VIDENC_BUFFER_PRIVATE*)pBufHead->pInputPortPrivate;
    	}
 
-    OMX_CONF_CHECK_CMD(pBufHead, pBufferPrivate, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, pBufferPrivate, 1);
     pBufferPrivate->bReadFromPipe = OMX_TRUE;
     
     if (pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_unlock() failed.\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "pthread_mutex_unlock() failed.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
 #else
     nRet = read(pComponentPrivate->nFilled_iPipe[0], &(pBufHead), sizeof(pBufHead));
     if (nRet == -1)
     {
-        OMX_EPRINT("Error while reading from the pipe\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
     }
     pBufferPrivate = (VIDENC_BUFFER_PRIVATE*)pBufHead->pInputPortPrivate;
-    OMX_CONF_CHECK_CMD(pBufHead, pBufferPrivate, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, pBufferPrivate, 1);
     pBufferPrivate->bReadFromPipe = OMX_TRUE;
 #endif
     
@@ -2381,9 +2415,9 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
 #endif
 
     if (pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_DSP ||
-    	pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_CLIENT) {
-    goto EXIT;
-    	
+        pBufferPrivate->eBufferOwner == VIDENC_BUFFER_WITH_CLIENT)
+    {
+        goto EXIT;
     }	
 
 
@@ -2392,7 +2426,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
     {
         
         pUalgInpParams = (H264VE_GPP_SN_UALGInputParams*)pBufferPrivate->pUalgParam; 
-        OMX_CONF_CHECK_CMD(pUalgInpParams, 1, 1);
+        OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pUalgInpParams, 1, 1);
         
         /*< must be followed for all video encoders*/
         /*  size of this structure             */
@@ -2464,10 +2498,12 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         /*< Enable/Disable Hierarchical P Frame (non-reference P frame) Coding. [Not useful for DM6446]*/
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.hierCodingEnable = 0; /* should be 1; */
         /*< Signals the type of stream generated with Call-back*/
-        if(pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_UNIT) {
-           ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.streamFormat = IH264_BYTE_STREAM;
+        if (pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_UNIT)
+        {
+            ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.streamFormat = IH264_BYTE_STREAM;
         }
-        else {
+        else
+        {
            ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.streamFormat = IH264_NALU_STREAM;
         }
         /*< Mechanism to do intra Refresh, see IH264VENC_IntraRefreshMethods for valid values*/
@@ -2532,7 +2568,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
                                            pComponentPrivate);
               
        /*Send Buffer to LCML*/
-        OMX_TRACE(" %p\n", (void*)pBufHead); 
+        OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead); 
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle, 
                                   EMMCodecInputBuffer, 
@@ -2543,7 +2579,10 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
                                   sizeof(H264VE_GPP_SN_UALGInputParams), 
                                   (OMX_U8*)pBufHead);
         if (eError != OMX_ErrorNone)
+        {
+            OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        }
             
     }
     else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
@@ -2551,13 +2590,13 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
     {
         
         pUalgInpParams = (MP4VE_GPP_SN_UALGInputParams*)pBufferPrivate->pUalgParam; 
-        OMX_CONF_CHECK_CMD(pUalgInpParams, 1, 1);
+        OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pUalgInpParams, 1, 1);
         
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulFrameIndex         = pComponentPrivate->nFrameCnt;
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulTargetFrameRate    = pComponentPrivate->nTargetFrameRate;            
         ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulTargetBitRate      = pComponentPrivate->nTargetBitRate;
         if(pComponentPrivate->nFrameCnt == 0 && pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4){
-            OMX_TRACE("GENERATING VOL HEADER\n");
+            /*OMX_TRACE("GENERATING VOL HEADER\n");*/
             ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulGenerateHeader     = 1;
         }
         else
@@ -2586,12 +2625,14 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         }
        
 	   /*Set segment mode params*/
-	   if(pComponentPrivate->bMVDataEnable){
+        if (pComponentPrivate->bMVDataEnable)
+        {
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ul4MV				  =1;
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->uluseUMV			  =1;
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulMVDataEnable		  =1;
 		   }
-	   else{
+        else
+        {
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ul4MV				  =0;
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->uluseUMV			  =0;
 		   ((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulMVDataEnable		  =0;
@@ -2616,18 +2657,19 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
 		((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulLastFrame         = 0;
 		((MP4VE_GPP_SN_UALGInputParams*)pUalgInpParams)->ulcapturewidth      = 0;
         ++pComponentPrivate->nFrameCnt;
-        OMX_PRINT("TargetFrameRate -> %d\n\
+        OMX_PRDSP1(pComponentPrivate->dbg,
+                   "TargetFrameRate -> %d\n\
                    TargetBitRate   -> %d\n\
                    QPI             -> %d\n", pComponentPrivate->nTargetFrameRate,
-                                             pComponentPrivate->nTargetBitRate,
-                                             pComponentPrivate->nQPI);
+                   pComponentPrivate->nTargetBitRate,
+                   pComponentPrivate->nQPI);
                                                  
         OMX_CONF_CIRCULAR_BUFFER_MOVE_TAIL(pBufHead, 
                                            pComponentPrivate->sCircularBuffer, 
                                            pComponentPrivate);
                         
         /*Send Buffer to LCML*/
-        OMX_TRACE(" %p\n", (void*)pBufHead);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle, 
                                   EMMCodecInputBuffer, 
@@ -2638,11 +2680,16 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
                                   sizeof(MP4VE_GPP_SN_UALGInputParams), 
                                   (OMX_U8*)pBufHead);
         if (eError != OMX_ErrorNone)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        {
+            OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
+            OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        }
               
     }
     else
     {
+        OMX_PRBUFFER4(pComponentPrivate->dbg, "Unsupported compression format (%d)\n",
+                      pPortDefOut->format.video.eCompressionFormat);
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
 OMX_CONF_CMD_BAIL:
@@ -2684,22 +2731,26 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         pSNPrivateParams = (H264VE_GPP_SN_UALGOutputParams*)(pBufferPrivate->pUalgParam);
         pBufHead->nFilledLen = ((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->ulBitstreamSize;
         
+        if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
+        {
         /*Copy Buffer Data to be propagated*/        
         if((pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_SLICE) &&
-            (pSNPrivateParams->ulNALUnitsPerFrame != (pSNPrivateParams->ulNALUnitIndex)+1) && (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)) {
+                (pSNPrivateParams->ulNALUnitsPerFrame != (pSNPrivateParams->ulNALUnitIndex+1)))
+            {
+
             pBufHead->pMarkData = NULL;
             pBufHead->hMarkTargetComponent = NULL;
             pBufHead->nTickCount = 0;
             pBufHead->nTimeStamp = 0;
             pBufHead->nFlags = 0;
         }
-        else {
-            OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pBufHead, pComponentPrivate->sCircularBuffer);
+            else
+            {
+                OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pBufHead, pComponentPrivate->sCircularBuffer,
+                                                   pComponentPrivate);
             pBufHead->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
         }
-        
-        if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
-        {
+
             /* Set lFrameType*/
             if (((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->lFrameType == OMX_LFRAMETYPE_H264)
             {
@@ -2708,7 +2759,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
             }
 
             /* if NAL frame mode */
-            if(pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_FRAME) {
+            if (pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_FRAME)
+            {
 
                 /*H264VE_GPP_SN_UALGOutputParams* pSNPrivateParams;*/
                 int nNalSlices;
@@ -2729,7 +2781,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
 
                 *pIndexNal = pSNPrivateParams->ulNALUnitsPerFrame;
                 pIndexNal++;
-                for(nNalSlices = 0; nNalSlices < pSNPrivateParams->ulNALUnitsPerFrame; nNalSlices++, pIndexNal++) {
+                for (nNalSlices = 0; nNalSlices < pSNPrivateParams->ulNALUnitsPerFrame; nNalSlices++, pIndexNal++)
+                {
 
                     *pIndexNal = (OMX_U32)(pSNPrivateParams->ulNALUnitsSizes[nNalSlices]);
                 }
@@ -2750,25 +2803,36 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                  pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
         {
+            OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pBufHead, pComponentPrivate->sCircularBuffer,
+                                               pComponentPrivate);
+            pBufHead->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
+
             /* Set cFrameType*/
-            if (((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->cFrameType == OMX_CFRAMETYPE_MPEG4) { 
+            if (((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->cFrameType == OMX_CFRAMETYPE_MPEG4)
+            {
                 /* I-VOP Frame */ 
                 pBufHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
             }
 			VIDENC_MPEG4_SEGMENTMODE_METADATA* pMetaData;
 			/*copy MPEG4 segment mode meta data */	
 			pMetaData=(VIDENC_MPEG4_SEGMENTMODE_METADATA*)pBufferPrivate->pMetaData;
-            if(pComponentPrivate->bMVDataEnable==OMX_TRUE){
+            if (pComponentPrivate->bMVDataEnable==OMX_TRUE)
+            {
 			   pMetaData->mvDataSize=((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->mvDataSize;
 			   pMetaData->pMVData=((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->MVData;
 			}
-			if(pComponentPrivate->bResyncDataEnable==OMX_TRUE){
+            if (pComponentPrivate->bResyncDataEnable==OMX_TRUE)
+            {
 			   pMetaData->pResyncData=((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->ResyncData;
 			   pMetaData->numPackets=((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->numPackets;
 			}
         }
         else 
+        {
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "Unsupported compression format (%d)\n",
+                          pPortDefOut->format.video.eCompressionFormat);
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+        }
             
         if (pBufHead->nFlags & OMX_BUFFERFLAG_EOS)
         {
@@ -2782,7 +2846,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         {
             /* trigger event handler if we are supposed to */ 
             if (pBufHead->hMarkTargetComponent == pComponentPrivate->pHandle && 
-                pBufHead->pMarkData) {
+                pBufHead->pMarkData)
+            {
                 OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,  OMX_EventMark, 0x0, 0x0, 
                                         pBufHead->pMarkData);
             }
@@ -2828,7 +2893,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeInBuf(VIDENC_COMPONENT_PRIVATE* pComponentP
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
 
 	/*pBufHead is checked for NULL*/
-    OMX_CONF_CHECK_CMD(pBufHead, 1, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
     pBufferPrivate = pBufHead->pInputPortPrivate;
 
     if (hTunnelComponent != NULL)
@@ -2842,7 +2907,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeInBuf(VIDENC_COMPONENT_PRIVATE* pComponentP
 #endif
 
         eError = OMX_FillThisBuffer(hTunnelComponent, pBufHead);
-        OMX_CONF_BAIL_IF_ERROR(eError)
+        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg,
+                              OMX_PRBUFFER4, "FillThisBuffer failed (%x)", eError);
     }
     else 
     {
@@ -2894,19 +2960,21 @@ OMX_ERRORTYPE OMX_VIDENC_InitLCML(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
     pComponentPrivate->pModLcml = pMyLCML;
     if (!pMyLCML)
     {
+        OMX_ERROR5(pComponentPrivate->dbg, "Could not open LCML library\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     
     fpGetHandle = dlsym(pMyLCML, "GetHandle");
     if ((error = dlerror()) != NULL)
     {    
+        OMX_ERROR4(pComponentPrivate->dbg, "No GetHandle in LCML library\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     
     eError = (*fpGetHandle)(&hLCML);
     if (eError != OMX_ErrorNone)
     {
-       OMX_EPRINT("Error While Getting LCML Handle...\n");
+        OMX_ERROR5(pComponentPrivate->dbg, "Error While Getting LCML Handle (%x)...\n", eError);
        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
 
@@ -2916,20 +2984,25 @@ OMX_ERRORTYPE OMX_VIDENC_InitLCML(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
     
 #else 
     g_hLcmlDllHandle = LoadLibraryEx(TEXT("oaf_bml.dll"), NULL, 0);
-    if (g_hLcmlDllHandle == NULL) {
-        OMX_EPRINT("BML Load Failed!!!, %d\n", GetLastError());
+    if (g_hLcmlDllHandle == NULL)
+    {
+        OMX_ERROR5(pComponentPrivate->dbg, "BML Load Failed!!!, %d\n", GetLastError());
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(g_hLcmlDllHandle,TEXT("GetHandle"));
-    if (!fpGetHandle1) {
+    if (!fpGetHandle1)
+    {
         FreeLibrary(g_hLcmlDllHandle);
         g_hLcmlDllHandle = NULL;
+        OMX_ERROR4(pComponentPrivate->dbg, "No GetHandle in BML\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     eError = fpGetHandle1(&hLCML);
-    if (eError != OMX_ErrorNone) {
+    if (eError != OMX_ErrorNone)
+    {
         FreeLibrary(g_hLcmlDllHandle);
         g_hLcmlDllHandle = NULL;
+        OMX_ERROR5(pComponentPrivate->dbg, "Error While Getting LCML Handle (%x)...\n", eError);
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML = (LCML_DSP_INTERFACE*)hLCML;
@@ -3039,7 +3112,8 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     VIDENC_MALLOC(pCreatePhaseArgs, 
                   sizeof(H264VE_GPP_SN_Obj_CreatePhase), 
                   H264VE_GPP_SN_Obj_CreatePhase, 
-                  pMemoryListHead);
+                  pMemoryListHead,
+                  pComponentPrivate->dbg);
 
     pCreatePhaseArgs->usNumStreams            = 2;
     pCreatePhaseArgs->usStreamId              = VIDENC_INPUT_PORT;
@@ -3073,7 +3147,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         pCreatePhaseArgs->ucYUVFormat         = 1;
     }
     else 
+    {
+        OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported YUV format.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+    }
 
     pCreatePhaseArgs->ucUnrestrictedMV        = 0;
     pCreatePhaseArgs->ucNumRefFrames          = 1;
@@ -3092,6 +3169,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     }
     else
     {
+        OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported rate control algorithm.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
 
@@ -3107,6 +3185,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     }
     else
     {
+        OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported deblocking setting.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
     }
 
@@ -3159,7 +3238,9 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     }
     else
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting,
+                               pComponentPrivate->dbg, OMX_PRDSP2,
+                               "Unsupported level.\n");
     }
 
     /* override parameters for VGA & D1 encoding */
@@ -3185,8 +3266,8 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     pTmp = memcpy (nArr, pCreatePhaseArgs, sizeof(H264VE_GPP_SN_Obj_CreatePhase));
     if (pTmp == NULL)
     {
-        OMX_EPRINT("memcpy() error.\n");
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+        OMX_TRACE4(pComponentPrivate->dbg, "memcpy() out of memory error.\n");
+        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
     pLcmlDSP->pCrPhArgs = nArr;
     sCb.LCML_Callback = (void *)OMX_VIDENC_LCML_Callback;
@@ -3198,13 +3279,14 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
                               &sCb);
     if (eError != OMX_ErrorNone)
     {
-        OMX_TRACE ("LCML_InitMMCodec Failed!...\n");
+        OMX_PRDSP4(pComponentPrivate->dbg, "LCML_InitMMCodec Failed!...\n");
         /*TODO: Validate eError from LCML_InitMMCodec for ResourceExhaustionTest */
         pComponentPrivate->bErrorLcmlHandle = OMX_TRUE;
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
     pComponentPrivate->bCodecLoaded = OMX_TRUE;
-    VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead);
+    VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead,
+                pComponentPrivate->dbg);
 OMX_CONF_CMD_BAIL:
     return eError;
 }
@@ -3319,7 +3401,8 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     VIDENC_MALLOC(pCreatePhaseArgs, 
                   sizeof(MP4VE_GPP_SN_Obj_CreatePhase), 
                   MP4VE_GPP_SN_Obj_CreatePhase, 
-                  pMemoryListHead); 
+                  pMemoryListHead,
+                  pComponentPrivate->dbg); 
 
     pCreatePhaseArgs->usNumStreams            = 2;
     pCreatePhaseArgs->usStreamId              = 0;
@@ -3352,7 +3435,11 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         pCreatePhaseArgs->ucIsMPEG4 = 1;
     }
     else 
+    {
+        OMX_PRDSP4(pComponentPrivate->dbg, "Unsupported video format (%d).\n",
+                   pPortDefOut->format.video.eCompressionFormat);
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+    }
             
     if (pPortDefIn->format.video.eColorFormat == OMX_COLOR_FormatYUV420Planar)
     {
@@ -3368,6 +3455,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     }
     else
     {
+            OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported YUV format.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
     if(pCompPortOut->pErrorCorrectionType->bEnableHEC)
@@ -3410,7 +3498,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         pCreatePhaseArgs->ucRateControlAlgorithm  = IVIDEO_NONE;
     }
     else 
+    {
+        OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported rate control algorithm.\n");
     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+    }
 
     pCreatePhaseArgs->ucQPFirstIFrame         = (OMX_U8)pQuantization->nQpI;
     pCreatePhaseArgs->ucProfile               = 1;
@@ -3449,6 +3540,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         }
         else
         {
+                OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported level.\n");
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
         }
 #else
@@ -3495,6 +3587,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         }
         else
         {
+            OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported level.\n");
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
         }
 
@@ -3516,7 +3609,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     pTmp = memcpy(nArr, pCreatePhaseArgs, sizeof(MP4VE_GPP_SN_Obj_CreatePhase));
     if (pTmp == NULL) 
     {
-        OMX_EPRINT("memcpy() error.\n");
+        OMX_TRACE4(pComponentPrivate->dbg, "memcpy() out of memory error.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
 
@@ -3531,13 +3624,14 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
                               
     if (eError != OMX_ErrorNone) 
     {
-        OMX_EPRINT ("LCML_InitMMCodec Failed!...\n");  
+        OMX_PRDSP4(pComponentPrivate->dbg, "LCML_InitMMCodec Failed!...\n");  
         /*TODO: Validate eError from LCML_InitMMCodec for ResourceExhaustionTest */
         pComponentPrivate->bErrorLcmlHandle = OMX_TRUE;
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
     pComponentPrivate->bCodecLoaded = OMX_TRUE;
-    VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead);
+    VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead,
+                pComponentPrivate->dbg);
     
 OMX_CONF_CMD_BAIL:
     return eError;
@@ -3586,7 +3680,8 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
             VIDENC_MALLOC(pUalgParam, 
                           sizeof(H264VE_GPP_SN_UALGInputParams) + 256, 
                           H264VE_GPP_SN_UALGInputParams, 
-                          pMemoryListHead);
+                          pMemoryListHead,
+                          pComponentPrivate->dbg);
                           
             pTemp = (char*)pUalgParam;
             pTemp += 128;
@@ -3601,7 +3696,8 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
             VIDENC_MALLOC(pUalgParam, 
                           sizeof(MP4VE_GPP_SN_UALGInputParams) + 256,
                           MP4VE_GPP_SN_UALGInputParams, 
-                          pMemoryListHead); 
+                          pMemoryListHead,
+                          pComponentPrivate->dbg); 
             pTemp = (char*)pUalgParam;
             pTemp += 128;
             pUalgParam = (MP4VE_GPP_SN_UALGInputParams*)pTemp;        
@@ -3617,7 +3713,8 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
             VIDENC_MALLOC(pUalgParam, 
                           sizeof(H264VE_GPP_SN_UALGOutputParams) + 256,
                           H264VE_GPP_SN_UALGOutputParams, 
-                          pMemoryListHead);
+                          pMemoryListHead,
+                          pComponentPrivate->dbg);
             pTemp = (char*)pUalgParam;
             pTemp += 128;
             pUalgParam = (H264VE_GPP_SN_UALGOutputParams*)pTemp;
@@ -3631,7 +3728,8 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
             VIDENC_MALLOC(pUalgParam, 
                           sizeof(MP4VE_GPP_SN_UALGOutputParams) + 256, 
                           MP4VE_GPP_SN_UALGOutputParams, 
-                          pMemoryListHead);
+                          pMemoryListHead,
+                          pComponentPrivate->dbg);
             pTemp = (char*)pUalgParam;
             pTemp += 128;
             pUalgParam = (MP4VE_GPP_SN_UALGOutputParams*)pTemp;        
@@ -3671,10 +3769,10 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
         pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pLcmlDspInterface->pComponentPrivate;
         pHandle = (OMX_COMPONENTTYPE *)pComponentPrivate->pHandle;
     }
-	else{
-        eError = OMX_ErrorBadParameter;                     \
-        OMX_TRACE("*Error : %x. No LCML handle\n", eError);                 \
-        goto OMX_CONF_CMD_BAIL;
+    else
+    {
+        OMXDBG_PRINT(stderr, DSP, 5, 0, "No LCML handle\n");
+        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
 	}
 	
 
@@ -3699,11 +3797,11 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
                               PERF_BoundaryStart | PERF_BoundarySteadyState);
             }
 #endif
-            OMX_TRACE(" [OUT] -> %p\n", pBufHead);
+            OMX_PRDSP1(pComponentPrivate->dbg, " [OUT] -> %p\n", pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_COMPONENT;
             if (pComponentPrivate->bCodecStarted == OMX_TRUE)
             {
-	          OMX_TRACE("Enters OMX_VIDENC_Process_FilledOutBuf\n");
+                OMX_PRDSP1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FilledOutBuf\n");
               eError = OMX_VIDENC_Process_FilledOutBuf(pComponentPrivate, pBufHead);
               if (eError != OMX_ErrorNone)
               {
@@ -3728,11 +3826,11 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
                                PERF_ModuleCommonLayer);
 #endif
 
-            OMX_TRACE(" [IN] -> %p\n", pBufHead);
+            OMX_PRDSP1(pComponentPrivate->dbg, " [IN] -> %p\n", pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_COMPONENT;
             if (pComponentPrivate->bCodecStarted == OMX_TRUE) 
             { 
-               OMX_TRACE("Enters OMX_VIDENC_Process_FreeInBuf\n");
+                OMX_PRDSP1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FreeInBuf\n");
                eError = OMX_VIDENC_Process_FreeInBuf(pComponentPrivate, pBufHead);
                if (eError != OMX_ErrorNone)
                {
@@ -3743,7 +3841,7 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
                             NULL);
                  OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
                }
-               OMX_TRACE("Exits OMX_VIDENC_Process_FreeInBuf\n");
+                OMX_PRDSP1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FreeInBuf\n");
             } 
         }
     }
@@ -3777,6 +3875,7 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
    nRet = OMX_VIDENC_HandleLcmlEvent(pComponentPrivate, eEvent, argsCb);
     if (nRet == -1)
     {
+        OMX_ERROR4(pComponentPrivate->dbg, "LCML Event Handler failed.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
     
@@ -3794,7 +3893,8 @@ OMX_CONF_CMD_BAIL:
 int OMX_CreateEvent(OMX_Event *event){
     int ret = OMX_ErrorNone;
     HANDLE createdEvent = NULL;
-    if(event == NULL){
+    if (event == NULL)
+    {
         ret = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -3807,7 +3907,8 @@ EXIT:
 
 int OMX_SignalEvent(OMX_Event *event){
      int ret = OMX_ErrorNone;
-     if(event == NULL){
+    if (event == NULL)
+    {
         ret = OMX_ErrorBadParameter;
         goto EXIT;
      }
@@ -3819,7 +3920,8 @@ EXIT:
 
 int OMX_WaitForEvent(OMX_Event *event) {
      int ret = OMX_ErrorNone;
-     if(event == NULL){
+    if (event == NULL)
+    {
         ret = OMX_ErrorBadParameter;
         goto EXIT;
      }
@@ -3831,7 +3933,8 @@ EXIT:
 
 int OMX_DestroyEvent(OMX_Event *event) {
      int ret = OMX_ErrorNone;
-     if(event == NULL){
+    if (event == NULL)
+    {
         ret = OMX_ErrorBadParameter;
         goto EXIT;
      }
@@ -3840,6 +3943,7 @@ EXIT:
      return ret;
 }
 #endif
+
 #ifdef RESOURCE_MANAGER_ENABLED
 /*-----------------------------------------------------------------------------*/
 /**
@@ -3858,13 +3962,14 @@ void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
     VIDENC_COMPONENT_PRIVATE *pCompPrivate = NULL;
 
-	OMX_TRACE("OMX_VIDENC_ResourceManagerCallBack\n");
     pCompPrivate = (VIDENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
-	OMX_TRACE("Resource Maager Callback\n");
-	OMX_TRACE("Arguments:\ncbData.RM_Error = %dcbData.RM_Cmd = %d\n", *(cbData.RM_Error), cbData.RM_Cmd);
-    if (*(cbData.RM_Error) == OMX_ErrorResourcesPreempted) {
+    OMX_PRMGR2(pCompPrivate->dbg, "OMX_VIDENC_ResourceManagerCallBack\n");
+    OMX_PRMGR2(pCompPrivate->dbg, "Arguments:\ncbData.RM_Error = %dcbData.RM_Cmd = %d\n", *(cbData.RM_Error), cbData.RM_Cmd);
+    if (*(cbData.RM_Error) == OMX_ErrorResourcesPreempted)
+    {
         if (pCompPrivate->eState== OMX_StateExecuting || 
-            pCompPrivate->eState == OMX_StatePause) {
+            pCompPrivate->eState == OMX_StatePause)
+        {
 
         pCompPrivate->sCbData.EventHandler (
 	                        pHandle, pHandle->pApplicationPrivate,
@@ -3872,18 +3977,19 @@ void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData)
                            OMX_ErrorResourcesPreempted,OMX_TI_ErrorMinor,
 	                        "Componentn Preempted\n");
 
-		OMX_TRACE("Send command to Idle from RM CallBack\n");
+            OMX_PRSTATE2(pCompPrivate->dbg, "Send command to Idle from RM CallBack\n");
         OMX_SendCommand(pHandle, Cmd, state, NULL);
         pCompPrivate->bPreempted = 1;
 
         }
     }
-    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired)
+    {
         pCompPrivate->sCbData.EventHandler (
 	                        pHandle, pHandle->pApplicationPrivate,
 	                        OMX_EventResourcesAcquired, 0,0,
 	                        NULL);
-		OMX_TRACE("Send command to Executing from RM CallBack\n");            
+        OMX_PRSTATE2(pCompPrivate->dbg, "Send command to Executing from RM CallBack\n");            
         OMX_SendCommand(pHandle, Cmd, OMX_StateExecuting, NULL);        
     }
 

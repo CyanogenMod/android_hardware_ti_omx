@@ -74,7 +74,6 @@
 
 /*------- Program Header Files -----------------------------------------------*/
 #include "OMX_VideoEnc_Utils.h"
-#include "OMX_VideoEnc_Debug.h"
 #include "OMX_VideoEnc_DSP.h"
 #include "OMX_VideoEnc_Thread.h"
 
@@ -106,8 +105,6 @@
 *  PRIVATE DECLARATIONS Defined here, used only here
 *******************************************************************************/
 /*--------data declarations --------------------------------------------------*/
-#define LOG_TAG " TI_VideoEncoder!"
-
 #ifdef UNDER_CE
            static pthread_t ComponentThread;
 #endif
@@ -223,7 +220,8 @@ static OMX_ERRORTYPE ComponentDeInit (OMX_IN OMX_HANDLETYPE hComponent);
 
 static OMX_ERRORTYPE VerifyTunnelConnection (VIDEOENC_PORT_TYPE* pPort,
                                              OMX_HANDLETYPE hTunneledComp,
-                                             OMX_PARAM_PORTDEFINITIONTYPE* pPortDef);
+                                             OMX_PARAM_PORTDEFINITIONTYPE* pPortDef,
+                                             struct OMX_TI_Debug *dbg);
 
 static OMX_ERRORTYPE ExtensionIndex (OMX_IN OMX_HANDLETYPE hComponent,
                                      OMX_IN OMX_STRING cParameterName,
@@ -247,11 +245,10 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
   **/
 /*----------------------------------------------------------------------------*/
 
-#ifndef UNDER_CE
-    OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
-#else
-    OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
+#ifdef UNDER_CE
+OMX_EXPORT
 #endif
+OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 {
     OMX_COMPONENTTYPE* pHandle                  = NULL;
     OMX_ERRORTYPE eError                        = OMX_ErrorNone;
@@ -262,6 +259,8 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_VIDEO_PARAM_PORTFORMATTYPE* pPortFormat = NULL;
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt         = NULL;
     VIDENC_NODE* pMemoryListHead                = NULL;
+    struct OMX_TI_Debug dbg;
+
     OMX_S32 nError = 0;
     OMX_U32 i = 0;
 	char* sDynamicFormat;
@@ -269,26 +268,32 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
     pthread_attr_t attr;
     memset(&attr, 0, sizeof(attr));
 #endif 
+
+
+    /* get default settings for debug */
+    OMX_DBG_INIT(dbg, "OMX_DBG_VIDENC");
+
 	/*dlopen("libLCML.so", RTLD_LAZY);*/
-    OMX_TRACE("Enter to ComponetInit\n");
+    OMX_PRINT2(dbg, "Enter to ComponetInit\n");
     if (!hComponent) 
     {
         eError = OMX_ErrorBadParameter;
         goto OMX_CONF_CMD_BAIL;
     }
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
-    eError = OMX_VIDENC_ListCreate(&pMemoryListHead);
+    eError = OMX_VIDENC_ListCreate(&dbg, &pMemoryListHead);
     OMX_CONF_BAIL_IF_ERROR(eError);
  
     /* Allocate memory for component's private data area */
     VIDENC_MALLOC(pHandle->pComponentPrivate, 
                   sizeof(VIDENC_COMPONENT_PRIVATE), 
                   VIDENC_COMPONENT_PRIVATE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
     pComponentPrivate->pMemoryListHead = pMemoryListHead;
 
+    pComponentPrivate->dbg = dbg;
     pComponentPrivate->compressionFormats[0]=OMX_VIDEO_CodingAVC;
     pComponentPrivate->compressionFormats[1]=OMX_VIDEO_CodingMPEG4;
     pComponentPrivate->compressionFormats[2]=OMX_VIDEO_CodingH263;
@@ -363,19 +368,24 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 sDynamicFormat = getenv("FORMAT");
 /*printf("\n ** FORMAT = %s\n\n", sDynamicFormat);*/
 #if 1
-	if (sDynamicFormat != NULL) {
-	if ( strcmp(sDynamicFormat,  "MPEG4") == 0 ) {
+    if (sDynamicFormat != NULL)
+    {
+        if ( strcmp(sDynamicFormat,  "MPEG4") == 0 )
+        {
 
     strcpy((char *)pComponentPrivate->componentRole.cRole, "video_encoder.mpeg4");
 		}
-	else if (strcmp(sDynamicFormat,  "H263") == 0 ) {
+        else if (strcmp(sDynamicFormat,  "H263") == 0 )
+        {
     strcpy((char *)pComponentPrivate->componentRole.cRole, "video_encoder.h263");
 		}
-	else if (strcmp(sDynamicFormat,  "H264") == 0 ) {
+        else if (strcmp(sDynamicFormat,  "H264") == 0 )
+        {
     strcpy((char *)pComponentPrivate->componentRole.cRole, "video_encoder.avc");
 		}
 		}
-	else {
+    else
+    {
     strcpy((char *)pComponentPrivate->componentRole.cRole, "video_encoder.avc");
 		}
 #else
@@ -388,125 +398,125 @@ sDynamicFormat = getenv("FORMAT");
     VIDENC_MALLOC(pComponentPrivate->pPortParamType, 
                   sizeof(OMX_PORT_PARAM_TYPE), 
                   OMX_PORT_PARAM_TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 #ifdef __KHRONOS_CONF_1_1__
     VIDENC_MALLOC(pComponentPrivate->pPortAudioType, 
                   sizeof(OMX_PORT_PARAM_TYPE), 
                   OMX_PORT_PARAM_TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pPortImageType, 
               sizeof(OMX_PORT_PARAM_TYPE), 
               OMX_PORT_PARAM_TYPE, 
-              pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pPortOtherType, 
                   sizeof(OMX_PORT_PARAM_TYPE), 
                   OMX_PORT_PARAM_TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 #endif
 
 
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT], 
                   sizeof(VIDEOENC_PORT_TYPE), 
                   VIDEOENC_PORT_TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT], 
                   sizeof(VIDEOENC_PORT_TYPE), 
                   VIDEOENC_PORT_TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortDef, 
                   sizeof(OMX_PARAM_PORTDEFINITIONTYPE), 
                   OMX_PARAM_PORTDEFINITIONTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortDef, 
                   sizeof(OMX_PARAM_PORTDEFINITIONTYPE), 
                   OMX_PARAM_PORTDEFINITIONTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortFormat, 
                   sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE), 
                   OMX_VIDEO_PARAM_PORTFORMATTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortFormat, 
                   sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE), 
                   OMX_VIDEO_PARAM_PORTFORMATTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 #ifdef __KHRONOS_CONF_1_1__
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pProfileType, 
                   sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE), 
                   OMX_VIDEO_PARAM_PROFILELEVELTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pProfileType, 
                   sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE), 
                   OMX_VIDEO_PARAM_PROFILELEVELTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pBitRateTypeConfig, 
                   sizeof(OMX_VIDEO_CONFIG_BITRATETYPE), 
                   OMX_VIDEO_CONFIG_BITRATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig, 
                   sizeof(OMX_VIDEO_CONFIG_BITRATETYPE), 
                   OMX_VIDEO_CONFIG_BITRATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pFrameRateConfig, 
                   sizeof(OMX_CONFIG_FRAMERATETYPE), 
                   OMX_CONFIG_FRAMERATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pFrameRateConfig, 
                   sizeof(OMX_CONFIG_FRAMERATETYPE), 
                   OMX_CONFIG_FRAMERATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType, 
                   sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE), 
                   OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 	VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType, 
                   sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE), 
                   OMX_VIDEO_PARAM_INTRAREFRESHTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 #endif
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pBitRateType, 
                   sizeof(OMX_VIDEO_PARAM_BITRATETYPE), 
                   OMX_VIDEO_PARAM_BITRATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType, 
                   sizeof(OMX_VIDEO_PARAM_BITRATETYPE), 
                   OMX_VIDEO_PARAM_BITRATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pPriorityMgmt, 
                   sizeof(OMX_PRIORITYMGMTTYPE), 
                   OMX_PRIORITYMGMTTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pH264, 
                   sizeof(OMX_VIDEO_PARAM_AVCTYPE), 
                   OMX_VIDEO_PARAM_AVCTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pMpeg4, 
                   sizeof(OMX_VIDEO_PARAM_MPEG4TYPE), 
                   OMX_VIDEO_PARAM_MPEG4TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pH263, 
                   sizeof(OMX_VIDEO_PARAM_H263TYPE), 
                   OMX_VIDEO_PARAM_H263TYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pVidParamBitrate, 
                   sizeof(OMX_VIDEO_PARAM_BITRATETYPE), 
                   OMX_VIDEO_PARAM_BITRATETYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pQuantization, 
                   sizeof(OMX_VIDEO_PARAM_QUANTIZATIONTYPE), 
                   OMX_VIDEO_PARAM_QUANTIZATIONTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pH264IntraPeriod, 
                   sizeof(OMX_VIDEO_CONFIG_AVCINTRAPERIOD),
                   OMX_VIDEO_CONFIG_AVCINTRAPERIOD, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pMotionVector, 
                   sizeof(OMX_VIDEO_PARAM_MOTIONVECTORTYPE),
                   OMX_VIDEO_PARAM_MOTIONVECTORTYPE, 
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pCapabilityFlags,
                   sizeof(PV_OMXComponentCapabilityFlagsType),
                   PV_OMXComponentCapabilityFlagsType,
-                  pMemoryListHead);
+                  pMemoryListHead, dbg);
 
     /* Set pPortParamType defaults */
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pPortParamType, OMX_PORT_PARAM_TYPE);
@@ -562,7 +572,7 @@ sDynamicFormat = getenv("FORMAT");
         VIDENC_MALLOC(pCompPortIn->pBufferPrivate[i], 
                       sizeof(VIDENC_BUFFER_PRIVATE), 
                       VIDENC_BUFFER_PRIVATE, 
-                      pMemoryListHead); 
+                      pMemoryListHead, dbg); 
     }
     for (i = 0; i < VIDENC_MAX_NUM_OF_IN_BUFFERS; i++)
     {
@@ -592,23 +602,25 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->format.video.xFramerate            = (15<<16); 
     pPortDef->format.video.bFlagErrorConcealment = OMX_FALSE;
 
-
-
-
-	if (sDynamicFormat != NULL) {
-	if ( strcmp(sDynamicFormat,  "MPEG4") == 0 ) {
+    if (sDynamicFormat != NULL)
+    {
+        if ( strcmp(sDynamicFormat,  "MPEG4") == 0 )
+        {
 
 		pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
 		}
-	else if (strcmp(sDynamicFormat,  "H263") == 0 ) {
+        else if (strcmp(sDynamicFormat,  "H263") == 0 )
+        {
 
 		pPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
 		}
-	else if (strcmp(sDynamicFormat,  "H264") == 0 ) {
+        else if (strcmp(sDynamicFormat,  "H264") == 0 )
+        {
 		pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC; 
 		}
 		}
-	else {
+    else
+    {
 		pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC; 
 		}
 
@@ -622,7 +634,7 @@ sDynamicFormat = getenv("FORMAT");
         VIDENC_MALLOC(pCompPortOut->pBufferPrivate[i], 
                       sizeof(VIDENC_BUFFER_PRIVATE), 
                       VIDENC_BUFFER_PRIVATE, 
-                      pMemoryListHead);
+                      pMemoryListHead, pComponentPrivate->dbg);
     }
     for (i = 0; i < VIDENC_MAX_NUM_OF_OUT_BUFFERS; i++) 
     {
@@ -634,7 +646,7 @@ sDynamicFormat = getenv("FORMAT");
 			VIDENC_MALLOC(pCompPortOut->pBufferPrivate[i]->pMetaData, 
 						  sizeof(VIDENC_MPEG4_SEGMENTMODE_METADATA), 
 						  VIDENC_MPEG4_SEGMENTMODE_METADATA, 
-						  pMemoryListHead);
+                      pMemoryListHead, pComponentPrivate->dbg);
 		  }
 	
 		/*segment mode defaults*/
@@ -656,18 +668,23 @@ sDynamicFormat = getenv("FORMAT");
     pPortFormat->nPortIndex         = VIDENC_OUTPUT_PORT;
     pPortFormat->nIndex             = 0x0;
 
-	if (sDynamicFormat != NULL) {
-	if ( strcmp(sDynamicFormat,  "MPEG4") == 0 ) {
-    pPortFormat->eCompressionFormat = OMX_VIDEO_CodingMPEG4;
-		}
-	else if (strcmp(sDynamicFormat,  "H263") == 0 ) {
-    pPortFormat->eCompressionFormat = OMX_VIDEO_CodingH263;
-		}
-	else if (strcmp(sDynamicFormat,  "H264") == 0 ) {
-    pPortFormat->eCompressionFormat = OMX_VIDEO_CodingAVC;
-		}
-		}
-	else {
+    if (sDynamicFormat != NULL)
+    {
+        if ( strcmp(sDynamicFormat,  "MPEG4") == 0 )
+        {
+            pPortFormat->eCompressionFormat = OMX_VIDEO_CodingMPEG4;
+        }
+        else if (strcmp(sDynamicFormat,  "H263") == 0 )
+        {
+            pPortFormat->eCompressionFormat = OMX_VIDEO_CodingH263;
+        }
+        else if (strcmp(sDynamicFormat,  "H264") == 0 )
+        {
+            pPortFormat->eCompressionFormat = OMX_VIDEO_CodingAVC;
+        }
+    }
+    else
+    {
     pPortFormat->eCompressionFormat = OMX_VIDEO_CodingAVC;
 		}
 
@@ -839,7 +856,7 @@ sDynamicFormat = getenv("FORMAT");
     pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsMovableInputBuffers=OMX_FALSE;
     pComponentPrivate->pCapabilityFlags->iOMXComponentSupportsPartialFrames=OMX_FALSE;
     pComponentPrivate->pCapabilityFlags->iOMXComponentUsesFullAVCFrames=OMX_FALSE;
-    pComponentPrivate->pCapabilityFlags->iOMXComponentUsesNALStartCode=OMX_FALSE;
+    pComponentPrivate->pCapabilityFlags->iOMXComponentUsesNALStartCode=OMX_FALSE; 
 
 #ifndef UNDER_CE
     /* Initialize Mutex for Buffer Tracking */
@@ -881,7 +898,7 @@ sDynamicFormat = getenv("FORMAT");
     eError = RMProxy_NewInitalizeEx(OMX_COMPONENTTYPE_VIDEO); 
     if (eError != OMX_ErrorNone)
     {
-        OMX_EPRINT("Error returned from loading ResourceManagerProxy thread...\n");
+        OMX_PRMGR4(dbg, "Error returned from loading ResourceManagerProxy thread...\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
 #endif
@@ -925,7 +942,7 @@ sDynamicFormat = getenv("FORMAT");
     OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
 #endif
 OMX_CONF_CMD_BAIL:
-    OMX_TRACE("Component Init Exit\n");
+    OMX_PRINT2(dbg, "Component Init Exit\n");
     return eError;
 }
 
@@ -955,13 +972,15 @@ static OMX_ERRORTYPE SetCallbacks (OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_U32* pTmp                               = NULL;
     
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pCallBacks, 1);
+    OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCallBacks, 1, 1);
     
     /*Copy the callbacks of the application to the component private */
     pTmp = memcpy (&(pComponentPrivate->sCbData), pCallBacks, sizeof(OMX_CALLBACKTYPE));
     if (pTmp == NULL)
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined, pComponentPrivate->dbg,
+                               OMX_TRACE4, "Failed to copy callbacks.\n");
     }
     
     /*copy the application private data to component memory*/
@@ -999,17 +1018,18 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     OMX_COMPONENTTYPE* pHandle                  = NULL;
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 
-    OMX_CONF_CHECK_CMD(hComp, szComponentName, pComponentVersion);
-    OMX_CONF_CHECK_CMD(pSpecVersion, pComponentUUID,1);
-    
+    OMX_CONF_CHECK_CMD(hComp, ((OMX_COMPONENTTYPE *) hComp)->pComponentPrivate, 1);
     pHandle = (OMX_COMPONENTTYPE*)hComp;
-    OMX_CONF_CHECK_CMD(pHandle->pComponentPrivate, 1, 1);
-
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
     
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, szComponentName, pComponentVersion, pSpecVersion);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pComponentUUID, 1, 1);
+
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }
                               
     strcpy(szComponentName, pComponentPrivate->cComponentName);
@@ -1054,16 +1074,19 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut   = NULL;
     VIDENC_NODE* pMemoryListHead                = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     if (Cmd == OMX_CommandMarkBuffer)
     {
-       OMX_CONF_CHECK_CMD(pCmdData, 1, 1);
+        OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCmdData, 1, 1);
     }
         
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }
     
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
@@ -1086,36 +1109,46 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
                 pComponentPrivate->bPassingIdleToLoaded = OMX_TRUE;
             }    
 #endif
-            OMX_TRACE("Write to cmd pipe!\n");
+        OMX_PRCOMM2(pComponentPrivate->dbg, "Write to cmd pipe!\n");
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             nRet = write(pComponentPrivate->nCmdDataPipe[1], 
                          &nParam1, 
                          sizeof(nParam1));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             break;
         case OMX_CommandFlush:
             if (nParam1 > 1 && nParam1 != -1)
             {
-              OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Invalid flush nParam1 (%lu).\n", nParam1);
             }
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
             {
-              OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             nRet = write(pComponentPrivate->nCmdDataPipe[1],
                        &nParam1, 
                        sizeof(nParam1));
             if (nRet == -1)
             {
-              OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             break;
         case OMX_CommandPortDisable:
@@ -1140,20 +1173,26 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
             }          
             else 
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Invalid port disable nParam1 (%lu).\n", nParam1);
             }
           
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             nRet = write(pComponentPrivate->nCmdDataPipe[1], 
                          &nParam1, 
                          sizeof(nParam1));
             if (nRet == -1) 
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             break;
         case OMX_CommandPortEnable:
@@ -1175,50 +1214,65 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
             }
             else
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Invalid port enable nParam1 (%lu).\n", nParam1);
             }
 
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             nRet = write(pComponentPrivate->nCmdDataPipe[1],
                          &nParam1, 
                          sizeof(nParam1));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             break;
         case OMX_CommandMarkBuffer:
             if (nParam1 > 0)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Invalid mark nParam1 (%lu).\n", nParam1);
             }
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             nRet = write(pComponentPrivate->nCmdDataPipe[1], 
                          &pCmdData,
                          sizeof(pCmdData));
             if (nRet == -1)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_PRCOMM4,
+                                   "Failed to write to cmd pipe.\n");
             }
             break;
         case OMX_CommandMax:
             break;
         default:
-            OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                               pComponentPrivate->dbg, OMX_PRCOMM4,
+                               "Invalid command (%x).\n", Cmd);
     }
 
     OMX_CONVERT_CMD(szCommandType, Cmd);
-    if (Cmd == OMX_CommandStateSet) {
+    if (Cmd == OMX_CommandStateSet)
+    {
         OMX_CONVERT_STATE(szParam, nParam1);  
-        OMX_TRACE("%s -> %s\n", szCommandType, szParam);
+        OMX_PRSTATE2(pComponentPrivate->dbg, "%s -> %s\n", szCommandType, szParam);
     }
 
 OMX_CONF_CMD_BAIL:  
@@ -1251,12 +1305,16 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     VIDEOENC_PORT_TYPE* pCompPortIn             = NULL;
     VIDEOENC_PORT_TYPE* pCompPortOut            = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, ComponentParameterStructure, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentParameterStructure, 1, 1);
 
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }
     
     pCompPortIn     = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT];
@@ -1270,7 +1328,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PORT_PARAM_TYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
 #ifdef __KHRONOS_CONF_1_1__
@@ -1281,7 +1341,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PORT_PARAM_TYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
 
@@ -1291,7 +1353,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PORT_PARAM_TYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
 
@@ -1301,7 +1365,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PORT_PARAM_TYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
 
@@ -1317,7 +1383,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else if (((OMX_PARAM_PORTDEFINITIONTYPE*)(ComponentParameterStructure))->nPortIndex == 
@@ -1328,7 +1396,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1340,40 +1410,40 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case OMX_IndexParamVideoPortFormat:
             if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nPortIndex == 
                 pCompPortIn->pPortFormat->nPortIndex)
-            {   OMX_TRACE("OMX_IndexParamVideoPortFormat input port\n");
+        {
                 if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex ==
                     pCompPortIn->pPortFormat->nIndex)
                 {
-                 OMX_TRACE("OMX_IndexParamVideoPortFormat index found\n");
                 ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eColorFormat = pCompPortIn->pPortFormat->eColorFormat;
                     eError = OMX_ErrorNone;
                 }
                 else 
                 {
-                    OMX_TRACE("OMX_IndexParamVideoPortFormat OMX_ErrorNoMore, no such index\n");
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorNoMore);
+
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorNoMore,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "No such index.\n");
                 }
             }
             else if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nPortIndex == 
                      pCompPortOut->pPortFormat->nPortIndex)
             {
-                OMX_TRACE("OMX_IndexParamVideoPortFormat output port\n");
                 if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex >= 0 &&
                     ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex < 3)
                 {
-                    OMX_TRACE("OMX_IndexParamVideoPortFormat index found\n");
+/*                    OMX_TRACE("OMX_IndexParamVideoPortFormat index found\n");*/
                     ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eCompressionFormat =
                     pComponentPrivate->compressionFormats[((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex];
                     eError = OMX_ErrorNone;
                 }
                 else 
                 {
-                    OMX_TRACE("OMX_IndexParamVideoPortFormat OMX_ErrorNoMore, no such index\n");
+                    /*OMX_TRACE("OMX_IndexParamVideoPortFormat OMX_ErrorNoMore, no such index\n");*/
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorNoMore);
                 }
             }
             else 
-            {OMX_TRACE("getParameter:: OMX_IndexParamVideoPortFormat OMX_ErrorBadPortIndex\n");
+        {
                 eError = OMX_ErrorBadPortIndex;
             }
             break;
@@ -1383,7 +1453,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PRIORITYMGMTTYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
         case OMX_IndexParamVideoAvc:
@@ -1395,7 +1467,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_AVCTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1412,7 +1486,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_MPEG4TYPE));
                 if (pTmp == NULL)
                 {
-                   OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1447,7 +1523,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_BITRATETYPE));
                 if (pTmp == NULL) 
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1465,7 +1543,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_H263TYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1482,7 +1562,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_QUANTIZATIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1495,7 +1577,8 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 	case OMX_IndexParamVideoProfileLevelQuerySupported:
 		{
 			if (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)ComponentParameterStructure)->nPortIndex == 
-				pCompPortIn->pProfileType->nPortIndex) {
+                pCompPortIn->pProfileType->nPortIndex)
+            {
 	                if (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)(ComponentParameterStructure))->nProfileIndex > 
 	                    pCompPortIn->pPortFormat->nIndex)
        		         {
@@ -1504,12 +1587,16 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 		   }
 				pTmp = memcpy(ComponentParameterStructure, 
 								pCompPortIn->pProfileType, 	sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE));
-				if (pTmp == NULL) {
-		                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
 					}
 				}
 			else if  (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)ComponentParameterStructure)->nPortIndex == 
-				pCompPortOut->pProfileType->nPortIndex) {
+                     pCompPortOut->pProfileType->nPortIndex)
+            {
 				if (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)(ComponentParameterStructure))->nProfileIndex > 
 	                    pCompPortOut->pPortFormat->nIndex)
        		         {
@@ -1518,12 +1605,16 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 		   }
 				pTmp = memcpy(ComponentParameterStructure, 
 								pCompPortOut->pProfileType, sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE));
-				if (pTmp == NULL) {
-		                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
 					}
-				}				
+            }
 				
-			else {
+            else
+            {
 				eError = OMX_ErrorBadPortIndex;
 				}
 			break;
@@ -1531,23 +1622,32 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 	case OMX_IndexParamVideoProfileLevelCurrent:
 			{
 			if (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)ComponentParameterStructure)->nPortIndex == 
-				pCompPortIn->pProfileType->nPortIndex) {
+                pCompPortIn->pProfileType->nPortIndex)
+            {
 				pTmp = memcpy(ComponentParameterStructure, 
 								pCompPortIn->pProfileType, 	sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE));
-				if (pTmp == NULL) {
-		                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
 					}
 				}
 			else if  (((OMX_VIDEO_PARAM_PROFILELEVELTYPE*)ComponentParameterStructure)->nPortIndex == 
-				pCompPortOut->pProfileType->nPortIndex) {
+                     pCompPortOut->pProfileType->nPortIndex)
+            {
 				pTmp = memcpy(ComponentParameterStructure, 
 								pCompPortOut->pProfileType, sizeof(OMX_VIDEO_PARAM_PROFILELEVELTYPE));
-				if (pTmp == NULL) {
-		                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
 					}
-				}				
-				
-			else {
+            }
+
+            else
+            {
 				eError = OMX_ErrorBadPortIndex;
 				}
 			break;
@@ -1561,9 +1661,13 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 						pTmp = memcpy(ComponentParameterStructure, 
 									  pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
 									  sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
-						if (pTmp == NULL)
-						   OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
-					}
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
+                }
+            }
 					else
 					{
 						eError = OMX_ErrorBadPortIndex;
@@ -1583,19 +1687,19 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
        case VideoEncodeCustomParamIndexNALFormat:
            (*((unsigned int*)ComponentParameterStructure)) = (unsigned int)pComponentPrivate->AVCNALFormat;
            break;
-       //not supported yet
-       case OMX_IndexConfigCommonRotate:
-           break;
        case PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
-           pTmp = memcpy(ComponentParameterStructure,
-                          pComponentPrivate->pCapabilityFlags,
-                          sizeof(PV_OMXComponentCapabilityFlagsType));
+            pTmp = memcpy(ComponentParameterStructure,
+            pComponentPrivate->pCapabilityFlags,
+            sizeof(PV_OMXComponentCapabilityFlagsType));
             if (pTmp == NULL)
             {
                 OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
             }
-            break;
-       default:
+            break; 
+       //not supported yet
+       case OMX_IndexConfigCommonRotate:
+           break;
+        default:
             eError = OMX_ErrorUnsupportedIndex;
             break;
     }
@@ -1634,12 +1738,16 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PARAM_COMPONENTROLETYPE  *pRole = NULL;
 	OMX_VIDEO_PARAM_PROFILELEVELTYPE* sProfileLevel;
 #endif
-    pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pCompParam, 1);
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
 
-    if (pComponentPrivate->eState != OMX_StateLoaded)
+    pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCompParam, 1, 1);
+
+    if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }   
     
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
@@ -1658,18 +1766,21 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else if (pComponentParam->nPortIndex == pCompPortOut->pPortFormat->nPortIndex) 
             {
-           OMX_TRACE("TI OMX VideoEncoder:: eCompressionFormat = %d\n", pComponentParam->eCompressionFormat);
                 pTmp = memcpy(pCompPortOut->pPortFormat,
                               pComponentParam,
                               sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else 
@@ -1684,7 +1795,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PORT_PARAM_TYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
         case OMX_IndexParamPortDefinition:
@@ -1697,7 +1810,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else if (pComponentParam->nPortIndex == pCompPortOut->pPortDef->nPortIndex)
@@ -1707,7 +1822,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1726,7 +1843,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_AVCTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1745,7 +1864,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_MPEG4TYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else 
@@ -1760,7 +1881,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                           sizeof(OMX_PRIORITYMGMTTYPE));
             if (pTmp == NULL)
             {
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                   pComponentPrivate->dbg, OMX_TRACE4,
+                                   "Failed to copy parameter.\n");
             }
             break;
         case OMX_IndexParamCompBufferSupplier:
@@ -1790,7 +1913,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_BITRATETYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else
@@ -1806,7 +1931,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 									 sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));	
 					   if (pTmp == NULL)
 						{
-							OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy parameter.\n");
 						}
 				}
 				break;
@@ -1820,7 +1947,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_H263TYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else 
@@ -1839,7 +1968,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                               sizeof(OMX_VIDEO_PARAM_QUANTIZATIONTYPE));
                 if (pTmp == NULL)
                 {
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy parameter.\n");
                 }
             }
             else 
@@ -1857,18 +1988,22 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
 #ifdef __KHRONOS_CONF_1_1__
 	case OMX_IndexParamStandardComponentRole:
-		if (pCompParam) {
+        if (pCompParam)
+        {
 			pRole = (OMX_PARAM_COMPONENTROLETYPE *)pCompParam;
 			memcpy(&(pComponentPrivate->componentRole), (void *)pRole, sizeof(OMX_PARAM_COMPONENTROLETYPE));
-			if(strcmp((char *)pRole->cRole,"video_encoder.mpeg4")==0){
+            if (strcmp((char *)pRole->cRole,"video_encoder.mpeg4")==0)
+            {
 		        pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
 				pCompPortOut->pPortFormat->eCompressionFormat = OMX_VIDEO_CodingMPEG4;
 				}
-			else if(strcmp((char *)pRole->cRole,"video_encoder.h263")==0){
+            else if (strcmp((char *)pRole->cRole,"video_encoder.h263")==0)
+            {
 				pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingH263;
 				pCompPortOut->pPortFormat->eCompressionFormat = OMX_VIDEO_CodingH263;
 				}
-			else if(strcmp((char *)pRole->cRole,"video_encoder.avc")==0){
+            else if (strcmp((char *)pRole->cRole,"video_encoder.avc")==0)
+            {
 				pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingAVC;
 				pCompPortOut->pPortFormat->eCompressionFormat= OMX_VIDEO_CodingAVC;
 				}
@@ -1881,8 +2016,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 			pCompPortOut->pPortDef->format.video.nBitrate = 64000;
         	pCompPortOut->pPortDef->format.video.xFramerate = (15 << 16);
 		
-		} 
-		else {
+        }
+        else
+        {
 			eError = OMX_ErrorBadParameter;
 		}
 		break;
@@ -1950,12 +2086,16 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
     VIDENC_NODE* pMemoryListHead                = NULL;
 	OMX_U32* pTmp								= NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, ComponentConfigStructure, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentConfigStructure, 1, 1);
 
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }   
     
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
@@ -2014,7 +2154,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
 				          pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pFrameRateConfig,
 				          sizeof(OMX_CONFIG_FRAMERATETYPE));
 			if (pTmp == NULL)
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy config.\n");
+            }
 		}
 	break;
 	case OMX_IndexConfigVideoBitrate:
@@ -2023,7 +2167,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
 				          pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig,
 				          sizeof(OMX_VIDEO_CONFIG_BITRATETYPE));
 			if (pTmp == NULL)
-				OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy config.\n");
+            }
 		}
 	break;
 #endif
@@ -2037,7 +2185,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
                           pComponentPrivate->pMotionVector,
                           sizeof(OMX_VIDEO_PARAM_MOTIONVECTORTYPE));
             if (pTmp == NULL)
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy config.\n");
+            }
         }
     case OMX_IndexConfigVideoAVCIntraPeriod:
         {
@@ -2049,7 +2201,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
                           pComponentPrivate->pH264IntraPeriod,
                           sizeof(OMX_VIDEO_CONFIG_AVCINTRAPERIOD));
             if (pTmp == NULL)
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy config.\n");
+            }
         }
 	case OMX_IndexParamVideoIntraRefresh:
 			 {	 
@@ -2057,7 +2213,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
 		    			       pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
 			    		       sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));	 
 			     if (pTmp == NULL)
-                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                       pComponentPrivate->dbg, OMX_TRACE4,
+                                       "Failed to copy config.\n");
+            }
 		}
 	break;
 	case OMX_IndexParamVideoErrorCorrection:
@@ -2069,14 +2229,21 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
                               pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
                               sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
                 if (pTmp == NULL)
-                   OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy config.\n");
+                }
             }
             else
             {
                 eError = OMX_ErrorBadPortIndex;
             }
-            break;	
-		}
+            break;  
+        }
+    case VideoEncodeCustomConfigIndexDebug:
+        OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+        break;
     case VideoEncodeCustomConfigIndexMIRRate:
 			(*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->nMIRRate;
             break;
@@ -2126,17 +2293,22 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
     VIDENC_NODE* pMemoryListHead                = NULL;
     OMX_U32 i;    
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, ComponentConfigStructure, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentConfigStructure, 1, 1);
 
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }   
     
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
       
-    switch (nConfigIndex) {
+    switch (nConfigIndex)
+    {
         case VideoEncodeCustomConfigIndexForceIFrame:
             pComponentPrivate->bForceIFrame = (OMX_BOOL)(*((OMX_BOOL*)ComponentConfigStructure));
             break;
@@ -2227,6 +2399,7 @@ break;
             if (pComponentPrivate->pMotionVector->eAccuracy < OMX_Video_MotionVectorQuarterPel)
                 eError = OMX_ErrorBadParameter;
         }
+        break;
     case OMX_IndexConfigVideoAVCIntraPeriod:
         {
             memcpy(pComponentPrivate->pH264IntraPeriod,
@@ -2235,6 +2408,10 @@ break;
             /* also set parameters set by this structure that are tracked outside of it */
             pComponentPrivate->nIntraFrameInterval = pComponentPrivate->pH264IntraPeriod->nPFrames;
         }
+        break;
+    case VideoEncodeCustomConfigIndexDebug:
+        OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+        break;
 	case VideoEncodeCustomConfigIndexMIRRate:
 				pComponentPrivate->nMIRRate = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
 		break;
@@ -2284,7 +2461,8 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
                                        OMX_OUT OMX_INDEXTYPE* pIndexType)
 {
     VIDENC_CUSTOM_DEFINITION sVideoEncodeCustomIndex[VIDENC_NUM_CUSTOM_INDEXES] = 
-                                   {{"OMX.TI.VideoEncode.Param.VBVSize", VideoEncodeCustomParamIndexVBVSize},
+    {
+        {"OMX.TI.VideoEncode.Param.VBVSize", VideoEncodeCustomParamIndexVBVSize},
                                     {"OMX.TI.VideoEncode.Param.DeblockFilter", VideoEncodeCustomParamIndexDeblockFilter},
                                     {"OMX.TI.VideoEncode.Config.ForceIFrame", VideoEncodeCustomConfigIndexForceIFrame},
                                     {"OMX.TI.VideoEncode.Config.IntraFrameInterval", VideoEncodeCustomConfigIndexIntraFrameInterval},
@@ -2312,7 +2490,8 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
                                      {"OMX.TI.VideoEncode.Config.MaxMVperMB", VideoEncodeCustomConfigIndexMaxMVperMB},
                                      {"OMX.TI.VideoEncode.Config.Intra4x4EnableIdc", VideoEncodeCustomConfigIndexIntra4x4EnableIdc},
                                      {"OMX.TI.VideoEncode.Config.EncodingPreset", VideoEncodeCustomParamIndexEncodingPreset},
-                                     {"OMX.TI.VideoEncode.Config.NALFormat", VideoEncodeCustomParamIndexNALFormat}
+        {"OMX.TI.VideoEncode.Config.NALFormat", VideoEncodeCustomParamIndexNALFormat},
+        {"OMX.TI.VideoEncode.Debug", VideoEncodeCustomConfigIndexDebug}
                                    }; 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nIndex = 0;
@@ -2359,9 +2538,12 @@ static OMX_ERRORTYPE GetState (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError                        = OMX_ErrorNone;
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pState, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pState, 1, 1);
     
+
     *pState = pComponentPrivate->eState;
 
 OMX_CONF_CMD_BAIL:
@@ -2395,9 +2577,11 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     VIDENC_NODE* pMemoryListHead                = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn    = NULL;
 
-	    OMX_CONF_CHECK_CMD(OMX_TRUE, pBufHead, hComponent);
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
 
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
+
     hTunnelComponent = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->hTunnelComponent;
 
     pComponentPrivate->pMarkData = pBufHead->pMarkData;
@@ -2405,7 +2589,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pPortDefIn = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortDef;
     if (!(pPortDefIn->bEnabled))
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Emptying buffer on disabled port.\n");
     }
 
     if(!hTunnelComponent)
@@ -2413,15 +2599,18 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         if (pBufHead->nInputPortIndex != 0x0  ||
             pBufHead->nOutputPortIndex != OMX_NOPORT) 
         {
-            OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Emptying buffer on invalid port.\n");
         }
         
         if (pComponentPrivate->eState != OMX_StateExecuting &&
             pComponentPrivate->eState != OMX_StatePause)
         {
-            OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Emptying buffer in invalid state (%d).\n", pComponentPrivate->eState);
         }
-
     }
 
     OMX_CONF_CHK_VERSION(pBufHead, OMX_BUFFERHEADERTYPE, eError);
@@ -2438,8 +2627,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #ifndef UNDER_CE
     if (pthread_mutex_lock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_lock() failed.\n");
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_TRACE4,
+                               "pthread_mutex_lock() failed.\n");
     }
     pBufferPrivate = pBufHead->pInputPortPrivate;
 
@@ -2452,12 +2642,15 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if (nRet == -1)
     {
     	pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex));
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "failed to write to nFilled_iPipe.\n");
     }
     if (pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_unlock() failed.\n");
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_TRACE4,
+                               "pthread_mutex_unlock() failed.\n");
     }
 #else
     pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_COMPONENT;
@@ -2467,7 +2660,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                  sizeof(pBufHead));
     if (nRet == -1)
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "failed to write to nFilled_iPipe.\n");
     }
 #endif
 
@@ -2500,8 +2695,10 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_HANDLETYPE hTunnelComponent             = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut   = NULL;
     
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pBufHead, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
 
 
     hTunnelComponent = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->hTunnelComponent;
@@ -2511,7 +2708,9 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 	
 	if (!(pPortDefOut->bEnabled))
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Filling buffer on disabled port.\n");
     }
     
     if(!hTunnelComponent)
@@ -2519,13 +2718,17 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         if (pBufHead->nOutputPortIndex != 0x1  ||
             pBufHead->nInputPortIndex != OMX_NOPORT)
         {
-           OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Filling buffer on invalid port.\n");
         }
 
         if (pComponentPrivate->eState != OMX_StateExecuting &&
             pComponentPrivate->eState != OMX_StatePause) 
         {
-           OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                                   pComponentPrivate->dbg, OMX_PRBUFFER4,
+                                   "Filling buffer in invalid state (%d).\n", pComponentPrivate->eState);
         }
     }
     OMX_CONF_CHK_VERSION(pBufHead, OMX_BUFFERHEADERTYPE, eError);
@@ -2553,8 +2756,9 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #ifndef UNDER_CE
     if (pthread_mutex_lock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_lock() failed.\n");
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_TRACE4,
+                               "pthread_mutex_lock() failed.\n");
     }
 
 
@@ -2563,14 +2767,18 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     nRet = write(pComponentPrivate->nFree_oPipe[1],
                  &(pBufHead), 
                  sizeof (pBufHead));
-    if (nRet == -1) {
+    if (nRet == -1)
+    {
 		pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex));
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "failed to write to nFree_oPipe.\n");
     }
     if (pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex)) != 0)
     {
-        OMX_EPRINT("pthread_mutex_unlock() failed.\n");
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_TRACE4,
+                               "pthread_mutex_unlock() failed.\n");
     }
 #else
 
@@ -2581,7 +2789,9 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                  sizeof (pBufHead));
     if (nRet == -1) 
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorHardware,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "failed to write to nFree_oPipe.\n");
     }
 #endif
 OMX_CONF_CMD_BAIL:
@@ -2613,9 +2823,12 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     OMX_S32 nRet        = -1;
     OMX_S32 nStop       = -1;
     OMX_U32 nTimeout    = 0;
+    struct OMX_TI_Debug dbg;
     
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
+
+    dbg = pComponentPrivate->dbg;
 
     pMemoryListHead=pComponentPrivate->pMemoryListHead; 
     
@@ -2641,7 +2854,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 	                                               NULL);
 	                    if (eError != OMX_ErrorNone) 
 	                    {
-	                        OMX_EPRINT("error when requesting EMMCodecControlDestroy");
+                            OMX_PRDSP4(dbg, "error when requesting EMMCodecControlDestroy");
 	                        eError = OMX_ErrorUndefined;
 	                    }
 
@@ -2656,14 +2869,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
         }
         if(nTimeout++ > VIDENC_MAX_COMPONENT_TIMEOUT)
         {
-            OMX_TRACE("TimeOut in HandlingFatalError!\n");
+            OMX_ERROR5(dbg, "TimeOut in HandlingFatalError!\n");
             break;
         }
-#ifndef UNDER_CE            
         sched_yield();
-#else
-        sched_yield();
-#endif
     }
 
 
@@ -2686,7 +2895,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 #ifdef __PERF_INSTRUMENTATION__
     PERF_SendingCommand(pComponentPrivate->pPERF, nStop, 0, PERF_ModuleComponent);
 #endif
-    OMX_TRACE("eCmd: -1 Send\n");
+    OMX_PRCOMM2(dbg, "eCmd: -1 Send\n");
     nRet = write(pComponentPrivate->nCmdPipe[1],
                  &nStop,
                  sizeof(OMX_COMMANDTYPE)); 
@@ -2701,7 +2910,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     if (eErr != 0)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error pthread_join\n");
+        OMX_TRACE4(dbg, "Error pthread_join (%d).\n", eErr);
     }
 
     /*close the data pipe handles*/
@@ -2709,28 +2918,28 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRBUFFER4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     eErr = close(pComponentPrivate->nFilled_iPipe[0]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRBUFFER4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     eErr = close(pComponentPrivate->nFree_oPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRBUFFER4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     eErr = close(pComponentPrivate->nFilled_iPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRBUFFER4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     /*Close the command pipe handles*/
@@ -2738,41 +2947,41 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     eErr = close(pComponentPrivate->nCmdPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
     /*Close the command data pipe handles*/
     eErr = close(pComponentPrivate->nCmdDataPipe[0]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
 
     eErr = close(pComponentPrivate->nCmdDataPipe[1]);
     if (0 != eErr && OMX_ErrorNone == eError)
     {
         eError = OMX_ErrorHardware;
-        OMX_EPRINT ("Error while closing data pipe\n");
+        OMX_PRCOMM4(dbg, "Error while closing data pipe (%d).\n", eErr);
     }
     
-    OMX_TRACE("pipes closed...\n");
+    OMX_PRINT2(dbg, "pipes closed...\n");
 
 #ifndef UNDER_CE
-    OMX_TRACE("destroy mVideoEncodeBufferMutex -> %p\n", 
+    OMX_TRACE2(dbg, "destroy mVideoEncodeBufferMutex -> %p\n", 
               &(pComponentPrivate->mVideoEncodeBufferMutex));
     /* Destroy Mutex for Buffer Tracking */
     nRet = pthread_mutex_destroy(&(pComponentPrivate->mVideoEncodeBufferMutex));
     while (nRet == EBUSY)
     {
         /* The mutex is busy. We need to unlock it, then destroy it. */
-        OMX_TRACE("destroy status = EBUSY\n");
+        OMX_TRACE2(dbg, "destroy status = EBUSY\n");
         pthread_mutex_unlock(&(pComponentPrivate->mVideoEncodeBufferMutex));
         nRet = pthread_mutex_destroy(&(pComponentPrivate->mVideoEncodeBufferMutex));
     }
@@ -2796,7 +3005,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_VIDEO); 
     if (eError != OMX_ErrorNone)
     {
-        OMX_EPRINT ("Error returned from destroy ResourceManagerProxy thread\n");
+        OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
         eError = OMX_ErrorUndefined;
     }
 #endif
@@ -2809,11 +3018,13 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 
     if (pComponentPrivate != NULL)
     { 
-        VIDENC_FREE(pComponentPrivate, pMemoryListHead); 
+        VIDENC_FREE(pComponentPrivate, pMemoryListHead, dbg); 
     }
     
     /* Free Resources */
-    OMX_VIDENC_ListDestroy(pMemoryListHead);
+    OMX_VIDENC_ListDestroy(&dbg, pMemoryListHead);
+
+    OMX_DBG_CLOSE(dbg);
 
 OMX_CONF_CMD_BAIL:
     return eError;
@@ -2851,9 +3062,10 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_HANDLETYPE hTunnelComponent = NULL;
     VIDENC_NODE* pMemoryListHead    = NULL;
     
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
 
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, ppBufferHdr, pBuffer);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ppBufferHdr, pBuffer, 1);
 
     if (nPortIndex == VIDENC_INPUT_PORT) 
     {
@@ -2865,21 +3077,31 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }        
     else 
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Using buffer on invalid port index.\n");
     }
 
     if (!pPortDef->bEnabled)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Using buffer on disabled port.\n");
     }
 
     if (nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated)
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);  
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Using duplicate buffer or of invalid size.\n");
+    }
     
  
     if (pComponentPrivate->eState == OMX_StateInvalid)
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Using buffer in invalid state.\n");
     }
     
     pMemoryListHead=pComponentPrivate->pMemoryListHead;
@@ -2898,7 +3120,7 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 
     VIDENC_MALLOC(pBufferPrivate->pBufferHdr,
                   sizeof(OMX_BUFFERHEADERTYPE),
-                  OMX_BUFFERHEADERTYPE, pMemoryListHead);
+                  OMX_BUFFERHEADERTYPE, pMemoryListHead, pComponentPrivate->dbg);
 
     pBufferPrivate->pBufferHdr->nSize       = sizeof(OMX_BUFFERHEADERTYPE);
     pBufferPrivate->pBufferHdr->nVersion    = pPortDef->nVersion;
@@ -2956,7 +3178,8 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     eError = OMX_VIDENC_Allocate_DSPResources(pComponentPrivate, nPortIndex);
-    OMX_CONF_BAIL_IF_ERROR(eError);
+    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                          "Failed to allocate DSP resources.\n");
     
     OMX_CONF_CIRCULAR_BUFFER_ADD_NODE(pComponentPrivate, 
                                       pComponentPrivate->sCircularBuffer);
@@ -3009,8 +3232,10 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     VIDENC_BUFFER_PRIVATE* pBufferPrivate       = NULL;
     VIDENC_NODE* pMemoryListHead                = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pBufHead, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
     /*OMX_CONF_CHK_VERSION(pBufHead, OMX_BUFFERHEADERTYPE, eError); Makes CONF_FlushTest Fail*/
         
     pHandle = (OMX_COMPONENTTYPE*)hComponent; 
@@ -3026,7 +3251,8 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     if (nPortIndex == VIDENC_INPUT_PORT)
     {
         pBufferPrivate = pBufHead->pInputPortPrivate;
-        if (pBufferPrivate != NULL){
+        if (pBufferPrivate != NULL)
+        {
 			if (pBufferPrivate->pUalgParam != NULL)
             {
                 pTemp = (char*)pBufferPrivate->pUalgParam;
@@ -3041,13 +3267,14 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                     pBufferPrivate->pUalgParam = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
                 }
             }
-			VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead);
+            VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
         }
     }
     else if (nPortIndex == VIDENC_OUTPUT_PORT)
     {
         pBufferPrivate = pBufHead->pOutputPortPrivate;
-		if (pBufferPrivate != NULL){
+        if (pBufferPrivate != NULL)
+        {
             if (pBufferPrivate->pUalgParam != NULL)
             {
                 pTemp = (char*)pBufferPrivate->pUalgParam;
@@ -3062,15 +3289,21 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                     pBufferPrivate->pUalgParam = (MP4VE_GPP_SN_UALGOutputParams*)pTemp;
                 }
             }
-			VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead);
+            VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
     	}
     }
     else 
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Freeing buffer on invalid port index.\n");
+    }
     
     if (pPortDef->bEnabled && pComponentPrivate->eState != OMX_StateIdle)
     {
-	   OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Freeing buffer in invalid state or on a disabled port.\n");
     }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -3087,7 +3320,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         {
             pBufHead->pBuffer -= 128;
             pBufHead->pBuffer = (unsigned char*)pBufHead->pBuffer;             
-            VIDENC_FREE(pBufHead->pBuffer, pMemoryListHead);
+            VIDENC_FREE(pBufHead->pBuffer, pMemoryListHead, pComponentPrivate->dbg);
         }
     }
 
@@ -3102,7 +3335,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     
     if (pBufHead != NULL)
     {
-        VIDENC_FREE(pBufHead, pMemoryListHead);
+        VIDENC_FREE(pBufHead, pMemoryListHead, pComponentPrivate->dbg);
     }
 
     OMX_CONF_CIRCULAR_BUFFER_DELETE_NODE(pComponentPrivate, 
@@ -3171,8 +3404,10 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError                        = OMX_ErrorNone;
     VIDENC_NODE* pMemoryListHead                = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
+
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pBufHead, 1);
+    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
     
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
 
@@ -3186,17 +3421,23 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }        
     else
     {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Allocating buffer on invalid port index.\n");
     }
    
     if (!pPortDef->bEnabled)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Allocating buffer on disabled port.\n");
     }   
 
     if (nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated)
     {
-       OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter);
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+                               pComponentPrivate->dbg, OMX_PRBUFFER4,
+                               "Allocating duplicate buffer or of invalid size.\n");
     }
     
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
@@ -3208,7 +3449,7 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     VIDENC_MALLOC(*pBufHead, 
                   sizeof(OMX_BUFFERHEADERTYPE),
                   OMX_BUFFERHEADERTYPE,
-                  pMemoryListHead);
+                  pMemoryListHead, pComponentPrivate->dbg);
 
     if (nPortIndex == VIDENC_INPUT_PORT)
     {
@@ -3224,7 +3465,7 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     VIDENC_MALLOC((*pBufHead)->pBuffer, 
                   nSizeBytes + 256, 
                   OMX_U8, 
-                  pMemoryListHead);
+                  pMemoryListHead, pComponentPrivate->dbg);
     ((*pBufHead)->pBuffer) += 128;
     ((*pBufHead)->pBuffer) = (unsigned char*)((*pBufHead)->pBuffer);
     (*pBufHead)->nSize       = sizeof(OMX_BUFFERHEADERTYPE);
@@ -3259,7 +3500,8 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }
    
     eError = OMX_VIDENC_Allocate_DSPResources(pComponentPrivate, nPortIndex);
-    OMX_CONF_BAIL_IF_ERROR(eError)
+    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP4,
+                          "Failed to allocate DSP resources.\n");
    
     OMX_CONF_CIRCULAR_BUFFER_ADD_NODE(pComponentPrivate, 
                                       pComponentPrivate->sCircularBuffer);
@@ -3300,12 +3542,13 @@ OMX_CONF_CMD_BAIL:
 
 OMX_ERRORTYPE VerifyTunnelConnection(VIDEOENC_PORT_TYPE* pPort, 
                                      OMX_HANDLETYPE hTunneledComp, 
-                                     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef)
+                                     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef,
+                                     struct OMX_TI_Debug *dbg)
 {
    OMX_PARAM_PORTDEFINITIONTYPE sPortDef;
    OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-   OMX_CONF_CHECK_CMD(pPort, hTunneledComp, pPortDef);
+    OMX_DBG_CHECK_CMD(*dbg, pPort, hTunneledComp, pPortDef);
 
    sPortDef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
    sPortDef.nVersion.s.nVersionMajor = 0x1;
@@ -3375,7 +3618,7 @@ OMX_CONF_CMD_BAIL:
   **/
 /*-------------------------------------------------------------------*/
 
-static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp)
+static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp, struct OMX_TI_Debug *dbg)
 {
 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -3388,29 +3631,33 @@ static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp)
 
     pTunnelcComponentName = malloc(128);
 
-	if (pTunnelcComponentName == NULL) {
-	    eError = OMX_ErrorInsufficientResources;  
-        OMX_TRACE("Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
+    if (pTunnelcComponentName == NULL)
+    {
+        eError = OMX_ErrorInsufficientResources;  
+        OMX_TRACE4(*dbg, "Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
         goto EXIT;                                
     }
 
     pTunnelComponentVersion = malloc(sizeof(OMX_VERSIONTYPE));
-    if (pTunnelComponentVersion == NULL) {
-        OMX_TRACE("Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
+    if (pTunnelComponentVersion == NULL)
+    {
+        OMX_TRACE4(*dbg, "Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
         eError = OMX_ErrorInsufficientResources;  
         goto EXIT;                                
     }
 
     pSpecVersion = malloc(sizeof(OMX_VERSIONTYPE));
-    if (pSpecVersion == NULL) {
-        OMX_TRACE("Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
+    if (pSpecVersion == NULL)
+    {
+        OMX_TRACE4(*dbg, "Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
         eError = OMX_ErrorInsufficientResources;  
         goto EXIT;                                
     }
 
     pComponentUUID = malloc(sizeof(OMX_UUIDTYPE));
-    if (pComponentUUID == NULL) {
-        OMX_TRACE("Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
+    if (pComponentUUID == NULL)
+    {
+        OMX_TRACE4(*dbg, "Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
         eError = OMX_ErrorInsufficientResources;  
         goto EXIT;                                
     }
@@ -3419,7 +3666,8 @@ static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp)
 
     /* Check if tunneled component is a TI component */
     pSubstring = strstr(pTunnelcComponentName, "OMX.TI.");
-    if(pSubstring == NULL) {
+    if (pSubstring == NULL)
+    {
         bResult = OMX_FALSE;
     }
 
@@ -3486,7 +3734,8 @@ OMX_ERRORTYPE ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
         }
 
 		/* Check if the other component is developed by TI */
-		if(IsTIOMXComponent(hTunneledComp) != OMX_TRUE) {
+        if (IsTIOMXComponent(hTunneledComp, &pComponentPrivate->dbg) != OMX_TRUE)
+        {
 		    eError = OMX_ErrorTunnelingUnsupported;
 			goto OMX_CONF_CMD_BAIL;
 		}
@@ -3503,11 +3752,13 @@ OMX_ERRORTYPE ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
             /* Component is the input (sink of data) */
             eError = VerifyTunnelConnection(pPort,
                                             hTunneledComp,
-                                            pPort->pPortDef);
+                                            pPort->pPortDef,
+                                            &pComponentPrivate->dbg);
             if(OMX_ErrorNone != eError)
             {
-                OMX_EPRINT("VerifyTunnelConnection failed\n");
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorPortsNotCompatible);
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorPortsNotCompatible,
+                                       pComponentPrivate->dbg, OMX_PRCOMM3,
+                                       "VerifyTunnelConnection failed.\n");
             }
            
             /* If specified obey output port's preferences. Otherwise choose output */
@@ -3531,9 +3782,11 @@ OMX_ERRORTYPE ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hComponent,
                                       OMX_IndexParamCompBufferSupplier,
                                       &sBufferSupplier);
 
-            if (sBufferSupplier.eBufferSupplier != pPort->eSupplierSetting) {
-                OMX_EPRINT("SetParameter: OMX_IndexParamCompBufferSupplier failed to change setting\n" );
-                OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorPortsNotCompatible);
+            if (sBufferSupplier.eBufferSupplier != pPort->eSupplierSetting)
+            {
+                OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorPortsNotCompatible,
+                                       pComponentPrivate->dbg, OMX_PRCOMM3,
+                                       "SetParameter: OMX_IndexParamCompBufferSupplier failed to change setting.\n");
             }
         }
     }
@@ -3561,7 +3814,8 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
     VIDENC_COMPONENT_PRIVATE *pComponentPrivate;
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-	if(hComponent==NULL){
+    if (hComponent==NULL)
+    {
 		goto OMX_CONF_CMD_BAIL;
 		eError= OMX_ErrorBadParameter;
 		}

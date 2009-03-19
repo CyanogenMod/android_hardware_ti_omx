@@ -346,7 +346,6 @@ typedef struct MP4VE_GPP_SN_Obj_CreatePhase {
 
     unsigned int   ulUseGOV;
     unsigned int   ulUseVOS;
-	
     unsigned int   enableH263AnnexI;
     unsigned int   enableH263AnnexJ;
     unsigned int   enableH263AnnexT;

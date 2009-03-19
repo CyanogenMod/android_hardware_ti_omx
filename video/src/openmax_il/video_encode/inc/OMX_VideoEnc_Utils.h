@@ -58,6 +58,7 @@
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
     #endif
+#include <OMX_TI_Debug.h>
 #include <OMX_Component.h>
 
 #ifdef UNDER_CE
@@ -65,6 +66,7 @@
     #include <pthread.h>
 #endif
 #include "OMX_TI_Common.h"
+#include <utils/Log.h>
 
 /* this is the max of VIDENC_MAX_NUM_OF_IN_BUFFERS and VIDENC_MAX_NUM_OF_OUT_BUFFERS */
 #define VIDENC_MAX_NUM_OF_BUFFERS     5
@@ -105,65 +107,62 @@
 #define  VIDENC_TIMEOUT_USEC 0;
 
 /*
- * Definition of capabilities index and structure
- * Needed to inform OpenCore about component capabilities.
- */
-
+* Definition of capabilities index and structure
+* Needed to inform OpenCore about component capabilities.
+*/
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 
 typedef struct PV_OMXComponentCapabilityFlagsType
 {
-/* OMX COMPONENT CAPABILITY RELATED MEMBERS*/
-OMX_BOOL iIsOMXComponentMultiThreaded;
-OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
-OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
-OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
-OMX_BOOL iOMXComponentSupportsPartialFrames;
-OMX_BOOL iOMXComponentUsesNALStartCode;
-OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
-OMX_BOOL iOMXComponentUsesFullAVCFrames;
-} PV_OMXComponentCapabilityFlagsType;
+    /* OMX COMPONENT CAPABILITY RELATED MEMBERS*/
+    OMX_BOOL iIsOMXComponentMultiThreaded;
+    OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+    OMX_BOOL iOMXComponentSupportsPartialFrames;
+    OMX_BOOL iOMXComponentUsesNALStartCode;
+    OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+    OMX_BOOL iOMXComponentUsesFullAVCFrames;
+} PV_OMXComponentCapabilityFlagsType; 
 
 /*
  * Redirects control flow in an error situation.
  * The OMX_CONF_CMD_BAIL label is defined inside the calling function.
  */
 #define OMX_CONF_BAIL_IF_ERROR(_eError)                     \
-{                                                           \
+do {                                                        \
     if(_eError != OMX_ErrorNone) {                          \
-        OMX_TRACE("*Error : %x\n", eError);                 \
         goto OMX_CONF_CMD_BAIL;                             \
         }                                                   \
-}
+} while(0)
 
 #define OMX_VIDENC_BAIL_IF_ERROR(_eError, _hComp)           \
-{                                                           \
+do {                                                        \
     if(_eError != OMX_ErrorNone) {	\
         _eError = OMX_VIDENC_HandleError(_hComp, _eError);  \
         if(_eError != OMX_ErrorNone) {                      \
-            OMX_TRACE("*Fatal Error : %x\n", _eError);      \
+            OMX_ERROR5(_hComp->dbg, "*Fatal Error : %x\n", _eError); \
             goto OMX_CONF_CMD_BAIL;                         \
         }                                                   \
     }                                                       \
-}
+} while(0)
 
 /*
  * Sets error type and redirects control flow to error handling and cleanup section
  */
 #define OMX_CONF_SET_ERROR_BAIL(_eError, _eCode)\
-{                                                           \
+do {                                                        \
     _eError = _eCode;                                       \
-    OMX_TRACE("*Error : %x \n", eError);                     \
     goto OMX_CONF_CMD_BAIL;                                 \
-}
+} while(0)
 
 #define OMX_VIDENC_SET_ERROR_BAIL(_eError, _eCode, _hComp)\
-{                   \
+do {                                                        \
     _eError = _eCode;                                       \
-    OMX_TRACE("*Fatal Error : %x\n", eError);               \
+    OMX_ERROR5(_hComp->dbg, "*Fatal Error : %x\n", eError); \
     OMX_VIDENC_HandleError(_hComp, _eError);                \
     goto OMX_CONF_CMD_BAIL;                                 \
-}
+} while(0)
 
 /*
  * Checking paramaters for non-NULL values.
@@ -173,13 +172,12 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
  *   are set to 1 (or a nonzero value). 
  */
 #define OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)             \
-{                                                           \
+do {                                                        \
     if(!_ptr1 || !_ptr2 || !_ptr3){                         \
         eError = OMX_ErrorBadParameter;                     \
-        OMX_TRACE("*Error : %x\n", eError);                 \
         goto OMX_CONF_CMD_BAIL;                             \
     }                                                       \
-}
+} while(0)
 
 /*
 * Initialize the Circular Buffer data. The Tail and Head pointers are NULL.
@@ -188,10 +186,12 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *It should be in the ComponentInit call of the Component.
 */
 #define OMX_CONF_CIRCULAR_BUFFER_INIT(_pPrivateData_)       \
+do {                                                            \
     (_pPrivateData_)->sCircularBuffer.pHead = NULL;         \
     (_pPrivateData_)->sCircularBuffer.pTail = NULL;         \
     (_pPrivateData_)->sCircularBuffer.nElements = 0;        \
-    (_pPrivateData_)->sCircularBuffer.nFillElements = 0;
+        (_pPrivateData_)->sCircularBuffer.nFillElements = 0;    \
+} while(0)
 
 /*
 *Restart the Circular Buffer. The tail points to the same node as the head. The 
@@ -199,8 +199,10 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *transition. 
 */
 #define OMX_CONF_CIRCULAR_BUFFER_RESTART(_sCircular_)       \
+do {                                                            \
     (_sCircular_).pTail = (_sCircular_).pHead;              \
-    (_sCircular_).nFillElements = 0;
+        (_sCircular_).nFillElements = 0;                        \
+} while(0)
     
 /*
 *Add node to the Circular Buffer.  Should be use when UseBuffer or AllocateBuffer
@@ -208,7 +210,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *and rewrite pNext with the new address of the Head.
 */
 #define OMX_CONF_CIRCULAR_BUFFER_ADD_NODE(_pPrivateData_, _sCircular_)\
-{                                                           \
+do {                                                        \
     if((_sCircular_).nElements < VIDENC_MAX_NUM_OF_BUFFERS) \
     {                                                       \
         OMX_U8 _i_ = 0;                                      \
@@ -216,7 +218,8 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
         VIDENC_MALLOC( (_sCircular_).pHead,                 \
                         sizeof(OMX_CONF_CIRCULAR_BUFFER_NODE),\
                         OMX_CONF_CIRCULAR_BUFFER_NODE,      \
-                        (_pPrivateData_)->pMemoryListHead); \
+                        (_pPrivateData_)->pMemoryListHead,  \
+                        (_pPrivateData_)->dbg);             \
         (_sCircular_).nElements++;                          \
         if(!pTmp){                                           \
             (_sCircular_).pHead->pNext = (_sCircular_).pHead;\
@@ -229,7 +232,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
             pTmp->pNext = (_sCircular_).pHead;              \
         }                                                   \
     }                                                       \
-}
+} while(0)
 
 /*
 * Will move the Tail of the Cirular Buffer to the next element. In the tail resides the last buffer to enter 
@@ -238,7 +241,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *It should be put in the function that handles the filled buffer from the application.
 */
 #define OMX_CONF_CIRCULAR_BUFFER_MOVE_TAIL(_pBufHead_, _sCircular_, _pPrivateData_)\
-{                                                           \
+do {                                                        \
     if((_pPrivateData_)->pMarkBuf){                        \
         (_sCircular_).pTail->pMarkData = (_pPrivateData_)->pMarkBuf->pMarkData;\
         (_sCircular_).pTail->hMarkTargetComponent = (_pPrivateData_)->pMarkBuf->hMarkTargetComponent;\
@@ -255,9 +258,9 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
     (_sCircular_).nFillElements++;                          \
     if(((_sCircular_).pTail == (_sCircular_).pHead) &&      \
        ((_sCircular_).nFillElements != 0)){                 \
-        OMX_TRACE("**Warning:Circular Buffer Full.\n");       \
+        OMX_TRACE2((_pPrivateData_)->dbg, "**Warning:Circular Buffer Full.\n"); \
     }                                                       \
-}
+} while(0)
 
 /*
 *Will move the Head of the Circular Buffer to the next element. In the head is the Data of the first Buffer
@@ -265,8 +268,8 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *that goes to the Application layer. Then it will move the Head to the Next element.
 *It should be put in the function that handles the filled buffers that comes from the DSP.
 */
-#define OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(_pBufHead_, _sCircular_)\
-{                                                           \
+#define OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(_pBufHead_, _sCircular_, _pPrivateData_) \
+do {                                                         \
     (_pBufHead_)->pMarkData = (_sCircular_).pHead->pMarkData;\
     (_pBufHead_)->hMarkTargetComponent = (_sCircular_).pHead->hMarkTargetComponent;\
     (_pBufHead_)->nTickCount = (_sCircular_).pHead->nTickCount;\
@@ -276,9 +279,9 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
     (_sCircular_).nFillElements--;                          \
     if(((_sCircular_).pTail == (_sCircular_).pHead) &&      \
        ((_sCircular_).nFillElements == 0)){                 \
-        OMX_TRACE("**Warning:Circular Buffer Empty.\n");      \
+        OMX_TRACE1((_pPrivateData_)->dbg, "**Note:Circular Buffer Empty.\n"); \
     }                                                       \
-}
+} while(0)
 
 /*
 *This Macro will delete a node from the Circular Buffer. It will rearrenge the conections
@@ -286,7 +289,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 *location and the nFillElement will be set to 0. It should be in the FreeBuffer call.
 */
 #define OMX_CONF_CIRCULAR_BUFFER_DELETE_NODE(_pPrivateData_, _sCircular_)\
-{                                                           \
+do {                                                        \
     OMX_CONF_CIRCULAR_BUFFER_NODE* pTmp1 = (_sCircular_).pHead;\
     OMX_CONF_CIRCULAR_BUFFER_NODE* pTmp2 = NULL;            \
     if(((_sCircular_).pHead != NULL) &&                     \
@@ -295,7 +298,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
             pTmp2 = pTmp1;                                  \
             pTmp1 = pTmp1->pNext;                           \
         }                                                   \
-        VIDENC_FREE(pTmp1,(_pPrivateData_)->pMemoryListHead);\
+        VIDENC_FREE(pTmp1,(_pPrivateData_)->pMemoryListHead, (_pPrivateData_)->dbg); \
         (_sCircular_).nElements--;                          \
         (_sCircular_).nFillElements = 0;                    \
         if(pTmp2 != NULL){                                  \
@@ -307,7 +310,7 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
             (_sCircular_).pTail = NULL;                     \
         }                                                   \
     }                                                       \
-}
+} while(0)
 
 /*
  * Checking for version compliance.
@@ -317,12 +320,14 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
 
 
 #define OMX_CONF_CHK_VERSION(_s_, _name_, _e_)              \
+do {                                                        \
     if((_s_)->nSize != sizeof(_name_)) _e_ = OMX_ErrorBadParameter; \
     if(((_s_)->nVersion.s.nVersionMajor != 0x1)||           \
        ((_s_)->nVersion.s.nVersionMinor != 0x0)||           \
        ((_s_)->nVersion.s.nRevision != 0x0)||               \
        ((_s_)->nVersion.s.nStep != 0x0)) _e_ = OMX_ErrorVersionMismatch;\
-    if(_e_ != OMX_ErrorNone) goto OMX_CONF_CMD_BAIL;
+    if(_e_ != OMX_ErrorNone) goto OMX_CONF_CMD_BAIL;        \
+} while(0)
 
 /* 
  * Initializes a data structure using a pointer to the structure.
@@ -330,16 +335,18 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
  *   of the structure.
  */
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
+do {                                            \
     (_s_)->nSize = sizeof(_name_);              \
     (_s_)->nVersion.s.nVersionMajor = 0x1;      \
     (_s_)->nVersion.s.nVersionMinor = 0x0;      \
     (_s_)->nVersion.s.nRevision     = 0x0;      \
-    (_s_)->nVersion.s.nStep         = 0x0    
+    (_s_)->nVersion.s.nStep         = 0x0;      \
+} while(0)
     
     
 /* Event Handler Macro*/
 #define OMX_VIDENC_EVENT_HANDLER(_hComponent_, _eEvent_, _nData1_, _nData2_, _pEventData_) \
-{                                                           \
+do {                                                        \
     if((_hComponent_)->bHideEvents != OMX_TRUE )            \
         (_hComponent_)->sCbData.EventHandler((_hComponent_)->pHandle, \
                                             (_hComponent_)->pHandle->pApplicationPrivate, \
@@ -348,42 +355,48 @@ OMX_BOOL iOMXComponentUsesFullAVCFrames;
                                             _nData2_,       \
                                             _pEventData_);  \
                                                             \
-        OMX_TRACE("EventHandler : %x : %x : %x \n", _eEvent_, _nData1_, _nData2_); \
+        OMX_PRINT1((_hComponent_)->dbg, "EventHandler : %lx : %lx : %lx \n", (OMX_U32) (_eEvent_), (OMX_U32) (_nData1_), (OMX_U32) (_nData2_)); \
                                                             \
-}                                        
+} while(0)
 
-#define VIDENC_MALLOC(_p_, _s_, _c_, _h_)                   \
+#define VIDENC_MALLOC(_p_, _s_, _c_, _h_, dbg)              \
+do {                                                        \
     _p_ = (_c_*)malloc(_s_);                                \
     if (_p_ == NULL) {                                      \
-        OMX_EPRINT("malloc() error.\n");                    \
+        OMX_TRACE4(dbg, "malloc() error.\n");               \
         eError = OMX_ErrorInsufficientResources;            \
         goto OMX_CONF_CMD_BAIL;                             \
     }                                                       \
     else {                                                  \
-        OMX_TRACE(": %d :malloc() -> %p\n", __LINE__, _p_); \
+        OMX_TRACE1(dbg, "malloc() -> %p\n", _p_); \
     }                                                       \
     memset((_p_), 0x0, _s_);                                \
     if ((_p_) == NULL) {                                    \
-        OMX_EPRINT("memset() error.\n");                    \
+        OMX_TRACE4(dbg, "memset() error.\n");               \
         eError = OMX_ErrorUndefined;                        \
         goto OMX_CONF_CMD_BAIL;                             \
     }                                                       \
-    eError = OMX_VIDENC_ListAdd(_h_, _p_);                  \
+    eError = OMX_VIDENC_ListAdd(&(dbg), _h_, _p_);          \
     if (eError == OMX_ErrorInsufficientResources) {         \
-        OMX_EPRINT("malloc() error.\n");                    \
+        OMX_TRACE4(dbg, "malloc() error.\n");               \
         goto OMX_CONF_CMD_BAIL;                             \
-    } 
+    }                                                       \
+} while(0)
     
-#define VIDENC_FREE(_p_, _h_)                               \
-    OMX_VIDENC_ListRemove(_h_, _p_);                        \
+#define VIDENC_FREE(_p_, _h_, dbg)                          \
+do {                                                        \
+    OMX_VIDENC_ListRemove((&dbg), _h_, _p_);                \
     _p_ = NULL;                                             \
+} while(0)
 
-typedef struct VIDENC_NODE {
+typedef struct VIDENC_NODE
+{
     OMX_PTR pData;
     struct VIDENC_NODE* pNext;
 }VIDENC_NODE;
     
-typedef enum VIDEOENC_PORT_INDEX {
+typedef enum VIDEOENC_PORT_INDEX
+{
     VIDENC_INPUT_PORT = 0x0,
     VIDENC_OUTPUT_PORT
 } VIDEOENC_PORT_INDEX;
@@ -395,7 +408,8 @@ typedef struct VIDENC_CUSTOM_DEFINITION
     OMX_INDEXTYPE nCustomIndex;
 } VIDENC_CUSTOM_DEFINITION;
 
-typedef struct OMX_CONF_CIRCULAR_BUFFER_NODE {
+typedef struct OMX_CONF_CIRCULAR_BUFFER_NODE
+{
     OMX_HANDLETYPE hMarkTargetComponent;
     OMX_PTR pMarkData;
     OMX_U32 nTickCount;
@@ -404,7 +418,8 @@ typedef struct OMX_CONF_CIRCULAR_BUFFER_NODE {
     struct OMX_CONF_CIRCULAR_BUFFER_NODE* pNext;
 } OMX_CONF_CIRCULAR_BUFFER_NODE;
 
-typedef struct OMX_CONF_CIRCULAR_BUFFER{
+typedef struct OMX_CONF_CIRCULAR_BUFFER
+{
     struct OMX_CONF_CIRCULAR_BUFFER_NODE* pHead;
     struct OMX_CONF_CIRCULAR_BUFFER_NODE* pTail;
     OMX_U8 nElements;
@@ -443,23 +458,28 @@ typedef enum VIDENC_CUSTOM_INDEX {
     VideoEncodeCustomConfigIndexIntra4x4EnableIdc,
     /*only for H264*/
     VideoEncodeCustomParamIndexEncodingPreset,
-	VideoEncodeCustomParamIndexNALFormat
+    VideoEncodeCustomParamIndexNALFormat,
+    /* debug config */
+    VideoEncodeCustomConfigIndexDebug
 } VIDENC_CUSTOM_INDEX;
 
-typedef enum VIDENC_BUFFER_OWNER {
+typedef enum VIDENC_BUFFER_OWNER
+{
     VIDENC_BUFFER_WITH_CLIENT = 0x0,
     VIDENC_BUFFER_WITH_COMPONENT,
     VIDENC_BUFFER_WITH_DSP,
     VIDENC_BUFFER_WITH_TUNNELEDCOMP 
 } VIDENC_BUFFER_OWNER;
 
-typedef enum VIDENC_AVC_NAL_FORMAT {
+typedef enum VIDENC_AVC_NAL_FORMAT
+{
 	VIDENC_AVC_NAL_UNIT = 0,	/*Default, one buffer per frame, no NAL mode*/
 	VIDENC_AVC_NAL_SLICE,		/*One NAL unit per buffer, one or more NAL units conforms a Frame*/
 	VIDENC_AVC_NAL_FRAME		/*One frame per buffer, one or more NAL units inside the buffer*/
 }VIDENC_AVC_NAL_FORMAT;
 
-typedef struct VIDENC_BUFFER_PRIVATE {
+typedef struct VIDENC_BUFFER_PRIVATE
+{
 	OMX_PTR pMetaData;/*pointer to metadata structure, this structure is used when MPEG4 segment mode is enabled  */
     OMX_BUFFERHEADERTYPE* pBufferHdr;
     OMX_PTR pUalgParam;
@@ -468,14 +488,16 @@ typedef struct VIDENC_BUFFER_PRIVATE {
     OMX_BOOL bReadFromPipe;
 } VIDENC_BUFFER_PRIVATE;
 
-typedef struct VIDENC_MPEG4_SEGMENTMODE_METADATA{
+typedef struct VIDENC_MPEG4_SEGMENTMODE_METADATA
+{
 	unsigned int mvDataSize;/*unsigned int*/
 	unsigned int numPackets;/*unsigned int*/
 	OMX_PTR pMVData;/*pointer to unsigned char MVData[3264]*/
 	OMX_PTR pResyncData;/*pointer to unsigned char ResyncData[5408]*/
 }VIDENC_MPEG4_SEGMENTMODE_METADATA;
 
-typedef struct VIDEOENC_PORT_TYPE {
+typedef struct VIDEOENC_PORT_TYPE
+{
     OMX_U32 nBufferCnt;
     OMX_U32 nTunnelPort;
     OMX_HANDLETYPE hTunnelComponent;
@@ -496,12 +518,14 @@ typedef struct VIDEOENC_PORT_TYPE {
 } VIDEOENC_PORT_TYPE;
 
 #ifndef KHRONOS_1_2
-    typedef enum OMX_EXTRADATATYPE {
+typedef enum OMX_EXTRADATATYPE
+{
 	    OMX_ExtraDataNone = 0,
         OMX_ExtraDataQuantization
     } OMX_EXTRADATATYPE;
 #endif
-typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2 {
+typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2
+{
 	OMX_U32 nSize;
 	OMX_VERSIONTYPE nVersion;
 	OMX_U32 nPortIndex;
@@ -516,7 +540,8 @@ typedef struct OMX_OTHER_EXTRADATATYPE_1_1_2 {
  * The VIDENC_COMPONENT_PRIVATE data structure is used to store component's 
  *                              private data.
  */
-typedef struct VIDENC_COMPONENT_PRIVATE{
+typedef struct VIDENC_COMPONENT_PRIVATE
+{
     OMX_PORT_PARAM_TYPE* pPortParamType;
     VIDEOENC_PORT_TYPE* pCompPort[VIDENC_NUM_OF_PORTS];
 #ifdef __KHRONOS_CONF_1_1__
@@ -629,7 +654,8 @@ typedef struct VIDENC_COMPONENT_PRIVATE{
 	#endif
 	OMX_BOOL bPreempted;
 	OMX_VIDEO_CODINGTYPE compressionFormats[3];
-	PV_OMXComponentCapabilityFlagsType* pCapabilityFlags;
+    struct OMX_TI_Debug dbg;
+    PV_OMXComponentCapabilityFlagsType* pCapabilityFlags;
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
@@ -679,13 +705,13 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources (OMX_IN VIDENC_COMPONENT_PRIVATE*
                                                    OMX_IN OMX_U32 nPortIndex);
 OMX_ERRORTYPE OMX_VIDENC_EmptyDataPipes (void* pThreadData);
 
-OMX_ERRORTYPE OMX_VIDENC_ListCreate(struct VIDENC_NODE** pListHead);
+OMX_ERRORTYPE OMX_VIDENC_ListCreate(struct OMX_TI_Debug *dbg, struct VIDENC_NODE** pListHead);
 
-OMX_ERRORTYPE OMX_VIDENC_ListAdd(struct VIDENC_NODE* pListHead, OMX_PTR pData);
+OMX_ERRORTYPE OMX_VIDENC_ListAdd(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead, OMX_PTR pData);
 
-OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct VIDENC_NODE* pListHead, OMX_PTR pData);
+OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead, OMX_PTR pData);
 
-OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct VIDENC_NODE* pListHead);
+OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct OMX_TI_Debug *dbg, struct VIDENC_NODE* pListHead);
 
 OMX_ERRORTYPE OMX_VIDENC_HandleError(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_ERRORTYPE eError);
 #ifdef RESOURCE_MANAGER_ENABLED

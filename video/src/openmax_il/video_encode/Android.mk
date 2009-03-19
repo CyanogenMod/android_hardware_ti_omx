@@ -5,7 +5,6 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
 LOCAL_SRC_FILES:= \
-	src/OMX_VideoEnc_Debug.c \
 	src/OMX_VideoEnc_Thread.c \
 	src/OMX_VideoEnc_Utils.c \
 	src/OMX_VideoEncoder.c
@@ -16,7 +15,7 @@ LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES)
 
 	
-LOCAL_CFLAGS := $(TI_OMX_CFLAGS) -DOMAP_2430 #-DOMX_DEBUG
+LOCAL_CFLAGS := $(TI_OMX_CFLAGS) -DOMAP_2430
 
 LOCAL_MODULE:= libOMX.TI.Video.encoder
 
