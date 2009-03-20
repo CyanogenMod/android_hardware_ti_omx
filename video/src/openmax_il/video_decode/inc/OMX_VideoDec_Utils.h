@@ -434,6 +434,11 @@ typedef enum VIDDEC_CUSTOM_PARAM_INDEX
  #endif
 #endif
     VideoDecodeCustomConfigDebug
+
+#ifdef ANDROID /*To be use by opencore multimedia framework*/
+    ,
+    PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX = 0xFF7A347
+#endif
 } VIDDEC_CUSTOM_PARAM_INDEX;
 
 typedef enum VIDDEC_LCML_STATES
@@ -836,6 +841,22 @@ typedef struct VIDDEC_SAVE_BUFFER{
     OMX_S32     nFilledLen;
 }VIDDEC_SAVE_BUFFER;
 
+#ifdef ANDROID 
+/** Opencore specific, refer to OpenMax Call Sequences document section 3.2 **/
+typedef struct PV_OMXComponentCapabilityFlagsType
+{
+    ////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS
+    OMX_BOOL iIsOMXComponentMultiThreaded;
+    OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+    OMX_BOOL iOMXComponentSupportsPartialFrames;
+    OMX_BOOL iOMXComponentUsesNALStartCodes;
+    OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+    OMX_BOOL iOMXComponentUsesFullAVCFrames;
+} PV_OMXComponentCapabilityFlagsType;
+#endif 
+
 /**
  * Data structure used to ...
  *
@@ -995,6 +1016,9 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U8* pCodecData; /* codec-specific data coming from the demuxer */
     OMX_U32 nCodecDataSize;
 	OMX_BOOL bVC1Fix;
+#ifdef ANDROID /* Specific flag for opencore mmframework */
+    PV_OMXComponentCapabilityFlagsType* pPVCapabilityFlags;
+#endif
     
     /* Used to handle config buffer fragmentation on AVC*/
     OMX_BOOL bConfigBufferCompleteAVC;
