@@ -126,7 +126,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
         }
 
         if (0 == status) {
-
+		printf("1\n");
         WMADEC_DPRINT("%d : bIsStopping = %d\n",__LINE__, pComponentPrivate->bIsStopping);
 
             if (pComponentPrivate->bIsStopping == 1)  {
@@ -157,7 +157,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
             WMADEC_DPRINT ("%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
         } 
         else if (-1 == status) {
-
+		printf("2\n");
             WMADEC_DPRINT ("%d :: Error in Select\n", __LINE__);
             
             pComponentPrivate->cbInfo.EventHandler ( pHandle,
@@ -170,7 +170,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
 
         } 
         else if (FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) {
-        
+        printf("3\n");
 
 
             WMADEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
@@ -187,7 +187,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
 
         }
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
-
+		printf("4\n");
             /* Do not accept any command when the component is stopping */
             WMADEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
 

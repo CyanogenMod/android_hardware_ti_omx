@@ -56,6 +56,9 @@
 
 #include <OMX_Component.h> 
 
+#include <utils/Log.h>
+#define LOG_TAG "omx_WMA"
+
 #ifdef UNDER_CE
 #ifndef _OMX_EVENT_
 #define _OMX_EVENT_
@@ -63,7 +66,7 @@ typedef struct OMX_Event {
         HANDLE event;
     } OMX_Event;	
 #endif
-	
+
 int OMX_CreateEvent(OMX_Event *event);
 int OMX_SignalEvent(OMX_Event *event);
 int OMX_WaitForEvent(OMX_Event *event);
@@ -82,6 +85,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #define ANDROID
+
 #define OBJECTTYPE_LC 2
 #define OBJECTTYPE_HE 5
 #define OBJECTTYPE_HE2 29
@@ -106,7 +110,8 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  *                                     
  */
 /* ======================================================================= */
-#define INPUT_WMADEC_BUFFER_SIZE 8192
+#define INPUT_WMADEC_BUFFER_SIZE 16384
+
 /* ======================================================================= */
 /**
  * @def    OUTPUT_WMADEC_BUFFER_SIZE   Default output buffer size          
@@ -118,16 +123,16 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    NUM_WMADEC_INPUT_BUFFERS   Default number of input buffers               
  */
 /* ======================================================================= */
-#define NUM_WMADEC_INPUT_BUFFERS 1
+#define NUM_WMADEC_INPUT_BUFFERS 2
 /* ======================================================================= */
 /**
  * @def    NUM_WMADEC_OUTPUT_BUFFERS   Default number of output buffers                                   
  */
 /* ======================================================================= */
 #ifdef UNDER_CE
-    #define NUM_WMADEC_OUTPUT_BUFFERS 2
+    #define NUM_WMADEC_OUTPUT_BUFFERS 4
 #else
-    #define NUM_WMADEC_OUTPUT_BUFFERS 1
+    #define NUM_WMADEC_OUTPUT_BUFFERS 4
 #endif
 /* ======================================================================= */
 /**
@@ -213,6 +218,21 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    WMADEC_DEFAULT_STREAMTYPE_DATA1   Default Stream Data Type values
  */
 /* ======================================================================= */
+//Macros for WMA
+#define GetUnalignedWord( pb, w ) \
+            (w) = ((OMX_U16) *(pb + 1) << 8) + *pb;
+
+#define GetUnalignedDword( pb, dw ) \
+            (dw) = ((OMX_U32) *(pb + 3) << 24) + \
+                   ((OMX_U32) *(pb + 2) << 16) + \
+                   ((OMX_U16) *(pb + 1) << 8) + *pb;
+
+#define GetUnalignedWordEx( pb, w )     GetUnalignedWord( pb, w ); (pb) += sizeof(OMX_U16);
+#define GetUnalignedDwordEx( pb, dw )   GetUnalignedDword( pb, dw ); (pb) += sizeof(OMX_U32);
+#define LoadWORD( w, p )    GetUnalignedWordEx( p, w )
+#define LoadDWORD( dw, p )  GetUnalignedDwordEx( p, dw )
+
+
 #define WMADEC_DEFAULT_STREAMTYPE_DATA1 -127295936 
 #define WMADEC_DEFAULT_STREAMTYPE_DATA2 23373
 #define WMADEC_DEFAULT_STREAMTYPE_DATA3 4559
@@ -308,7 +328,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    WMADEC_DEBUG   Turns debug messaging on and off
  */
 /* ======================================================================= */
-#undef WMADEC_DEBUG
+#define WMADEC_DEBUG
 /* ======================================================================= */
 /**
  * @def    WMADEC_MEMCHECK   Turns memory messaging on and off
@@ -347,7 +367,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  */
 /* ======================================================================= */
 #ifndef UNDER_CE
-        #define WMADEC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
+        #define WMADEC_EPRINT LOGE
 #else
         #define WMADEC_EPRINT		  printf
 #endif
@@ -358,7 +378,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* ======================================================================= */
 #ifndef UNDER_CE
 #ifdef  WMADEC_DEBUG
-        #define WMADEC_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
+        #define WMADEC_DPRINT(...)
 #else
         #define WMADEC_DPRINT(...)
 #endif
@@ -443,6 +463,29 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
 	}
+
+/* ======================================================================= */
+/**
+ *  W M A       T Y P E S
+ */
+/* ======================================================================= */
+
+
+#define WAVE_FORMAT_MSAUDIO1  0x0160
+#define WAVE_FORMAT_WMAUDIO2  0x0161
+#define WAVE_FORMAT_WMAUDIO3  0x0162
+#define WAVE_FORMAT_WMAUDIO_LOSSLESS  0x0163
+#define WAVE_FORMAT_WMAUDIO2_ES  0x0165
+#define WAVE_FORMAT_WMASPDIF 0x164
+#define WAVE_FORMAT_WMAUDIO3_ES  0x0166
+#define WAVE_FORMAT_WMAUDIO_LOSSLESS_ES  0x0167
+#define WAVE_FORMAT_MSSPEECH  10
+
+
+/* According with the ASF Specification:*/
+#define WAVE_FORMAT_MSAUDIO              0x0161  /*Versions 7,8 and 9 Series*/
+#define WAVE_FORMAT_MSAUDIO_9            0x0162  /* 9 series                 */
+#define WAVE_FORMAT_MSAUDIO_9_LOOSELESS  0x0163  /* 9 series                  */
 
 /* ======================================================================= */
 /** COMP_PORT_TYPE  Port types
@@ -554,30 +597,30 @@ typedef struct PV_OMXComponentCapabilityFlagsType
         OMX_BOOL iOMXComponentNeedsNALStartCode;
         OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
 } PV_OMXComponentCapabilityFlagsType;
-
-// this are the Data Fields for WMA RCA Header
-typedef struct StreamData{
-    OMX_U64 nDataPacketsCount;
-    OMX_U64 playDuration;
-    OMX_U32 nMaxDataPacketSize;
-
-    OMX_U64 temp;
-    OMX_U64 temp2;
-
-    OMX_U32 typeSpecificDataLength;
-    OMX_U16 StreamNumber;
-    OMX_U16 FormatTag;              //Format = 0x161 [Windows Media Audio]
-    OMX_U16 NumberOfChannels;
-    OMX_U32 nSamplesPerSecond;
-    OMX_U32 nAverageBytesPerSec;
-    OMX_U16 BlockAlignment;
-    OMX_U16 nBitsPerSample;
-    OMX_U16 notUsed;
-    OMX_U32 nSamplesPerBlock;
-    OMX_U16 EncodeOptions;
-    OMX_U32 notUsed2;
-}StreamData;
-
+/* =================================================================================== */
+/**
+*  RCA_HEADER. Rca data that goes to SN with each raw data packet received from test app.
+*/
+/* ================================================================================== */
+typedef struct RCA_HEADER
+{         
+    QWORD					iPackets;	
+    QWORD					iPlayDuration;
+    OMX_U32 				iMaxPacketSize; 
+    WMADECGUID				iStreamType;	
+    OMX_U32					iTypeSpecific;  
+    OMX_U16					iStreamNum;     
+    OMX_U16					iFormatTag;     
+    OMX_U16					iChannel;
+    OMX_U32					iSamplePerSec;  
+    OMX_U32					iAvgBytesPerSec;
+    OMX_U16					iBlockAlign;    
+    OMX_U16					iValidBitsPerSample;
+    OMX_U16					iNotUsed;
+    OMX_U32					iSamplesPerBlock;
+    OMX_U16					iEncodeOptV;
+    OMX_U32					iNotUsed2;    
+} RCA_HEADER;
 /* =================================================================================== */
 /**
 * Component private data
@@ -830,14 +873,17 @@ typedef struct WMADEC_COMPONENT_PRIVATE
 	OMX_U32 num_Reclaimed_Op_Buff;
     
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
-    OMX_BOOL reconfigInputPort;     /*Added by Enrique Zertuche */
-    OMX_BOOL reconfigOutputPort;    /*Added by Enrique Zertuche */
-    OMX_BOOL bConfigData;           /*Added by Enrique Zertuche */
+    OMX_BOOL reconfigInputPort;     
+    OMX_BOOL reconfigOutputPort;    
+    OMX_BOOL bConfigData;           
     
     OMX_AUDIO_PARAM_WMATYPE *wma_ip;
+    
     OMX_AUDIO_PARAM_PCMMODETYPE *wma_op;
-     
-    StreamData pStreamData;
+    	
+	OMX_U8 first_buffer;	
+	
+	RCA_HEADER *rcaheader;
         
 } WMADEC_COMPONENT_PRIVATE;
 /* ===========================================================  */
@@ -1218,7 +1264,7 @@ void* ComponentThread (void* pThreadData);
 /* ======================================================================= */
 /** OMX_WMADEC_INDEXAUDIOTYPE  Defines the custom configuration settings
 *                              for the component
-*
+*pHeaderInfo
 *  @param  OMX_IndexCustomWMADECModeDasfConfig      Sets the DASF mode
 *
 *  
@@ -1240,6 +1286,18 @@ typedef enum OMX_WMADEC_INDEXAUDIOTYPE {
 /*            and returns the value in a TUint value.                        */
 /*  =========================================================================*/
 OMX_U32 WMADEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition);
+
+/*  =========================================================================*/
+/*  func    WMADEC_Parser                                                    */
+/*                                                                           */
+/*  desc    Gets the info from the Buffer to build a RCA header              */
+/*            and returns the RCA Header filled with the data.               */
+/*@return OMX_ErrorNone = No error                                           */
+/*          OMX Error code = Error                                           */
+/*  =========================================================================*/
+OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData);
+
+
 
 #endif
 
