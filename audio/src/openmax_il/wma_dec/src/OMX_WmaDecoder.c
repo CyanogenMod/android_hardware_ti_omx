@@ -392,10 +392,8 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n", __LINE__);
 /* initialize role name */
     strcpy((char *) pComponentPrivate->componentRole.cRole, WMA_DEC_ROLE);
     /* Initialize device string to the default value */
-    printf("==================Before setting devices string========================\n");
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
-//	strcpy((char*)pComponentPrivate->sDeviceString,":il2:o11/codec\0");
-    printf("At inits device string is =%s\n",pComponentPrivate->sDeviceString);
+
     /* Removing sleep() calls. Initialization.*/
 #ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
@@ -409,6 +407,14 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n", __LINE__);
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    pComponentPrivate->codecStop_waitingsignal = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
 #else
     OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -1407,7 +1413,6 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     WMADEC_DPRINT("\n------------------------------------------\n\n");
 
     if (pComponentPrivate->bBypassDSP == 0) {
-        printf("inside if \n");
         pComponentPrivate->app_nBuf--;
     }
 
@@ -1589,7 +1594,6 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     }
 #endif    
     WMADEC_DPRINT ("%d ::ComponentDeInit\n",__LINE__);
-    pComponentPrivate->bIsStopping = 1;
     eError = WMADEC_StopComponentThread(pHandle);
     WMADEC_DPRINT ("%d ::ComponentDeInit\n",__LINE__);
     /* Wait for thread to exit so we can get the status into "error" */
@@ -1635,7 +1639,7 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
                                              OMX_U32 nTunneledPort,
                                              OMX_TUNNELSETUPTYPE* pTunnelSetup)
 {
-    printf("===========================Inside the ComponentTunnelRequest==============================\n");
+    WMADEC_DPRINT("===========================Inside the ComponentTunnelRequest==============================\n");
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     WMADEC_DPRINT (stderr, "Inside the ComponentTunnelRequest\n");
     eError = OMX_ErrorNotImplemented;
@@ -1662,7 +1666,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                    OMX_IN OMX_U32 nSizeBytes)
 
 {
-    printf ("====================================OMX_ERRORTYPE AllocateBuffer ()=======================\n");
+    WMADEC_DPRINT ("====================================OMX_ERRORTYPE AllocateBuffer ()=======================\n");
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -1691,11 +1695,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         }
         pComponentPrivate->AlloBuf_waitingsignal = 1;
 #ifndef UNDER_CE
-        printf("=======================================Before mutex 1==========================================\n");
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-        printf("=======================================After mutex 1==========================================\n");
 #else
         OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
 #endif
@@ -2016,9 +2018,9 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     }
 
     WMADEC_DPRINT("Line %d\n",__LINE__); 
-    printf("pPortDef->bPopulated =%d\n",pPortDef->bPopulated);
-    printf("nSizeBytes =%d\n",nSizeBytes);
-    printf("pPortDef->nBufferSize =%d\n",pPortDef->nBufferSize);
+    WMADEC_DPRINT("pPortDef->bPopulated =%d\n",pPortDef->bPopulated);
+    WMADEC_DPRINT("nSizeBytes =%d\n",nSizeBytes);
+    WMADEC_DPRINT("pPortDef->nBufferSize =%d\n",pPortDef->nBufferSize);
 
 #ifndef UNDER_CE
     if(pPortDef->bPopulated) {
@@ -2092,12 +2094,12 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     *ppBufferHdr = pBufferHeader;
     WMADEC_DPRINT("pBufferHeader = %p\n",pBufferHeader);
     if (pComponentPrivate->bEnableCommandPending){
-        printf("Sending command before exiting usbuffer\n");
+        WMADEC_DPRINT("Sending command before exiting usbuffer\n");
         SendCommand (pComponentPrivate->pHandle,
                      OMX_CommandPortEnable,
                      pComponentPrivate->bEnableCommandParam,NULL);
     }    
-printf("exiting Use buffer\n");	
+    WMADEC_DPRINT("exiting Use buffer\n");	
 EXIT:
     return eError;
 }

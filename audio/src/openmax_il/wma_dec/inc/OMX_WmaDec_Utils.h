@@ -328,7 +328,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    WMADEC_DEBUG   Turns debug messaging on and off
  */
 /* ======================================================================= */
-#define WMADEC_DEBUG
+#undef WMADEC_DEBUG
 /* ======================================================================= */
 /**
  * @def    WMADEC_MEMCHECK   Turns memory messaging on and off
@@ -378,7 +378,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* ======================================================================= */
 #ifndef UNDER_CE
 #ifdef  WMADEC_DEBUG
-        #define WMADEC_DPRINT(...)
+        #define WMADEC_DPRINT LOGI
 #else
         #define WMADEC_DPRINT(...)
 #endif
@@ -844,6 +844,14 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
+
+    pthread_mutex_t codecStop_mutex;    
+    pthread_cond_t codecStop_threshold;
+    OMX_U8 codecStop_waitingsignal;
+
+    pthread_mutex_t codecFlush_mutex;    
+    pthread_cond_t codecFlush_threshold;
+    OMX_U8 codecFlush_waitingsignal;
     
     OMX_U8 nUnhandledFillThisBuffers;
     OMX_U8 nUnhandledEmptyThisBuffers;
