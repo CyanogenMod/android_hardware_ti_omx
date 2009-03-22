@@ -126,29 +126,15 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
         }
 
         if (0 == status) {
-		printf("1\n");
-        WMADEC_DPRINT("%d : bIsStopping = %d\n",__LINE__, pComponentPrivate->bIsStopping);
-
+            WMADEC_DPRINT("%d : bIsStopping = %d\n",__LINE__, pComponentPrivate->bIsStopping);
             if (pComponentPrivate->bIsStopping == 1)  {
-
                 WMADEC_DPRINT("%d:WmaComponentThread \n",__LINE__);
-                /*if(eError != OMX_ErrorNone) {
-                   WMADEC_DPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
-                    break;
-                }*/
-				pComponentPrivate->bIsStopping = 0;
                 pComponentPrivate->lcml_nOpBuf = 0;
                 pComponentPrivate->lcml_nIpBuf = 0;
                 pComponentPrivate->app_nBuf = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
-
-                if (pComponentPrivate->curState != OMX_StateIdle) {
-                    goto EXIT;
-                }
-            
-                pComponentPrivate->bIsStopping = 0;
                 pComponentPrivate->bIsEOFSent = 0;
-                
+
                 if (pComponentPrivate->curState != OMX_StateIdle) {
                    WMADEC_DPRINT("%d:WmaComponentThread \n",__LINE__);
                     goto EXIT;
@@ -157,9 +143,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
             WMADEC_DPRINT ("%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
         } 
         else if (-1 == status) {
-		printf("2\n");
             WMADEC_DPRINT ("%d :: Error in Select\n", __LINE__);
-            
             pComponentPrivate->cbInfo.EventHandler ( pHandle,
                                                      pHandle->pApplicationPrivate,
                                                      OMX_EventError,
@@ -170,9 +154,6 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
 
         } 
         else if (FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) {
-        printf("3\n");
-
-
             WMADEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
@@ -187,16 +168,11 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
 
         }
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
-		printf("4\n");
             /* Do not accept any command when the component is stopping */
             WMADEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
-
-
             nRet = WMADECHandleCommand (pComponentPrivate);
-
             if (nRet == EXIT_COMPONENT_THRD) {
                 WMADEC_DPRINT ("Exiting from Component thread\n");
-
                 WMADEC_CleanupInitParams(pHandle);
                 if(eError != OMX_ErrorNone) {
                     WMADEC_DPRINT("%d :: Function Mp3Dec_FreeCompResources returned\
@@ -204,12 +180,12 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
                     goto EXIT;
                 }
                 WMADEC_DPRINT("%d :: ARM Side Resources Have Been Freed\n",__LINE__);
-
                 pComponentPrivate->curState = OMX_StateLoaded;
+
 #ifdef __PERF_INSTRUMENTATION__
-WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
-				PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
-#endif	
+                WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
+                PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
+#endif
                 pComponentPrivate->cbInfo.EventHandler( pHandle, 
                                                         pHandle->pApplicationPrivate,
                                                         OMX_EventCmdComplete,
@@ -241,7 +217,7 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
     }
 EXIT:
 #ifdef __PERF_INSTRUMENTATION__
-WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
+    WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
     WMADEC_DPRINT("%d::Exiting ComponentThread\n",__LINE__);
