@@ -2588,25 +2588,6 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
 #ifndef UNDER_CE       
 
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntIp = %d\n", pComponentPrivate->lcml_nCntIp);
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nIpBuf = %d\n", pComponentPrivate->lcml_nIpBuf);
-    MP3DEC_EPRINT("pComponentPrivate->num_Sent_Ip_Buff = %d\n", pComponentPrivate->num_Sent_Ip_Buff);
-    MP3DEC_EPRINT("pComponentPrivate->nNumInputBufPending = %d\n", pComponentPrivate->nNumInputBufPending);
-    MP3DEC_EPRINT("pComponentPrivate->nEmptyBufferDoneCount = %d\n", pComponentPrivate->nEmptyBufferDoneCount);
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntIpRes = %d\n", pComponentPrivate->lcml_nCntIpRes);
-
-
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nCntOp = %d\n", pComponentPrivate->lcml_nCntOp);
-    MP3DEC_EPRINT("pComponentPrivate->lcml_nOpBuf = %d\n", pComponentPrivate->lcml_nOpBuf);
-    MP3DEC_EPRINT("pComponentPrivate->num_Op_Issued = %d\n", pComponentPrivate->num_Op_Issued);
-    MP3DEC_EPRINT("pComponentPrivate->nNumOutputBufPending = %d\n", pComponentPrivate->nNumOutputBufPending);
-    MP3DEC_EPRINT("pComponentPrivate->nOutStandingFillDones = %d\n", pComponentPrivate->nOutStandingFillDones);
-    MP3DEC_EPRINT("pComponentPrivate->nFillBufferDoneCount = %d\n", pComponentPrivate->nFillBufferDoneCount);
-    MP3DEC_EPRINT("pComponentPrivate->app_nBuf = %d\n", pComponentPrivate->app_nBuf);
-    MP3DEC_EPRINT("pComponentPrivate->nLcml_nCntOpReceived = %d\n", pComponentPrivate->nLcml_nCntOpReceived);
-    MP3DEC_EPRINT("pComponentPrivate->num_Reclaimed_Op_Buff = %d\n", pComponentPrivate->num_Reclaimed_Op_Buff);
-    MP3DEC_EPRINT("pComponentPrivate->numPendingBuffers = %d\n", pComponentPrivate->numPendingBuffers);
-    MP3DEC_EPRINT("pComponentPrivate->nNumOutputBufPending = %d\n", pComponentPrivate->nNumOutputBufPending);
 ///incase any pending output buffers, clear them
     for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
         MP3DEC_DPRINT("pComponentPrivate->pInputBufferList->bBufferPending[%ld] = %ld\n",i,
