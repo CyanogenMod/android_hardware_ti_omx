@@ -84,7 +84,10 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+
+#ifndef ANDROID
 #define ANDROID
+#endif
 
 #define OBJECTTYPE_LC 2
 #define OBJECTTYPE_HE 5
