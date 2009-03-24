@@ -2908,6 +2908,14 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sInSemaphore);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sOutSemaphore);
 #endif
+    if(pComponentPrivate->pUalgParams != NULL){
+        OMX_U8* pTemp = NULL;
+        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+        pTemp -= VIDDEC_PADDING_HALF;
+        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
+        free(pComponentPrivate->pUalgParams);
+        pComponentPrivate->pUalgParams = NULL;
+    }
     if(pHandle->pComponentPrivate != NULL) {
         free(pHandle->pComponentPrivate);
         pHandle->pComponentPrivate = NULL;

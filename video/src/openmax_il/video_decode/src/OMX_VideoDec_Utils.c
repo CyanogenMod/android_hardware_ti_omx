@@ -2699,6 +2699,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 #endif
 #endif
                 if(pComponentPrivate->pUalgParams != NULL) {
+                    OMX_U8* pTemp = NULL;
+                    pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                    pTemp -= VIDDEC_PADDING_HALF;
+                    pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     free(pComponentPrivate->pUalgParams);
                     pComponentPrivate->pUalgParams = NULL;
                 }
@@ -5275,9 +5279,13 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             }
             if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_RCVSTREAM) {
                     if(pComponentPrivate->pUalgParams == NULL) {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams,
-                                          WMV9DEC_UALGInputParam,
-                                          pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams, WMV9DEC_UALGInputParam,
+                                sizeof(WMV9DEC_UALGInputParam) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
                     pBuffHead->nFlags  &= ~(OMX_BUFFERFLAG_CODECCONFIG);
                     if (pComponentPrivate->bIsNALBigEndian) {
@@ -5294,6 +5302,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     }
                     size_dsp = sizeof(WMV9DEC_UALGInputParam);
                     ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = ++pComponentPrivate->frameCounter;
+                    pUalgInpParams = pComponentPrivate->pUalgParams;
                     eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                                 pLcmlHandle)->pCodecinterfacehandle,
                                                 EMMCodecInputBuffer,
@@ -5569,6 +5578,31 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         pComponentPrivate->bFirstHeader = OMX_FALSE;
                         goto EXIT;
                     }
+                    else if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
+#ifdef ANDROID
+                        eError = VIDDEC_SaveBuffer(pComponentPrivate, pBuffHead);
+                        if(eError != OMX_ErrorNone){
+                            goto EXIT;
+                        }
+#endif
+
+                        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
+                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+#ifdef __PERF_INSTRUMENTATION__
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          pBuffHead->pBuffer,
+                                          pBuffHead->nFilledLen,
+                                          PERF_ModuleHLMM);
+#endif
+
+                        pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
+                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                  pBuffHead);
+                        goto EXIT;
+
+                    }
                     eError = OMX_ErrorNone;
             }
         }
@@ -5810,52 +5844,95 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             if(pComponentPrivate->iEndofInputSent == 0){
                 pComponentPrivate->iEndofInputSent = 1;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "Sending EOS Empty eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+                if(pComponentPrivate->pUalgParams != NULL){
+                    OMX_U8* pTemp = NULL;
+                    pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                    pTemp -= VIDDEC_PADDING_HALF;
+                    pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
+                    free(pComponentPrivate->pUalgParams);
+                    pComponentPrivate->pUalgParams = NULL;
+                }
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams, H264VDEC_UALGInputParam,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams,
+                                H264VDEC_UALGInputParam,
+                                sizeof(H264VDEC_UALGInputParam) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
-                        size_dsp = sizeof(H264VDEC_UALGInputParam);
-                        ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount = -1;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
-                            ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount);
+                    size_dsp = sizeof(H264VDEC_UALGInputParam);
+                    ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount = -1;
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
+                        ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount);
                 }
                 else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams, WMV9DEC_UALGInputParam,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams,
+                                WMV9DEC_UALGInputParam,
+                                sizeof(WMV9DEC_UALGInputParam) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
-                        size_dsp = sizeof(WMV9DEC_UALGInputParam);
-                        ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
-                            ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
+                    size_dsp = sizeof(WMV9DEC_UALGInputParam);
+                    ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
+                        ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
                 }
                 else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                          pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams, MP4VD_GPP_SN_UALGInputParams,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams,
+                                MP4VD_GPP_SN_UALGInputParams,
+                                sizeof(MP4VD_GPP_SN_UALGInputParams) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
-                        size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
-                        ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = -1;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
-                            ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount);
+                    size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
+                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = -1;
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
+                        ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount);
                 }
                 else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams, MP2VDEC_UALGInputParam,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams,
+                                MP2VDEC_UALGInputParam,
+                                sizeof(MP2VDEC_UALGInputParam) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
-                        size_dsp = sizeof(MP2VDEC_UALGInputParam);
-                        ((MP2VDEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
-                            ((MP2VDEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
+                    size_dsp = sizeof(MP2VDEC_UALGInputParam);
+                    ((MP2VDEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
+                        ((MP2VDEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
                 }
 #ifdef VIDDEC_SPARK_CODE
                 else if (VIDDEC_SPARKCHECK) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
-                        OMX_MALLOC_STRUCT(pComponentPrivate->pUalgParams, SPARKVD_GPP_SN_UALGInputParams,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        OMX_U8* pTemp = NULL;
+                        OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->pUalgParams,
+                                SPARKVD_GPP_SN_UALGInputParams,
+                                sizeof(SPARKVD_GPP_SN_UALGInputParams) + VIDDEC_PADDING_FULL,
+                                pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp += VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                     }
                     size_dsp = sizeof(SPARKVD_GPP_SN_UALGInputParams);
                     ((SPARKVD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
