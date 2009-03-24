@@ -129,10 +129,14 @@ WMADEC_DPRINT ("PERF%d :: OMX_WmaDec_ComponentThread.c\n",__LINE__);
             WMADEC_DPRINT("%d : bIsStopping = %d\n",__LINE__, pComponentPrivate->bIsStopping);
             if (pComponentPrivate->bIsStopping == 1)  {
                 WMADEC_DPRINT("%d:WmaComponentThread \n",__LINE__);
+				pComponentPrivate->bIsStopping = 0;
                 pComponentPrivate->lcml_nOpBuf = 0;
                 pComponentPrivate->lcml_nIpBuf = 0;
                 pComponentPrivate->app_nBuf = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
+                if (pComponentPrivate->curState != OMX_StateIdle) {
+                    goto EXIT;
+                }
                 pComponentPrivate->bIsEOFSent = 0;
 
                 if (pComponentPrivate->curState != OMX_StateIdle) {

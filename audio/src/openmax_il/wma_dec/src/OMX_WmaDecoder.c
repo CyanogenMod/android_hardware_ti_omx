@@ -251,7 +251,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     WMAD_OMX_MALLOC(wma_op, OMX_AUDIO_PARAM_PCMMODETYPE);
 
     ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[INPUT_PORT] = wma_ip;
-    ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[OUTPUT_PORT] = (OMX_HANDLETYPE)wma_op;
+    ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[OUTPUT_PORT] = (OMX_AUDIO_PARAM_WMATYPE*)wma_op;
 
     WMADEC_DPRINT("%d Malloced wmaParams[INPUT_PORT] = 0x%x\n",__LINE__,((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[INPUT_PORT]);
     WMADEC_DPRINT("%d Malloced wmaParams[OUTPUT_PORT] = 0x%x\n",__LINE__,((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[OUTPUT_PORT]);
@@ -1594,6 +1594,7 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     }
 #endif    
     WMADEC_DPRINT ("%d ::ComponentDeInit\n",__LINE__);
+    pComponentPrivate->bIsStopping = 1;
     eError = WMADEC_StopComponentThread(pHandle);
     WMADEC_DPRINT ("%d ::ComponentDeInit\n",__LINE__);
     /* Wait for thread to exit so we can get the status into "error" */
@@ -1920,6 +1921,7 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
             }
             if(pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled && 
                 pComponentPrivate->bLoadedCommandPending == OMX_FALSE &&
+               !pComponentPrivate->reconfigOutputPort &&
                 (pComponentPrivate->curState == OMX_StateIdle || 
                 pComponentPrivate->curState == OMX_StateExecuting || 
                 pComponentPrivate->curState == OMX_StatePause)) {
@@ -2007,6 +2009,12 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
 
     pPortDef = ((WMADEC_COMPONENT_PRIVATE*) 
                     pComponentPrivate)->pPortDef[nPortIndex];
+    if(!pPortDef->bEnabled){
+        pComponentPrivate->AlloBuf_waitingsignal = 1;   
+        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+        pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
+        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+    }
     WMADEC_DPRINT ("%d :: pPortDef = 0x%x\n", __LINE__,pPortDef);
     WMADEC_DPRINT ("%d :: pPortDef->bEnabled = %d\n", __LINE__,pPortDef->bEnabled);
 
@@ -2093,7 +2101,7 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     WMADEC_DPRINT("Line %d\n",__LINE__); 
     *ppBufferHdr = pBufferHeader;
     WMADEC_DPRINT("pBufferHeader = %p\n",pBufferHeader);
-    if (pComponentPrivate->bEnableCommandPending){
+    if (pComponentPrivate->bEnableCommandPending && pPortDef->bPopulated){
         WMADEC_DPRINT("Sending command before exiting usbuffer\n");
         SendCommand (pComponentPrivate->pHandle,
                      OMX_CommandPortEnable,
