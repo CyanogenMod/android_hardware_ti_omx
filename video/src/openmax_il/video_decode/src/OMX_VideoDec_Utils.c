@@ -1086,7 +1086,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 #ifdef ANDROID
             /*Set PV (opencore) capability flags*/
             pComponentPrivate->pPVCapabilityFlags->iIsOMXComponentMultiThreaded = OMX_TRUE;
-            pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
+            pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE;
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsMovableInputBuffers = OMX_FALSE;
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentUsesNALStartCodes = OMX_TRUE;
