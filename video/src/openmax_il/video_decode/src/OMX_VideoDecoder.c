@@ -1391,14 +1391,9 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 #ifdef ANDROID
         /* Opencore specific */
         case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX: /** Obtain the capabilities of the OMX component **/
-            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 memcpy(ComponentParameterStructure, pComponentPrivate->pPVCapabilityFlags, 
                         sizeof(PV_OMXComponentCapabilityFlagsType));
                 eError = OMX_ErrorNone;
-            }
-            else{
-                eError = OMX_ErrorUnsupportedIndex;
-            }
             break;
 #endif
         default:
