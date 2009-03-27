@@ -68,8 +68,8 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
    OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
 #ifdef RESOURCE_MANAGER_ENABLED
         /*resolution for greater than CIF*/
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > VIDDEC_CIF_WIDTH) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > VIDDEC_CIF_HEIGHT)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_CIF_WIDTH) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_CIF_HEIGHT)) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 nReturnValue = VIDDEC_RM_FREC_H264_VGA;
             }
@@ -77,8 +77,8 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 nReturnValue = VIDDEC_RM_FREC_WMV_VGA;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-                if ((OMX_U16)pComponentPrivate->pOutPortDef->format.video.nFrameHeight > VIDDEC_D1MAX_HEIGHT ||
-                    (OMX_U16)pComponentPrivate->pOutPortDef->format.video.nFrameWidth > VIDDEC_D1MAX_WIDTH)
+                if ((OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_D1MAX_HEIGHT ||
+                    (OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_D1MAX_WIDTH)
                 {
                     nReturnValue = VIDDEC_RM_FREC_MPEG4_720P;
                 }
@@ -103,10 +103,10 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             }
         }
         /*resolution from QCIF up to CIF*/
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= VIDDEC_CIF_WIDTH) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > VIDDEC_QCIF_WIDTH)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= VIDDEC_CIF_HEIGHT) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > VIDDEC_QCIF_HEIGHT))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= VIDDEC_CIF_WIDTH) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_QCIF_WIDTH)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= VIDDEC_CIF_HEIGHT) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_QCIF_HEIGHT))) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 nReturnValue = VIDDEC_RM_FREC_H264_CIF;
             }
@@ -132,10 +132,10 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             }
         }
         /*resolution up to QCIF*/
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= VIDDEC_QCIF_WIDTH) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= VIDDEC_MIN_WIDTH)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= VIDDEC_QCIF_HEIGHT) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= VIDDEC_MIN_HEIGHT))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= VIDDEC_QCIF_WIDTH) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= VIDDEC_MIN_WIDTH)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= VIDDEC_QCIF_HEIGHT) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_HEIGHT))) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 nReturnValue = VIDDEC_RM_FREC_H264_QCIF;
             }
@@ -4619,6 +4619,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
         nConfigBufferCounter += VIDDEC_ScanConfigBufferAVC(pBuffHead, 0x000001);
         if(nConfigBufferCounter < 2){ /*If less of 2 we need to store the data internally to later assembly the complete ConfigBuffer*/
             /*Set flag to False, the Config Buffer is not complete */
+            OMX_PRINT2(pComponentPrivate->dbg, "Setting bConfigBufferCompleteAVC = OMX_FALSE");
             pComponentPrivate->bConfigBufferCompleteAVC = OMX_FALSE;
             /* Malloc Buffer if is not created yet, use Port  buffer size*/
             if(pComponentPrivate->pInternalConfigBufferAVC == NULL){
@@ -4649,6 +4650,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
             goto EXIT;
         }
         else{  /* We have all the requiered data*/
+             OMX_PRINT2(pComponentPrivate->dbg, "Setting bConfigBufferCompleteAVC = OMX_TRUE");
              pComponentPrivate->bConfigBufferCompleteAVC = OMX_TRUE;
              /* If we have already Config data of previous buffer, we assembly the final ConfigBuffer*/
              if(pComponentPrivate->pInternalConfigBufferAVC != NULL){
@@ -4997,11 +4999,15 @@ OMX_S32 VIDDEC_UVLC_dec(OMX_U32 *nPosition, OMX_U8* pBuffer)
 /* ========================================================================== */
 OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorBadParameter;
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_S32 nWidth = 0;
     OMX_S32 nHeight = 0;
+    OMX_S32 nPadWidth = 0;
+    OMX_S32 nPadHeight = 0;
     OMX_S32 nCropWidth = 0;
     OMX_S32 nCropHeight = 0;
+    OMX_S32 nCroppedWidth = 0;
+    OMX_S32 nCroppedHeight = 0;
 
     OMX_U32 nOutMinBufferSize = 0;
     OMX_BOOL bInPortSettingsChanged = OMX_FALSE;
@@ -5018,11 +5024,13 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     /*Get output port allocated buffer size*/
     nOutPortActualAllocLen =  pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[0]->pBufferHdr->nAllocLen;
 
-    if( (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) ||
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV ||
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2 ||
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+    OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %x, Original resolution IN %dx%d : OUT %dx%d\n",
+            (unsigned int)pBuffHead,
+            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
+            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,
+            (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
+            (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+
 
         if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
             eError = VIDDEC_ParseVideo_H264( pComponentPrivate, pBuffHead, &nWidth, &nHeight,
@@ -5042,38 +5050,13 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 goto EXIT;
             }
             /*End Code to handle fragmentation of ConfigBuffer for AVC*/
-            
-            OMX_PRINT2(pComponentPrivate->dbg, " %x C(%d-%d) I(%d-%d) - %x \n", (unsigned int)pBuffHead, (unsigned int)nWidth,
-                (unsigned int)nHeight, (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-                (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,eError);
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4  ||
-            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-            if(( pComponentPrivate->pInPortDef->format.video.nFrameWidth != 864 ||
-                pComponentPrivate->pInPortDef->format.video.nFrameHeight != 864)) {
-                VIDDEC_ParseVideo_MPEG4( &nWidth, &nHeight, pBuffHead);
-            }
-            else {
-                nWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
-                nHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-                if (pComponentPrivate->pInPortDef->format.video.nFrameWidth == 864) {
-                    pComponentPrivate->pInPortDef->format.video.nFrameWidth = 854;
-                    nWidth = 854;
-                }
-                if (pComponentPrivate->pInPortDef->format.video.nFrameHeight == 864) {
-                    pComponentPrivate->pInPortDef->format.video.nFrameHeight = 854;
-                    nHeight = 854;
-                }
-            }
-            OMX_PRINT2(pComponentPrivate->dbg, " %x C(%d-%d) I(%d-%d) - %x \n", (unsigned int)pBuffHead, (unsigned int)nWidth,
-            (unsigned int)nHeight, (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,eError);
+                pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+            VIDDEC_ParseVideo_MPEG4( &nWidth, &nHeight, pBuffHead);
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
             VIDDEC_ParseVideo_MPEG2( &nWidth, &nHeight, pBuffHead);
-            OMX_PRINT2(pComponentPrivate->dbg, " %x C(%d-%d) I(%d-%d) - %x \n", (unsigned int)pBuffHead, (unsigned int)nWidth,
-            (unsigned int)nHeight, (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,eError);
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
             if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM) {
@@ -5082,28 +5065,31 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             else {
                 eError = VIDDEC_ParseVideo_WMV9_RCV( &nWidth, &nHeight, pBuffHead);
             }
-            OMX_PRINT2(pComponentPrivate->dbg, " %x C(%d-%d) I(%d-%d) - %x \n", (unsigned int)pBuffHead, (unsigned int)nWidth,
-            (unsigned int)nHeight, (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,eError);
         }
 
-
-        /*Verify correct values in the initial setup*/
-
-        /*Get minimum output buffer size & verify if the actual allocated size is enough*/
-        if (pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420){
-            nOutMinBufferSize = nWidth*nHeight*VIDDEC_FACTORFORMAT420;
+        nPadWidth = nWidth;
+        nPadHeight = nHeight;
+        if((nPadWidth%16) != 0){
+            nPadWidth += 16-(nPadWidth%16);
         }
-        else{
-            nOutMinBufferSize = nWidth*nHeight*VIDDEC_FACTORFORMAT422;
+        if((nPadHeight%16) != 0){
+            nPadHeight += 16-(nPadHeight%16);
         }
 
-        if(nOutPortActualAllocLen < nOutMinBufferSize){
-            pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
-            bOutPortSettingsChanged = OMX_TRUE;
+        /*TODO: Test Croped MPEG4*/
+
+        if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
+            if(nPadWidth == 864){
+                nPadWidth = 854;
+            }
+            if(nPadHeight == 864){
+                nPadHeight = 864;
+            }
         }
 
         /*TODO: Get minimum INPUT buffer size & verify if the actual size is enough*/
+        /*Verify correct values in the initial setup*/
 
         /*Verify if actual width & height parameters are correct*/
         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth != nWidth ||
@@ -5120,20 +5106,79 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 eError = OMX_ErrorBadParameter;
                 goto EXIT;
             }
-            pComponentPrivate->pInPortDef->format.video.nFrameWidth = nWidth;
-            pComponentPrivate->pInPortDef->format.video.nFrameHeight = nHeight;
-#ifndef ANDROID
+            pComponentPrivate->pInPortDef->format.video.nFrameWidth = nPadWidth;
+            pComponentPrivate->pInPortDef->format.video.nFrameHeight = nPadHeight;
+#ifdef ANDROID
+            /*Force reload the component to configure create face args (SN)*/
+            bOutPortSettingsChanged = OMX_TRUE;
+            OMX_PRINT1(pComponentPrivate->dbg, "Input port setting change, Force reload component !!!!!!\n");
+#else
             /*OpenCORE doesn't support dynamic input port configuration*/
             bInPortSettingsChanged = OMX_TRUE;
 #endif
         }
-        if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
-            pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
+       
+        if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingAVC &&
+            pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingMPEG4 &&
+            pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingH263){
+            if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
 
-            pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nWidth;
-            pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nHeight;
-            bOutPortSettingsChanged = OMX_TRUE;
+                pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nPadWidth;
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nPadHeight;
+                bOutPortSettingsChanged = OMX_TRUE;
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: default new: %dx%d\n", nPadWidth, nPadHeight);
+            }
         }
+        else if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
+            if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
+
+                pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nWidth;
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nHeight;
+                bOutPortSettingsChanged = OMX_TRUE;
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: new MPEG4: %dx%d\n", nWidth, nHeight);
+            }
+        }
+        else{ /*OMX_VIDEO_CodingAVC*/
+            /* nCroppedWidth & nCroppedHeight indicate the resultant o/p resolution */
+            if((nWidth%16) != 0){
+                nWidth += 16-(nWidth%16);
+            }
+            if((nHeight%16) != 0){
+                nHeight += 16-(nHeight%16);
+            }
+            nCroppedWidth = nWidth - nCropWidth;
+            nCroppedHeight = nHeight - nCropHeight;
+            if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nCroppedWidth ||
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nCroppedHeight) {
+
+                pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nCroppedWidth;
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nCroppedHeight;
+                bOutPortSettingsChanged = OMX_TRUE;
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: AVC new: %dx%d \n", nCroppedWidth, nCroppedHeight);
+            }
+        }
+
+        /*Get minimum OUTPUT buffer size & verify if the actual allocated size is enough*/
+        nOutMinBufferSize = pComponentPrivate->pOutPortDef->format.video.nFrameWidth *
+                            pComponentPrivate->pOutPortDef->format.video.nFrameHeight *
+                            ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
+
+        if(nOutPortActualAllocLen < nOutMinBufferSize){
+            pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
+            bOutPortSettingsChanged = OMX_TRUE;
+            OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%x \n", nOutMinBufferSize);
+        }
+
+
+        OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %x, Resolution after parser: IN %dx%d : OUT %dx%d\n",
+                (unsigned int)pBuffHead,
+                (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
+                (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,
+                (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
+                (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
 
         pComponentPrivate->bInPortSettingsChanged |= bInPortSettingsChanged;
         pComponentPrivate->bOutPortSettingsChanged |= bOutPortSettingsChanged;
@@ -5186,10 +5231,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         else {
             eError = OMX_ErrorNone;
         }
-    }
-    else {
-        eError = OMX_ErrorNone;
-    }
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "OUT\n");
     return eError;
@@ -5576,32 +5617,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         pComponentPrivate->bConfigBufferCompleteAVC == FALSE){
                         /* Set bFirstHeader flag to false so next buffer enters to ParseHeade again*/
                         pComponentPrivate->bFirstHeader = OMX_FALSE;
+                        OMX_PRINT1(pComponentPrivate->dbg, "AVC: bConfigBufferCompleateAVC == FALSE!");
                         goto EXIT;
-                    }
-                    else if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
-#ifdef ANDROID
-                        eError = VIDDEC_SaveBuffer(pComponentPrivate, pBuffHead);
-                        if(eError != OMX_ErrorNone){
-                            goto EXIT;
-                        }
-#endif
-
-                        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleHLMM);
-#endif
-
-                        pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                  pBuffHead);
-                        goto EXIT;
-
                     }
                     eError = OMX_ErrorNone;
             }
@@ -6300,6 +6317,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferSize fromDSP %lu \n",pBuffHead->nAllocLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocLen: 0x%x, FilledLen: 0x%x\n", pBuffHead->nAllocLen, pBuffHead->nFilledLen);
     OMX_PRSTATE1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
     if(pBuffHead != NULL) {
         OMX_S32 nErrorCode = 0;
@@ -6696,26 +6714,26 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     if(pComponentPrivate->ProcessMode == 0){
         if(pComponentPrivate->wmvProfile == VIDDEC_WMV_PROFILEMAX)
         {
-            if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 640) ||
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 480)) {
+            if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 640) ||
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 480)) {
                 lcml_dsp->ProfileID = 4;
             }
-            else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 640) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352)) ||
-                ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 480) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288))) {
+            else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 640) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352)) ||
+                ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 480) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288))) {
                 lcml_dsp->ProfileID = 2;
             }
-            else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-                ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+            else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+                ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
                 lcml_dsp->ProfileID = 1;
             }
-            else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-                ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-                (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+            else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+                ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
                 lcml_dsp->ProfileID = 0;
             }
             else {
@@ -6791,12 +6809,12 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)nOutBuff;
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth);
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
+    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
 
     if (pComponentPrivate->nWMVFileType != VIDDEC_WMV_ELEMSTREAM) {
-        pComponentPrivate->pBufferRCV.sStructRCV.nVertSize = (OMX_U32)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
-        pComponentPrivate->pBufferRCV.sStructRCV.nHorizSize = (OMX_U32)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth);
+        pComponentPrivate->pBufferRCV.sStructRCV.nVertSize = (OMX_U32)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
+        pComponentPrivate->pBufferRCV.sStructRCV.nHorizSize = (OMX_U32)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
     }
 
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
@@ -6925,20 +6943,20 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     lcml_dsp->Priority  = 5;
 
    if(pComponentPrivate->ProcessMode == 0){
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288)) {
             lcml_dsp->ProfileID = 3;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -6988,8 +7006,8 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)nOutBuff;
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth);
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
+    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
 
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
         pCreatePhaseArgs->ulYUVFormat           = H264VIDDEC_YUVFORMAT_INTERLEAVED422;
@@ -7157,8 +7175,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)(pComponentPrivate->pOutPortDef->nBufferCountActual);
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16) nFrameWidth;
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16) nFrameHeight;
+    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
+    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
+
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
         pCreatePhaseArgs->ulYUVFormat           = MP4VIDDEC_YUVFORMAT_INTERLEAVED422;
     }
@@ -7286,20 +7305,20 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg2Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     lcml_dsp->Priority  = 5;
 
     if(pComponentPrivate->ProcessMode == 0){
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288)) {
             lcml_dsp->ProfileID = 3;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -7308,20 +7327,20 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg2Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
         }
     }
     else if(pComponentPrivate->ProcessMode == 1) {
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288)) {
             lcml_dsp->ProfileID = 3;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -7342,8 +7361,8 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg2Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)(pComponentPrivate->pOutPortDef->nBufferCountActual);
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth);
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
+    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
 
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
         pCreatePhaseArgs->ulYUVFormat           = MP2VIDDEC_YUVFORMAT_INTERLEAVED422;
@@ -7463,26 +7482,26 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
 
 
     if(pComponentPrivate->ProcessMode == 0){
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 640) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 480)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 640) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 480)) {
             lcml_dsp->ProfileID = 4;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 640) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 480) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 640) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 480) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288))) {
             lcml_dsp->ProfileID = 3;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -7491,26 +7510,26 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
         }
     }
     else if(pComponentPrivate->ProcessMode == 1) {
-        if ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 640) ||
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 480)) {
+        if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 640) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 480)) {
             lcml_dsp->ProfileID = 4;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 640) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 352)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 480) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 288))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 640) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 352)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 480) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 288))) {
             lcml_dsp->ProfileID = 3;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 352) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 176)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 288) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 144))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 352) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > 176)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 288) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > 144))) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth >= 16)) ||
-            ((OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight >= 16))) {
+        else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -7531,8 +7550,8 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)(pComponentPrivate->pOutPortDef->nBufferCountActual);
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameWidth);
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
+    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
 
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
         pCreatePhaseArgs->ulYUVFormat           = SPARKVIDDEC_YUVFORMAT_INTERLEAVED422;
