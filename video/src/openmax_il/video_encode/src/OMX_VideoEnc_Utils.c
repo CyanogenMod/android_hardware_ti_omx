@@ -3591,9 +3591,9 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
         }
 
-        pCreatePhaseArgs->enableH263AnnexI  = 1;
-        pCreatePhaseArgs->enableH263AnnexJ  = 1;
-        pCreatePhaseArgs->enableH263AnnexT  = 1;
+        pCreatePhaseArgs->enableH263AnnexI  = 0;
+        pCreatePhaseArgs->enableH263AnnexJ  = 0;
+        pCreatePhaseArgs->enableH263AnnexT  = 0;
     }
     pCreatePhaseArgs->ulMaxDelay              = 300;
 	#ifndef MODE_3410
