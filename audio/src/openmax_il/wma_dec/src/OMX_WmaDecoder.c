@@ -207,7 +207,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_AUDIO_PARAM_WMATYPE *wma_ip = NULL; 
     OMX_AUDIO_PARAM_PCMMODETYPE *wma_op = NULL;
     
-
+      
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     int i;
@@ -250,6 +250,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     WMAD_OMX_MALLOC(wma_ip, OMX_AUDIO_PARAM_WMATYPE);
     WMAD_OMX_MALLOC(wma_op, OMX_AUDIO_PARAM_PCMMODETYPE);
 
+    
+    ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wma_op=wma_op;
+   
     ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[INPUT_PORT] = wma_ip;
     ((WMADEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->wmaParams[OUTPUT_PORT] = (OMX_AUDIO_PARAM_WMATYPE*)wma_op;
 
@@ -315,7 +318,7 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n", __LINE__);
     pComponentPrivate->pHeaderInfo->iSamplePerBlock         =   8704;
     
 
-    pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data, need to use bufferFlag instead */
+    pComponentPrivate->bConfigData = 0;  /* assume the first buffer received will contain only config data, need to use bufferFlag instead */
     pComponentPrivate->reconfigInputPort = 0; 
     pComponentPrivate->reconfigOutputPort = 0;
      
@@ -781,7 +784,7 @@ EXIT:
   *         OMX_Error_BadParameter   The input parameter pointer is null
   **/
 /*-------------------------------------------------------------------*/
-
+FILE *fp1, *fp2;
 static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
@@ -908,10 +911,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             }
         break;
         case OMX_IndexParamAudioPcm:
-            memcpy(ComponentParameterStructure, 
-                                   pComponentPrivate->wmaParams[OUTPUT_PORT], 
-                                   sizeof(OMX_AUDIO_PARAM_PCMMODETYPE)
-                      );
+                memcpy(ComponentParameterStructure, 
+                                       (OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->wma_op, 
+                                       sizeof(OMX_AUDIO_PARAM_PCMMODETYPE)
+                          );                    
             break;
             
         case OMX_IndexParamCompBufferSupplier:
@@ -1120,7 +1123,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         case OMX_IndexParamAudioPcm:
         if(pCompParam){
                  wma_op = (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
-                 memcpy(pComponentPrivate->wmaParams[OUTPUT_PORT], pComponentPrivate->wma_op, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
+                 memcpy(pComponentPrivate->wma_op, wma_op, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         }
         else{
             eError = OMX_ErrorBadParameter;
@@ -1128,15 +1131,13 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
 
         case OMX_IndexParamCompBufferSupplier:
-            /*eError = OMX_ErrorBadPortIndex; */ /*remove for StdAudioDecoderTest, leave for other tests*/
-                            if(((OMX_PARAM_PORTDEFINITIONTYPE *)(pCompParam))->nPortIndex ==
-                                    pComponentPrivate->pPortDef[INPUT_PORT]->nPortIndex) {
-                    WMADEC_DPRINT(":: SetParameter OMX_IndexParamCompBufferSupplier \n");
-                                   sBufferSupplier.eBufferSupplier = OMX_BufferSupplyInput;
-                                   memcpy(&sBufferSupplier, pCompParam, sizeof(OMX_PARAM_BUFFERSUPPLIERTYPE));								   
-                    
-                }
-                else if(((OMX_PARAM_PORTDEFINITIONTYPE *)(pCompParam))->nPortIndex ==
+            if(((OMX_PARAM_PORTDEFINITIONTYPE *)(pCompParam))->nPortIndex ==
+                 pComponentPrivate->pPortDef[INPUT_PORT]->nPortIndex) {
+                 WMADEC_DPRINT(":: SetParameter OMX_IndexParamCompBufferSupplier \n");
+                 sBufferSupplier.eBufferSupplier = OMX_BufferSupplyInput;
+                 memcpy(&sBufferSupplier, pCompParam, sizeof(OMX_PARAM_BUFFERSUPPLIERTYPE));								   
+            }
+            else if(((OMX_PARAM_PORTDEFINITIONTYPE *)(pCompParam))->nPortIndex ==
                                   pComponentPrivate->pPortDef[OUTPUT_PORT]->nPortIndex) {
                     WMADEC_DPRINT(":: SetParameter OMX_IndexParamCompBufferSupplier \n");
                     sBufferSupplier.eBufferSupplier = OMX_BufferSupplyOutput;
@@ -1690,10 +1691,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     WMADEC_DPRINT ("%d :: pPortDef->bEnabled = %d\n", __LINE__,pPortDef->bEnabled);
 
     WMADEC_DPRINT ("pPortDef->bEnabled = %d\n", pPortDef->bEnabled);
-    while (1) {
-        if(pPortDef->bEnabled) {
-            break;
-        }
+
+    if(!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
 #ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
@@ -1702,8 +1701,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #else
         OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
 #endif
-        break;
+
     }
+
     WMAD_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
 
     memset(pBufferHeader, 0x0, sizeof(OMX_BUFFERHEADERTYPE));
@@ -1879,11 +1879,13 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
             WMADEC_MEMPRINT("%d:[FREE] %p\n",__LINE__,pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
             OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
             pComponentPrivate->pInputBufferList->numBuffers--;
+            
             if (pComponentPrivate->pInputBufferList->numBuffers < 
                 pComponentPrivate->pPortDef[INPUT_PORT]->nBufferCountMin) {
     
                 pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated = OMX_FALSE;
             }
+            
             if(pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled && 
           pComponentPrivate->bLoadedCommandPending == OMX_FALSE &&
                 (pComponentPrivate->curState == OMX_StateIdle || 
@@ -1950,8 +1952,8 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
 #endif           
         }
 
-        /* Removing sleep() calls.  There are no allocated buffers. */		
-        
+        /* Removing sleep() calls.  There are no allocated buffers. */
+#if 0
         if (pComponentPrivate->bDisableCommandPending && 
                 (pComponentPrivate->pInputBufferList->numBuffers + 
                 pComponentPrivate->pOutputBufferList->numBuffers == 0)) {
@@ -1961,6 +1963,32 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
                         pComponentPrivate->bDisableCommandParam,NULL);
                 }
         }
+#else
+        if (pComponentPrivate->bDisableCommandPending && 
+           (pComponentPrivate->pInputBufferList->numBuffers == 0)) {
+           pComponentPrivate->bDisableCommandPending = OMX_FALSE;
+           pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle,
+                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete,
+                                                   OMX_CommandPortDisable,
+                                                   INPUT_PORT,
+                                                   NULL);
+
+        }
+        if (pComponentPrivate->bDisableCommandPending && 
+           (pComponentPrivate->pOutputBufferList->numBuffers == 0)) {
+           pComponentPrivate->bDisableCommandPending = OMX_FALSE;
+           pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle,
+                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete,
+                                                   OMX_CommandPortDisable,
+                                                   OUTPUT_PORT,
+                                                   NULL);
+
+        }
+
+#endif
+
     WMADEC_DPRINT ("%d :: Exiting FreeBuffer\n", __LINE__);
     return eError;
 }
@@ -2010,8 +2038,9 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
     pPortDef = ((WMADEC_COMPONENT_PRIVATE*) 
                     pComponentPrivate)->pPortDef[nPortIndex];
     if(!pPortDef->bEnabled){
-        pComponentPrivate->AlloBuf_waitingsignal = 1;   
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+        pComponentPrivate->AlloBuf_waitingsignal = 1;
+        //wait for the port to be enabled before we accept buffers
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
     }
@@ -2036,13 +2065,7 @@ WMADEC_DPRINT ("PERF %d :: OMX_WmaDecoder.c\n",__LINE__);
         goto EXIT;
     }
 #endif  
-/*    if(nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated) {
-        WMADEC_DPRINT ("%d :: In AllocateBuffer\n", __LINE__);
-        WMADEC_DPRINT("About to return OMX_ErrorBadParameter on lineOMX_ErrorBadParameter on line %d\n",__LINE__);
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-*/
+
     WMADEC_DPRINT("Line %d\n",__LINE__); 
     WMAD_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     WMADEC_MEMPRINT("%d:[ALLOC] %p\n",__LINE__,pBufferHeader);

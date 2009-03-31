@@ -1091,46 +1091,25 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 /* enable in port */
                 WMADEC_DPRINT("setting input port to enabled\n");
                 pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = OMX_TRUE;
-                /* Removing sleep calls. */
-                WMADEC_DPRINT("WAKE UP!! HandleCommand: En utils setting output port to enabled. \n");
-
-                if(pComponentPrivate->AlloBuf_waitingsignal)
-                {
-                     pComponentPrivate->AlloBuf_waitingsignal = 0;
-                }
-
-                /* Removing sleep calls. */
                 WMADEC_DPRINT("pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = %d\n",
                               pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled);
             }
             if(commandData == 0x1 || commandData == -1)
             {
                 /* enable out port */
-                /* Removing sleep() calls. */
                 char *pArgs = "damedesuStr";
                 printf("============SETTING OUTPUT PORT TO ENABLED====================\n");
                 pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled = OMX_TRUE;
                 WMADEC_DPRINT("pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled = %d\n",
                               pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled);
                 
-                if (pComponentPrivate->curState == OMX_StateExecuting){
+                if (pComponentPrivate->curState == OMX_StateExecuting && pComponentPrivate->bDspStoppedWhileExecuting){
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                     printf("=========================CALLING CONTROL START AT POT ENABLE===========================\n");
                     eError = LCML_ControlCodec(
                                           ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                           EMMCodecControlStart,(void *)pArgs);
                 }                
-                if(pComponentPrivate->AlloBuf_waitingsignal)
-                {
-                     pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE                 
-                     pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                     OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif                 
-                }
             }
         }
  
@@ -1144,6 +1123,13 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(pComponentPrivate->curState == OMX_StateLoaded ||  
                         pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated)
                 {
+                    if(pComponentPrivate->AlloBuf_waitingsignal)
+                    {
+                         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+                         pComponentPrivate->AlloBuf_waitingsignal = 0;
+                         pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+                    }
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete, 
@@ -1163,6 +1149,12 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                         OMX_StateLoaded || 
                         pComponentPrivate->pPortDef[OUTPUT_PORT]->bPopulated)
                 {
+                     if(pComponentPrivate->AlloBuf_waitingsignal){
+                        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+                        pComponentPrivate->AlloBuf_waitingsignal = 0;
+                        pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
+                    } 
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete, 
@@ -1172,40 +1164,8 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 printf("==============================We can send input buffers againg!=========================\n");
                 pComponentPrivate->reconfigOutputPort = 0;
                 WMADECFill_LCMLInitParamsEx(pHandle,commandData);
-            }
-            if(pComponentPrivate->AlloBuf_waitingsignal){
-                pComponentPrivate->AlloBuf_waitingsignal = 0;           
-                pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-                pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-                pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-            }           
-#if 0
-            for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
-                if (pComponentPrivate->pOutputBufHdrPending[i]) {
-                    printf("SENDING QUEUED OUTPUT BUFFERS\n");
-                    LCML_WMADEC_BUFHEADERTYPE *pLcmlHdr;
-                    
-                    WMADECGetCorresponding_LCMLHeader(
-                                               pComponentPrivate, 
-                                               pComponentPrivate->pOutputBufHdrPending[i]->pBuffer, 
-                                               OMX_DirOutput, 
-                                               &pLcmlHdr);                                   
-                    WMADEC_SetPending(pComponentPrivate,
-                                      pComponentPrivate->pOutputBufHdrPending[i],
-                                      OMX_DirOutput);
-                    
-                    eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                              EMMCodecOuputBuffer,
-                                              pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
-                                              pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
-                                              0,
-                                              (OMX_U8 *) pLcmlHdr->pOpParam,
-                                              sizeof(WMADEC_UAlgOutBufParamStruct),
-                                              NULL);
-                }
-           }                       
-            pComponentPrivate->nNumOutputBufPending = 0;
-#endif
+            }          
+
             printf("=======Before sending pending buffers==============\n");
             printf("pComponentPrivate->nNumInputBufPending=%d\n",pComponentPrivate->nNumInputBufPending);    
             for (i=0; i < pComponentPrivate->nNumInputBufPending; i++){                
@@ -1254,10 +1214,17 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
             }    
             else if(commandData == -1 )
             {
-                    if(pComponentPrivate->curState == OMX_StateLoaded || 
-                        (pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated && 
-                        pComponentPrivate->pPortDef[OUTPUT_PORT]->bPopulated))
+                if(pComponentPrivate->curState == OMX_StateLoaded || 
+                    (pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated && 
+                    pComponentPrivate->pPortDef[OUTPUT_PORT]->bPopulated))
                 {
+                    if(pComponentPrivate->AlloBuf_waitingsignal)
+                    {
+                        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
+                        pComponentPrivate->AlloBuf_waitingsignal = 0;
+                        pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);                  
+                    }
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete, 
@@ -1271,9 +1238,8 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                            OUTPUT_PORT, NULL);
 
                     pComponentPrivate->bEnableCommandPending = 0;
-                pComponentPrivate->reconfigOutputPort = 0;
-                WMADECFill_LCMLInitParamsEx(pHandle,commandData);
-                     
+                    pComponentPrivate->reconfigOutputPort = 0;
+                    WMADECFill_LCMLInitParamsEx(pHandle,commandData);     
                 }
                 else 
                 {
@@ -1281,15 +1247,6 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->bEnableCommandParam = commandData;
                 }
             }
-            
- 
-#ifndef UNDER_CE                 
-         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-         pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-         OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif 
     }
     else if (command == OMX_CommandFlush)
     {
@@ -1299,7 +1256,6 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
              if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
          
-
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x0; 
                 aParam[2] = 0x0; 
@@ -1437,11 +1393,9 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                               PERF_ModuleCommonLayer);
 #endif
             /** ring tone**/
-            WMADEC_EPRINT("send after eos ");
             if(pComponentPrivate->SendAfterEOS == 1){
-            WMADEC_EPRINT("is tue \n");
-//                pComponentPrivate->nNumInputBufPending = 0;
-//                pComponentPrivate->nNumOutputBufPending = 0;
+                pComponentPrivate->nNumInputBufPending = 0;
+                pComponentPrivate->nNumOutputBufPending = 0;
                 if(pComponentPrivate->dasfmode == 1)
                 {
                     OMX_U32 pValues[4];
@@ -1479,10 +1433,12 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         goto EXIT;
                     }
                 }				
-#ifdef ANDROID
-                WMADEC_EPRINT("bConfigData = %d\n", pComponentPrivate->bConfigData);
-                /*******************PARSER***************************************/
-                if(pComponentPrivate->bConfigData == 1){
+#ifdef ANDROID //this is used to separate changes made for integration with opencore 2.1 or later versions
+
+                /* check if the buffer contains config data, it should only be the case in the fist input buffer*/
+                if(pBufHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG){
+                    pComponentPrivate->bConfigData = 1; /* changed the if statement to use the buffer flag, now this flag doesnt do anything
+                                                           we will leave it for now incase it becomes useful */
                     WMADEC_DPRINT("======================Before parsing===========================\n");
                     eError=WMADEC_Parser( pBufHeader->pBuffer,&pComponentPrivate->rcaheader);						
                     WMADEC_DPRINT("======================AFTER parsing===========================\n");
@@ -1491,20 +1447,19 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         WMADEC_DPRINT("%d :: Error: Parsing invalid ...\n",__LINE__);
                         goto EXIT;
                     }					
-					/*******************Updating if needed*********************/
-                    WMADEC_EPRINT("OLD: pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate=%d \n",pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate);
-                    if(pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate != iSamplePerSec){
-                        pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate = iSamplePerSec;
-       					pComponentPrivate->reconfigOutputPort=1;
-                        WMADEC_EPRINT("=================RECONFIGURATION NEEDED===============\n");
-                        WMADEC_EPRINT("NEW: pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate=%d \n",pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate);
+                    /*Updating if needed, but reconfig should not happen due to change in opencore */
+                    WMADEC_DPRINT("OLD: pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate=%d \n",pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate);
+                    if(pComponentPrivate->wma_op->nSamplingRate != iSamplePerSec){
+                        pComponentPrivate->wma_op->nSamplingRate=iSamplePerSec;
+                        pComponentPrivate->reconfigOutputPort=1;
+                        WMADEC_DPRINT("=================RECONFIGURATION NEEDED===============\n");
+                        WMADEC_DPRINT("NEW: pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate=%d \n",pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate);
                     }
-                    if(pComponentPrivate->wmaParams[OUTPUT_PORT]->nChannels != iChannel){
-                        pComponentPrivate->wmaParams[OUTPUT_PORT]->nChannels = iChannel;
-       					pComponentPrivate->reconfigOutputPort=1;
-                        WMADEC_EPRINT("=================RECONFIGURATION NEEDED===============\n");                        
+                    if(pComponentPrivate->wma_op->nChannels != iChannel){
+                        pComponentPrivate->wma_op->nChannels = iChannel;
+                        pComponentPrivate->reconfigOutputPort=1;
+                        WMADEC_DPRINT("=================RECONFIGURATION NEEDED===============\n");                        
                     }
-					/*******************Updating if needed*********************/					
                     if(pComponentPrivate->reconfigOutputPort){                    
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1512,19 +1467,18 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                OUTPUT_PORT,
                                                0,
                                                NULL);                        
-                     WMADEC_EPRINT("================= sent reconfig event to client===============\n");
-                        pComponentPrivate->cbInfo.EmptyBufferDone (
-                                                                   pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   pBufHeader
-                                                                   ); 
-                        pComponentPrivate->nEmptyBufferDoneCount++;
-                    
+                        WMADEC_DPRINT("================= sent reconfig event to client===============\n");
                     }
+                    pBufHeader->nFilledLen = 0; 
+                    pComponentPrivate->cbInfo.EmptyBufferDone (
+                                                               pComponentPrivate->pHandle,
+                                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                                               pBufHeader
+                                                               ); 
+                    pComponentPrivate->nEmptyBufferDoneCount++;
                     pComponentPrivate->bConfigData = 0;
                     goto EXIT;
                 }
-                /*******************PARSER***************************************/				
 #endif
                 if( pComponentPrivate->dasfmode )
                 {
@@ -1634,7 +1588,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                pBufHeader
                                                );
                             */
-                            WMADEC_EPRINT("Don't queue buffers during a reconfig\n");
+                            WMADEC_DPRINT("Don't queue buffers during a reconfig\n");
 						}	                          
                     }
                 }
@@ -2097,7 +2051,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     switch(event)
     {
         case EMMCodecDspError:
-            WMADEC_EPRINT("[LCML CALLBACK EVENT]  EMMCodecDspError\n");
+            WMADEC_DPRINT("[LCML CALLBACK EVENT]  EMMCodecDspError\n");
             break;
 
         case EMMCodecInternalError:
