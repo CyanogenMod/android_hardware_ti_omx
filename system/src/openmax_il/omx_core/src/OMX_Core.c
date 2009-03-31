@@ -20,6 +20,8 @@
 #include "OMX_ComponentRegistry.h"
 //#include "pvlogger.h"
 
+#include "ti_omx_config_parser.h"
+
 /** size for the array of allocated components.  Sets the maximum 
  * number of components that can be allocated at once */
 #define MAXCOMP (50)
@@ -743,6 +745,14 @@ OMX_ERRORTYPE ComponentTable_FillBufferDone(
     return OMX_ErrorNotImplemented;
 }
 
+OMX_BOOL TIOMXConfigParserRedirect(
+    OMX_PTR aInputParameters,
+    OMX_PTR aOutputParameters)
 
-
-
+{
+    OMX_BOOL Status = OMX_FALSE;
+        
+    Status = TIOMXConfigParser(aInputParameters, aOutputParameters);
+    
+    return Status;
+}

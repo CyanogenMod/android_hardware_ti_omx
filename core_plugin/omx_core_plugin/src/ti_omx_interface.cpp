@@ -81,6 +81,8 @@ class TIOMXInterface : public OMXInterface
                 pOMX_GetRolesOfComponent = NULL;
                 pOMX_SetupTunnel = NULL;
                 pOMX_GetContentPipe = NULL;
+                // added extra method to enable config parsing without instantiating the component
+                pOMXConfigParser = NULL;
 
                 // check for errors
                 const char* pErr = dlerror();
@@ -109,6 +111,7 @@ class TIOMXInterface : public OMXInterface
                 pOMX_GetComponentsOfRole = (tpOMX_GetComponentsOfRole)dlsym(ipHandle, "TIOMX_GetComponentsOfRole");
                 pOMX_GetRolesOfComponent = (tpOMX_GetRolesOfComponent)dlsym(ipHandle, "TIOMX_GetRolesOfComponent");
                 pOMX_SetupTunnel = (tpOMX_SetupTunnel)dlsym(ipHandle, "TIOMX_SetupTunnel");
+                pOMXConfigParser = (tpOMXConfigParser)dlsym(ipHandle, "TIOMXConfigParserRedirect");
                 pOMX_GetContentPipe = NULL; // (tpOMX_GetContentPipe)dlsym(ipHandle, "OMX_GetContentPipe");
             }
         };
