@@ -561,6 +561,10 @@ typedef struct
 	OMX_S32      iOutputFormat;     
 } WMADEC_UALGParams;
 
+typedef struct {
+    /* Number of frames in a buffer */
+    unsigned long ulFrameCount;
+}WMADEC_UAlgOutBufParamStruct;
 /* =================================================================================== */
 /**
 * WMA Buffer Header Type
@@ -570,6 +574,8 @@ typedef struct LCML_WMADEC_BUFHEADERTYPE {
       OMX_DIRTYPE eDir;
       OMX_BUFFERHEADERTYPE* buffer;
       WMADEC_UAlgInBufParamStruct *pIpParam;
+    /* Output Parameter Information structure */
+      WMADEC_UAlgOutBufParamStruct *pOpParam;
 }LCML_WMADEC_BUFHEADERTYPE;
 
 /* =================================================================================== */
@@ -1224,7 +1230,7 @@ OMX_U32 WMADEC_IsPending(WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
 */
 
 /*================================================================== */
-OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
+OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 
 /* ===========================================================  */
 /**
