@@ -68,7 +68,7 @@
  * @def WBAMRENC_NUM_INPUT_BUFFERS   Default number of input buffers
  */
 /* ======================================================================= */
-#define WBAMRENC_NUM_INPUT_BUFFERS 1
+#define WBAMRENC_NUM_INPUT_BUFFERS 5
 /* ======================================================================= */
 /**
  * @def WBAMRENC_NUM_INPUT_BUFFERS_DASF  Default No.of input buffers DASF
@@ -80,7 +80,7 @@
  * @def WBAMRENC_NUM_OUTPUT_BUFFERS   Default number of output buffers
  */
 /* ======================================================================= */
-#define WBAMRENC_NUM_OUTPUT_BUFFERS 1
+#define WBAMRENC_NUM_OUTPUT_BUFFERS 9
 /* ======================================================================= */
 /**
  * @def WBAMRENC_INPUT_BUFFER_SIZE       Default input buffer size

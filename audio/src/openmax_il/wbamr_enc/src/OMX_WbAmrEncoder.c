@@ -236,6 +236,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     ((WBAMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     pComponentPrivate = pHandle->pComponentPrivate;
 
+#ifdef ANDROID
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_FALSE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
+#endif
+
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERF = PERF_Create(PERF_FOURCC('W','B','_','E'),
                                            PERF_ModuleLLMM |
@@ -316,7 +326,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->eDir                               = OMX_DirOutput;
     pPortDef_op->nBufferCountMin                    = WBAMRENC_NUM_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountActual                 = WBAMRENC_NUM_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferSize                        = WBAMRENC_OUTPUT_FRAME_SIZE;
+    pPortDef_op->nBufferSize                        = 640; //WBAMRENC_OUTPUT_FRAME_SIZE;
     pPortDef_op->bEnabled                           = OMX_TRUE;
     pPortDef_op->bPopulated                         = OMX_FALSE;
     pPortDef_op->eDomain                            = OMX_PortDomainAudio;
@@ -338,10 +348,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortFormat->eEncoding          = OMX_AUDIO_CodingPCM;  /*Data Expected on Input Port*/
     
     amr_ip->nPortIndex = WBAMRENC_INPUT_PORT; 
-    amr_ip->nChannels = 2; 
+    amr_ip->nChannels = 1;
     amr_ip->eNumData= OMX_NumericalDataSigned; 
     amr_ip->nBitPerSample = 16;  
-    amr_ip->nSamplingRate = 44100;           
+    amr_ip->nSamplingRate = 16000;
     amr_ip->ePCMMode = OMX_AUDIO_PCMModeLinear; 
     amr_ip->bInterleaved = OMX_TRUE; /*For Encoders Only*/
 
@@ -892,6 +902,27 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             eError = OMX_ErrorBadPortIndex;
         }
         break;                
+
+#ifdef ANDROID
+    case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+        {
+            PV_OMXComponentCapabilityFlagsType* pCap_flags =
+                (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+            pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
+            if (NULL == pCap_flags)
+            {
+                WBAMRENC_EPRINT ("%d: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+                eError =  OMX_ErrorBadParameter;
+                goto EXIT;
+            }
+            WBAMRENC_DPRINT ("%d: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+            memcpy(pCap_flags,
+                   &(pComponentPrivate->iPVCapabilityFlags),
+                   sizeof(PV_OMXComponentCapabilityFlagsType));
+            eError = OMX_ErrorNone;
+        }
+        break;
+#endif
 
     case OMX_IndexParamVideoInit:
         break;
