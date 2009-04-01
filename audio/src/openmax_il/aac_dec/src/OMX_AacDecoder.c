@@ -319,11 +319,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data */
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 0;
-
-#ifdef ANDROID
-/* force to use frame mode always because opencore does not call SetConfig */
     pComponentPrivate->framemode = 0;
-#endif
+
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -381,6 +378,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
+    pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    pComponentPrivate->codecStop_waitingsignal = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
 
 #else
     OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));

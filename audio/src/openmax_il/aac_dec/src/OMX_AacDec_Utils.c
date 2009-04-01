@@ -539,6 +539,12 @@ OMX_ERRORTYPE AACDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+
+    pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+    pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+
+    pthread_mutex_destroy(&pComponentPrivate->codecFlush_mutex);
+    pthread_cond_destroy(&pComponentPrivate->codecFlush_threshold);
 #else
     OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
     OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
@@ -1520,7 +1526,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
 		    /* Needed for port reconfiguration */   
                AACDECFill_LCMLInitParamsEx(pHandle,commandData);
-#if 1
 //// release any buffers received during port disable for reconfig
                     for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
                         AACDEC_DPRINT("%d pComponentPrivate->pOutputBufHdrPending[%lu] = %p\n",__LINE__,i,
@@ -1541,10 +1546,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       NULL);
                         }
                     }
-                    pComponentPrivate->nNumOutputBufPending = 0;
-////
-#endif    
-                    /*pComponentPrivate->OutPendingPR = 0;*/
+                    pComponentPrivate->nNumOutputBufPending = 0;    
                     pComponentPrivate->bEnableCommandPending = 0;
                     pComponentPrivate->reconfigOutputPort = 0;
                 }
@@ -1585,8 +1587,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                      pComponentPrivate->bEnableCommandPending = 0;
                      AACDECFill_LCMLInitParamsEx(pHandle,commandData);
 
-///
-#if 1
+
                      for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
                          AACDEC_DPRINT("%d pComponentPrivate->pInputBufHdrPending[%lu] = %d\n",__LINE__,i,
                                         pComponentPrivate->pInputBufHdrPending[i] != NULL);
@@ -1627,7 +1628,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                          }
                      }
                      pComponentPrivate->nNumOutputBufPending = 0;
-#endif
                  }
                  else {
                      pComponentPrivate->bEnableCommandPending = 1;
@@ -1650,20 +1650,51 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
+                    AACDEC_EPRINT("about to be Flushing input port\n");
+                if (pComponentPrivate->num_Sent_Ip_Buff){ //no buffers have been sent yet, no need to flush SN
+                    aParam[0] = USN_STRMCMD_FLUSH;
+                    aParam[1] = 0x0;
+                    aParam[2] = 0x0;
 
-                aParam[0] = USN_STRMCMD_FLUSH;
-                aParam[1] = 0x0;
-                aParam[2] = 0x0;
-
-                AACDEC_DPRINT("Flushing input port\n");
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       EMMCodecControlStrmCtrl,
-                                       (void*)aParam);
-                if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    AACDEC_DPRINT("Flushing input port DSP\n");
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                            pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    }
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                                 EMMCodecControlStrmCtrl, (void*)aParam);
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecFlush_threshold, &pComponentPrivate->codecFlush_mutex);
+                        pComponentPrivate->codecFlush_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    }
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
                 }
-            }
-            else {
+                else{
+                    AACDEC_EPRINT("skipped DSP, Flushing input port\n");
+                    for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
+#ifdef __PERF_INSTRUMENTATION__
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          PREF(pComponentPrivate->pInputBufHdrPending[i],pBuffer),
+                                          0,
+                                          PERF_ModuleHLMM);
+#endif
+
+                        pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                   pComponentPrivate->pInputBufHdrPending[i]);
+                        pComponentPrivate->pInputBufHdrPending[i] = NULL;
+                    }
+                    pComponentPrivate->nNumInputBufPending=0;    
+                    pComponentPrivate->cbInfo.EventHandler(pHandle, 
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete, 
+                                                           OMX_CommandFlush,
+                                                           OMX_DirInput, 
+                                                           NULL);
+                }
+            }else {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
             }
         }
@@ -1671,17 +1702,53 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
+                AACDEC_EPRINT("About to be Flushing output port\n");
+                if(pComponentPrivate->num_Op_Issued && !pComponentPrivate->reconfigOutputPort ){ //no buffers sent to DSP yet
+                    aParam[0] = USN_STRMCMD_FLUSH;
+                    aParam[1] = 0x1;
+                    aParam[2] = 0x0;
 
-                aParam[0] = USN_STRMCMD_FLUSH;
-                aParam[1] = 0x1;
-                aParam[2] = 0x0;
+                    AACDEC_EPRINT("Flushing output port dsp\n");
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                            pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    }
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                               EMMCodecControlStrmCtrl, (void*)aParam);
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecFlush_threshold, &pComponentPrivate->codecFlush_mutex);
+                        pComponentPrivate->codecFlush_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    }
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                }else{
+                    AACDEC_EPRINT("skipped dsp flush, Flushing output port\n");
+//force FillBufferDone calls on pending buffers
+                    for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
+#ifdef __PERF_INSTRUMENTATION__
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          PREF(pComponentPrivate->pOutputBufHdrPending[i],pBuffer),
+                                          PREF(pComponentPrivate->pOutputBufHdrPending[i],nFilledLen),
+                                          PERF_ModuleHLMM);
+#endif  
 
-                AACDEC_DPRINT("Flushing output port\n");
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       EMMCodecControlStrmCtrl,
-                                       (void*)aParam);
-                if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                  pComponentPrivate->pOutputBufHdrPending[i]
+                                                                  );
+                        pComponentPrivate->nOutStandingFillDones--;
+                        pComponentPrivate->pOutputBufHdrPending[i] = NULL;
+                    }
+                    pComponentPrivate->nNumOutputBufPending=0;
+
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete, 
+                                                           OMX_CommandFlush,
+                                                           OMX_DirOutput,
+                                                           NULL);
+
                 }
             }
             else {
@@ -2419,9 +2486,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                           0,
                           PERF_ModuleHLMM);
 #endif
-           /*( fOutAAC = fopen("captureInput.aac", "a+");
-            fwrite(pLcmlHdr->pBufHdr->pBuffer, 1, pLcmlHdr->pBufHdr->nFilledLen, fOutAAC);
-            fclose(fOutAAC);*/ 
 
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2525,11 +2589,8 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                PERF_ModuleHLMM);
 #endif
 
-                               /* fOutPCM = fopen("captureOut.pcm", "a+");
-                                fwrite(pLcmlHdr->pBufHdr->pBuffer, 1, pLcmlHdr->pBufHdr->nFilledLen, fOutPCM);
-                                fclose(fOutPCM); */
                 if(pComponentPrivate->reconfigOutputPort){
-                    AACDEC_DPRINT("Don't return buffers while port reconfig takes place\n");
+                    
                 }else{
                     pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                               pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2691,23 +2752,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    OMX_ErrorStreamCorrupt, 
                                                    OMX_TI_ErrorMajor, 
                                                    NULL);
-#if 0
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       MMCodecControlStop,(void *)pArgs);
-            if(eError != OMX_ErrorNone) {
-                AACDEC_DPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
-                goto EXIT;
-            }
-            AACDEC_DPRINT("%d :: AACDEC: Codec has been Stopped here\n",__LINE__);
-            pComponentPrivate->curState = OMX_StateIdle;
-            pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventCmdComplete, 
-                                                   OMX_ErrorNone,
-                                                   0, 
-                                                   NULL);
 
-#endif
 #else
                 AACDEC_EPRINT("Should stop codec first :: ERROR!\n");
             pComponentPrivate->cbInfo.EventHandler(pHandle, 
@@ -2749,15 +2794,12 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     goto EXIT;
                 }
 
-/*                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       OMX_EventPortSettingsChanged,
-                                                       OMX_DirInput,
-                                                       OMX_AUDIO_AACObjectHE,
-                                                       NULL);
-*/
+
 #endif
-            }
+
+            }else{
+		AACDEC_DPRINT("%d %s-SBR reconfiguration not needed\n",__LINE__,__func__);
+	    }
         }
         if ( ( (int)args[4] == USN_ERR_WARNING ) && ( (int)args[5] == AACDEC_PS_CONTENT )){
             AACDEC_DPRINT("%d :: LCML_Callback: PS content detected \n" ,__LINE__);
@@ -2812,26 +2854,39 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             pHandle = pComponentPrivate->pHandle;
             if ( args[2] == (void *)EMMCodecInputBuffer) {
                 if (args[0] == (void *)USN_ERR_NONE ) {
-                    AACDEC_DPRINT("Flushing input port %d\n",__LINE__);
+                    AACDEC_EPRINT("Flushing input port in lcml_callback %d\n",__LINE__);
 
-					for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
+                    for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
 #ifdef __PERF_INSTRUMENTATION__
-					PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                      PREF(pComponentPrivate->pInputBufHdrPending[i],pBuffer),
-									  0,
-									  PERF_ModuleHLMM);
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          PREF(pComponentPrivate->pInputBufHdrPending[i],pBuffer),
+                                          0,
+                                          PERF_ModuleHLMM);
 #endif
-					pComponentPrivate->cbInfo.EmptyBufferDone (
-                                                           pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           pComponentPrivate->pInputBufHdrPending[i]
-                                                           );
+                   pComponentPrivate->cbInfo.EmptyBufferDone (
+                                      pComponentPrivate->pHandle,
+                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                      pComponentPrivate->pInputBufHdrPending[i]);
+
                     pComponentPrivate->nEmptyBufferDoneCount++;
 					pComponentPrivate->pInputBufHdrPending[i] = NULL;
 					}
                     pComponentPrivate->nNumInputBufPending=0;
-                    pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                           OMX_EventCmdComplete, OMX_CommandFlush,INPUT_PORT_AACDEC, NULL);
+                    
+                    pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    if(pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pComponentPrivate->codecFlush_waitingsignal = 1; 
+                        pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
+                        AACDEC_EPRINT("flush ack. received. for input port\n");
+                    }     
+                    pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    
+                    pComponentPrivate->cbInfo.EventHandler(pHandle, 
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete,
+                                                           OMX_CommandFlush,
+                                                           INPUT_PORT_AACDEC,
+                                                           NULL);
                 } else {
                     AACDEC_EPRINT ("LCML reported error while flushing input port\n");
                     goto EXIT;
@@ -2839,7 +2894,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             }
             else if ( args[2] == (void *)EMMCodecOuputBuffer) {
                 if (args[0] == (void *)USN_ERR_NONE ) {
-				    AACDEC_DPRINT("Flushing output port %d\n",__LINE__);
+				    AACDEC_EPRINT("Flushing output port in lcml_callback %d\n",__LINE__);
 						for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
 #ifdef __PERF_INSTRUMENTATION__
 							PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -2857,8 +2912,20 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 							pComponentPrivate->pOutputBufHdrPending[i] = NULL;
 						}
                     pComponentPrivate->nNumOutputBufPending=0;
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventCmdComplete, OMX_CommandFlush,OUTPUT_PORT_AACDEC, NULL);
+
+                    pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    if(pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pComponentPrivate->codecFlush_waitingsignal = 1; 
+                        pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
+                        AACDEC_EPRINT("flush ack. received. for output port\n");
+                    }     
+                    pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete,
+                                                           OMX_CommandFlush,
+                                                           OUTPUT_PORT_AACDEC,
+                                                           NULL);
 
                 } else {
                     AACDEC_EPRINT("LCML reported error while flushing output port\n");

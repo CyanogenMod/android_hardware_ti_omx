@@ -64,8 +64,8 @@
 #endif
 
 /* Log for Android system*/
-/*#include <utils/Log.h>
-  #define LOG_TAG "TIOMXAACDEC"*/
+#include <utils/Log.h>
+#define LOG_TAG "TIOMXAACDEC"
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -255,7 +255,7 @@
     #define AACDEC_MEMPRINT(...)
 #endif
 
-#define AACDEC_EPRINT printf
+#define AACDEC_EPRINT LOGE
 
                            /* __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	ERROR",__FUNCTION__, __LINE__);\
 	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
@@ -921,6 +921,14 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
+
+    pthread_mutex_t codecStop_mutex;    
+    pthread_cond_t codecStop_threshold;
+    OMX_U8 codecStop_waitingsignal;
+
+    pthread_mutex_t codecFlush_mutex;    
+    pthread_cond_t codecFlush_threshold;
+    OMX_U8 codecFlush_waitingsignal;
 
     OMX_S8 nUnhandledFillThisBuffers;
     OMX_S8 nUnhandledEmptyThisBuffers;

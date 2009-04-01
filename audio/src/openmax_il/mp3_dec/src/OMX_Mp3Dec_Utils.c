@@ -1695,7 +1695,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->first_buff = 0;
                 OMX_ERROR4(pComponentPrivate->dbg, "in flush IN:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 if (pComponentPrivate->num_Sent_Ip_Buff){ //no buffers have been sent yet, no need to flush SN
-                    aParam[0] = USN_STRMCMD_FLUSH;        //this may only be a workaround for a SN defect
+                    aParam[0] = USN_STRMCMD_FLUSH;        
                     aParam[1] = 0x0; 
                     aParam[2] = 0x0; 
 
@@ -1788,24 +1788,6 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                     pComponentPrivate->nNumOutputBufPending=0;
 
-//
-                    for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          PREF(pComponentPrivate->pOutputBufHdrPending[i],pBuffer),
-                                          PREF(pComponentPrivate->pOutputBufHdrPending[i],nFilledLen),
-                                          PERF_ModuleHLMM);
-#endif  
-
-                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                  pComponentPrivate->pOutputBufHdrPending[i]
-                                                                  );
-                        pComponentPrivate->nOutStandingFillDones--;
-                        pComponentPrivate->pOutputBufHdrPending[i] = NULL;
-                    }
-                    pComponentPrivate->nNumOutputBufPending=0;
-//
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete, 
