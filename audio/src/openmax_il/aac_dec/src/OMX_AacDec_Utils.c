@@ -1547,7 +1547,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     /*pComponentPrivate->OutPendingPR = 0;*/
                     pComponentPrivate->bEnableCommandPending = 0;
                     pComponentPrivate->reconfigOutputPort = 0;
-                    pComponentPrivate->PScontent = 0;
                 }
                 else {
                     pComponentPrivate->bEnableCommandPending = 1;
@@ -1707,9 +1706,6 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U32 externsionSamplingFrequency = 0;
     OMX_U32 externsionSamplingFrequencyIdx = 0;
 
-    pComponentPrivate->firstINbuffer = 1;
-    pComponentPrivate->firstOUTbuffer = 1;
-
     iObjectType = AACDEC_GetBits(&nBitPosition, 5, pHeaderStream, OMX_TRUE);
     if(iObjectType == OBJECTTYPE_LC){
         pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
@@ -1731,19 +1727,19 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
         pComponentPrivate->pcmParams->nSamplingRate = pComponentPrivate->aacParams->nSampleRate;
         AACDEC_DPRINT("New Sample rate detected:: %ld (%d)\n",pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx,
                       pComponentPrivate->pcmParams->nSamplingRate);
-        /*pComponentPrivate->reconfigOutputPort = OMX_TRUE;*/
+        pComponentPrivate->reconfigOutputPort = OMX_TRUE;
 
     }
 
     pComponentPrivate->pcmParams->nChannels = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
     AACDEC_DPRINT("nChannels %ld\n",pComponentPrivate->pcmParams->nChannels);
-    pComponentPrivate->PScontent = 1;
+    /* Override nChannels to always be STEREO (2) */
+    pComponentPrivate->pcmParams->nChannels = 2;
+
 
     if (iObjectType == OBJECTTYPE_HE){
         externsionSamplingFrequencyIdx = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
         /*pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = externsionSamplingFrequencyIdx;*/
-        pComponentPrivate->SBR = 1;
-        pComponentPrivate->reconfigOutputPort = OMX_FALSE;
         /*pComponentPrivate->pcmParams->nSamplingRate = 
             AACDec_GetSampleRatebyIndex(externsionSamplingFrequencyIdx);*/
     }else {
@@ -1754,18 +1750,14 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
             extensionAudioObjectType = AACDEC_GetBits(&nBitPosition, 5, pHeaderStream, OMX_TRUE);
             if (extensionAudioObjectType == OBJECTTYPE_HE){
                 AACDEC_DPRINT("OBJECTTYPE_HE detected!\n");
-                pComponentPrivate->reconfigOutputPort = OMX_FALSE;
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
             }
             if (extensionAudioObjectType == OBJECTTYPE_HE2){
                 AACDEC_DPRINT("OBJECTTYPE_HE2 detected!\n");
-                /*pComponentPrivate->reconfigOutputPort = OMX_FALSE;*/
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
-                pComponentPrivate->pcmParams->nChannels = 2;
             }
             pComponentPrivate->SBR = AACDEC_GetBits(&nBitPosition, 1, pHeaderStream, OMX_TRUE);
             if(pComponentPrivate->SBR){
-                pComponentPrivate->reconfigOutputPort = OMX_FALSE;
                 externsionSamplingFrequency = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
                 AACDEC_DPRINT("sbrPresentFlag detected, externsionSamplingFrequency %ld\n",
                               externsionSamplingFrequency);
@@ -1957,20 +1949,20 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     case OMX_AUDIO_AACObjectHE_PS:
                         pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
-                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = pComponentPrivate->SBR; /* 1 */
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                         pComponentPrivate->parameteric_stereo = PARAMETRIC_STEREO_AACDEC;
                         break;
                     case OMX_AUDIO_AACObjectHE:
                         pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
-                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
-                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = pComponentPrivate->SBR; /* 1 */
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
 			break;
                     case OMX_AUDIO_AACObjectLC:
                     default: /* we will use LC profile as the default, SSR and Main Profiles are not supported */
                         AACDEC_DPRINT("%s: IN Switch::ObjectLC\n", __FUNCTION__);
                         pComponentPrivate->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
-                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
 
                         // always use down sample flag on for LC content, 
                         // this will avoid the upsampled output issue
@@ -2079,22 +2071,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 		    pComponentPrivate->first_buff = 1;
 	        }
             }
-            /*
-            if(pComponentPrivate->firstINbuffer == 1){
-                pComponentPrivate->firstINbuffer++;
-                AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
-                eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                          EMMCodecInputBuffer,
-                                          pBufHeader->pBuffer,
-                                          pBufHeader->nAllocLen,
-                                          pBufHeader->nFilledLen,
-                                          (OMX_U8 *) pLcmlHdr->pIpParam,
-                                          sizeof(AACDEC_UAlgInBufParamStruct),
-                                          NULL);
-                goto EXIT;
-
-            }
-            */
             AACDEC_DPRINT  ("%d Comp:: Sending Filled Input buffer = %p, %p\
                                to LCML\n", __LINE__,pBufHeader,pBufHeader->pBuffer);
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -2116,13 +2092,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         else{
                            AACDEC_DPRINT("DON'T queue buffers during a reconfig!!\n");
                            pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
-                           /*
-                           pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           pBufHeader);
-                           pComponentPrivate->nEmptyBufferDoneCount++;
-                           */
-                           
                         }
                         if (eError != OMX_ErrorNone) {
                             AACDEC_DPRINT  ("%d ::Comp: SetBuff: IP: Error Occurred\n",__LINE__);
@@ -2202,40 +2171,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                           0,
                           PERF_ModuleCommonLayer);
 #endif
-        if(pComponentPrivate->firstOUTbuffer == 1){
-            pComponentPrivate->firstOUTbuffer++;
-            pComponentPrivate->reconfigOutputPort = 1;
-            AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
-            eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                      EMMCodecOuputBuffer,
-                                      pBufHeader->pBuffer,
-                                      pBufHeader->nAllocLen,
-                                      0,
-                                      (OMX_U8 *) pLcmlHdr->pOpParam,
-                                      sizeof(AACDEC_UAlgOutBufParamStruct),
-                                      pBufHeader->pBuffer);
-            pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
-            goto EXIT;
-        }
-	/*
-	if(pComponentPrivate->OutPendingPR){
-	    if(pComponentPrivate->pfirstobuffersize > 0){
-		LOGE("Return 1 out buffer\n");
-		memcpy(pBufHeader->pBuffer,
-		       pComponentPrivate->pfirstobuffer,
-		       pComponentPrivate->pfirstobuffersize);
-
-		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-							  pComponentPrivate->pHandle->pApplicationPrivate,
-							  pBufHeader);
-		pComponentPrivate->nFillBufferDoneCount++;
-	    }
-
-	    pComponentPrivate->OutPendingPR = 0;
-	    AACDEC_OMX_FREE(pComponentPrivate->pfirstobuffer);
-	    goto EXIT;
-	}
-	*/
         if (pComponentPrivate->bBypassDSP == 0) {
             AACDEC_DPRINT  ("%d Comp:: Sending Emptied Output buffer=%p to LCML\n",__LINE__,pBufHeader);
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -2565,7 +2500,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->first_TS;
                 TS = pLcmlHdr->pBufHdr->nTimeStamp;
             }else{
-                if(pComponentPrivate->pcmParams->nChannels == 0) {/* OMX_AUDIO_ChannelModeStereo */
+                if(pComponentPrivate->pcmParams->nChannels == 2) {/* OMX_AUDIO_ChannelModeStereo */
                     time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (2 * (pComponentPrivate->pcmParams->nBitPerSample / 8));
                 }else {/* OMX_AUDIO_ChannelModeMono */
                     time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (1 * (pComponentPrivate->pcmParams->nBitPerSample / 8));
@@ -2593,31 +2528,8 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                /* fOutPCM = fopen("captureOut.pcm", "a+");
                                 fwrite(pLcmlHdr->pBufHdr->pBuffer, 1, pLcmlHdr->pBufHdr->nFilledLen, fOutPCM);
                                 fclose(fOutPCM); */
-                if(pComponentPrivate->PScontent){
-                    if(pComponentPrivate->PSdetected == OMX_TRUE){
-			/*Store this buffer as we may/may not use it later */
-                        /*pComponentPrivate->pOutPendingPR[pComponentPrivate->OutPendingPR++] = pLcmlHdr->pBufHdr;*/
-                    }else{
-			/*
-			LOGE("Store 1 buffer\n");
-			AACDEC_OMX_MALLOC_SIZE(pComponentPrivate->pfirstobuffer,
-					       pLcmlHdr->pBufHdr->nFilledLen,
-					       OMX_U8);
-			pComponentPrivate->pfirstobuffersize = pLcmlHdr->pBufHdr->nFilledLen;
-			memcpy(pComponentPrivate->pfirstobuffer,
-			       pLcmlHdr->pBufHdr->pBuffer,
-			       pLcmlHdr->pBufHdr->nFilledLen);
-			*/
-                        /* Notify Client in case of an SBR without PS information */
-                        pComponentPrivate->pOutPendingPR[pComponentPrivate->OutPendingPR++] = pLcmlHdr->pBufHdr;
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventPortSettingsChanged,
-                                                               OMX_DirOutput,
-                                                               0,
-                                                               NULL);
-                        sched_yield();
-                    }
+                if(pComponentPrivate->reconfigOutputPort){
+                    AACDEC_DPRINT("Don't return buffers while port reconfig takes place\n");
                 }else{
                     pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                               pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2679,8 +2591,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         if (!pComponentPrivate->bNoIdleOnStop) {
             AACDEC_DPRINT("setting state to idle after EMMCodecProcessingStoped event\n\n");
             pComponentPrivate->curState = OMX_StateIdle;
-            pComponentPrivate->firstINbuffer = 1;
-            pComponentPrivate->firstOUTbuffer = 1;
 
 #ifdef RESOURCE_MANAGER_ENABLED
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
@@ -2815,6 +2725,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE &&
                pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
 
+#ifndef ANDROID
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
                 pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectHE;
                 pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
@@ -2845,14 +2756,14 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                        OMX_AUDIO_AACObjectHE,
                                                        NULL);
 */
-            }else{
-		AACDEC_DPRINT("%d %s-SBR reconfiguration not needed\n",__LINE__,__func__);
-	    }
+#endif
+            }
         }
         if ( ( (int)args[4] == USN_ERR_WARNING ) && ( (int)args[5] == AACDEC_PS_CONTENT )){
             AACDEC_DPRINT("%d :: LCML_Callback: PS content detected \n" ,__LINE__);
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
 
+#ifndef ANDROID
                 pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectLC;
                 pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
                 pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
@@ -2875,20 +2786,8 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                            NULL);
                     goto EXIT;
                 }
-
-                if(pComponentPrivate->nFillBufferDoneCount == 0){
-                    pComponentPrivate->pcmParams->nChannels = 2;
-                    pComponentPrivate->PSdetected = OMX_TRUE;
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventPortSettingsChanged,
-                                                           OMX_DirOutput,
-                                                           0,
-                                                           NULL);
-                }
-            }else{
-		AACDEC_DPRINT("%d %s-PS reconfiguration not needed\n",__LINE__,__func__);
-	    }
+#endif
+            }
         }
         if( (int)args[5] == IUALG_WARN_OVERFLOW ){
             AACDEC_DPRINT( "Algorithm error. Overflow" );

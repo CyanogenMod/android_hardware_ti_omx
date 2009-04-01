@@ -64,8 +64,8 @@
 #endif
 
 /* Log for Android system*/
-#include <utils/Log.h>
-/*#define LOG_TAG "TIOMXAACDEC"*/
+/*#include <utils/Log.h>
+  #define LOG_TAG "TIOMXAACDEC"*/
 
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
@@ -417,7 +417,7 @@
  *
  */
 /* ======================================================================= */
-#define AACD_OUTPUT_BUFFER_SIZE 8192*4
+#define AACD_OUTPUT_BUFFER_SIZE 8192*10
 /* ======================================================================= */
 /**
  * @def    AACD_SAMPLING_FREQUENCY   Sampling frequency
@@ -967,14 +967,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_BOOL bConfigData;
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
-    OMX_U32 PScontent;
-    OMX_U32 PSdetected;
-    OMX_U32 firstOUTbuffer;
-    OMX_U32 firstINbuffer;
     OMX_U8 OutPendingPR;
-    OMX_BUFFERHEADERTYPE *pOutPendingPR[MAX_NUM_OF_BUFS_AACDEC];
-    OMX_U8 *pfirstobuffer;
-    OMX_U32 pfirstobuffersize;
 
 } AACDEC_COMPONENT_PRIVATE;
 
