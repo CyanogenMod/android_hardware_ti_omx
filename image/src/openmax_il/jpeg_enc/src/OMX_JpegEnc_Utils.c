@@ -676,13 +676,10 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     //Input Format => 0:RGB24, 1:RGB16, 2:RGB12, 3:RGB8, 4:RGB4, 5:YUV422ILE, 6:YUV422IBE,
     //                7:422_IN_UY_WS, 8:422_IN_YU_WS, 9:YUV420P, 10:GRAY8, 11:GRAY4, 12:GRAY2_IN, 13:GRAY1
     if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatCbYCrY
-    		||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888)
+    		||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888
+			||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr)
     {
     	ptCreateStringPPLIB[13] = 5;
-    }
-    else if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr)
-    {
-    	ptCreateStringPPLIB[13] = 6;
     }
     else if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatYUV420PackedPlanar)
     {
@@ -1002,6 +999,9 @@ OMX_ERRORTYPE SendDynamicParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
             || pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format16bitRGB565) {
         ptParam.nInputChromaFormat = 4;
     }
+	else if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr) {
+		ptParam.nInputChromaFormat = 9;
+	}
     else {
         ptParam.nInputChromaFormat = 1;
     }
