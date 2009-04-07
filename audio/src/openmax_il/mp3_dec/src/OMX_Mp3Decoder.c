@@ -226,7 +226,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     MP3D_BUFFERLIST *pTemp = NULL;
     int i=0;
 
-    MP3DEC_EPRINT ("Entering OMX_ComponentInit\n"); //using e-print for verification puposes
+    MP3DEC_DPRINT ("Entering OMX_ComponentInit\n"); //using e-print for verification puposes
 
     MP3D_OMX_CONF_CHECK_CMD(pHandle,1,1);
 
@@ -338,7 +338,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bPreempted = OMX_FALSE; 
     pComponentPrivate->first_buff = 0;
 
-    pComponentPrivate->bConfigData = 1;  /* assume the first buffer received will contain only config data, need to use bufferFlag instead for 1.1.2 compliance */
+    //bConfigData flag is used to indicate if we need to parse the frame header 
+    pComponentPrivate->bConfigData = 1;
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 1; //set the initial value to true if you expect to do port config...
 
