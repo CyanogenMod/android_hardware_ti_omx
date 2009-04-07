@@ -1472,12 +1472,8 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
     } else if (command == OMX_CommandFlush) {
         if(commandData == 0x0 || commandData == -1){
             WBAMRENC_DPRINT("Flushing input port %d\n",__LINE__);
-            for (i=0; i < WBAMRENC_MAX_NUM_OF_BUFS; i++) {
-                pComponentPrivate->pInputBufHdrPending[i] = NULL;
-            }
-            pComponentPrivate->nNumInputBufPending=0;                      
                
-            for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
+            for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                   pComponentPrivate->pInputBufferList->pBufHdr[i]->pBuffer,
@@ -1487,23 +1483,23 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                 pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           pComponentPrivate->pInputBufferList->pBufHdr[i]
-                                                           );
+                                                           pComponentPrivate->pInputBufHdrPending[i]);
                 pComponentPrivate->nEmptyBufferDoneCount++;
                 pComponentPrivate->nOutStandingEmptyDones--;
             }
-            pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                   OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_INPUT_PORT, NULL);   
+            pComponentPrivate->nNumInputBufPending=0;
+            pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete,
+                                                   OMX_CommandFlush,
+                                                   WBAMRENC_INPUT_PORT,
+                                                   NULL);
         }
   
         if(commandData == 0x1 || commandData == -1){       
             WBAMRENC_DPRINT("Flushing output port %d\n",__LINE__);
-            for (i=0; i < WBAMRENC_MAX_NUM_OF_BUFS; i++) {
-                pComponentPrivate->pOutputBufHdrPending[i] = NULL;
-            }
-            pComponentPrivate->nNumOutputBufPending=0;
 
-            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+            for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                   pComponentPrivate->pOutputBufferList->pBufHdr[i]->pBuffer,
@@ -1512,12 +1508,17 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif                        
                 pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]);
+                                                          pComponentPrivate->pOutputBufHdrPending[i]);
                 pComponentPrivate->nFillBufferDoneCount++;   
                 pComponentPrivate->nOutStandingFillDones--;             
             }
-            pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                   OMX_EventCmdComplete, OMX_CommandFlush,WBAMRENC_OUTPUT_PORT, NULL);
+            pComponentPrivate->nNumOutputBufPending=0;
+            pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventCmdComplete,
+                                                   OMX_CommandFlush,
+                                                   WBAMRENC_OUTPUT_PORT,
+                                                   NULL);
         }
     }
 
@@ -1688,7 +1689,7 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 }
             }
         }else{
-            if(pBufHeader->nFlags != OMX_BUFFERFLAG_EOS){
+            if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS)!= OMX_BUFFERFLAG_EOS){
                 if (pComponentPrivate->dasfMode == 0 && !pBufHeader->pMarkData) {
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -1759,10 +1760,10 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             for(i=0;i<nFrames;i++){
                 (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
             }
-            if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
+            if(pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) {
+                (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame = OMX_BUFFERFLAG_EOS;
                 pComponentPrivate->InBuf_Eos_alreadysent = 1; /*TRUE*/
-                pBufHeader->nFlags = 0;
-            }   
+            }
             pLcmlHdr->pBufferParam->usNbFrames = nFrames;
             /* Store time stamp information */
             pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
@@ -2089,7 +2090,7 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     switch(event) {
 
     case EMMCodecDspError:
-        WBAMRENC_EPRINT("[LCML CALLBACK EVENT]  EMMCodecDspError\n");
+        WBAMRENC_DPRINT("[LCML CALLBACK EVENT]  EMMCodecDspError\n");
         break;
 
     case EMMCodecInternalError:
@@ -2271,9 +2272,9 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                     }    
 
                     if(pComponentPrivate->InBuf_Eos_alreadysent){
-                        if(!pLcmlHdr->buffer->nFilledLen){
-                            pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
-                        }
+
+                        pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+
                         pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                                pHandle->pApplicationPrivate,
                                                                OMX_EventBufferFlag,

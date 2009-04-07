@@ -77,6 +77,12 @@
     #define sleep Sleep
 #endif
 
+/* ======================================================================= */
+/**
+ * @def    ANDROID    PV-OpenCore capabilities.
+ */
+/* ======================================================================= */
+#define ANDROID
 
 /* ======================================================================= */
 /**
@@ -240,6 +246,10 @@
         newfree(ptr); \
         ptr = NULL; \
     }
+#ifdef ANDROID
+/* PV opencore capability custom parameter index */
+#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
 
 /* ======================================================================= */
 /**
@@ -267,7 +277,7 @@
  * @def    WBAMRENC_MAX_NUM_OF_BUFS   Maximum number of buffers
  */
 /* ======================================================================= */
-#define WBAMRENC_MAX_NUM_OF_BUFS 10
+#define WBAMRENC_MAX_NUM_OF_BUFS 15
 /* ======================================================================= */
 /**
  * @def    WBAMRENC_NUM_OF_PORTS   Number of ports
@@ -437,6 +447,18 @@ enum WBAMRENC_MimeMode {
  */
 /* ======================================================================= */
 #define _ERROR_PROPAGATION__
+
+typedef struct PV_OMXComponentCapabilityFlagsType {
+    /* OMX COMPONENT CAPABILITY RELATED MEMBERS (for opencore compatability)*/
+    OMX_BOOL iIsOMXComponentMultiThreaded;
+    OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
+    OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
+    OMX_BOOL iOMXComponentSupportsPartialFrames;
+    OMX_BOOL iOMXComponentNeedsNALStartCode;
+    OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
+} PV_OMXComponentCapabilityFlagsType;
+
 /** WBAMRENC_COMP_PORT_TYPE  Port types
  *
  *  @param  WBAMRENC_INPUT_PORT             Input port
@@ -851,6 +873,9 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
     OMX_BOOL bLoadedCommandPending;
     
     OMX_PARAM_COMPONENTROLETYPE componentRole;
+
+    /* Pointer to OpenCore capabilities structure */
+    PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
     
 } WBAMRENC_COMPONENT_PRIVATE;
 
