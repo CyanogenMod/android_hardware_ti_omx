@@ -201,6 +201,10 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_DEFAULT_OUTPUT_BUFFER_SIZE       614400
 #define VIDDEC_DEFAULT_WIDTH                    640
 #define VIDDEC_DEFAULT_HEIGHT                   480
+#define VIDDEC_DEFAULT_PROCESSMODE              0      /* 0=frmmode; 1=strmmode */
+#define VIDDEC_DEFAULT_H264BITSTRMFMT           0      /* 0=bytestrm; 1->4=NAL-bitstrm */
+#define MAX_CCD_CNT                             128
+#define MAX_NALUDATA_CNT                        128
 
 #define VIDDEC_INPUT_PORT_COMPRESSIONFORMAT      OMX_VIDEO_CodingMPEG4
 #define VIDDEC_OUTPUT_PORT_COMPRESSIONFORMAT      OMX_VIDEO_CodingUnused
@@ -855,7 +859,7 @@ typedef struct PV_OMXComponentCapabilityFlagsType
     OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
     OMX_BOOL iOMXComponentUsesFullAVCFrames;
 } PV_OMXComponentCapabilityFlagsType;
-#endif 
+#endif
 
 /**
  * Data structure used to ...
@@ -1015,16 +1019,26 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U32 nDisplayWidth;
     OMX_U8* pCodecData; /* codec-specific data coming from the demuxer */
     OMX_U32 nCodecDataSize;
-	OMX_BOOL bVC1Fix;
+    OMX_BOOL bVC1Fix;
 #ifdef ANDROID /* Specific flag for opencore mmframework */
     PV_OMXComponentCapabilityFlagsType* pPVCapabilityFlags;
 #endif
-    
+
     /* Used to handle config buffer fragmentation on AVC*/
     OMX_BOOL bConfigBufferCompleteAVC;
     OMX_PTR pInternalConfigBufferAVC;
     OMX_U32 nInternalConfigBufferFilledAVC;
     struct OMX_TI_Debug dbg;
+    /* track number of codec config data (CCD) units and sizes */
+    OMX_U32 aCCDsize[MAX_CCD_CNT];
+    OMX_U32 nCCDcnt;
+
+    /* indicate if codec config data (CCD)
+     * buffer (e.g. SPS/PPS) has been copied
+     * to the data buffer.  SPS,PPS,NAL1,...
+     * */
+    OMX_BOOL bCopiedCCDBuffer;
+
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/
