@@ -87,4 +87,7 @@ include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
 #call to plugin
 include $(TI_OMX_TOP)/core_plugin/Android.mk
 
+#call to ti_omx_config_parser
+include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
+
 endif
