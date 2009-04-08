@@ -125,9 +125,9 @@ void* ComponentThread (void* pThreadData)
         if (status == 0) 
         {
 
-            AACENC_DPRINT("%d : bIsStopping = %ld\n",__LINE__, pComponentPrivate->bIsStopping);
-            AACENC_DPRINT("%d : lcml_nOpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nOpBuf);
-            AACENC_DPRINT("%d : lcml_nIpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nIpBuf);
+            AACENC_EPRINT("%d : bIsStopping = %ld\n",__LINE__, pComponentPrivate->bIsStopping);
+            AACENC_EPRINT("%d : lcml_nOpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nOpBuf);
+            AACENC_EPRINT("%d : lcml_nIpBuf = %ld\n",__LINE__, pComponentPrivate->lcml_nIpBuf);
 
             if (pComponentPrivate->bIsThreadstop == 1)  
             {

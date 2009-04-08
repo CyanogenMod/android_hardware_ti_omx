@@ -264,8 +264,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #ifdef ANDROID /* leave this now, we may need them later. */
     pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; /* N/C */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE; /* N/C */
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; /* experiment with this */
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; /* N/C */
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
@@ -372,6 +372,14 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
+            
+    pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    pComponentPrivate->codecStop_waitingsignal = 0;
+
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
             
     pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
@@ -919,7 +927,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
 #ifdef ANDROID
     case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
     {
-	AACENC_EPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
+	AACENC_DPRINT ("Entering PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX::%d\n", __LINE__);
         PV_OMXComponentCapabilityFlagsType* pCap_flags = (PV_OMXComponentCapabilityFlagsType *) ComponentParameterStructure;
         if (NULL == pCap_flags)
         {
@@ -927,7 +935,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
             eError =  OMX_ErrorBadParameter;
             goto EXIT;
         }
-        AACENC_EPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
+        AACENC_DPRINT ("%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
         memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
 	eError = OMX_ErrorNone;
     }

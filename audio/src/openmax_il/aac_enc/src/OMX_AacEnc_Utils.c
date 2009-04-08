@@ -950,8 +950,20 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         AACENC_DPRINT("%d :: AACENC: Setting Component to OMX_StateIdle\n",__LINE__);
                         AACENC_DPRINT("%d :: AACENC: About to Call MMCodecControlStop\n", __LINE__);
 
+                        pComponentPrivate->bIsStopping = 1;
+
+						if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+							pthread_mutex_lock(&pComponentPrivate->codecStop_mutex); 	
+						}
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                       MMCodecControlStop,(void *)pArgs);
+
+	                    if (pComponentPrivate->codecStop_waitingsignal == 0){
+	                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+	                        pComponentPrivate->codecStop_waitingsignal = 0;
+	                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+	                    }
+					
                         if(eError != OMX_ErrorNone) 
                         {
                             AACENC_EPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
@@ -1394,8 +1406,19 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                 {
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
                     AACENC_DPRINT("AACENC: About to stop socket node line %d\n",__LINE__);
+
+                        pComponentPrivate->bIsStopping = 1;
+					if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+						pthread_mutex_lock(&pComponentPrivate->codecStop_mutex); 	
+					}
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                   MMCodecControlStop,(void *)pArgs);
+
+                    if (pComponentPrivate->codecStop_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                        pComponentPrivate->codecStop_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                    }
                 }
             }
         }
@@ -1828,7 +1851,6 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
             {
                 AACENC_DPRINT("%d :: UTIL: End of Stream has been reached \n",__LINE__);
                 pLcmlHdr->pIpParam->bLastBuffer   = 1;  /* EOS flag for SN. - It is the last buffer with data for SN */
-                pComponentPrivate->bIsStopping    = 1;  
                 AACENC_DPRINT ("%d :: UTIL: pLcmlHdr->pIpParam->bLastBuffer = %d \n",__LINE__,(int)pLcmlHdr->pIpParam->bLastBuffer);
             }
 
@@ -2493,6 +2515,14 @@ pHandle = pComponentPrivate_CC->pHandle;
     
     else if(event == EMMCodecProcessingStoped) 
     {
+        pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex);
+        if(pComponentPrivate_CC->codecStop_waitingsignal == 0){
+            pComponentPrivate_CC->codecStop_waitingsignal = 1;             
+            pthread_cond_signal(&pComponentPrivate_CC->codecStop_threshold);
+            AACENC_EPRINT("stop ack. received. stop waiting for sending disable command completed\n");
+        }
+        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
+		
         if (!pComponentPrivate_CC->bNoIdleOnStop) 
         {
             pComponentPrivate_CC->curState = OMX_StateIdle;
@@ -2607,8 +2637,19 @@ pHandle = pComponentPrivate_CC->pHandle;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
 
 #ifndef UNDER_CE
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                          MMCodecControlStop,(void *)pArgs);
+
+                        pComponentPrivate_CC->bIsStopping = 1;
+					if (pComponentPrivate_CC->codecStop_waitingsignal == 0){ 
+						pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex); 	
+					}
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                                  MMCodecControlStop,(void *)pArgs);
+
+                    if (pComponentPrivate_CC->codecStop_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate_CC->codecStop_threshold, &pComponentPrivate_CC->codecStop_mutex);
+                        pComponentPrivate_CC->codecStop_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
+                    }
             if(eError != OMX_ErrorNone) 
             {
                 AACENC_EPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
@@ -2638,8 +2679,19 @@ pHandle = pComponentPrivate_CC->pHandle;
             pHandle = pComponentPrivate_CC->pHandle;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
 #ifndef UNDER_CE
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                          MMCodecControlStop,(void *)pArgs);
+
+                        pComponentPrivate_CC->bIsStopping = 1;
+					if (pComponentPrivate_CC->codecStop_waitingsignal == 0){ 
+						pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex); 	
+					}
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                                  MMCodecControlStop,(void *)pArgs);
+
+                    if (pComponentPrivate_CC->codecStop_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate_CC->codecStop_threshold, &pComponentPrivate_CC->codecStop_mutex);
+                        pComponentPrivate_CC->codecStop_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
+                    }
             if(eError != OMX_ErrorNone) 
             {
                 AACENC_EPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
