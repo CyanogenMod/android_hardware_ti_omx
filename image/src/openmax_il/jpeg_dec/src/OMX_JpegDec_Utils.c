@@ -1869,7 +1869,7 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
     }
 
     ptJPGDecUALGInBufParam = (JPEGDEC_UAlgInBufParamStruct *)pBuffPrivate->pUALGParams;
-    ptJPGDecUALGInBufParam->ulAlphaRGB = 0;
+    ptJPGDecUALGInBufParam->ulAlphaRGB = 0xFF;
     ptJPGDecUALGInBufParam->lInBufCount = 0;
     ptJPGDecUALGInBufParam->ulInNumFrame = 1;
     ptJPGDecUALGInBufParam->ulInFrameAlign = 4;
