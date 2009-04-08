@@ -6312,6 +6312,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                             pParam->pNALUSizeArray[i] = nalusize[j];
                                             j++;
                                         }
+                                        pParam->ulNumOfNALU = i+numnalu;
 
                                         for(j=0;j<i;j++) {
                                             OMX_PRINT1(pComponentPrivate->dbg,"pParm->pNALUSizeArray[%d] = %d\n",j,pParam->pNALUSizeArray[j]);
