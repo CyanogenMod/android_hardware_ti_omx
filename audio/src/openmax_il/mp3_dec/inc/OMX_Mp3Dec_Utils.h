@@ -43,6 +43,7 @@
 
 #include <OMX_Component.h>
 #include "OMX_TI_Common.h"
+#include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 
 #ifdef UNDER_CE
@@ -239,34 +240,34 @@
 #define MP3D_OMX_MALLOC(_pStruct_, _sName_)   \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
     if(_pStruct_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");	\
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_pStruct_,0,sizeof(_sName_));\
-    MP3DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 
 
 #define MP3D_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
     _ptr_ = (_name_ *)newmalloc(_size_);      \
     if(_ptr_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
         eError = OMX_ErrorInsufficientResources; \
         goto EXIT;      \
     } \
     memset(_ptr_,0,_size_); \
-    MP3DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 #define MP3D_OMX_ERROR_EXIT(_e_, _c_, _s_)\
     _e_ = _c_;\
-    printf("\n**************** OMX ERROR ************************\n");\
-    printf("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);\
-    printf("\n**************** OMX ERROR ************************\n");\
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);\
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
     goto EXIT;
 
 
@@ -280,7 +281,7 @@
 
 #define MP3D_OMX_FREE(ptr) \
     if(NULL != ptr) { \
-        MP3DEC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr); \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Freeing Address = %p\n",__LINE__,ptr); \
         newfree(ptr); \
         ptr = NULL; \
     }
@@ -337,8 +338,8 @@ typedef enum OMX_INDEXAUDIOTYPE {
     MP3D_OMX_IndexCustomModeDasfConfig,
     OMX_IndexCustomMp3DecHeaderInfoConfig,
     OMX_IndexCustomMp3DecStreamInfoConfig,
-    OMX_IndexCustomMp3DecDataPath    
-
+    OMX_IndexCustomMp3DecDataPath,
+    OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE;
 /* ======================================================================= */
 /** MP3DEC_BUFDATA
@@ -797,7 +798,9 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_BOOL bConfigData;
 
     StreamData pStreamData;
-	
+
+    struct OMX_TI_Debug dbg;
+
 } MP3DEC_COMPONENT_PRIVATE;
 
 

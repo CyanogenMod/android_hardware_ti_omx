@@ -106,7 +106,8 @@ typedef enum OMX_INDEXAUDIOTYPE {
 	MP3D_OMX_IndexCustomModeDasfConfig,
     OMX_IndexCustomMp3DecHeaderInfoConfig,
 	OMX_IndexCustomMp3DecStreamInfoConfig,
-    OMX_IndexCustomMp3DecDataPath	
+    OMX_IndexCustomMp3DecDataPath,
+    OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE;
 
 #endif /* OMX_MP3DECODER_H */

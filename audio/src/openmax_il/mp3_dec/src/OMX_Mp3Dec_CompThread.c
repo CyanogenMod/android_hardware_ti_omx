@@ -104,7 +104,7 @@ void* MP3DEC_ComponentThread (void* pThreadData)
     MP3DEC_COMPONENT_PRIVATE* pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
 
-    MP3DEC_DPRINT (":: Entering ComponentThread \n");
+    OMX_PRINT1(pComponentPrivate->dbg, ":: Entering ComponentThread \n");
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('M', 'P', '3',' '),
@@ -135,29 +135,29 @@ void* MP3DEC_ComponentThread (void* pThreadData)
 #endif
 
         if (pComponentPrivate->bExitCompThrd == 1) {
-            MP3DEC_DPRINT(":: Comp Thrd Exiting here...\n");
+            OMX_PRINT1(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
             goto EXIT;
         }
 
 
 
         if (0 == status) {
-            MP3DEC_DPRINT("\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
-            MP3DEC_DPRINT("Current State: %d \n", pComponentPrivate->curState);
+            OMX_PRSTATE2(pComponentPrivate->dbg, "\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
+            OMX_PRSTATE2(pComponentPrivate->dbg, "Current State: %d \n", pComponentPrivate->curState);
          
-            MP3DEC_DPRINT("%d:: lcml_nCntOp = %lu\n",__LINE__,pComponentPrivate->lcml_nCntOp);
-            MP3DEC_DPRINT("%d : lcml_nCntIp = %lu\n",__LINE__,pComponentPrivate->lcml_nCntIp);
-            MP3DEC_DPRINT("%d : lcml_nCntIpRes = %lu\n",__LINE__,pComponentPrivate->lcml_nCntIpRes);
-            MP3DEC_DPRINT("%d :: lcml_nCntOpReceived = %lu\n",__LINE__,pComponentPrivate->lcml_nCntOpReceived);
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d:: lcml_nCntOp = %lu\n",__LINE__,pComponentPrivate->lcml_nCntOp);
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d : lcml_nCntIp = %lu\n",__LINE__,pComponentPrivate->lcml_nCntIp);
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d : lcml_nCntIpRes = %lu\n",__LINE__,pComponentPrivate->lcml_nCntIpRes);
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: lcml_nCntOpReceived = %lu\n",__LINE__,pComponentPrivate->lcml_nCntOpReceived);
 
             if (pComponentPrivate->bExitCompThrd == 1) {
-                MP3DEC_EPRINT(":: Comp Thrd Exiting here...\n");
+                OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
                 goto EXIT;
             }
 
 
         } else if (-1 == status) {
-            MP3DEC_DPRINT (":: Error in Select\n");
+            OMX_ERROR4(pComponentPrivate->dbg, ":: Error in Select\n");
             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                     pHandle->pApplicationPrivate,
                                                     OMX_EventError,
@@ -170,26 +170,26 @@ void* MP3DEC_ComponentThread (void* pThreadData)
             int ret;
             OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
 
-            MP3DEC_DPRINT (":: DATA pipe is set in Component Thread\n");
+            OMX_PRCOMM2(pComponentPrivate->dbg, ":: DATA pipe is set in Component Thread\n");
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                MP3DEC_DPRINT (":: Error while reading from the pipe\n");
+                OMX_ERROR2(pComponentPrivate->dbg, ":: Error while reading from the pipe\n");
             }
 
             eError = MP3DEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                MP3DEC_DPRINT (":: Error From HandleDataBuf_FromApp\n");
+                OMX_ERROR2(pComponentPrivate->dbg, ":: Error From HandleDataBuf_FromApp\n");
                 break;
             }
         } else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
-            MP3DEC_DPRINT (":: CMD pipe is set in Component Thread\n");
+            OMX_PRCOMM2(pComponentPrivate->dbg, ":: CMD pipe is set in Component Thread\n");
             nRet = MP3DEC_HandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
-                MP3DEC_DPRINT ("Exiting from Component thread\n");
-                printf ("Exiting from Component thread\n");
+                OMX_PRDSP2(pComponentPrivate->dbg, "Exiting from Component thread\n");
+                OMX_PRDSP2(pComponentPrivate->dbg, "Exiting from Component thread\n");
                 MP3DEC_CleanupInitParams(pHandle);
-                printf("****************** Component State Set to Loaded\n\n");
-                MP3DEC_STATEPRINT("****************** Component State Set to Loaded\n\n");
+                OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
+                OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
@@ -221,7 +221,7 @@ EXIT:
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
 
-    MP3DEC_DPRINT (":: Exiting ComponentThread \n");
-    printf (":: Exiting ComponentThread \n");
+    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
+    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
     return (void*)OMX_ErrorNone;
 }
