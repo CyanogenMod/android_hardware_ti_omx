@@ -105,7 +105,7 @@ void* AACDEC_ComponentThread (void* pThreadData)
     AACDEC_COMPONENT_PRIVATE* pComponentPrivate = (AACDEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
 
-    AACDEC_DPRINT ("%d :: Entering ComponentThread \n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering ComponentThread \n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('A', 'C', 'D', '_'),
                                                PERF_ModuleComponent |
@@ -137,17 +137,17 @@ void* AACDEC_ComponentThread (void* pThreadData)
 
 
         if (pComponentPrivate->bExitCompThrd == 1) {
-            AACDEC_DPRINT("%d :: Comp Thrd Exiting here...\n",__LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Comp Thrd Exiting here...\n",__LINE__);
             goto EXIT;
         }
 
 
 
         if (0 == status) {
-            AACDEC_DPRINT("\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
+            OMX_ERROR2(pComponentPrivate->dbg, "\n\n\n!!!!!  Component Time Out !!!!!!!!!!!! \n");
         } 
         else if (-1 == status) {
-            AACDEC_EPRINT ("%d :: Error in Select\n", __LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                     pHandle->pApplicationPrivate,
                                                     OMX_EventError,
@@ -158,12 +158,12 @@ void* AACDEC_ComponentThread (void* pThreadData)
             
         } 
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
-            AACDEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: CMD pipe is set in Component Thread\n",__LINE__);
             nRet = AACDEC_HandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
-                AACDEC_DPRINT ("Exiting from Component thread\n");
+                OMX_PRINT1(pComponentPrivate->dbg, "Exiting from Component thread\n");
                 AACDEC_CleanupInitParams(pHandle);
-                AACDEC_STATEPRINT("******************* Component State Set to Loaded\n\n");
+                OMX_PRSTATE2(pComponentPrivate->dbg, "******************* Component State Set to Loaded\n\n");
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
@@ -175,7 +175,7 @@ void* AACDEC_ComponentThread (void* pThreadData)
                                                            OMX_EventCmdComplete,
                                                            OMX_ErrorNone,pComponentPrivate->curState, NULL);
                 } else {
-                    AACDEC_EPRINT("OMX_EventError:: OMX_ErrorPortUnpopulated at CompThread line %d\n", __LINE__);
+                    OMX_ERROR4(pComponentPrivate->dbg, "OMX_EventError:: OMX_ErrorPortUnpopulated at CompThread line %d\n", __LINE__);
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventError,
@@ -190,15 +190,15 @@ void* AACDEC_ComponentThread (void* pThreadData)
             int ret;
             OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
 
-            AACDEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                AACDEC_DPRINT ("%d :: Error while reading from the pipe\n",__LINE__);
+                OMX_ERROR2(pComponentPrivate->dbg, "%d :: Error while reading from the pipe\n",__LINE__);
             }
 
             eError = AACDEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                AACDEC_DPRINT ("%d :: Error From HandleDataBuf_FromApp\n",__LINE__);
+                OMX_ERROR2(pComponentPrivate->dbg, "%d :: Error From HandleDataBuf_FromApp\n",__LINE__);
                 break;
             }
         }   
@@ -210,6 +210,6 @@ void* AACDEC_ComponentThread (void* pThreadData)
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    AACDEC_DPRINT ("%d :: Exiting ComponentThread \n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting ComponentThread \n",__LINE__);
     return (void*)OMX_ErrorNone;
 }

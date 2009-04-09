@@ -43,6 +43,7 @@
 
 #include <OMX_Component.h>
 #include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 #include <pthread.h>
 #include <sched.h>
@@ -63,13 +64,19 @@
 #include "perf.h"
 #endif
 
-/* Log for Android system*/
-#include <utils/Log.h>
-#define LOG_TAG "TIOMXAACDEC"
+#ifndef ANDROID
+    #define ANDROID
+#endif
 
-/* PV opencore capability custom parameter index */
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-#define ANDROID
+#ifdef ANDROID
+    /* Log for Android system*/
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_AACDEC"
+
+    /* PV opencore capability custom parameter index */
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
+ 
 #define OBJECTTYPE_LC 2
 #define OBJECTTYPE_HE 5
 #define OBJECTTYPE_HE2 29
@@ -271,14 +278,14 @@
 #define AACD_OMX_MALLOC(_pStruct_, _sName_)                         \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
-        AACDEC_EPRINT("***********************************\n");            \
-        AACDEC_EPRINT("%d :: Malloc Failed\n",__LINE__);                   \
-        AACDEC_EPRINT("***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                   \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-    AACDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 /* ======================================================================= */
 /**
@@ -288,14 +295,14 @@
 #define AACDEC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
-        AACDEC_EPRINT("***********************************\n");        \
-        AACDEC_EPRINT("%d :: Malloc Failed\n",__LINE__);               \
-        AACDEC_EPRINT("***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    AACDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 /* ======================================================================= */
 /**
@@ -304,9 +311,9 @@
 /* ======================================================================= */
 #define AACDEC_OMX_ERROR_EXIT(_e_, _c_, _s_)                            \
     _e_ = _c_;                                                          \
-    AACDEC_EPRINT("\n**************** OMX ERROR ************************\n");  \
-    AACDEC_EPRINT("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);  \
-    AACDEC_EPRINT("\n**************** OMX ERROR ************************\n");  \
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");  \
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);  \
+    OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");  \
     goto EXIT;
 
 /* ======================================================================= */
@@ -329,7 +336,7 @@
 /* ======================================================================= */
 #define AACDEC_OMX_FREE(ptr)                                            \
     if(NULL != ptr) {                                                   \
-        AACDEC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr);   \
+        OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Freeing Address = %p\n",__LINE__,ptr);   \
         newfree(ptr);                                                   \
         ptr = NULL;                                                     \
     }
@@ -501,7 +508,8 @@ typedef enum COMP_PORT_TYPE_AACDEC {
 typedef enum OMX_INDEXAUDIOTYPE_AACDEC {
     OMX_IndexCustomAacDecHeaderInfoConfig = 0xFF000001,
     OMX_IndexCustomAacDecStreamIDConfig,
-    OMX_IndexCustomAacDecDataPath
+    OMX_IndexCustomAacDecDataPath,
+    OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE_AACDEC;
 
 /* ======================================================================= */
@@ -976,6 +984,8 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
     OMX_U8 OutPendingPR;
+
+    struct OMX_TI_Debug dbg;
 
 } AACDEC_COMPONENT_PRIVATE;
 
