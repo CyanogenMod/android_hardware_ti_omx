@@ -47,6 +47,7 @@
 #include <OMX_Component.h>
 #include <TIDspOmx.h>
 #include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 #define _ERROR_PROPAGATION__ 
 
@@ -56,8 +57,17 @@
 
 #include <OMX_Component.h> 
 
-#include <utils/Log.h>
-#define LOG_TAG "omx_WMA"
+#ifndef ANDROID
+    #define ANDROID
+#endif
+
+#ifdef ANDROID
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_WMADEC"
+
+/* PV opencore capability custom parameter index */
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
 
 #ifdef UNDER_CE
 #ifndef _OMX_EVENT_
@@ -431,27 +441,27 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 #define WMAD_OMX_MALLOC(_pStruct_, _sName_)                             \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));                   \
     if(_pStruct_ == NULL){                                              \
-        printf("***********************************\n");                \
-        printf("%d :: Malloc Failed\n",__LINE__);                       \
-        printf("***********************************\n");                \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");                \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                       \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");                \
         eError = OMX_ErrorInsufficientResources;                        \
         goto EXIT;                                                      \
     }                                                                   \
     memset(_pStruct_,0,sizeof(_sName_));                                \
-    WMADEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 
 #define WMAD_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)              \
     _ptr_ = (_name_ *)newmalloc(_size_);                        \
     if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    WMADEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 
 /* ======================================================================= */
@@ -461,7 +471,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* ======================================================================= */
 
 #define OMX_WMADECMEMFREE_STRUCT(_pStruct_)                     \
-    WMADEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);    \
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: [FREE] %p\n",__LINE__,_pStruct_);    \
     if(_pStruct_ != NULL){                                      \
     	newfree(_pStruct_);                                     \
         _pStruct_ = NULL;                                       \
@@ -903,7 +913,9 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     OMX_U8 first_buffer;	
 	
     RCA_HEADER *rcaheader;
-        
+
+    struct OMX_TI_Debug dbg;        
+
 } WMADEC_COMPONENT_PRIVATE;
 /* ===========================================================  */
 /**
@@ -1294,7 +1306,8 @@ typedef enum OMX_WMADEC_INDEXAUDIOTYPE {
     OMX_IndexCustomWMADECHeaderInfoConfig,
     OMX_IndexCustomWmaDecLowLatencyConfig,
     OMX_IndexCustomWmaDecStreamIDConfig,
-    OMX_IndexCustomWmaDecDataPath
+    OMX_IndexCustomWmaDecDataPath,
+    OMX_IndexCustomDebug
 }OMX_WMADEC_INDEXAUDIOTYPE;
 
 
