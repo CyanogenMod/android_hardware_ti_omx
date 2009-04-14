@@ -1688,7 +1688,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                                                  0x0, 
                                                  pCompPortOut->pBufferPrivate[nCount]->pBufferHdr->pMarkData);
                     }   
-                                                       
+                    OMX_PRINT2(pComponentPrivate->dbg, "sending FillBufferDone %p \n", pCompPortOut->pBufferPrivate[nCount]->pBufferHdr);
                     pComponentPrivate->sCbData.FillBufferDone(pComponentPrivate->pHandle,
                                                               pComponentPrivate->pHandle->pApplicationPrivate,
                                                               pCompPortOut->pBufferPrivate[nCount]->pBufferHdr);
@@ -2508,9 +2508,15 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         }
         /*< Mechanism to do intra Refresh, see IH264VENC_IntraRefreshMethods for valid values*/
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.intraRefreshMethod = IH264_INTRAREFRESH_NONE;
+        /* Enable Perceptual Quantization a.k.a. Perceptual Rate Control*/
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.perceptualQuant = 0;
+        /* Enable Scene Change Detection*/
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.sceneChangeDet = 0;
         /*< Function pointer of the call-back function to be used by Encoder*/
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.pfNalUnitCallBack = NULL;
-        
+
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.pContext = NULL;
+
         /*< Following Parameter are related to Arbitrary Slice Ordering (ASO)*/
         /*< Number of valid enteries in asoSliceOrder array valid range is [0,8], 
         //!< where 0 and 1 doesn't have any effect*/
