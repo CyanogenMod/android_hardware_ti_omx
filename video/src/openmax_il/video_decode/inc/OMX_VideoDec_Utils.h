@@ -820,6 +820,9 @@ typedef struct VIDDEC_MPEG4_ParserParam {
     OMX_U32 nScalability;
     OMX_S32 nSourceFormat;
     OMX_BOOL nOutputFormat;
+    OMX_U32 nCPM;
+    OMX_U32 nPWI;
+    OMX_U32 nPHI;
 }VIDDEC_MPEG4_ParserParam;
 #endif
 

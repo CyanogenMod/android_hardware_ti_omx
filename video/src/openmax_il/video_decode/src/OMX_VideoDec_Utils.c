@@ -4546,6 +4546,24 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BU
                         (*nWidth) = 1408;
                         (*nHeight) = 1152;
                     }
+                    else if (sMPEG4_Param->nSourceFormat == 0x6)
+                    {
+                        (void)VIDDEC_GetBits(&nBitPosition, 24, pHeaderStream, OMX_TRUE);
+                        sMPEG4_Param->nCPM = VIDDEC_GetBits(&nBitPosition, 1, pHeaderStream, OMX_TRUE);
+                        if(sMPEG4_Param->nCPM)
+                            (void)VIDDEC_GetBits(&nBitPosition, 2, pHeaderStream, OMX_TRUE);
+
+                        (void)VIDDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
+
+                        sMPEG4_Param->nPWI = VIDDEC_GetBits(&nBitPosition, 9, pHeaderStream, OMX_TRUE);
+                        (*nWidth) = (sMPEG4_Param->nPWI + 1)*4;
+
+                        (void)VIDDEC_GetBits(&nBitPosition, 1, pHeaderStream, OMX_TRUE);
+
+                        sMPEG4_Param->nPHI = VIDDEC_GetBits(&nBitPosition, 9, pHeaderStream, OMX_TRUE);
+                        (*nHeight) = sMPEG4_Param->nPHI*4;
+
+                    }
                     else if (sMPEG4_Param->nSourceFormat == 0x7)
                     {
                         sMPEG4_Param->nSourceFormat = VIDDEC_GetBits(&nBitPosition, 3, pHeaderStream, OMX_TRUE);
