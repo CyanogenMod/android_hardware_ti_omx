@@ -5640,8 +5640,23 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pComponentPrivate->bParserEnabled) {
             if (pComponentPrivate->bFirstHeader == OMX_FALSE) {
                 pComponentPrivate->bFirstHeader = OMX_TRUE;
+                /* If VIDDEC_ParseHeader() does not return OMX_ErrorNone, then
+                * reconfiguration is required.
+                * eError is set to OMX_ErrorNone after saving the buffer, which will
+                * be used later by the reconfiguration logic.
+                */
                 eError = VIDDEC_ParseHeader( pComponentPrivate, pBuffHead);
-                if(eError != OMX_ErrorNone) {
+
+                /* The MPEG4 & H.263 algorithm expects both the configuration buffer
+                * and the first data buffer to be in the same frame - this logic only
+                * applies when in frame mode and when the framework sends the config data
+                * separately. The same situation is handled elsewhere for H.264 & WMV
+                * decoding.
+                */
+                if(eError != OMX_ErrorNone ||
+                    ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                    pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) && 
+                    pComponentPrivate->ProcessMode == 0)) {
                     if (pBuffHead != NULL) {
 
 #ifdef ANDROID
