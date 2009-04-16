@@ -1692,7 +1692,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_ERROR4(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %d\n", pComponentPrivate->nUnhandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
-                pComponentPrivate->first_buff = 0;
+                //pComponentPrivate->first_buff = 0;
                 OMX_ERROR4(pComponentPrivate->dbg, "in flush IN:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 if (pComponentPrivate->num_Sent_Ip_Buff){ //no buffers have been sent yet, no need to flush SN
                     aParam[0] = USN_STRMCMD_FLUSH;        
@@ -1746,7 +1746,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %d\n", pComponentPrivate->nUnhandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
-                pComponentPrivate->first_buff = 0;
+                //pComponentPrivate->first_buff = 0;
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "in flush OUT:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "in flush OUT:lcml_nOpBuf = %ld \n", pComponentPrivate->lcml_nOpBuf);
                 if (pComponentPrivate->num_Op_Issued && !pComponentPrivate->reconfigOutputPort){ //if no buffers have been sent yet, no need to flush SN
@@ -2244,7 +2244,7 @@ OMX_ERRORTYPE MP3DEC_GetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
         pBuf = pComponentPrivate->pInputBufferList->pBufHdr[i];
         if(pBufHeader == pBuf) {
             *eDir = OMX_DirInput;
-            OMX_ERROR4(pComponentPrivate->dbg, ":: Buffer %p is INPUT BUFFER\n", pBufHeader);
+            OMX_PRINT2(pComponentPrivate->dbg, ":: Buffer %p is INPUT BUFFER\n", pBufHeader);
             flag = 0;
             goto EXIT;
         }
@@ -2256,7 +2256,7 @@ OMX_ERRORTYPE MP3DEC_GetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
         pBuf = pComponentPrivate->pOutputBufferList->pBufHdr[i];
         if(pBufHeader == pBuf) {
             *eDir = OMX_DirOutput;
-            OMX_ERROR4(pComponentPrivate->dbg, ":: Buffer %p is OUTPUT BUFFER\n", pBufHeader);
+            OMX_PRINT2(pComponentPrivate->dbg, ":: Buffer %p is OUTPUT BUFFER\n", pBufHeader);
             flag = 0;
             goto EXIT;
         }
@@ -2480,6 +2480,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                         pComponentPrivate->first_buff = 2;
                         pLcmlHdr->pBufHdr->nTimeStamp = (OMX_U32)pComponentPrivate->first_TS;
                         TS = pLcmlHdr->pBufHdr->nTimeStamp;
+                        OMX_ERROR4(pComponentPrivate->dbg, "first_ts = %d\n", TS);
                     }else{ 
                         time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (pComponentPrivate->pcmParams->nChannels * 
                                                                      (pComponentPrivate->pcmParams->nBitPerSample / 8));
@@ -2487,6 +2488,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                         /* Update time stamp information */
                         TS += (OMX_U32)time_stmp;
                         pLcmlHdr->pBufHdr->nTimeStamp = TS;
+                        OMX_ERROR4(pComponentPrivate->dbg, "ts = %d\n", TS);
                     }
                 }
                 /*add on: Copyint tick count information to output buffer*/
@@ -2727,7 +2729,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     if(pComponentPrivate->codecFlush_waitingsignal == 0){
                         pComponentPrivate->codecFlush_waitingsignal = 1; 
                         pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
-                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for input port\n");
+                        OMX_ERROR4(pComponentPrivate->dbg, "flush ack. received. for input port\n");
                     }     
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
 
@@ -2895,7 +2897,7 @@ OMX_ERRORTYPE MP3DEC_GetCorresponding_LCMLHeader(MP3DEC_COMPONENT_PRIVATE* pComp
             OMX_PRBUFFER2(pComponentPrivate->dbg, "pLcmlBufHeader->pBufHdr->pBuffer = %p\n",pLcmlBufHeader->pBufHdr->pBuffer);
             if(pBuffer == pLcmlBufHeader->pBufHdr->pBuffer) {
                 *ppLcmlHdr = pLcmlBufHeader;
-                OMX_ERROR4(pComponentPrivate->dbg, "::Corresponding LCML Header Found\n");
+                OMX_PRINT1(pComponentPrivate->dbg, "::Corresponding LCML Header Found\n");
                 goto EXIT;
             }
             pLcmlBufHeader++;
@@ -2913,7 +2915,7 @@ OMX_ERRORTYPE MP3DEC_GetCorresponding_LCMLHeader(MP3DEC_COMPONENT_PRIVATE* pComp
 
             if(pBuffer == pLcmlBufHeader->pBufHdr->pBuffer) {
                 *ppLcmlHdr = pLcmlBufHeader;
-                OMX_ERROR4(pComponentPrivate->dbg, "::Corresponding LCML Header Found\n");
+                OMX_PRINT1(pComponentPrivate->dbg, "::Corresponding LCML Header Found\n");
                 goto EXIT;
             }
             pLcmlBufHeader++;
