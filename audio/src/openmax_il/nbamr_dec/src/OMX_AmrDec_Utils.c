@@ -1120,7 +1120,10 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->nHoldLength = 0;
             } 
             else if(pComponentPrivate->curState == OMX_StatePause) {
-
+                OMX_U8 *pArgs = (void*)"damedesuStr";
+                eError = LCML_ControlCodec(
+                                           ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                           MMCodecControlStop,(void *)pArgs);
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif                
