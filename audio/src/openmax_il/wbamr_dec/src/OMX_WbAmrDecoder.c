@@ -329,10 +329,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 #if 1 /* currently using default values until more is understood */
 			pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
-			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
-			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
+			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE;
+			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
 			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; /* experiment with this */
-			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_FALSE; /* experiment with this */
+			pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; /* experiment with this */
 			pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
 			pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* experiment with this */
 #endif
@@ -1221,6 +1221,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                          pComponentPrivate->mimemode = 1;
                 else
 					pComponentPrivate->mimemode = 2; /*IF2 Format*/
+                 /* This hack is to always decode Mime (3gpp) files from Android GUI */
+                 /* This should be fixed in a better way */
+                 /* March 16, 2009 */
+                 pComponentPrivate->mimemode = 1;
 			    
                 /* 0 means Input port */
                 if(pCompAmrParam->nPortIndex == 0) {
