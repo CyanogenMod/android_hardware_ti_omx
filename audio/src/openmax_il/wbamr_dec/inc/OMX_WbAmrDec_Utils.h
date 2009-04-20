@@ -27,8 +27,6 @@
 /* #include <ResourceManagerProxyAPI.h> */
 
 
-/* Log for Android system*/
-#include <utils/Log.h>
 
 /* ======================================================================= */
 /**
@@ -158,14 +156,14 @@ enum WBAMRDEC_MimeMode {
 #define WBAMR_DEC_OMX_MALLOC(_pStruct_, _sName_)                         \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                   \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-   WBAMR_DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+   OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
    /* ======================================================================= */
 /**
@@ -175,14 +173,14 @@ enum WBAMRDEC_MimeMode {
 #define WBAMR_DEC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    WBAMR_DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 /* ======================================================================= */
 /**
@@ -191,7 +189,7 @@ enum WBAMRDEC_MimeMode {
 /* ======================================================================= */
 
 #define OMX_WBDECMEMFREE_STRUCT(_pStruct_)\
-	WBAMR_DEC_MEMPRINT("%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
+	OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\

@@ -45,6 +45,7 @@
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
 #include <pthread.h>
+#include <OMX_TI_Debug.h>
 
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
@@ -57,8 +58,17 @@
 /* #include <ResourceManagerProxyAPI.h> */
 #endif
 
+#ifndef ANDROID
+    #define ANDROID
+#endif
+
+#ifdef ANDROID
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_WBAMRDEC"
+
 /* PV opencore capability custom parameter index */
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
 
 /* =======================================================================
  *
@@ -219,7 +229,8 @@ typedef enum OMX_INDEXAUDIOTYPE_WBAMRDEC {
 	OMX_IndexCustomWbAmrDecHeaderInfoConfig,
 	OMX_IndexCustomWbAmrDecStreamIDConfig,
     OMX_IndexCustomWbAmrDecDataPath,
-	OMX_IndexCustomWbAmrDecNextFrameLost
+	OMX_IndexCustomWbAmrDecNextFrameLost,
+	OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE_WBAMRDEC;
 
 
@@ -617,7 +628,9 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     OMX_BOOL bFrameLost;
 	
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
-	
+
+    struct OMX_TI_Debug dbg;	
+
 } WBAMR_DEC_COMPONENT_PRIVATE;
 
 #endif /* OMX_WBAMR_DECODER_H */

@@ -89,7 +89,7 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
     OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
 	ssize_t ret;
 
-	WBAMR_DEC_DPRINT("OMX_AmrDec_ComponentThread:%d\n",__LINE__);
+	OMX_PRINT1(pComponentPrivate->dbg, "OMX_AmrDec_ComponentThread:%d\n",__LINE__);
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('W', 'B', '_', 'D'),
@@ -111,7 +111,7 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-        WBAMR_DEC_DPRINT("%d:AmrComponentThread \n",__LINE__);
+        OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
 #ifndef UNDER_CE
 		sigset_t set;
 		sigemptyset (&set);
@@ -122,28 +122,28 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
 #endif
 
         if (pComponentPrivate->bIsStopping == 1) {
-            WBAMR_DEC_DPRINT(":: Comp Thrd Exiting here...\n");
+            OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
             goto EXIT;
         }
         if (0 == status) {
 
-            WBAMR_DEC_DPRINT("%d : bIsStopping = %d\n",__LINE__,
+            OMX_PRSTATE2(pComponentPrivate->dbg, "%d : bIsStopping = %ld\n",__LINE__,
                                   pComponentPrivate->bIsStopping);
 
-            WBAMR_DEC_DPRINT("%d : lcml_nOpBuf = %d\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : lcml_nOpBuf = %ld\n",__LINE__,
                                   pComponentPrivate->lcml_nOpBuf);
 
-            WBAMR_DEC_DPRINT("%d : lcml_nIpBuf = %d\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : lcml_nIpBuf = %ld\n",__LINE__,
                                   pComponentPrivate->lcml_nIpBuf);
-            WBAMR_DEC_DPRINT("%d : app_nBuf = %d\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : app_nBuf = %ld\n",__LINE__,
                                   pComponentPrivate->app_nBuf);
 
             if (pComponentPrivate->bIsStopping == 1)  {
-               WBAMR_DEC_DPRINT("%d:AmrComponentThread \n",__LINE__);
+               OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
 
-                   WBAMR_DEC_DPRINT("%d:AmrComponentThread \n",__LINE__);
+                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
                 if(eError != OMX_ErrorNone) {
-                   WBAMR_DEC_EPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
+                   OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
                     break;
                 }
                 pComponentPrivate->bIsStopping = 0;
@@ -152,15 +152,15 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
                 pComponentPrivate->app_nBuf = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
 
-                   WBAMR_DEC_DPRINT("%d:AmrComponentThread \n",__LINE__);
+                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateIdle) {
-                   WBAMR_DEC_DPRINT("%d:AmrComponentThread \n",__LINE__);
+                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
                     goto EXIT;
                 }
             }
             WBAMR_DEC_DPRINT ("%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
         } else if (-1 == status) {
-            WBAMR_DEC_EPRINT ("%d :: Error in Select\n", __LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle,
 						                             pHandle->pApplicationPrivate,
 						                             OMX_EventError,
@@ -170,30 +170,30 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
             exit(1);
 
         } else if (FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) {
-            WBAMR_DEC_DPRINT ("%d :: DATA pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                WBAMR_DEC_EPRINT ("%d :: Error while reading from the pipe\n",__LINE__);
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error while reading from the pipe\n",__LINE__);
             }
             eError = WBAMR_DEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                WBAMR_DEC_DPRINT ("%d :: Error From WBAMR_DEC_HandleDataBuf_FromApp\n");
+                OMX_ERROR2(pComponentPrivate->dbg, "%d :: Error From WBAMR_DEC_HandleDataBuf_FromApp\n",__LINE__);
                 break;
             }
         }
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
             /* Do not accept any command when the component is stopping */
-            WBAMR_DEC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: CMD pipe is set in Component Thread\n",__LINE__);
             nRet = WBAMR_DEC_HandleCommand (pComponentPrivate);
             if (nRet == WBAMR_DEC_EXIT_COMPONENT_THRD) {
-                WBAMR_DEC_DPRINT ("Exiting from Component thread\n");
+                OMX_PRINT1(pComponentPrivate->dbg, "Exiting from Component thread\n");
 
                 if(eError != OMX_ErrorNone) {
-                    WBAMR_DEC_DPRINT("%d :: Function Mp3Dec_FreeCompResources returned\
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Function Mp3Dec_FreeCompResources returned\
                                                                 error\n",__LINE__);
                     goto EXIT;
                 }
-                WBAMR_DEC_DPRINT("%d :: ARM Side Resources Have Been Freed\n",__LINE__);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: ARM Side Resources Have Been Freed\n",__LINE__);
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
@@ -224,7 +224,7 @@ EXIT:
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    WBAMR_DEC_DPRINT("%d::Exiting WBAMR_DEC_ComponentThread\n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d::Exiting WBAMR_DEC_ComponentThread\n",__LINE__);
     return (void*)OMX_ErrorNone;
 
 
