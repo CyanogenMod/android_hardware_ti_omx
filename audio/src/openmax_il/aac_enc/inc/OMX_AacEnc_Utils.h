@@ -23,6 +23,7 @@
 
 #include <OMX_Component.h>
 #include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 #include "OMX_AacEncoder.h"
 /* #include <ResourceManagerProxyAPI.h> */
@@ -39,11 +40,16 @@
 #define _ERROR_PROPAGATION__ 
 #define MPEG4AACENC_MAX_OUTPUT_FRAMES 24
 
-/* PV opencore capability custom parameter index */
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-
 #ifndef ANDROID
     #define ANDROID
+#endif
+
+#ifdef ANDROID
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_AACENC"
+
+/* PV opencore capability custom parameter index */
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #endif
 
 #define EXTRA_BYTES 128 
@@ -65,7 +71,7 @@
 #define OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3) \
 {                       \
     if(!_ptr1 || !_ptr2 || !_ptr3){     \
-        AACENC_EPRINT("%d :: Error bad parameter \n",__LINE__);\
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error bad parameter \n",__LINE__);\
         eError = OMX_ErrorBadParameter;     \
     goto EXIT;          \
     }                       \
@@ -95,23 +101,23 @@
     
     
 #define OMX_MEMFREE_STRUCT(_pStruct_)\
-    AACENC_DPRINT("%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
+    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
         newfree(_pStruct_);\
         _pStruct_ = NULL;\
     }
 
 #define OMX_CLOSE_PIPE(_pStruct_,err)\
-    AACENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
+    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d :: CLOSING PIPE \n",__LINE__);\
     err = close (_pStruct_);\
     if(0 != err && OMX_ErrorNone == eError){\
         eError = OMX_ErrorHardware;\
-        AACENC_DPRINT("%d :: Error while closing pipe\n",__LINE__);\
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error while closing pipe\n",__LINE__);\
         goto EXIT;\
     }
 
 #define OMX_DPRINT_ADDRESS(_s_, _ptr_)  \
-    printf("%s = %p\n", _s_, _ptr_);
+    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%s = %p\n", _s_, _ptr_);
 
 
 #undef SWAT_ANALYSIS
@@ -593,6 +599,8 @@ pthread_mutex_t InLoaded_mutex;
     OMX_U32 tickcountBufIndex[MAX_NUM_OF_BUFS];
     
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
+
+    struct OMX_TI_Debug dbg;
 
 } AACENC_COMPONENT_PRIVATE;
 

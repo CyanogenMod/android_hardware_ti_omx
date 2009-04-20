@@ -81,7 +81,8 @@ typedef enum OMX_AACENC_INDEXAUDIOTYPE {
     OMX_IndexCustomAacEncHeaderInfoConfig = 0xFF000001,
     OMX_IndexCustomAacEncStreamIDConfig,
     OMX_IndexCustomAacEncFramesPerOutBuf,
-       OMX_IndexCustomAacEncDataPath    
+    OMX_IndexCustomAacEncDataPath,
+    OMX_IndexCustomDebug
 }OMX_AACENC_INDEXAUDIOTYPE;
 
 #endif /* OMX_AACENCODER_H */
