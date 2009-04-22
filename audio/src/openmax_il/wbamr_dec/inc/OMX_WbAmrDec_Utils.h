@@ -134,7 +134,7 @@ enum WBAMRDEC_MimeMode {
 #ifdef UNDER_CE
 #define WBAMR_DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define WBAMR_DEC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define WBAMR_DEC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -145,7 +145,7 @@ enum WBAMRDEC_MimeMode {
 #ifdef UNDER_CE
 #define WBAMR_DEC_DLL_NAME "\\windows\\wbamrdec_sn.dll64P"
 #else
-#define WBAMR_DEC_DLL_NAME "/lib/dsp/wbamrdec_sn.dll64P"
+#define WBAMR_DEC_DLL_NAME "wbamrdec_sn.dll64P"
 #endif
 
 /* ======================================================================= */

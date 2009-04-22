@@ -429,7 +429,7 @@
 #ifdef UNDER_CE
     #define NBAMRENC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-    #define NBAMRENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+    #define NBAMRENC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -440,7 +440,7 @@
 #ifdef UNDER_CE
     #define NBAMRENC_DLL_NAME "\\windows\\nbamrenc_sn.dll64P"
 #else
-    #define NBAMRENC_DLL_NAME "/lib/dsp/nbamrenc_sn.dll64P"
+    #define NBAMRENC_DLL_NAME "nbamrenc_sn.dll64P"
 #endif
 
 /* ======================================================================= */

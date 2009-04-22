@@ -169,29 +169,17 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     plcml_Init->NodeInfo.nNumOfDLLs = 3;
 
     plcml_Init->NodeInfo.AllUUIDs[0].uuid = (struct DSP_UUID*)&MPEG4AACENC_SN_UUID;
-#ifndef UNDER_CE
-    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[0].DllName,"/lib/dsp/mpeg4aacenc_sn.dll64P");
-#else
-    strcpy (plcml_Init->NodeInfo.AllUUIDs[0].DllName,"\\windows\\mpeg4aacenc_sn.dll64P");                                               
-#endif
+    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[0].DllName,AACENC_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[0].eDllType = DLL_NODEOBJECT;
 
 
     plcml_Init->NodeInfo.AllUUIDs[1].uuid = (struct DSP_UUID*)&MPEG4AACENC_SN_UUID;
-#ifndef UNDER_CE
-    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[1].DllName,"/lib/dsp/mpeg4aacenc_sn.dll64P");
-#else
-    strcpy (plcml_Init->NodeInfo.AllUUIDs[1].DllName,"\\windows\\mpeg4aacenc_sn.dll64P");
-#endif
+    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[1].DllName,AACENC_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[1].eDllType = DLL_DEPENDENT;
 
 
     plcml_Init->NodeInfo.AllUUIDs[2].uuid = &USN_TI_UUID;
-#ifndef UNDER_CE
-    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[2].DllName,"/lib/dsp/usn.dll64P");
-#else
-    strcpy (plcml_Init->NodeInfo.AllUUIDs[2].DllName,"\\windows\\usn.dll64P");
-#endif
+    strcpy ((char*)plcml_Init->NodeInfo.AllUUIDs[2].DllName,AACENC_USN_DLL_NAME);
     plcml_Init->NodeInfo.AllUUIDs[2].eDllType = DLL_DEPENDENT;
 
     plcml_Init->DeviceInfo.TypeofDevice = 0;

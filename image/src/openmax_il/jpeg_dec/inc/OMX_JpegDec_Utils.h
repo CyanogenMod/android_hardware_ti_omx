@@ -254,9 +254,9 @@ do {					       \
     #define JPEG_COMMON_DLL "/windows/usn.dll64P"
     #define USN_DLL "/windows/usn.dll64P"
 #else
-#define JPEG_DEC_NODE_DLL "/lib/dsp/jpegdec_sn.dll64P"
-#define JPEG_COMMON_DLL "/lib/dsp/usn.dll64P"
-#define USN_DLL "/lib/dsp/usn.dll64P"
+#define JPEG_DEC_NODE_DLL "jpegdec_sn.dll64P"
+#define JPEG_COMMON_DLL "usn.dll64P"
+#define USN_DLL "usn.dll64P"
 #endif
 
 #define JPGDEC_SNTEST_STRMCNT       2
