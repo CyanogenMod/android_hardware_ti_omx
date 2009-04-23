@@ -45,6 +45,7 @@
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
 #include <pthread.h>
+#include <OMX_TI_Debug.h>
 /* #include <ResourceManagerProxyAPI.h> */
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -59,11 +60,17 @@
 /*#include <ResourceManagerProxyAPI.h> */
 #endif
 
-/* Log for Android system*/
-#include <utils/Log.h>
+#ifndef ANDROID
+    #define ANDROID
+#endif
 
-/* PV opencore capability custom parameter index */
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#ifdef ANDROID
+    #undef LOG_TAG
+    #define LOG_TAG "OMX_NBAMRDEC"
+
+    /* PV opencore capability custom parameter index */
+    #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
+#endif
 
 
 /* ======================================================================= */
@@ -801,6 +808,8 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
 
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
 
+    struct OMX_TI_Debug dbg;
+
 } AMRDEC_COMPONENT_PRIVATE;
 
 typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
@@ -812,7 +821,8 @@ typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
         OMX_IndexCustomNbAmrDecHeaderInfoConfig,
         OMX_IndexCustomNbAmrDecStreamIDConfig,
         OMX_IndexCustomNbAmrDecDataPath,
-        OMX_IndexCustomNbAmrDecNextFrameLost        
+        OMX_IndexCustomNbAmrDecNextFrameLost,
+        OMX_IndexCustomDebug
 }OMX_NBAMRDEC_INDEXAUDIOTYPE;
 
 #endif /* OMX_AMRDECODER_H */

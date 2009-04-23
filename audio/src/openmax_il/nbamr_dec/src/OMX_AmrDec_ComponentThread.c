@@ -75,7 +75,7 @@ void* ComponentThread (void* pThreadData)
     OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
 	ssize_t ret;
 
-	AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: \n",__LINE__);
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: \n",__LINE__);
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('N', 'B', '_', 'D'),
@@ -107,29 +107,29 @@ void* ComponentThread (void* pThreadData)
 #endif
 
         if (pComponentPrivate->bIsStopping == 1) {
-            AMRDEC_DPRINT(":: Comp Thrd Exiting here...\n");
+            OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
             goto EXIT;
         }
 
         if (0 == status) {
 
-            AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: bIsStopping = %ld\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: bIsStopping = %ld\n",__LINE__,
                                   pComponentPrivate->bIsStopping);
 
-            AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: lcml_nOpBuf = %ld\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: lcml_nOpBuf = %ld\n",__LINE__,
                                   pComponentPrivate->lcml_nOpBuf);
 
-            AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: lcml_nIpBuf = %ld\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: lcml_nIpBuf = %ld\n",__LINE__,
                                   pComponentPrivate->lcml_nIpBuf);
-            AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: app_nBuf = %ld\n",__LINE__,
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: app_nBuf = %ld\n",__LINE__,
                                   pComponentPrivate->app_nBuf);
 
             if (pComponentPrivate->bIsStopping == 1)  {
-               AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
+               OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
 
-                   AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
+                   OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
                 if(eError != OMX_ErrorNone) {
-                   AMRDEC_EPRINT("%d :: OMX_AmrDec_ComponentThread.c :: Error Occurred in Codec Stop..\n",__LINE__);
+                   OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Error Occurred in Codec Stop..\n",__LINE__);
                     break;
                 }
                 pComponentPrivate->bIsStopping = 0;
@@ -138,15 +138,15 @@ void* ComponentThread (void* pThreadData)
                 pComponentPrivate->app_nBuf = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
 
-                   AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
+                   OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateIdle) {
-                   AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
+                   OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
                     goto EXIT;
                 }
             }
-             AMRDEC_DPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
+             OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
         } else if (-1 == status) {
-            AMRDEC_EPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: Error in Select\n", __LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Error in Select\n", __LINE__);
             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                     pHandle->pApplicationPrivate,
                                                     OMX_EventError,
@@ -157,31 +157,31 @@ void* ComponentThread (void* pThreadData)
 
         }
         else if (FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) {
-            AMRDEC_DPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: DATA pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: DATA pipe is set in Component Thread\n",__LINE__);
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                AMRDEC_EPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: Error while reading from the pipe\n",__LINE__);
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Error while reading from the pipe\n",__LINE__);
             }
             eError = NBAMRDECHandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                AMRDEC_EPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: Error From NBAMRDECHandleDataBuf_FromApp\n",__LINE__);
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Error From NBAMRDECHandleDataBuf_FromApp\n",__LINE__);
                 break;
             }
 
         }
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
             /* Do not accept any command when the component is stopping */
-            AMRDEC_DPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: CMD pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: CMD pipe is set in Component Thread\n",__LINE__);
             nRet = NBAMRDECHandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
-                AMRDEC_DPRINT ("%d :: OMX_AmrDec_ComponentThread.c :: Exiting from Component thread\n",__LINE__);
+                OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Exiting from Component thread\n",__LINE__);
 
                 if(eError != OMX_ErrorNone) {
-                    AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: Function Mp3Dec_FreeCompResources returned\
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Function Mp3Dec_FreeCompResources returned\
                                                                 error\n",__LINE__);
                     goto EXIT;
                 }
-                AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: ARM Side Resources Have Been Freed\n",__LINE__);
+                OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: ARM Side Resources Have Been Freed\n",__LINE__);
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
@@ -211,6 +211,6 @@ EXIT:
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
 
-    AMRDEC_DPRINT("%d :: OMX_AmrDec_ComponentThread.c :: Exiting ComponentThread\n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Exiting ComponentThread\n",__LINE__);
     return (void*)OMX_ErrorNone;
 }
