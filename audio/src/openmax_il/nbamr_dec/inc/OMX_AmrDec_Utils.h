@@ -143,14 +143,14 @@
 #define NBAMR_DEC_OMX_MALLOC(_pStruct_, _sName_)                         \
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                   \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-   AMRDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
+   OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
    /* ======================================================================= */
 /**
@@ -160,14 +160,14 @@
 #define NBAMR_DEC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    AMRDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 
 /* ======================================================================= */
@@ -177,7 +177,7 @@
 /* ======================================================================= */
 
 #define OMX_NBDECMEMFREE_STRUCT(_pStruct_)\
-	AMRDEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
+	OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
