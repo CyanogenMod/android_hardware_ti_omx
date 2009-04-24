@@ -48,5 +48,5 @@ struct DSP_UUID G726ENCSOCKET_TI_UUID = {
 	0xef, 0x82, 0xe1, 0x0a, 0x1a, 0xcb
     }
 };
-
+
 #endif
