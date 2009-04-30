@@ -19,24 +19,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /* =============================================================================
-*             Texas Instruments OMAP(TM) Platform Software
-*  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
-*
-*  Use of this software is controlled by the terms and conditions found
-*  in the license agreement under which this software has been supplied.
-* ============================================================================ */
+ *             Texas Instruments OMAP(TM) Platform Software
+ *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
+ *
+ *  Use of this software is controlled by the terms and conditions found
+ *  in the license agreement under which this software has been supplied.
+ * ============================================================================ */
 /**
-* @file OMX_WbAmrDec_ComponentThread.h
-*
-* This is an header file for an audio WbAmr Decoder that is fully
-* compliant with the Khronos OpenMAX 1.0 specification.
-* This the file that the application that uses OMX would include
-* in its code.
-*
-* @path $(CSLPATH)\
-*
-* @rev 1.0
-*/
+ * @file OMX_WbAmrDec_ComponentThread.h
+ *
+ * This is an header file for an audio WbAmr Decoder that is fully
+ * compliant with the Khronos OpenMAX 1.0 specification.
+ * This the file that the application that uses OMX would include
+ * in its code.
+ *
+ * @path $(CSLPATH)\
+ *
+ * @rev 1.0
+ */
 /* --------------------------------------------------------------------------- */
 
 #ifndef OMX_WBAMR_DEC_COMPONENTTHREAD__H
@@ -45,14 +45,14 @@
 #define WBAMR_DEC_EXIT_COMPONENT_THRD  10
 /* ===========================================================  */
 /**
-*  WBAMR_DEC_ComponentThread()  Component thread
-*
-*
-*  @param pThreadData		Thread data
-*
-*  @return None
-*
-*/
+ *  WBAMR_DEC_ComponentThread()  Component thread
+ *
+ *
+ *  @param pThreadData       Thread data
+ *
+ *  @return None
+ *
+ */
 /*================================================================== */
 void* WBAMR_DEC_ComponentThread (void* pThreadData);
 

@@ -157,13 +157,13 @@ enum WBAMRDEC_MimeMode {
     _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
     if(_pStruct_ == NULL){                                          \
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                   \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "Malloc Failed\n");                   \
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");            \
         eError = OMX_ErrorInsufficientResources;                    \
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-   OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
+   OMXDBG_PRINT(stderr, BUFFER, 2, 0, "Malloced = %p\n",_pStruct_);
 
    /* ======================================================================= */
 /**
@@ -174,13 +174,13 @@ enum WBAMRDEC_MimeMode {
     _ptr_ = (_name_*)newmalloc(_size_);                         \
     if(_ptr_ == NULL){                                          \
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "Malloc Failed\n");               \
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
         eError = OMX_ErrorInsufficientResources;                \
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "Malloced = %p\n",_ptr_);
 
 /* ======================================================================= */
 /**
@@ -189,72 +189,12 @@ enum WBAMRDEC_MimeMode {
 /* ======================================================================= */
 
 #define OMX_WBDECMEMFREE_STRUCT(_pStruct_)\
-	OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
+	OMXDBG_PRINT(stderr, BUFFER, 2, 0, "FREEING MEMORY = %p\n",_pStruct_);\
     if(_pStruct_ != NULL){\
     	newfree(_pStruct_);\
 	    _pStruct_ = NULL;\
 	}
 
-/* ======================================================================= */
-/**
- * @def    WBAMR_DEC_EPRINT   Error print macro
- */
-/* ======================================================================= */
-#ifndef UNDER_CE
-        #define WBAMR_DEC_EPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-#else
-        #define WBAMR_DEC_EPRINT    printf
-#endif
-/* ======================================================================= */
-/**
- * @def    WBAMR_DEC_DEBUG   Debug print macro
- */
-/* ======================================================================= */
-#ifndef UNDER_CE
-#ifdef  WBAMR_DEC_DEBUG
-        #define WBAMR_DEC_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-#else
-        #define WBAMR_DEC_DPRINT(...)
-#endif
-/* ======================================================================= */
-/**
- * @def    WBAMR_DEC_MEMCHECK   Memory print macro
- */
-/* ======================================================================= */
-#ifdef  WBAMR_DEC_MEMCHECK
-        #define WBAMR_DEC_MEMPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-#else
-        #define WBAMR_DEC_MEMPRINT(...)
-#endif
-
-#ifdef  WBAMR_DEC_DEBUG_MCP
-        #define WBAMR_DEC_MCP_DPRINT(...)    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	",__FUNCTION__, __LINE__);\
-	                                __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-#else
-        #define WBAMR_DEC_MCP_DPRINT(...)
-#endif
-
-#else /*UNDER_CE*/
-
-	#ifdef DEBUG
-		 #define WBAMR_DEC_DPRINT printf
-		 #define WBAMR_DEC_MEMPRINT printf
-	#else
-		 #define WBAMR_DEC_DPRINT
-	     #define WBAMR_DEC_MEMPRINT
-	#endif
-
-#endif
-
-
-typedef OMX_ERRORTYPE (*WBAMR_DEC_fpo)(OMX_HANDLETYPE);
 
 /* ===========================================================  */
 /**
@@ -384,23 +324,6 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE *pBufHeader,
         WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate);
 /* ===========================================================  */
 /**
-*  WBAMR_DEC_HandleDataBuf_FromLCML()  Handles data buffers received
-* from LCML
-*
-*  @param pComponentPrivate	Component private data
-*
-*  @return OMX_ErrorNone = Successful
-*          Other error code = fail
-*  @return OMX_ErrorNone = Successful
-*          Other error code = fail
-*/
-/*================================================================== */
-/* OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromLCML(WBAMR_DEC_COMPONENT_PRIVATE* pComponentPrivate); */
-
-void  WBAMR_DEC_AddHeader(BYTE **pFileBuf);
-void  WBAMR_DEC_ResetPtr(BYTE **pFileBuf);
-/* ===========================================================  */
-/**
 *  WBAMR_DEC_GetLCMLHandle()  Get the handle to the LCML
 *
 *
@@ -500,7 +423,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 */
 /*================================================================== */
 OMX_U32 WBAMR_DEC_IsValid(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
-/* OMX_ERRORTYPE WBAMR_DEC_TransitionToIdle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate); */
 
 /* void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
 

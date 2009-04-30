@@ -19,36 +19,36 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /* ==============================================================================
-*             Texas Instruments OMAP (TM) Platform Software
-*  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
-*
-*  Use of this software is controlled by the terms and conditions found
-*  in the license agreement under which this software has been supplied.
-* ============================================================================ */
+ *             Texas Instruments OMAP (TM) Platform Software
+ *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
+ *
+ *  Use of this software is controlled by the terms and conditions found
+ *  in the license agreement under which this software has been supplied.
+ * ============================================================================ */
 /**
-* @file OMX_AmrDec_ComponentThread.c
-*
-* This file implements OMX Component for PCM decoder that
-* is fully compliant with the OMX Audio specification 1.0.
-*
-* @path  $(CSLPATH)\
-*
-* @rev  0.1
-*/
+ * @file OMX_WbAmrDec_ComponentThread.c
+ *
+ * This file implements OMX Component for WBMAR decoder that
+ * is fully compliant with the OMX Audio specification 1.0.
+ *
+ * @path  $(CSLPATH)\
+ *
+ * @rev  0.1
+ */
 /* ----------------------------------------------------------------------------
-*!
-*! Revision History
-*! ===================================
-*! 10-Sept-2005 mf:  Initial Version. Change required per OMAPSWxxxxxxxxx
-*! to provide _________________.
-*!
-* ============================================================================= */
+ *!
+ *! Revision History
+ *! ===================================
+ *! 10-Sept-2005 mf:  Initial Version. Change required per OMAPSWxxxxxxxxx
+ *! to provide _________________.
+ *!
+ * ============================================================================= */
 
 
 /* ------compilation control switches -------------------------*/
 /****************************************************************
-*  INCLUDE FILES
-****************************************************************/
+ *  INCLUDE FILES
+ ****************************************************************/
 /* ----- system and platform files ----------------------------*/
 #ifdef UNDER_CE
 #include <windows.h>
@@ -70,10 +70,10 @@
 
 /* ================================================================================= */
 /**
-* @fn WBAMR_DEC_ComponentThread() Component thread
-*
-*  @see         OMX_ComponentThread.h
-*/
+ * @fn WBAMR_DEC_ComponentThread() Component thread
+ *
+ *  @see         OMX_ComponentThread.h
+ */
 /* ================================================================================ */
 
 void* WBAMR_DEC_ComponentThread (void* pThreadData)
@@ -87,9 +87,9 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
     WBAMR_DEC_COMPONENT_PRIVATE* pComponentPrivate = (WBAMR_DEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
     OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
-	ssize_t ret;
+    ssize_t ret;
 
-	OMX_PRINT1(pComponentPrivate->dbg, "OMX_AmrDec_ComponentThread:%d\n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering\n");
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('W', 'B', '_', 'D'),
@@ -111,121 +111,113 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-        OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
+        OMX_PRINT1(pComponentPrivate->dbg, "AmrComponentThread \n");
 #ifndef UNDER_CE
-		sigset_t set;
-		sigemptyset (&set);
-		sigaddset (&set, SIGALRM);
-		status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
+        sigset_t set;
+        sigemptyset (&set);
+        sigaddset (&set, SIGALRM);
+        status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
 #else
         status = select (fdmax+1, &rfds, NULL, NULL, &tv);
 #endif
 
         if (pComponentPrivate->bIsStopping == 1) {
-            OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
+            OMX_ERROR4(pComponentPrivate->dbg, "Comp Thrd Exiting here...\n");
             goto EXIT;
         }
         if (0 == status) {
 
-            OMX_PRSTATE2(pComponentPrivate->dbg, "%d : bIsStopping = %ld\n",__LINE__,
-                                  pComponentPrivate->bIsStopping);
+            OMX_PRSTATE2(pComponentPrivate->dbg, "bIsStopping = %ld\n",
+                         pComponentPrivate->bIsStopping);
 
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : lcml_nOpBuf = %ld\n",__LINE__,
-                                  pComponentPrivate->lcml_nOpBuf);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "lcml_nOpBuf = %ld\n",
+                          pComponentPrivate->lcml_nOpBuf);
 
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : lcml_nIpBuf = %ld\n",__LINE__,
-                                  pComponentPrivate->lcml_nIpBuf);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : app_nBuf = %ld\n",__LINE__,
-                                  pComponentPrivate->app_nBuf);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "lcml_nIpBuf = %ld\n",
+                          pComponentPrivate->lcml_nIpBuf);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "app_nBuf = %ld\n",
+                          pComponentPrivate->app_nBuf);
 
             if (pComponentPrivate->bIsStopping == 1)  {
-               OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
 
-                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
-                if(eError != OMX_ErrorNone) {
-                   OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
-                    break;
-                }
                 pComponentPrivate->bIsStopping = 0;
                 pComponentPrivate->lcml_nOpBuf = 0;
                 pComponentPrivate->lcml_nIpBuf = 0;
                 pComponentPrivate->app_nBuf = 0;
                 pComponentPrivate->num_Reclaimed_Op_Buff = 0;
 
-                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
+                OMX_PRINT1(pComponentPrivate->dbg, "AmrComponentThread \n");
                 if (pComponentPrivate->curState != OMX_StateIdle) {
-                   OMX_PRINT1(pComponentPrivate->dbg, "%d:AmrComponentThread \n",__LINE__);
+                    OMX_PRINT1(pComponentPrivate->dbg, "AmrComponentThread \n");
                     goto EXIT;
                 }
             }
-            WBAMR_DEC_DPRINT ("%d :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg,"Component Time Out !!!!!!!!!!!! \n");
         } else if (-1 == status) {
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error in Select\n", __LINE__);
+            OMX_ERROR4(pComponentPrivate->dbg, "Error in Select\n");
             pComponentPrivate->cbInfo.EventHandler (pHandle,
-						                             pHandle->pApplicationPrivate,
-						                             OMX_EventError,
-													 OMX_ErrorInsufficientResources,
-													 OMX_TI_ErrorSevere,
+                                                    pHandle->pApplicationPrivate,
+                                                    OMX_EventError,
+                                                    OMX_ErrorInsufficientResources,
+                                                    OMX_TI_ErrorSevere,
                                                     "Error from Component Thread in select");
             exit(1);
 
         } else if (FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) {
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "DATA pipe is set in Component Thread\n");
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
-                OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error while reading from the pipe\n",__LINE__);
+                OMX_ERROR4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
             }
             eError = WBAMR_DEC_HandleDataBuf_FromApp (pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
-                OMX_ERROR2(pComponentPrivate->dbg, "%d :: Error From WBAMR_DEC_HandleDataBuf_FromApp\n",__LINE__);
+                OMX_ERROR2(pComponentPrivate->dbg, "Error From WBAMR_DEC_HandleDataBuf_FromApp\n");
                 break;
             }
         }
         else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
             /* Do not accept any command when the component is stopping */
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: CMD pipe is set in Component Thread\n",__LINE__);
+            OMX_PRCOMM2(pComponentPrivate->dbg, "CMD pipe is set in Component Thread\n");
             nRet = WBAMR_DEC_HandleCommand (pComponentPrivate);
             if (nRet == WBAMR_DEC_EXIT_COMPONENT_THRD) {
                 OMX_PRINT1(pComponentPrivate->dbg, "Exiting from Component thread\n");
 
                 if(eError != OMX_ErrorNone) {
-                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Function Mp3Dec_FreeCompResources returned\
-                                                                error\n",__LINE__);
+                    OMX_ERROR4(pComponentPrivate->dbg, "Function Mp3Dec_FreeCompResources returned\
+                                                                error\n");
                     goto EXIT;
                 }
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: ARM Side Resources Have Been Freed\n",__LINE__);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "ARM Side Resources Have Been Freed\n");
 
                 pComponentPrivate->curState = OMX_StateLoaded;
 #ifdef __PERF_INSTRUMENTATION__
-				PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
+                PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
 #endif
-				if (pComponentPrivate->bPreempted == 0) {
-	                pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                        pHandle->pApplicationPrivate,
-                                                        OMX_EventCmdComplete,
-                                                        OMX_ErrorNone,
-                                                        pComponentPrivate->curState, 
-                                                        NULL);
-				}
-				else {
-	                pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                        pHandle->pApplicationPrivate,
-                                                        OMX_EventError,
-                                                        OMX_ErrorResourcesLost, 
-                                                        OMX_TI_ErrorMajor, 
-														NULL);
-					pComponentPrivate->bPreempted = 0;
-				}
+                if (pComponentPrivate->bPreempted == 0) {
+                    pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventCmdComplete,
+                                                           OMX_ErrorNone,
+                                                           pComponentPrivate->curState,
+                                                           NULL);
+                }
+                else {
+                    pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                           pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           OMX_ErrorResourcesLost,
+                                                           OMX_TI_ErrorMajor,
+                                                           NULL);
+                    pComponentPrivate->bPreempted = 0;
+                }
 
             }
         }
     }
-EXIT:
+ EXIT:
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    OMX_PRINT1(pComponentPrivate->dbg, "%d::Exiting WBAMR_DEC_ComponentThread\n",__LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "Exiting\n");
     return (void*)OMX_ErrorNone;
-
-
 }
