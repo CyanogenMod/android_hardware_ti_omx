@@ -5919,7 +5919,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
             }
             else {
-                pBuffHead->nFilledLen = 0;
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_COMPONENT;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
                 pComponentPrivate->nInputBCountDsp++;
@@ -5938,14 +5937,17 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             if(pComponentPrivate->iEndofInputSent == 0){
                 pComponentPrivate->iEndofInputSent = 1;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "Sending EOS Empty eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-                if(pComponentPrivate->pUalgParams != NULL){
-                    OMX_U8* pTemp = NULL;
-                    pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
-                    pTemp -= VIDDEC_PADDING_HALF;
-                    pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
-                    free(pComponentPrivate->pUalgParams);
-                    pComponentPrivate->pUalgParams = NULL;
+                if(pComponentPrivate->eFirstBuffer.bSaveFirstBuffer == OMX_FALSE){
+                    if(pComponentPrivate->pUalgParams != NULL){
+                        OMX_U8* pTemp = NULL;
+                        pTemp = (OMX_U8*)(pComponentPrivate->pUalgParams);
+                        pTemp -= VIDDEC_PADDING_HALF;
+                        pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
+                        free(pComponentPrivate->pUalgParams);
+                        pComponentPrivate->pUalgParams = NULL;
+                    }
                 }
+
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                     if(pComponentPrivate->pUalgParams == NULL)
                     {
@@ -6110,14 +6112,43 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     }
 
                     OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT)\n");
-                    eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
-                                                  NULL,
-                                                  0,
-                                                  0,
-                                                  (OMX_U8 *)pComponentPrivate->pUalgParams,
-                                                  size_dsp,
-                                                  (OMX_PTR)&pComponentPrivate->pTempBuffHead);
+
+                    /* Verify if first buffer as been stored. 
+                     * Handle case were only one frame is decoded */
+                    if(pComponentPrivate->eFirstBuffer.bSaveFirstBuffer){
+                        eError = VIDDEC_CopyBuffer(pComponentPrivate, pBuffHead);
+                        if (eError != OMX_ErrorNone) {
+                            OMX_PRDSP4(pComponentPrivate->dbg, "VIDDEC_HandleDataBuf_FromApp: VIDDEC_CopyBuffer()= 0x%x\n", eError);
+                            if (eError == OMX_ErrorInsufficientResources) {
+                                goto EXIT;
+                            }
+                        }
+                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+                        eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
+                                                    pLcmlHandle)->pCodecinterfacehandle,
+                                                    EMMCodecInputBuffer,
+                                                    &pBuffHead->pBuffer[pBuffHead->nOffset],/*WMV_VC1_CHANGES*/
+                                                    pBuffHead->nAllocLen,
+                                                    pBuffHead->nFilledLen,
+                                                    (OMX_U8 *)pComponentPrivate->pUalgParams,
+                                                    size_dsp,
+                                                    (OMX_U8 *)pBuffHead);
+                        if (eError != OMX_ErrorNone){
+                            OMX_PRDSP4(pComponentPrivate->dbg, "LCML_QueueBuffer EOS (0x%x)\n",eError);
+                            eError = OMX_ErrorHardware;
+                            goto EXIT;
+                        }
+                    }
+                    else{
+                        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                                      EMMCodecInputBuffer,
+                                                      NULL,
+                                                      0,
+                                                      0,
+                                                      (OMX_U8 *)pComponentPrivate->pUalgParams,
+                                                      size_dsp,
+                                                      (OMX_PTR)&pComponentPrivate->pTempBuffHead);
+                    }
                 }
 #endif
                     if (eError != OMX_ErrorNone){
