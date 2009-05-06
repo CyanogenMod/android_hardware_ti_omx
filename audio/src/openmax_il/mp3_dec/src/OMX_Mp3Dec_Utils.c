@@ -1957,14 +1957,13 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     }
                     // save the current value of nChannels
                     temp2 = pComponentPrivate->pcmParams->nChannels;
-                    // if stereo or joint stereo, then pcm channels is stereo. Otherwise pcm output will be mono
-                    if (pComponentPrivate->pStreamData.nChannelMode == 0 || pComponentPrivate->pStreamData.nChannelMode == 1){
-                        pComponentPrivate->pcmParams->nChannels = MP3D_STEREO_STREAM;
-                    }
-                    else{ // value of 2 = dual channel; 3 = mono
+                    // value of 3 = mono
+                    if (pComponentPrivate->pStreamData.nChannelMode == 3){
                         pComponentPrivate->pcmParams->nChannels = 1;
                     }
-                     
+                    else{ // if stereo,joint stereo or dual channel, then pcm channels is stereo. Otherwise pcm output will be mono
+                         pComponentPrivate->pcmParams->nChannels = MP3D_STEREO_STREAM;
+                    }
                     // decide if dynamic reconfig is needed
                     OMX_PRCOMM2(pComponentPrivate->dbg, ": decide on reconfig ports...\n");
                     if (temp !=  pComponentPrivate->pcmParams->nSamplingRate || 
@@ -3483,4 +3482,3 @@ OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
     nOutput = nOutput >> (32 - nBits) ;
     return nOutput;
 }
-
