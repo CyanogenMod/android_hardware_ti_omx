@@ -1847,7 +1847,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 }
 				
 #endif
-				if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE)
+				else if (pComponentPrivate->mimemode == NBAMRDEC_PADMIMEMODE)
 								{
 									OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
 											taBuf_FromApp - reading NBAMRDEC_PADMIMEMODE\

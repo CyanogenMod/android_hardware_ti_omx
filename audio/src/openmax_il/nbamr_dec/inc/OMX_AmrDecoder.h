@@ -349,7 +349,8 @@ enum NBAMRDEC_DecodeType
 enum NBAMRDEC_MimeMode {
 	NBAMRDEC_FORMATCONFORMANCE,
 	NBAMRDEC_MIMEMODE,
-    NBAMRDEC_IF2
+        NBAMRDEC_IF2,
+        NBAMRDEC_PADMIMEMODE
 };
 
 /* ======================================================================= */
