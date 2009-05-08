@@ -1023,6 +1023,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->pH264->bDirectSpatialTemporal    = VIDDEC_DEFAULT_H264_DIRECTSPATIALTEMPORAL;
             pComponentPrivate->pH264->nCabacInitIdc             = VIDDEC_DEFAULT_H264_CABACINITIDC;
             pComponentPrivate->pH264->eLoopFilterMode           = VIDDEC_DEFAULT_H264_LOOPFILTERMODE;
+            pComponentPrivate->H264BitStreamFormat              = VIDDEC_DEFAULT_H264BITSTRMFMT;
 
             pComponentPrivate->pH263->nPortIndex                = VIDDEC_DEFAULT_H263_PORTINDEX;
             pComponentPrivate->pH263->nPFrames                  = VIDDEC_DEFAULT_H263_PFRAMES;
@@ -1038,11 +1039,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             OMX_CONF_INIT_STRUCT(pComponentPrivate->pWMV, OMX_VIDEO_PARAM_WMVTYPE, pComponentPrivate->dbg);
             pComponentPrivate->pWMV->nPortIndex                 = VIDDEC_DEFAULT_WMV_PORTINDEX;
             pComponentPrivate->pWMV->eFormat                    = VIDDEC_DEFAULT_WMV_FORMAT;
-
-            pComponentPrivate->ProcessMode                      = VIDDEC_DEFAULT_PROCESSMODE;
-#ifdef VIDDEC_FLAGGED_EOS
-            pComponentPrivate->bUseFlaggedEos                   = OMX_TRUE;
-#endif
+            pComponentPrivate->nWMVFileType                     = VIDDEC_WMV_RCVSTREAM; /* RCVSTREAM must be the default value*/
             pComponentPrivate->wmvProfile                       = VIDDEC_WMV_PROFILEMAX;
 #ifdef UNDER_CE
             pComponentPrivate->bIsNALBigEndian                   = OMX_TRUE;
@@ -1055,9 +1052,8 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->bLCMLOut                         = OMX_FALSE;
 #endif
             pComponentPrivate->eRMProxyState                    = VidDec_RMPROXY_State_Unload;
-            pComponentPrivate->nWMVFileType                     = VIDDEC_WMV_RCVSTREAM; /* RCVSTREAM must be the default value*/
+            pComponentPrivate->ProcessMode                      = VIDDEC_DEFAULT_PROCESSMODE;
             pComponentPrivate->bParserEnabled                   = OMX_TRUE;
-            pComponentPrivate->H264BitStreamFormat              = VIDDEC_DEFAULT_H264BITSTRMFMT;
 
             VIDDEC_CircBuf_Init(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
 #ifndef UNDER_CE
@@ -2599,30 +2595,26 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
 #endif
 #endif
-
-#ifdef VIDDEC_FLAGGED_EOS
-                if (pComponentPrivate->bUseFlaggedEos) {
-                    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-                        pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-                        pComponentPrivate->pLCML != NULL &&
-                        pComponentPrivate->bLCMLHalted != OMX_TRUE){
-                        OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
-                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlUsnEos, NULL);
-                        if (eError != OMX_ErrorNone) {
-                            OMX_PRDSP4(pComponentPrivate->dbg, "error in EMMCodecControlUsnEos %x\n",eError);
-                            eError = OMX_ErrorHardware;
-                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   OMX_EventError,
-                                                                   OMX_ErrorHardware,
-                                                                   OMX_TI_ErrorSevere,
-                                                                   "LCML_ControlCodec EMMCodecControlUsnEos function");
-                            OMX_ERROR4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
-                            goto EXIT;
-                        }
+                /* Send command to USN to do the propagation of the EOS flag */
+                if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
+                    pComponentPrivate->pLCML != NULL &&
+                    pComponentPrivate->bLCMLHalted != OMX_TRUE){
+                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlUsnEos, NULL);
+                    if (eError != OMX_ErrorNone) {
+                        OMX_PRDSP4(pComponentPrivate->dbg, "error in EMMCodecControlUsnEos %x\n",eError);
+                        eError = OMX_ErrorHardware;
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                                               OMX_EventError,
+                                                               OMX_ErrorHardware,
+                                                               OMX_TI_ErrorSevere,
+                                                               "LCML_ControlCodec EMMCodecControlUsnEos function");
+                        OMX_ERROR4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
+                        goto EXIT;
                     }
                 }
-#endif
                if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingWMV) {
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
@@ -3778,215 +3770,107 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
 
     if(pBuffHead->pOutputPortPrivate != NULL) {
         pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
-#ifdef VIDDEC_FLAGGED_EOS
-        if (!pComponentPrivate->bUseFlaggedEos) {
-#endif
-            if((pComponentPrivate->bPlayCompleted == 0 && pComponentPrivate->bBuffFound == OMX_FALSE) ||
-                (pComponentPrivate->bPlayCompleted == 1 && pComponentPrivate->bBuffFound == OMX_TRUE)) {
-                if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-                    pComponentPrivate->pLCML != NULL){
+        if (pComponentPrivate->bPlayCompleted == 0 ||
+            (pComponentPrivate->bBuffFound = OMX_TRUE && pComponentPrivate->bPlayCompleted == 1)) {
+            if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
+                pComponentPrivate->pLCML != NULL) {
 #ifdef KHRONOS_1_1
-                    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                        MP4VD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
-                        pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
-                        if (pComponentPrivate->eMBErrorReport.bEnabled) {
-                            pUalgOutParams->lMbErrorBufFlag = 1;
-                        }
-                        else {
-                            pUalgOutParams->lMbErrorBufFlag = 0;
-                        }
+                if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                     pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+                    MP4VD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
+                    pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
+                    if (pComponentPrivate->eMBErrorReport.bEnabled) {
+                        pUalgOutParams->lMbErrorBufFlag = 1;
                     }
-                    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                        H264VDEC_UALGOutputParam* pUalgOutParams = NULL;
-                        pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
-                        if (pComponentPrivate->eMBErrorReport.bEnabled) {
-                            pUalgOutParams->lMBErrStatFlag = 1;
-                        }
-                        else {
-                            pUalgOutParams->lMBErrStatFlag = 0;
-                        }
-                     }
-#endif
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-                    OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
-
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleCommonLayer);
-#endif
-                    eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                              EMMCodecOuputBuffer,
-                                              pBuffHead->pBuffer,
-                                              pBuffHead->nAllocLen,
-                                              pBuffHead->nFilledLen,
-                                              (OMX_U8*)(pBufferPrivate->pUalgParam),
-                                              (OMX_S32)pBufferPrivate->nUalgParamSize,
-                                              (OMX_U8*)pBuffHead);
-                    if (eError != OMX_ErrorNone){
-                        OMX_PRDSP4(pComponentPrivate->dbg, "LCML_QueueBuffer 0x%x\n", eError);
-                        eError = OMX_ErrorHardware;
-                        goto EXIT;
+                    else {
+                        pUalgOutParams->lMbErrorBufFlag = 0;
                     }
                 }
-                else {
+                if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
+                    H264VDEC_UALGOutputParam* pUalgOutParams = NULL;
+                    pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
+                    if (pComponentPrivate->eMBErrorReport.bEnabled) {
+                        pUalgOutParams->lMBErrStatFlag = 1;
+                    }
+                    else {
+                        pUalgOutParams->lMBErrStatFlag = 0;
+                    }
+                 }
+#endif
+                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+                OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      pBuffHead->pBuffer,
+                                      pBuffHead->nFilledLen,
+                                      PERF_ModuleCommonLayer);
+#endif
+
+                OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
+                eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                          EMMCodecOuputBuffer,
+                                          pBuffHead->pBuffer,
+                                          pBuffHead->nAllocLen,
+                                          pBuffHead->nFilledLen,
+                                          (OMX_U8*)(pBufferPrivate->pUalgParam),
+                                          (OMX_S32)pBufferPrivate->nUalgParamSize,
+                                          (OMX_U8*)pBuffHead);
+                if (eError != OMX_ErrorNone){
+                    OMX_PRDSP4(pComponentPrivate->dbg, "LCML_QueueBuffer 0x%x\n", eError);
                     eError = OMX_ErrorHardware;
                     goto EXIT;
                 }
             }
             else {
-                pComponentPrivate->bBuffFound = OMX_TRUE;
-                if (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
-                        pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
-                        pBuffHead->nFilledLen = 0;
-                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_TUNNELEDCOMP;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "tunnel eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleLLMM);
-#endif
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
-                        VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                        eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[1]->hTunnelComponent, pBuffHead);
-                }
-                else {
+                eError = OMX_ErrorHardware;
+                goto EXIT;
+            }
+        }
+        else { /*if the last output buffer wans't marked then return the next input buffer*/
+            pComponentPrivate->bBuffFound = OMX_TRUE;
+            if (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
                     pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
                     pBuffHead->nFilledLen = 0;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "standalone buffer eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_TUNNELEDCOMP;
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "tunnel eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
 #ifdef __PERF_INSTRUMENTATION__
-                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                      pBuffHead->pBuffer,
-                                      pBuffHead->nFilledLen,
-                                      PERF_ModuleHLMM);
+            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                              pBuffHead->pBuffer,
+                              pBuffHead->nFilledLen,
+                              PERF_ModuleLLMM);
 #endif
-
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
                     VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventBufferFlag,
-                                                           VIDDEC_OUTPUT_PORT,
-                                                           OMX_BUFFERFLAG_EOS,
-                                                           NULL);
-                    pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
-                                                             pComponentPrivate->pHandle->pApplicationPrivate,
-                                                             pBuffHead);
-
-                }
+                    eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[1]->hTunnelComponent, pBuffHead);
             }
-#ifdef VIDDEC_FLAGGED_EOS
-        }
-        else {
-            if (pComponentPrivate->bPlayCompleted == 0 ||
-                (pComponentPrivate->bBuffFound = OMX_TRUE && pComponentPrivate->bPlayCompleted == 1)) {
-                if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-                    pComponentPrivate->pLCML != NULL) {
-#ifdef KHRONOS_1_1
-                    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                        MP4VD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
-                        pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
-                        if (pComponentPrivate->eMBErrorReport.bEnabled) {
-                            pUalgOutParams->lMbErrorBufFlag = 1;
-                        }
-                        else {
-                            pUalgOutParams->lMbErrorBufFlag = 0;
-                        }
-                    }
-                    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                        H264VDEC_UALGOutputParam* pUalgOutParams = NULL;
-                        pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
-                        if (pComponentPrivate->eMBErrorReport.bEnabled) {
-                            pUalgOutParams->lMBErrStatFlag = 1;
-                        }
-                        else {
-                            pUalgOutParams->lMBErrStatFlag = 0;
-                        }
-                     }
-#endif
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-
+            else {
+                pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
+                pBuffHead->nFilledLen = 0;
+                OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
+                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
+                OMX_PRBUFFER1(pComponentPrivate->dbg, "standalone buffer eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
 #ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleCommonLayer);
-#endif
-
-                    OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
-                    eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                              EMMCodecOuputBuffer,
-                                              pBuffHead->pBuffer,
-                                              pBuffHead->nAllocLen,
-                                              pBuffHead->nFilledLen,
-                                              (OMX_U8*)(pBufferPrivate->pUalgParam),
-                                              (OMX_S32)pBufferPrivate->nUalgParamSize,
-                                              (OMX_U8*)pBuffHead);
-                    if (eError != OMX_ErrorNone){
-                        OMX_PRDSP4(pComponentPrivate->dbg, "LCML_QueueBuffer 0x%x\n", eError);
-                        eError = OMX_ErrorHardware;
-                        goto EXIT;
-                    }
-                }
-                else {
-                    eError = OMX_ErrorHardware;
-                    goto EXIT;
-                }
-            }
-            else { /*if the last output buffer wans't marked then return the next input buffer*/
-                pComponentPrivate->bBuffFound = OMX_TRUE;
-                if (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
-                        pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
-                        pBuffHead->nFilledLen = 0;
-                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_TUNNELEDCOMP;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "tunnel eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-    #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                   pBuffHead->pBuffer,
                                   pBuffHead->nFilledLen,
-                                  PERF_ModuleLLMM);
-    #endif
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
-                        VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                        eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[1]->hTunnelComponent, pBuffHead);
-                }
-                else {
-                    pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
-                    pBuffHead->nFilledLen = 0;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "nFlags %x nFilledLen %x\n\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "standalone buffer eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-    #ifdef __PERF_INSTRUMENTATION__
-                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                      pBuffHead->pBuffer,
-                                      pBuffHead->nFilledLen,
-                                      PERF_ModuleHLMM);
-    #endif
+                                  PERF_ModuleHLMM);
+#endif
 
-                    VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventBufferFlag,
-                                                           VIDDEC_OUTPUT_PORT,
-                                                           OMX_BUFFERFLAG_EOS,
-                                                           NULL);
-                    pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
-                                                             pComponentPrivate->pHandle->pApplicationPrivate,
-                                                             pBuffHead);
+                VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       VIDDEC_OUTPUT_PORT,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+                pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
+                                                         pComponentPrivate->pHandle->pApplicationPrivate,
+                                                         pBuffHead);
 
-                }
             }
         }
-#endif
     }
     else {
         OMX_PRBUFFER2(pComponentPrivate->dbg, "null element *************n\n");
@@ -5870,12 +5754,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL){
                     pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
-#ifdef VIDDEC_FLAGGED_EOS
-                    if (pComponentPrivate->bUseFlaggedEos) {
-                        /*pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;*/
-                        pBuffHead->nFlags = 0;
-                    }
-#endif
+                    pBuffHead->nFlags = 0;
 
 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -6051,59 +5930,22 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL){
-#ifdef VIDDEC_FLAGGED_EOS
-                    if (pComponentPrivate->bUseFlaggedEos) {
-                        pComponentPrivate->pTempBuffHead.nFlags = 0;
-                        pComponentPrivate->pTempBuffHead.nFlags |= OMX_BUFFERFLAG_EOS;
-                        pComponentPrivate->pTempBuffHead.nFilledLen = 0;
-                        pComponentPrivate->pTempBuffHead.pBuffer = NULL;
-                    }
-#endif
-#ifdef VIDDEC_FLAGGED_EOS
-                if (!pComponentPrivate->bUseFlaggedEos) {
-#endif
+                    pComponentPrivate->pTempBuffHead.nFlags = 0;
+                    pComponentPrivate->pTempBuffHead.nFlags |= OMX_BUFFERFLAG_EOS;
+                    pComponentPrivate->pTempBuffHead.nFilledLen = 0;
+                    pComponentPrivate->pTempBuffHead.pBuffer = NULL;
+                    
 #ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleHLMM);
+                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      pBuffHead->pBuffer,
+                                      pBuffHead->nFilledLen,
+                                      PERF_ModuleHLMM);
 #endif
 
                     if(pComponentPrivate->bDynamicConfigurationInProgress){
                         pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
                         pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-
-                        OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
-                        pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                  pBuffHead);
-                        goto EXIT;
-                    }
-                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT)\n");
-                    eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
-                                                  NULL,
-                                                  0,
-                                                  0,
-                                                  (OMX_U8 *)pComponentPrivate->pUalgParams,
-                                                  size_dsp,
-                                                  NULL);
-#ifdef VIDDEC_FLAGGED_EOS
-                }
-                else {
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pBuffHead->pBuffer,
-                                          pBuffHead->nFilledLen,
-                                          PERF_ModuleHLMM);
-#endif
-
-                    if(pComponentPrivate->bDynamicConfigurationInProgress){
-                        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-
                         OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
                         pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
@@ -6149,8 +5991,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                                       size_dsp,
                                                       (OMX_PTR)&pComponentPrivate->pTempBuffHead);
                     }
-                }
-#endif
                     if (eError != OMX_ErrorNone){
                         OMX_PRDSP4(pComponentPrivate->dbg, "LCML_QueueBuffer 1 (0x%x)\n",eError);
                         eError = OMX_ErrorHardware;
@@ -6826,34 +6666,15 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "standalone buffer eBufferOwner 0x%x  --  %lx\n", pBufferPrivate->eBufferOwner,pBuffHead->nFlags);
-    #ifdef VIDDEC_FLAGGED_EOS
-                if (!pComponentPrivate->bUseFlaggedEos) {
-    #endif
-                    if(pComponentPrivate->bPlayCompleted == OMX_TRUE && pComponentPrivate->bBuffFound == OMX_FALSE){
-                        pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
-                        /*check values to ZERO*/
-                        pComponentPrivate->bBuffFound = OMX_TRUE;
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                            pComponentPrivate->pHandle->pApplicationPrivate,
-                                                            OMX_EventBufferFlag,
-                                                            VIDDEC_OUTPUT_PORT,
-                                                            OMX_BUFFERFLAG_EOS,
-                                                            NULL);
-                    }
-    #ifdef VIDDEC_FLAGGED_EOS
+                if((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)){
+                    pComponentPrivate->bBuffFound = OMX_TRUE;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                        pComponentPrivate->pHandle->pApplicationPrivate,
+                                                        OMX_EventBufferFlag,
+                                                        VIDDEC_OUTPUT_PORT,
+                                                        OMX_BUFFERFLAG_EOS,
+                                                        NULL);
                 }
-                else {
-                    if((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)){
-                        pComponentPrivate->bBuffFound = OMX_TRUE;
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                            pComponentPrivate->pHandle->pApplicationPrivate,
-                                                            OMX_EventBufferFlag,
-                                                            VIDDEC_OUTPUT_PORT,
-                                                            OMX_BUFFERFLAG_EOS,
-                                                            NULL);
-                    }
-                }
-    #endif
                 pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
                                                          pComponentPrivate->pHandle->pApplicationPrivate,
                                                          pBuffHead);
@@ -8115,13 +7936,9 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                PERF_ModuleCommonLayer);
 #endif
 
-#ifdef VIDDEC_FLAGGED_EOS
-                            if (pComponentPrivate->bUseFlaggedEos) {
-                                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)) {
-                                    pComponentPrivate->bPlayCompleted = OMX_TRUE;
-                                }
+                            if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)) {
+                                pComponentPrivate->bPlayCompleted = OMX_TRUE;
                             }
-#endif
 
                             nRetVal = write(pComponentPrivate->filled_outBuf_Q[1],&pBuffHead,sizeof(pBuffHead));
                             if(nRetVal == -1){
@@ -8273,13 +8090,10 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                pBuffHead->nFilledLen,
                                                PERF_ModuleCommonLayer);
 #endif
-#ifdef VIDDEC_FLAGGED_EOS
-                            if (pComponentPrivate->bUseFlaggedEos) {
-                                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)) {
-                                    pComponentPrivate->bPlayCompleted = OMX_TRUE;
-                                }
+                            if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)) {
+                                pComponentPrivate->bPlayCompleted = OMX_TRUE;
                             }
-#endif
+
                             nRetVal = write(pComponentPrivate->filled_outBuf_Q[1],&pBuffHead,sizeof(pBuffHead));
                             if(nRetVal == -1){
                                 OMX_PRCOMM4(pComponentPrivate->dbg, "writing to the input pipe %x (%lu)\n", OMX_ErrorInsufficientResources,nRetVal);
@@ -8661,31 +8475,28 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_PRDSP2(pComponentPrivate->dbg, "OUTPUT width=%lu height=%lu\n", pComponentPrivate->pOutPortDef->format.video.nFrameWidth, pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
     OMX_PRDSP2(pComponentPrivate->dbg, "INPUT width=%lu height=%lu\n", pComponentPrivate->pInPortDef->format.video.nFrameWidth, pComponentPrivate->pInPortDef->format.video.nFrameHeight);   
 
-
-#ifdef VIDDEC_FLAGGED_EOS
-    if (pComponentPrivate->bUseFlaggedEos) {
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-            pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-            pComponentPrivate->pLCML != NULL &&
-            pComponentPrivate->bLCMLHalted != OMX_TRUE){
-            OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlUsnEos, NULL);
-            if (eError != OMX_ErrorNone) {
-                OMX_PRDSP4(pComponentPrivate->dbg, "error in EMMCodecControlUsnEos %x\n",eError);
-                eError = OMX_ErrorHardware;
-                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       OMX_EventError,
-                                                       OMX_ErrorHardware,
-                                                       OMX_TI_ErrorSevere,
-                                                       "LCML_ControlCodec EMMCodecControlUsnEos function");
-                OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
-                goto EXIT;
-            }
+    /*Enable EOS propagation at USN*/
+    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
+        pComponentPrivate->pLCML != NULL &&
+        pComponentPrivate->bLCMLHalted != OMX_TRUE){
+        OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlUsnEos, NULL);
+        if (eError != OMX_ErrorNone) {
+            OMX_PRDSP4(pComponentPrivate->dbg, "error in EMMCodecControlUsnEos %x\n",eError);
+            eError = OMX_ErrorHardware;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                   OMX_EventError,
+                                                   OMX_ErrorHardware,
+                                                   OMX_TI_ErrorSevere,
+                                                   "LCML_ControlCodec EMMCodecControlUsnEos function");
+            OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
+            goto EXIT;
         }
     }
-#endif
-   if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingWMV) {
+
+    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingWMV) {
         if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
             message[1] = 4;
         }
@@ -8713,7 +8524,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         }
         VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
         VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-   }
+    }
 
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
     pComponentPrivate->bIsPaused = 0;

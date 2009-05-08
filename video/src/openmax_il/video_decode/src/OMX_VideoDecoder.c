@@ -101,22 +101,6 @@ extern OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentP
 /*--------data declarations --------------------------------------------------*/
 OMX_STRING cVideoDecodeName = "OMX.TI.Video.Decoder";
 
-#ifdef VIDDEC_FLAGGED_EOS
-VIDDEC_CUSTOM_PARAM sVideoDecCustomParams[] =                                {{VIDDEC_CUSTOMPARAM_PROCESSMODE, VideoDecodeCustomParamProcessMode},
-                                                                             {VIDDEC_CUSTOMPARAM_H264BITSTREAMFORMAT, VideoDecodeCustomParamH264BitStreamFormat},
-                                                                             {VIDDEC_CUSTOMPARAM_WMVPROFILE, VideoDecodeCustomParamWMVProfile},
-                                                                             {VIDDEC_CUSTOMPARAM_WMVFILETYPE, VideoDecodeCustomParamWMVFileType},
-                                                                             {VIDDEC_CUSTOMPARAM_PARSERENABLED, VideoDecodeCustomParamParserEnabled},
-                                                                             {VIDDEC_CUSTOMCONFIG_DEBUG, VideoDecodeCustomConfigDebug},
-#ifdef VIDDEC_SPARK_CODE
-                                                                             {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian},
-                                                                             {VIDDEC_CUSTOMPARAM_BUSEFLAGGEDEOS, VideoDecodeCustomParambUseFlaggedEos},
-                                                                             {VIDDEC_CUSTOMPARAM_ISSPARKINPUT, VideoDecodeCustomParamIsSparkInput}};
-#else
-                                                                             {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian},
-                                                                             {VIDDEC_CUSTOMPARAM_BUSEFLAGGEDEOS, VideoDecodeCustomParambUseFlaggedEos}};
-#endif
-#else
 VIDDEC_CUSTOM_PARAM sVideoDecCustomParams[] =                                {{VIDDEC_CUSTOMPARAM_PROCESSMODE, VideoDecodeCustomParamProcessMode},
                                                                              {VIDDEC_CUSTOMPARAM_H264BITSTREAMFORMAT, VideoDecodeCustomParamH264BitStreamFormat},
                                                                              {VIDDEC_CUSTOMPARAM_WMVPROFILE, VideoDecodeCustomParamWMVProfile},
@@ -128,8 +112,6 @@ VIDDEC_CUSTOM_PARAM sVideoDecCustomParams[] =                                {{V
                                                                              {VIDDEC_CUSTOMPARAM_ISSPARKINPUT, VideoDecodeCustomParamIsSparkInput}};
 #else
                                                                              {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian}};
-#endif
-
 #endif
 
 /*--------function prototypes ------------------------------------------------*/
@@ -1366,12 +1348,6 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
             break;
 #endif
-#ifdef VIDDEC_FLAGGED_EOS
-        case VideoDecodeCustomParambUseFlaggedEos:
-            *((OMX_BOOL *)ComponentParameterStructure) = pComponentPrivate->bUseFlaggedEos;
-
-            break;
-#endif
         case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
         {
             memcpy(ComponentParameterStructure, pComponentPrivate->pDeblockingParamType, sizeof(OMX_PARAM_DEBLOCKINGTYPE));
@@ -1697,11 +1673,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
 #ifdef VIDDEC_SPARK_CODE
         case VideoDecodeCustomParamIsSparkInput:
             pComponentPrivate->bIsSparkInput = (OMX_BOOL)(*((OMX_BOOL *)pCompParam));
-            break;
-#endif
-#ifdef VIDDEC_FLAGGED_EOS
-        case VideoDecodeCustomParambUseFlaggedEos:
-            pComponentPrivate->bUseFlaggedEos = (OMX_BOOL)(*((OMX_BOOL *)pCompParam));
             break;
 #endif
 #ifdef KHRONOS_1_1

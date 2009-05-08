@@ -21,12 +21,6 @@
 #ifndef OMX_VIDDEC_UTILS__H
 #define OMX_VIDDEC_UTILS__H
 
-#define VIDDEC_FLAGGED_EOS
-
-#ifndef VIDDEC_FLAGGED_EOS
-    #define VIDDEC_FLAGGED_EOS
-#endif
-
 #ifdef ANDROID
 /* Log for Android system*/
 #include <utils/Log.h>
@@ -382,27 +376,10 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 
 #define CSD_POSITION                                    51 /*Codec Specific Data position on the "stream propierties object"(ASF spec)*/
 
-/*Custom Parameters*/
-#ifdef VIDDEC_FLAGGED_EOS
- #define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 7
-#else
- #define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 6
-#endif
-
-#ifdef VIDDEC_SPARK_CODE
- #ifdef VIDDEC_FLAGGED_EOS
-    #undef VIDDEC_NUMBER_OF_CUSTOM_PARAMS
-    #define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 8
- #else
-    #undef VIDDEC_NUMBER_OF_CUSTOM_PARAMS
-    #define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 7
- #endif
-#endif
-
 #ifndef KHRONOS_1_2
  #define OMX_BUFFERFLAG_CODECCONFIG 0x00000080
 #endif
-/*#define VIDDEC_NUMBER_OF_CUSTOM_PARAMS 6*/
+
 typedef struct VIDDEC_CUSTOM_PARAM
 {
     unsigned char cCustomParamName[128];
@@ -420,22 +397,9 @@ typedef enum VIDDEC_CUSTOM_PARAM_INDEX
     VideoDecodeCustomParamWMVProfile,
     VideoDecodeCustomParamWMVFileType,
     VideoDecodeCustomParamParserEnabled,
-#ifdef VIDDEC_FLAGGED_EOS
- #ifdef VIDDEC_SPARK_CODE
     VideoDecodeCustomParamIsNALBigEndian,
-    VideoDecodeCustomParambUseFlaggedEos,
+#ifdef VIDDEC_SPARK_CODE
     VideoDecodeCustomParamIsSparkInput,
- #else
-    VideoDecodeCustomParamIsNALBigEndian,
-    VideoDecodeCustomParambUseFlaggedEos,
- #endif
-#else
- #ifdef VIDDEC_SPARK_CODE
-    VideoDecodeCustomParamIsNALBigEndian,
-    VideoDecodeCustomParamIsSparkInput,
- #else
-    VideoDecodeCustomParamIsNALBigEndian,
- #endif
 #endif
     VideoDecodeCustomConfigDebug
 
@@ -919,10 +883,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U32 ProcessMode;
     OMX_U32 H264BitStreamFormat;
     OMX_BOOL MPEG4Codec_IsTI;
- #ifdef VIDDEC_FLAGGED_EOS
-    OMX_BOOL bUseFlaggedEos;
-    OMX_BUFFERHEADERTYPE pTempBuffHead;
- #endif
+    OMX_BUFFERHEADERTYPE pTempBuffHead;  /*Used for EOS logic*/
     OMX_U32 app_nBuf;
     OMX_U32 lcml_compID;
     void* pLcmlHandle;
