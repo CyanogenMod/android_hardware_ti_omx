@@ -338,6 +338,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pComponentPrivate->bPreempted = OMX_FALSE; 
     pComponentPrivate->first_buff = 0;
+    pComponentPrivate->first_TS = 0;
+    pComponentPrivate->temp_TS = 0;
+    pComponentPrivate->lastout = NULL;
 
     //bConfigData flag is used to indicate if we need to parse the frame header 
     pComponentPrivate->bConfigData = 1;
@@ -1541,10 +1544,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
         goto EXIT;
     }
 
-    OMX_PRCOMM2(pComponentPrivate->dbg, "\n------------------------------------------\n\n");
-    OMX_PRCOMM2(pComponentPrivate->dbg, " :: Component Sending Filled ip buff %p \
-                             to Component Thread\n",pBuffer);
-    OMX_PRCOMM2(pComponentPrivate->dbg, "\n------------------------------------------\n\n");
+    OMX_PRCOMM2(pComponentPrivate->dbg, "------------------------------------------\n");
+    OMX_PRCOMM2(pComponentPrivate->dbg, "Sending Filled IN buff %p\n",pBuffer);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "------------------------------------------\n");
 
     if (pComponentPrivate->bBypassDSP == 0) {
         pComponentPrivate->app_nBuf--;
@@ -1594,12 +1596,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
     int nRet=0;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
-
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "\n------------------------------------------\n\n");
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, " :: Component Sending Emptied op buff %p \
-                             to Component Thread\n",pBuffer);
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "\n------------------------------------------\n\n");
-
 
     MP3D_OMX_CONF_CHECK_CMD(pHandle,1,1);
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -1678,6 +1674,10 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
         pBuffer->pMarkData = pComponentPrivate->pMarkData;
         pComponentPrivate->pMarkData = NULL;
     }
+
+    OMX_PRCOMM2(pComponentPrivate->dbg, "------------------------------------------\n");
+    OMX_PRCOMM2(pComponentPrivate->dbg, "Sending Emptied OUT buff %p\n",pBuffer);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "------------------------------------------\n");
 
     pComponentPrivate->nUnhandledFillThisBuffers++;
     nRet = write (pComponentPrivate->dataPipe[1], &pBuffer,

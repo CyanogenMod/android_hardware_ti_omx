@@ -791,7 +791,12 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_U8 first_buff;
 
     /** First Time Stamp sent **/
-    OMX_U8 first_TS;
+    OMX_S64 first_TS;
+    /** Temp Time Stamp to store intermediate values **/
+    OMX_S64 temp_TS;
+    /** Last buffer received usind in PV-Android context **/
+    OMX_BUFFERHEADERTYPE *lastout;
+
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
