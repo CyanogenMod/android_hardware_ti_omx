@@ -1340,18 +1340,12 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
         hInterface->dspCodec = NULL;
     }
     codec = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle)->pCodec);
-    pthread_mutex_lock(&codec->mutex);
-    
-    LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
-    if(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle) != NULL)
-    {
-        free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
-        hInterface->pCodecinterfacehandle = NULL;
-    }
-
-    LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
     if(codec != NULL)
     {
+    pthread_mutex_lock(&codec->mutex);
+    
+
+    LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
         if(codec->g_aNotificationObjects[0]!= NULL)
         {
             free(codec->g_aNotificationObjects[0]);
@@ -1374,6 +1368,8 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
             codec = NULL;
         }
     }
+    free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
+    hInterface->pCodecinterfacehandle = NULL;
     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
     return eError;
 }
