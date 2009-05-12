@@ -660,58 +660,62 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888){
     	ptCreateString[17] = 1; //Convert flag
     }
+
+    ptCreateString[18] = 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
+    ptCreateString[19] = 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */
+	
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
 
     //size
-    ptCreateStringPPLIB[9] = JPEGENC_PPLIB_CREATEPARAM_SIZE;
+    ptCreateStringPPLIB[10] = JPEGENC_PPLIB_CREATEPARAM_SIZE;
 
     //SlibVersion
-    ptCreateStringPPLIB[10] = 0x00000100;
+    ptCreateStringPPLIB[11] = 0x00000100;
 
     //MaxInWidth
-    ptCreateStringPPLIB[11] = pPortDefIn->format.image.nFrameWidth;
+    ptCreateStringPPLIB[12] = pPortDefIn->format.image.nFrameWidth;
 
     //MaxOutWidth
-    ptCreateStringPPLIB[12] = pPortDefIn->format.image.nFrameWidth;
+    ptCreateStringPPLIB[13] = pPortDefIn->format.image.nFrameWidth;
     //Input Format => 0:RGB24, 1:RGB16, 2:RGB12, 3:RGB8, 4:RGB4, 5:YUV422ILE, 6:YUV422IBE,
     //                7:422_IN_UY_WS, 8:422_IN_YU_WS, 9:YUV420P, 10:GRAY8, 11:GRAY4, 12:GRAY2_IN, 13:GRAY1
     if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatCbYCrY
-    		||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888
-			||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr)
+        ||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888
+        ||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr)
     {
-    	ptCreateStringPPLIB[13] = 5;
+        ptCreateStringPPLIB[14] = 5;
     }
     else if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatYUV420PackedPlanar)
     {
-    	ptCreateStringPPLIB[13] = 9;
+        ptCreateStringPPLIB[14] = 9;
     }
     else if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_Format16bitRGB565)
     {
-    	ptCreateStringPPLIB[13] = 1;
+        ptCreateStringPPLIB[14] = 1;
     }
     else{
-    	ptCreateStringPPLIB[13] = 9;
+        ptCreateStringPPLIB[14] = 9;
     }
 
     //YuvOutputFormat
     // --> 0 = OFF, 1 = YUV420, 2 = YUV422ILE, 3 = YUV422IBE
     if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatYUV420PackedPlanar)
     {
-    	ptCreateStringPPLIB[14] = 1;
+        ptCreateStringPPLIB[15] = 1;
     }
     else
     {
-    	ptCreateStringPPLIB[14] = 2;
+        ptCreateStringPPLIB[15] = 2;
     }
 
     //RGBOuputFormat
     // --> 0 = OFF, 1 = RGB4, 2 = RGB8, 3 = RGB12, 4 = RGB16, 5 = RGB24, 6 = RGB32,
     //     7 = GRAY8, 8 = GRAY4, 9 = GRAY2, 10 = GRAY1
-    ptCreateStringPPLIB[15] = 0;
+    ptCreateStringPPLIB[16] = 0;
 
-    ptCreateString[32] = END_OF_CR_PHASE_ARGS;
+    ptCreateString[34] = END_OF_CR_PHASE_ARGS;
 #else
-    ptCreateString[18] = END_OF_CR_PHASE_ARGS;
+    ptCreateString[20] = END_OF_CR_PHASE_ARGS;
 #endif
     lcml_dsp->pCrPhArgs = ptCreateString;
     EXIT:
@@ -2201,7 +2205,42 @@ OMX_U32 CalculateParamsSize (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate) {
     }
 
 
+    /* handle APP5 marker */
+    if (pComponentPrivate->sAPP5.bMarkerEnabled) {
+        i+=4;  /* 4 bytes for the Number of buffers TAG */
+        i+=4;  /* 4 bytes for the size of this TAG */
+        i+=4;  /* 4 bytes for the actual number of buffers (just 1 buffer) */
+        i+=4;  /* 4 bytes for the buffer0  TAG */
+            
+    	/* if explicity specified by application, set the marker from algo, otherwise set it from application */
+    	if (pComponentPrivate->sAPP5.nMarkerSize <= 0) {
+            i+=4;   /* 4 bytes for the size of this TAG */
+            i+=4;   /* 4 bytes for the actual data of this TAG */
+            i+=4;   /* 4 bytes for the actual data of this TAG */
+    	}
+    	else {
+    	    i+=4;   /* 4 bytes for the size of this TAG */
+                i += (pComponentPrivate->sAPP5.nMarkerSize/4)*4;  /* x bytes for the actual buffer data for this TAG */
+                if (pComponentPrivate->sAPP5.nMarkerSize % 4) {
+                    i +=4;  /* 4 extra bytes if the size is not divisible by 4*/
+                }                
+    	} 
+        
+    	/* if thumbnail is set, configure it accordingly */
+    	if (pComponentPrivate->sAPP5.nThumbnailWidth > 0 && pComponentPrivate->sAPP5.nThumbnailHeight > 0) {
+            i+=4;  /* 4 bytes for the THUMB INDEX TAG */
+            i+=4;  /* 4 bytes for the size of this TAG */
+            i+=4;  /* 4 bytes for the actual data for this TAG */
 
+            i+=4;  /* 4 bytes for the THUMB W TAG */
+            i+=4;  /* 4 bytes for the size of this TAG */
+            i+=4;  /* 4 bytes for the actual data for this TAG (width value) */
+
+            i+=4;  /* 4 bytes for the THUMB H TAG */
+            i+=4;  /* 4 bytes for the size of this TAG */
+            i+=4;  /* 4 bytes for the actual data for this TAG (height value) */
+    	}
+    }  
     /* handle APP13 marker */
     if (pComponentPrivate->sAPP13.bMarkerEnabled) {
         i+=4;  /* 4 bytes for the Number of buffers TAG */
@@ -2355,6 +2394,48 @@ static OMX_ERRORTYPE SetJpegEncInPortParams(JPEGENC_COMPONENT_PRIVATE *pComponen
             new_params[i++] = pComponentPrivate->sAPP1.nThumbnailHeight;
         }
     }
+
+
+    /* handle APP5 marker */
+    if(pComponentPrivate->sAPP5.bMarkerEnabled) {
+        new_params[i++] = APP5_NUMBUF;
+        new_params[i++] = 4;
+        new_params[i++] = 1;
+
+        /* set default APP5 BUFFER */
+        new_params[i++] = APP5_BUFFER;
+
+        /* if explicity specified by application, set the marker from algo, otherwise set it from application */
+        if (pComponentPrivate->sAPP5.nMarkerSize <= 0) {
+            new_params[i++] = 8;
+            new_params[i++] = 0; 
+            new_params[i++] = 'F' | 'F' << 8 | 'F' << 16 | 'F' << 24; 
+        }
+        else {
+            new_params[i++] = pComponentPrivate->sAPP5.nMarkerSize;
+            memcpy(new_params + i, pComponentPrivate->sAPP5.pMarkerBuffer, pComponentPrivate->sAPP5.nMarkerSize);
+            i += pComponentPrivate->sAPP5.nMarkerSize / 4;
+            if (pComponentPrivate->sAPP5.nMarkerSize % 4) {
+            	i ++;
+            }
+        } 
+
+        /* if thumbnail is set, configure it accordingly */
+        if (pComponentPrivate->sAPP5.nThumbnailWidth > 0 && pComponentPrivate->sAPP5.nThumbnailHeight > 0) {
+            new_params[i++] = APP5_THUMB_INDEX;
+            new_params[i++] = 4;
+            new_params[i++] = 1;
+
+            new_params[i++] = APP5_THUMB_W;
+            new_params[i++] = 4;
+            new_params[i++] = pComponentPrivate->sAPP5.nThumbnailWidth;
+
+            new_params[i++] = APP5_THUMB_H;
+            new_params[i++] = 4;
+            new_params[i++] = pComponentPrivate->sAPP5.nThumbnailHeight;
+        }
+    }
+    
 
     /* handle APP13 marker */
     if(pComponentPrivate->sAPP13.bMarkerEnabled) {
