@@ -924,18 +924,13 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL               bBuffMarkTaked;
     OMX_BOOL               bBuffalreadyMarked;
 
-    OMX_U32 nFlags;
-
     OMX_STATETYPE eIdleToLoad;
     OMX_STATETYPE eExecuteToIdle;
-    OMX_BOOL bPlayCompleted;
     OMX_BOOL iEndofInputSent;
-    OMX_BOOL iEndofInput;
     OMX_BOOL bPipeCleaned;
     OMX_BOOL bFirstBuffer;
 
     OMX_BOOL bParserEnabled;
-    OMX_BOOL bBuffFound;
     OMX_BOOL bFlushOut;
     void* pUalgParams;
     OMX_BOOL bLCMLHalted;
