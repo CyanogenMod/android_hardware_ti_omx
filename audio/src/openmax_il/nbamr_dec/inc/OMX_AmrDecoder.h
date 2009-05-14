@@ -184,7 +184,7 @@
  * @def    NBAMRDEC_SAMPLING_FREQUENCY          Sampling Frequency
  */
 /* ======================================================================= */
-#define NBAMRDEC_SAMPLING_FREQUENCY 48000
+#define NBAMRDEC_SAMPLING_FREQUENCY 8000
 
 /* ======================================================================= */
 /**

@@ -2450,7 +2450,8 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10])
     
     AMRDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     pComponentPrivate = (AMRDEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)args[6])->pComponentPrivate;
-
+    static OMX_U32 TS = 0;
+    static double time_stmp = 0;
     pHandle = pComponentPrivate->pHandle;
     
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Entering the NBAMRDECLCML_Callback Function\n",__LINE__);
@@ -2591,7 +2592,10 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                 }
             }
             /* Copying time stamp information to output buffer */
-            pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->OpBufindex];
+            time_stmp = pLcmlHdr->buffer->nFilledLen / (1 * (((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nBitPerSample / 8));
+            time_stmp = (time_stmp / ((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nSamplingRate) * 1000;
+            TS += (OMX_U32)time_stmp;
+            pLcmlHdr->buffer->nTimeStamp = TS;
             /* Copying nTickCount information to output buffer */
             pLcmlHdr->buffer->nTickCount = pComponentPrivate->arrTickCount[pComponentPrivate->OpBufindex];
             pComponentPrivate->OpBufindex++;
