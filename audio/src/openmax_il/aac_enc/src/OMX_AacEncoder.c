@@ -71,12 +71,8 @@
 #include <dbapi.h>
 #include <dlfcn.h>
 
-
-
-
 /*-------program files ----------------------------------------*/
 #include "LCML_DspCodec.h"
-
 
 #ifndef UNDER_CE
 #ifdef DSP_RENDERING_ON
@@ -91,7 +87,6 @@
 #define  AAC_ENC_ROLE "audio_encoder.aac"
 #include "OMX_AacEnc_Utils.h"
 #include <TIDspOmx.h>
-
 
 /****************************************************************
 *  EXTERNAL REFERENCES NOTE : only use if not found in header file
@@ -141,7 +136,6 @@ static OMX_ERRORTYPE ComponentRoleEnum( OMX_IN OMX_HANDLETYPE hComponent,
 #define FIFO1 "/dev/fifo.1"
 #define FIFO2 "/dev/fifo.2"
 
-
 int Aacenc_fdwrite, Aacenc_fdread;
 
 #ifndef UNDER_CE
@@ -180,8 +174,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     int i;
 
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: AACENC : Entering OMX_ComponentInit\n", __LINE__);
-/* For Android Tests */
-    OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: AACENC : Entering OMX_ComponentInit\n", __LINE__);
 
     /*Set the all component function pointer to the handle*/
     pHandle->SetCallbacks           = SetCallbacks;
@@ -211,7 +203,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->sPortParam.nStartPortNumber = 0x0;
 
 
-    /* ---------start of MX_AUDIO_PARAM_AACPROFILETYPE --------- */
+    /* ---------start of OMX_AUDIO_PARAM_AACPROFILETYPE --------- */
 
     OMX_MALLOC_STRUCT(aac_ip, OMX_AUDIO_PARAM_AACPROFILETYPE);
     OMXDBG_PRINT(stderr, PRINT, 2, 0, "AACENC: aac_ip %p \n", aac_ip);
@@ -225,12 +217,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     aac_op->nChannels           = 2;
     aac_op->nSampleRate         = 44100;
     aac_op->eAACProfile         = OMX_AUDIO_AACObjectLC;
-    aac_op->eAACStreamFormat    = OMX_AUDIO_AACStreamFormatMP2ADTS;         /* For khronos only : should  be MP4ADTS*/
+    aac_op->eAACStreamFormat    = OMX_AUDIO_AACStreamFormatMP2ADTS;  /* For khronos only : should  be MP4ADTS*/
     aac_op->nBitRate            = 128000;
     aac_op->eChannelMode        = OMX_AUDIO_ChannelModeStereo;
     aac_op->nPortIndex          = 1;
     aac_op->nFrameLength        = 0;
-    aac_op->nAudioBandWidth     = 0;                                        /* ? */
+    aac_op->nAudioBandWidth     = 0;
     
     /* ---------end of MX_AUDIO_PARAM_AACPROFILETYPE --------- */
 
@@ -245,9 +237,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMXDBG_PRINT(stderr, PRINT, 2, 0, "AACENC: aac_pcm_op%p \n ",aac_pcm_op);
     
     aac_pcm_ip->nSize               = sizeof(OMX_AUDIO_PARAM_PCMMODETYPE);
-    aac_pcm_ip->nBitPerSample       = 16;                           /*Will be remapped for SN. 16:2,  24:3*/
+    aac_pcm_ip->nBitPerSample       = 16;        /*Will be remapped for SN. 16:2,  24:3*/
     aac_pcm_ip->nPortIndex          = 0;
-    aac_pcm_ip->nChannels           = 1;                            /*Will be remapped for SN.  0:mono, 1:stereo*/
+    aac_pcm_ip->nChannels           = 1;         /*Will be remapped for SN.  0:mono, 1:stereo*/
     aac_pcm_ip->eNumData            = OMX_NumericalDataSigned;  
     aac_pcm_ip->nSamplingRate       = 8000;
     aac_pcm_ip->ePCMMode            = OMX_AUDIO_PCMModeLinear; 
@@ -263,13 +255,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_AACENC");
 
 #ifdef ANDROID /* leave this now, we may need them later. */
-    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE; /* N/C */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE; /* N/C */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; /* experiment with this */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; /* N/C */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; /* N/C */
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; 
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE; 
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_TRUE; 
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE;
 #endif
     
 #ifdef __PERF_INSTRUMENTATION__
@@ -421,17 +413,19 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->eDir                   = OMX_DirInput;
     pPortDef_ip->bEnabled               = OMX_TRUE;
     pPortDef_ip->nBufferSize            = INPUT_AACENC_BUFFER_SIZE;
+    pPortDef_ip->nBufferAlignment       = EXTRA_BYTES;
     pPortDef_ip->bPopulated             = 0;
     pPortDef_ip->format.audio.eEncoding =OMX_AUDIO_CodingPCM;  
     pPortDef_ip->eDomain                = OMX_PortDomainAudio;
     
     pPortDef_op->nSize                  = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pPortDef_op->nPortIndex             = 0x1;
-    pPortDef_op->nBufferCountActual     = NUM_AACENC_OUTPUT_BUFFERS; /*4*/
+    pPortDef_op->nBufferCountActual     = NUM_AACENC_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountMin        = NUM_AACENC_OUTPUT_BUFFERS;
     pPortDef_op->eDir                   = OMX_DirOutput;
     pPortDef_op->bEnabled               = OMX_TRUE;
     pPortDef_op->nBufferSize            = OUTPUT_AACENC_BUFFER_SIZE;
+    pPortDef_op->nBufferAlignment       = EXTRA_BYTES;
     pPortDef_op->bPopulated             = 0;
     pPortDef_op->format.audio.eEncoding = OMX_AUDIO_CodingAAC;   
     pPortDef_op->eDomain                = OMX_PortDomainAudio;

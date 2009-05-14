@@ -337,6 +337,17 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 /* ======================================================================= */
 #define WMADEC_DEFAULT_SAMPLEPERBLOCK 8704
 /* ======================================================================= */
+
+/**
+ * @def    WMA_CACHE_ALIGN   Number of bytes for cache alignment
+ */
+/* ======================================================================= */
+#define WMA_CACHE_ALIGN 128
+/**
+ * @def    WMA_CACHE_ALIGN   Number of bytes for cache alignment
+ */
+/* ======================================================================= */
+#define WMA_EXTRA_BYTES 256
 /**
  * @def    WMADEC_DEBUG   Turns debug messaging on and off
  */

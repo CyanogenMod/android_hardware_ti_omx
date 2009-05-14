@@ -271,12 +271,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleAudioDecode);
 #endif
 
-#ifdef ANDROID /* leave this now, we may need them later. */
-    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE; 
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE; 
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; /* experiment with this */
+#ifdef ANDROID 
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE; 
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE; 
 #endif
@@ -445,6 +445,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->nBufferCountMin = NUM_WMADEC_INPUT_BUFFERS;
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
+    pPortDef_ip->nBufferAlignment = WMA_CACHE_ALIGN;
     pPortDef_ip->nBufferSize = INPUT_WMADEC_BUFFER_SIZE;
     pPortDef_ip->bPopulated = 0;
     pPortDef_ip->eDomain = OMX_PortDomainAudio;
@@ -453,6 +454,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->nPortIndex = 0x1;
     pPortDef_op->nBufferCountActual = NUM_WMADEC_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountMin = NUM_WMADEC_OUTPUT_BUFFERS;
+    pPortDef_op->nBufferAlignment = WMA_CACHE_ALIGN;
     pPortDef_op->eDir = OMX_DirOutput;
     pPortDef_op->bEnabled = OMX_TRUE;
     if(pComponentPrivate->pPortDef[OUTPUT_PORT]->nBufferSize == 0)
@@ -1714,7 +1716,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     memset(pBufferHeader, 0x0, sizeof(OMX_BUFFERHEADERTYPE));
 
-    WMAD_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, nSizeBytes + 256, OMX_U8);
+    WMAD_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, nSizeBytes + WMA_EXTRA_BYTES, OMX_U8);
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p\n",__LINE__,pBufferHeader->pBuffer);
     if(NULL == pBufferHeader->pBuffer) {
 	    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__);
@@ -1723,7 +1725,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         }
         goto EXIT;
     }
-    pBufferHeader->pBuffer += 128;
+    pBufferHeader->pBuffer += WMA_CACHE_ALIGN;
 
 
 
@@ -1871,7 +1873,7 @@ static OMX_ERRORTYPE FreeBuffer(
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
             tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
             if (tempBuff != 0){
-                tempBuff -= 128;}
+                tempBuff -= WMA_CACHE_ALIGN;}
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p\n",__LINE__,tempBuff);
             OMX_WMADECMEMFREE_STRUCT(tempBuff);
         }
@@ -1906,7 +1908,7 @@ static OMX_ERRORTYPE FreeBuffer(
         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
             tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
             if (tempBuff != 0){
-                tempBuff -= 128;}
+                tempBuff -= WMA_CACHE_ALIGN;}
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p\n",__LINE__,tempBuff);
             OMX_WMADECMEMFREE_STRUCT(tempBuff);
         }
