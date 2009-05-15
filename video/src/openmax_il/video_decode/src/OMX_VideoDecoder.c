@@ -1253,17 +1253,6 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                     }
                 }
                 else if (pPortFormat->nPortIndex == pComponentPrivate->pOutPortFormat->nPortIndex) {
-                    switch (pPortFormat->nIndex) {
-                        case VIDDEC_DEFAULT_OUTPUT_INDEX_PLANAR420:
-                            pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT420;
-                            break;
-                        case VIDDEC_DEFAULT_OUTPUT_INDEX_INTERLEAVED422:
-                            pComponentPrivate->pOutPortFormat->eColorFormat = VIDDEC_COLORFORMAT422;
-                            break;
-                        default:
-                            eError = OMX_ErrorNoMore;
-                            break;
-                    }
                     if(eError == OMX_ErrorNone) {
                         memcpy(ComponentParameterStructure, pComponentPrivate->pOutPortFormat, 
                             sizeof(OMX_VIDEO_PARAM_PORTFORMATTYPE));
