@@ -645,10 +645,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 
    pComponentPrivate->sAPP0.bMarkerEnabled = OMX_FALSE;
    pComponentPrivate->sAPP1.bMarkerEnabled = OMX_FALSE;
+   pComponentPrivate->sAPP5.bMarkerEnabled = OMX_FALSE; 
    pComponentPrivate->sAPP13.bMarkerEnabled = OMX_FALSE;
 
    pComponentPrivate->sAPP0.pMarkerBuffer = NULL;
    pComponentPrivate->sAPP1.pMarkerBuffer = NULL;
+   pComponentPrivate->sAPP5.pMarkerBuffer = NULL;
    pComponentPrivate->sAPP13.pMarkerBuffer = NULL;
    
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pParamBufSupplier, OMX_PARAM_BUFFERSUPPLIERTYPE);
@@ -1363,6 +1365,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				eError = OMX_ErrorBadParameter;
 				goto EXIT;
 			}
+
+			if (pComponentPrivate->sAPP0.pMarkerBuffer != NULL) {
+					OMX_FREE(pComponentPrivate->sAPP0.pMarkerBuffer);
+			}
+
 			memcpy (&pComponentPrivate->sAPP0, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP0);
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
@@ -1370,12 +1377,7 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				memcpy (pComponentPrivate->sAPP0.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP0.pMarkerBuffer);
 			}
-			else{
-				if (pComponentPrivate->sAPP0.pMarkerBuffer != NULL) {
-					OMX_FREE(pComponentPrivate->sAPP0.pMarkerBuffer);
-					pComponentPrivate->sAPP0.pMarkerBuffer = NULL;
-				}
-			}
+
 			eError = SetJpegEncInParams(pComponentPrivate); 
         break;
 		}
@@ -1387,6 +1389,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				eError = OMX_ErrorBadParameter;
 				goto EXIT;
 			}
+
+			if (pComponentPrivate->sAPP1.pMarkerBuffer != NULL) {
+				OMX_FREE(pComponentPrivate->sAPP1.pMarkerBuffer);
+			}
+			
 			memcpy (&pComponentPrivate->sAPP1, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP1);
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
@@ -1394,11 +1401,29 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				memcpy (pComponentPrivate->sAPP1.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP1.pMarkerBuffer);
 			}
-			else{
-				if (pComponentPrivate->sAPP1.pMarkerBuffer != NULL) {
-					OMX_FREE(pComponentPrivate->sAPP1.pMarkerBuffer);
-					pComponentPrivate->sAPP1.pMarkerBuffer = NULL;
-				}
+			
+			eError = SetJpegEncInParams(pComponentPrivate); 
+			break;
+		}
+
+	case OMX_IndexCustomAPP5:
+		{
+			JPEG_APPTHUMB_MARKER *pMarkerInfo = (JPEG_APPTHUMB_MARKER *) ComponentConfigStructure;
+			if (pMarkerInfo->nThumbnailHeight < 0 || pMarkerInfo->nThumbnailWidth < 0) {
+				eError = OMX_ErrorBadParameter;
+				goto EXIT;
+			}
+
+			if (pComponentPrivate->sAPP5.pMarkerBuffer != NULL) {
+				OMX_FREE(pComponentPrivate->sAPP5.pMarkerBuffer);
+			}
+			
+			memcpy (&pComponentPrivate->sAPP5, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
+			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP5);
+			if (pMarkerInfo->pMarkerBuffer != NULL) {
+				OMX_MALLOC(pComponentPrivate->sAPP5.pMarkerBuffer, pMarkerInfo->nMarkerSize);
+				memcpy (pComponentPrivate->sAPP5.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
+				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP5.pMarkerBuffer);
 			}
 			eError = SetJpegEncInParams(pComponentPrivate); 
 			break;
@@ -1407,6 +1432,10 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 	case OMX_IndexCustomAPP13:
 		{
 			JPEG_APP13_MARKER *pMarkerInfo = (JPEG_APP13_MARKER *) ComponentConfigStructure;
+			if (pComponentPrivate->sAPP13.pMarkerBuffer != NULL) {
+				OMX_FREE(pComponentPrivate->sAPP13.pMarkerBuffer);
+			}			
+
 			memcpy (&pComponentPrivate->sAPP13, pMarkerInfo, sizeof(JPEG_APP13_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP13);
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
@@ -1414,12 +1443,7 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				memcpy (pComponentPrivate->sAPP13.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP13.pMarkerBuffer);
 			}
-			else{
-				if (pComponentPrivate->sAPP13.pMarkerBuffer != NULL) {
-					OMX_FREE(pComponentPrivate->sAPP13.pMarkerBuffer);
-					pComponentPrivate->sAPP13.pMarkerBuffer = NULL;
-				}
-			}
+			
 			eError = SetJpegEncInParams(pComponentPrivate); 
 			break;
 		}
@@ -2263,6 +2287,7 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.encoder.Config.InputFrameHeight", OMX_IndexCustomInputFrameHeight},
     {"OMX.TI.JPEG.encoder.Config.APP0", OMX_IndexCustomAPP0},
     {"OMX.TI.JPEG.encoder.Config.APP1", OMX_IndexCustomAPP1},
+    {"OMX.TI.JPEG.encoder.Config.APP5", OMX_IndexCustomAPP5},
     {"OMX.TI.JPEG.encoder.Config.APP13", OMX_IndexCustomAPP13},
     {"OMX.TI.JPEG.encoder.Config.QFactor", OMX_IndexCustomQFactor},
     {"OMX.TI.JPEG.encoder.Config.DRI", OMX_IndexCustomDRI},

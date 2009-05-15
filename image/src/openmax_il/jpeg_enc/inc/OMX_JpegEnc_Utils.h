@@ -301,7 +301,12 @@ typedef enum Content_Type
     APP1_THUMB_INDEX,
     APP13_THUMB_INDEX,
     DYNPARAMS_HUFFMANTABLE,
-    DYNPARAMS_QUANTTABLE
+    DYNPARAMS_QUANTTABLE,
+    APP5_BUFFER,
+    APP5_NUMBUF,
+    APP5_THUMB_H,
+    APP5_THUMB_W,
+    APP5_THUMB_INDEX    
 } Content_Type;
 
 /*This enum must not be changed.  */
@@ -414,6 +419,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     OMX_U8 *pString_Comment;
     JPEG_APPTHUMB_MARKER sAPP0;
     JPEG_APPTHUMB_MARKER sAPP1;
+    JPEG_APPTHUMB_MARKER sAPP5;
     JPEG_APP13_MARKER sAPP13;
     JPEGE_INPUT_PARAMS InParams;
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
@@ -573,6 +579,7 @@ typedef enum OMX_JPEGE_INDEXTYPE  {
     OMX_IndexCustomInputFrameHeight,
     OMX_IndexCustomAPP0,
     OMX_IndexCustomAPP1,
+    OMX_IndexCustomAPP5,
     OMX_IndexCustomAPP13,
     OMX_IndexCustomQFactor,
     OMX_IndexCustomDRI,
