@@ -2062,18 +2062,15 @@ OMX_ERRORTYPE G729ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                PREF(pLcmlHdr->buffer,pBuffer),
                                PREF(pLcmlHdr->buffer,nFilledLen),
                                PERF_ModuleCommonLayer);
-#endif                    
 
             pComponentPrivate->nLcml_nCntOpReceived++;
             if ((pComponentPrivate->nLcml_nCntIp >= 1) &&
                 (pComponentPrivate->nLcml_nCntOpReceived == 1))
             {
-            
-#ifdef __PERF_INSTRUMENTATION__            
                 PERF_Boundary(pComponentPrivate->pPERFcomp,
                               PERF_BoundaryStart | PERF_BoundarySteadyState);
-#endif                                       
             }
+#endif
 
 
             for (i=0; i < numFrames; i++)

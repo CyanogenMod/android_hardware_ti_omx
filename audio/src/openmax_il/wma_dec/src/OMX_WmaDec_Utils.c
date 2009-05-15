@@ -394,9 +394,10 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     }
     pComponentPrivate_CC->bPortDefsAllocated = 1;
     
+#ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate_CC->nLcml_nCntIp = 0;
     pComponentPrivate_CC->nLcml_nCntOpReceived = 0;
-
+#endif
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECFill_LCMLInitParams",__LINE__);
 
     pComponentPrivate_CC->bInitParamsInitialized = 1;   
