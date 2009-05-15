@@ -1549,7 +1549,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
                 }
-                OMX_PRINT2(pComponentPrivate->dbg, "reconfigOut = %d!, but should be true! %d\n", __LINE__);
+                OMX_PRINT2(pComponentPrivate->dbg, "reconfigOut = %d!, but should be true!\n",pComponentPrivate->reconfigOutputPort);
                 if(pComponentPrivate->reconfigOutputPort){
                     //make sure new VA's are used
                     MP3DECFill_LCMLInitParamsEx(pHandle, 1);
@@ -1692,7 +1692,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_ERROR4(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %d\n", pComponentPrivate->nUnhandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
-                //pComponentPrivate->first_buff = 0;
+                pComponentPrivate->first_buff = 0;
                 OMX_ERROR4(pComponentPrivate->dbg, "in flush IN:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 if (pComponentPrivate->num_Sent_Ip_Buff){ //no buffers have been sent yet, no need to flush SN
                     aParam[0] = USN_STRMCMD_FLUSH;        
@@ -1746,7 +1746,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %d\n", pComponentPrivate->nUnhandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
-                //pComponentPrivate->first_buff = 0;
+                pComponentPrivate->first_buff = 0;
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "in flush OUT:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "in flush OUT:lcml_nOpBuf = %ld \n", pComponentPrivate->lcml_nOpBuf);
                 if (pComponentPrivate->num_Op_Issued && !pComponentPrivate->reconfigOutputPort){ //if no buffers have been sent yet, no need to flush SN
@@ -2022,8 +2022,15 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     }
                     pComponentPrivate->bConfigData = 0;
                 }
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                           EMMCodecControlStart,
+                                           (void *)pArgs);
+                if(eError != OMX_ErrorNone) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Start..\n", __LINE__);
+                    goto EXIT;
+                }
                 pComponentPrivate->SendAfterEOS = 0;
-                pComponentPrivate->first_buff = 0;
+                //pComponentPrivate->first_buff = 0;
             } //end SendAfterEOS
 
             pLcmlHdr->pIpParam->bLastBuffer = 0;
@@ -2032,7 +2039,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 OMX_PRBUFFER2(pComponentPrivate->dbg, ":: bLastBuffer Is Set Here....\n");
                 pLcmlHdr->pIpParam->bLastBuffer = 1;
                 pComponentPrivate->bIsEOFSent = 1;
-//                pComponentPrivate->SendAfterEOS = 1;
+                pComponentPrivate->SendAfterEOS = 1;
                 pBufHeader->nFlags = 0;
             }
 
@@ -2298,7 +2305,6 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     OMX_COMPONENTTYPE *pHandle;
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U32 i;
-    static OMX_U32 TS = 0;
     MP3DEC_BUFDATA *OutputFrames;
     MP3DEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 #ifdef RESOURCE_MANAGER_ENABLED 
@@ -2462,12 +2468,15 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
                 if (pComponentPrivate->bIsEOFSent){ 		
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Adding EOS flag to the output buffer\n");
+                    /* Send OMX_EventBufferFlag until PLAY COMPLETED DSP event is returned */
+                    /*
                     pLcmlHdr->pBufHdr->nFlags |= OMX_BUFFERFLAG_EOS;
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventBufferFlag,
                                                            pLcmlHdr->pBufHdr->nOutputPortIndex,
                                                            pLcmlHdr->pBufHdr->nFlags, NULL);
+                    */
                     pComponentPrivate->bIsEOFSent = 0;
                 }
 
@@ -2477,17 +2486,19 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 }else{
                     if(pComponentPrivate->first_buff == 1){
                         pComponentPrivate->first_buff = 2;
-                        pLcmlHdr->pBufHdr->nTimeStamp = (OMX_U32)pComponentPrivate->first_TS;
-                        TS = pLcmlHdr->pBufHdr->nTimeStamp;
-                        OMX_ERROR4(pComponentPrivate->dbg, "first_ts = %d\n", TS);
+                        pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->first_TS;
+                        pComponentPrivate->temp_TS = pLcmlHdr->pBufHdr->nTimeStamp;
+                        OMX_ERROR4(pComponentPrivate->dbg, "first_ts = %lld\n",
+                                   pComponentPrivate->temp_TS);
                     }else{ 
                         time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (pComponentPrivate->pcmParams->nChannels * 
                                                                      (pComponentPrivate->pcmParams->nBitPerSample / 8));
                         time_stmp = (time_stmp / pComponentPrivate->pcmParams->nSamplingRate) * 1000;
                         /* Update time stamp information */
-                        TS += (OMX_U32)time_stmp;
-                        pLcmlHdr->pBufHdr->nTimeStamp = TS;
-                        OMX_ERROR4(pComponentPrivate->dbg, "ts = %d\n", TS);
+                        pComponentPrivate->temp_TS += time_stmp;
+                        pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->temp_TS;
+                        OMX_ERROR4(pComponentPrivate->dbg, "out ts = %lld\n",
+                                   pComponentPrivate->temp_TS);
                     }
                 }
                 /*add on: Copyint tick count information to output buffer*/
@@ -2514,6 +2525,39 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             }
         }
     }else if(event == EMMCodecProcessingStoped) { 
+        for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
+            if (pComponentPrivate->pInputBufferList->bBufferPending[i]) {
+#ifdef __PERF_INSTRUMENTATION__
+                PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                  PREF(pComponentPrivate->pInputBufferList->pBufHdr[i], pBuffer),
+                                  0,
+                                  PERF_ModuleHLMM);
+#endif
+
+                pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           pComponentPrivate->pInputBufferList->pBufHdr[i]);
+                pComponentPrivate->nEmptyBufferDoneCount++;
+                MP3DEC_ClearPending(pComponentPrivate, pComponentPrivate->pInputBufferList->pBufHdr[i], OMX_DirInput, __LINE__);
+            }
+        }
+
+        for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+            if (pComponentPrivate->pOutputBufferList->bBufferPending[i]) {
+#ifdef __PERF_INSTRUMENTATION__
+                PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                  PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i],pBuffer),
+                                  PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i],nFilledLen),
+                                  PERF_ModuleHLMM);
+#endif
+
+                pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                          pComponentPrivate->pHandle->pApplicationPrivate,
+                                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]);
+                pComponentPrivate->nFillBufferDoneCount++;
+                MP3DEC_ClearPending(pComponentPrivate, pComponentPrivate->pOutputBufferList->pBufHdr[i], OMX_DirOutput, __LINE__);
+            }
+        }
         pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
         if(pComponentPrivate->codecStop_waitingsignal == 0){
             pComponentPrivate->codecStop_waitingsignal = 1;             
@@ -2570,7 +2614,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                    pHandle->pApplicationPrivate,
                                                    OMX_EventError,
-                                                   OMX_ErrorHardware, 
+                                                   OMX_ErrorHardware,
                                                    OMX_TI_ErrorSevere,
                                                    NULL);
         }
@@ -2578,36 +2622,50 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
         OMX_ERROR2(pComponentPrivate->dbg, ":: --------- EMMCodecDspError Here\n");
         if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
-#ifndef UNDER_CE       
-
+            OMX_ERROR4(pComponentPrivate->dbg, "IUALG_WARN_PLAYCOMPLETED!\n");
 ///incase any pending output buffers, clear them
-    for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pInputBufferList->bBufferPending[%ld] = %ld\n",i,
-                       pComponentPrivate->pOutputBufferList->bBufferPending[i]);
-        if (MP3DEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Forcing FillBufferDone\n");
+            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+                if (MP3DEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
+                    pComponentPrivate->lastout = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+                }
+            }
+            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+                if (MP3DEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
 #ifdef __PERF_INSTRUMENTATION__
-            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                              PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i], pBuffer),
-                              0,
-                              PERF_ModuleHLMM);
+                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i], pBuffer),
+                                      0,
+                                      PERF_ModuleHLMM);
 #endif                  
-            pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
-            pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
-            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-                                                      pComponentPrivate->pOutputBufferList->pBufHdr[i]);
-            pComponentPrivate->nFillBufferDoneCount++;
-        }
-    }
-///
-    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,                  
+                    pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
+                    if(pComponentPrivate->lastout == pComponentPrivate->pOutputBufferList->pBufHdr[i]){
+                        OMX_ERROR4(pComponentPrivate->dbg, "Mark EOS on OUT buffer!\n");
+                        pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
+                    }
+                    OMX_ERROR2(pComponentPrivate->dbg, "FillBufferDone!\n");
+                    pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                              pComponentPrivate->pHandle->pApplicationPrivate,
+                                                              pComponentPrivate->pOutputBufferList->pBufHdr[i]);
+                    pComponentPrivate->nFillBufferDoneCount++;
+                }
+            }
+//
+#ifndef UNDER_CE
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                    OMX_EventBufferFlag,
-                                                   (OMX_U32)NULL,
+                                                   OMX_DirOutput,
                                                    OMX_BUFFERFLAG_EOS,
                                                    NULL);
-    pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;   
+            if(pComponentPrivate->dasfmode){
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+            }
+            pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;
 
 #else
             /* add callback to application to indicate SN/USN has completed playing of current set of date */
@@ -3172,14 +3230,11 @@ void MP3DEC_SetPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHE
 {
     OMX_U16 i;
 
-    OMXDBG_PRINT(stderr, PRINT, 1, 0, "Called MP3DEC_SetPending\n");
-    OMXDBG_PRINT(stderr, PRINT, 2, 0, "eDir = %d\n",eDir);
-
     if (eDir == OMX_DirInput) {
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pInputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pInputBufferList->bBufferPending[i] = 1;
-                OMXDBG_PRINT(stderr, BUFFER, 2, 0, "INPUT BUFFER %d IS PENDING Line %ld\n",i,lineNumber);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "INPUT BUFFER %d IS PENDING Line %ld\n",i,lineNumber);
             }
         }
     }
@@ -3187,7 +3242,7 @@ void MP3DEC_SetPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHE
         for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pOutputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pOutputBufferList->bBufferPending[i] = 1;
-                OMXDBG_PRINT(stderr, BUFFER, 2, 0, "OUTPUT BUFFER %d IS PENDING Line %ld\n",i,lineNumber);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "OUTPUT BUFFER %d IS PENDING Line %ld\n",i,lineNumber);
             }
         }
     }
@@ -3221,7 +3276,7 @@ void MP3DEC_ClearPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pInputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pInputBufferList->bBufferPending[i] = 0;
-                OMXDBG_PRINT(stderr, BUFFER, 2, 0, "INPUT BUFFER %d IS RECLAIMED Line %ld\n",i,lineNumber);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "INPUT BUFFER %d IS RECLAIMED Line %ld\n",i,lineNumber);
             }
         }
     }
@@ -3229,7 +3284,7 @@ void MP3DEC_ClearPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
         for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pOutputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pOutputBufferList->bBufferPending[i] = 0;
-                OMXDBG_PRINT(stderr, BUFFER, 2, 0, "OUTPUT BUFFER %d IS RECLAIMED Line %ld\n",i,lineNumber);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "OUTPUT BUFFER %d IS RECLAIMED Line %ld\n",i,lineNumber);
             }
         }
     }
