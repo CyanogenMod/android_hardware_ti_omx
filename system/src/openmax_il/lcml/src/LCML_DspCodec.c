@@ -1364,12 +1364,12 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
  #endif          
             pthread_mutex_unlock(&codec->mutex);
             pthread_mutex_destroy (&codec->mutex);
+            free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
+            hInterface->pCodecinterfacehandle = NULL;
             free(codec);
             codec = NULL;
         }
     }
-    free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
-    hInterface->pCodecinterfacehandle = NULL;
     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
     return eError;
 }
