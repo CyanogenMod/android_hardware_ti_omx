@@ -134,10 +134,10 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate;
     LCML_WBAMR_DEC_BUFHEADERTYPE *pTemp_lcml;
 
+    pComponentPrivate = pHandle->pComponentPrivate;
     OMX_PRINT1(pComponentPrivate->dbg, "WBAMR_DEC_Fill_LCMLInitParams\n ");
     OMX_PRDSP1(pComponentPrivate->dbg, "pHandle = %p\n",pHandle);
     OMX_PRDSP1(pComponentPrivate->dbg, "pHandle->pComponentPrivate = %p\n",pHandle->pComponentPrivate);
-    pComponentPrivate = pHandle->pComponentPrivate;
 
     nIpBuf = pComponentPrivate->pInputBufferList->numBuffers;
     pComponentPrivate->nRuntimeInputBuffers = nIpBuf;
@@ -955,7 +955,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       WBAMR_DEC_CPU_LOAD,
                                                       3456,
                                                       &(pComponentPrivate->rmproxyCallback));
-                    OMX_PRINT2(pComponentPrivate->dbg, "AMRDEC: RMProxy_SendCommand returned\n",rm_error);
+                    OMX_PRINT2(pComponentPrivate->dbg, "AMRDEC: RMProxy_SendCommand returned %d\n",rm_error);
                     if(rm_error == OMX_ErrorNone) {
                         /* resource is available */
                         pComponentPrivate->curState = OMX_StateIdle;
