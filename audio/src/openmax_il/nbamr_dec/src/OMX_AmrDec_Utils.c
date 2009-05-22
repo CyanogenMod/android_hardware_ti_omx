@@ -465,9 +465,9 @@ OMX_ERRORTYPE NBAMRDEC_StartComponentThread(OMX_HANDLETYPE pComponent)
 */
     /* Create the Component Thread */
 #ifdef UNDER_CE        
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, ComponentThread, pComponentPrivate);
+    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, NBAMRDEC_ComponentThread, pComponentPrivate);
 #else    
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, ComponentThread, pComponentPrivate);
+    eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, NBAMRDEC_ComponentThread, pComponentPrivate);
 #endif
     if (eError || !pComponentPrivate->ComponentThread) {
        eError = OMX_ErrorInsufficientResources;
