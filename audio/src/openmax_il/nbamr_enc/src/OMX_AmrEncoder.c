@@ -1737,8 +1737,8 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     OMX_NBMEMFREE_STRUCT(pComponentPrivate);
 
 EXIT:
-    OMX_PRINT1(dbg, "%d :: Exiting ComponentDeInit\n", __LINE__);
-    OMX_PRINT1(dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: Exiting ComponentDeInit\n", __LINE__);
+    OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
