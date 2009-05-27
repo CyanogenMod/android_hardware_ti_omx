@@ -8,19 +8,13 @@ include $(CLEAR_VARS)
 TI_BRIDGE_TOP := hardware/ti/omap3/dspbridge
 
 OMX_DEBUG := 0
-RESOURCE_MANAGER_ENABLED := 0
+RESOURCE_MANAGER_ENABLED := 1
+ENABLE_RMPM_STUB := 0
 PERF_INSTRUMENTATION := 1
 PERF_CUSTOMIZABLE := 1
 PERF_READER := 1
 
 TI_OMX_CFLAGS := -Wall -fpic -pipe -DSTATIC_TABLE -O0 
-
-ifeq ($(RESOURCE_MANAGER_ENABLED),1)
-TI_OMX_CFLAGS += -DRESOURCE_MANAGER_ENABLED 
-endif
-ifeq ($(PERF_INSTRUMENTATION),1)
-TI_OMX_CFLAGS += -D__PERF_INSTRUMENTATION__
-endif
 
 TI_OMX_TOP := $(LOCAL_PATH)
 TI_OMX_SYSTEM := $(TI_OMX_TOP)/system/src/openmax_il
@@ -43,24 +37,45 @@ TI_OMX_COMP_SHARED_LIBRARIES += \
 	libPERF
 endif
 
+ifeq ($(RESOURCE_MANAGER_ENABLED),1)
+TI_OMX_CFLAGS += -DRESOURCE_MANAGER_ENABLED
+TI_OMX_COMP_SHARED_LIBRARIES += \
+	libOMX_ResourceManagerProxy 
+endif
+
+ifeq ($(PERF_INSTRUMENTATION),1)
+TI_OMX_CFLAGS += -D__PERF_INSTRUMENTATION__
+endif
+
+ifeq ($(ENABLE_RMPM_STUB),1)
+TI_OMX_CFLAGS += -D__ENABLE_RMPM_STUB__
+endif
+
 TI_OMX_COMP_C_INCLUDES := \
 	$(TI_OMX_INCLUDES) \
 	$(TI_BRIDGE_TOP)/api/inc \
 	$(TI_OMX_SYSTEM)/lcml/inc \
 	$(TI_OMX_SYSTEM)/common/inc \
-	$(TI_OMX_SYSTEM)/perf/inc 
-
-#call to common omx
-include $(TI_OMX_SYSTEM)/omx_core/src/Android.mk
-include $(TI_OMX_SYSTEM)/lcml/src/Android.mk
+	$(TI_OMX_SYSTEM)/perf/inc \
+	$(TI_OMX_SYSTEM)/resource_manager/inc \
+ 	$(TI_OMX_SYSTEM)/resource_manager_proxy/inc \
+	$(TI_OMX_SYSTEM)/omx_policy_manager/inc \
 
 ifeq ($(PERF_INSTRUMENTATION),1)
 include $(TI_OMX_SYSTEM)/perf/Android.mk
 endif
+
 ifeq ($(PERF_READER),1)
 #TODO: Implement automatic building
 #include $(TI_OMX_SYSTEM)/perf/reader/Android.mk
 endif
+
+#call to common omx & system components
+include $(TI_OMX_SYSTEM)/omx_core/src/Android.mk
+include $(TI_OMX_SYSTEM)/lcml/src/Android.mk
+include $(TI_OMX_SYSTEM)/resource_manager/Android.mk
+include $(TI_OMX_SYSTEM)/resource_manager_proxy/Android.mk
+include $(TI_OMX_SYSTEM)/omx_policy_manager/Android.mk
 
 #call to audio
 include $(TI_OMX_AUDIO)/aac_dec/src/Android.mk
@@ -93,10 +108,12 @@ include $(TI_OMX_AUDIO)/g729_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/g729_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/g729_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/g729_enc/tests/Android.mk
+
 #call to video
 include $(TI_OMX_VIDEO)/video_decode/Android.mk
 include $(TI_OMX_VIDEO)/video_encode/Android.mk
 include $(TI_OMX_VIDEO)/video_encode/test/Android.mk
+
 #call to image
 include $(TI_OMX_IMAGE)/jpeg_enc/Android.mk
 include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
