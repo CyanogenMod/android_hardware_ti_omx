@@ -1406,10 +1406,8 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 
     AACDEC_OMX_CONF_CHECK_CMD(pHandle,1,1);
         if (pHandle && pHandle->pComponentPrivate) {
-	    OMXDBG_PRINT(stderr, STATE, 2, 0, "%d :: In GetState\n", __LINE__);
             *pState =  ((AACDEC_COMPONENT_PRIVATE*)
                         pHandle->pComponentPrivate)->curState;
-            OMXDBG_PRINT(stderr, STATE, 2, 0, "%d :: curState = %d\n", __LINE__,(int)*pState);
         } else {
             OMXDBG_PRINT(stderr, STATE, 2, 0, "%d :: In GetState\n", __LINE__);
             OMXDBG_PRINT(stderr, STATE, 2, 0, "Component State Set to Loaded\n\n");
