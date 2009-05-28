@@ -1771,10 +1771,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     MP3D_OMX_FREE(pComponentPrivate->sDeviceString);
 
     OMX_PRBUFFER2(dbg, ":: Freeing: pComponentPrivate = %p\n",pComponentPrivate);
-    MP3D_OMX_FREE(pComponentPrivate);
     OMX_PRINT1(dbg, "::*********** ComponentDeinit is Done************** \n");
  EXIT:
     OMX_DBG_CLOSE(dbg);
+    MP3D_OMX_FREE(pComponentPrivate);
     return eError;
 }
 
