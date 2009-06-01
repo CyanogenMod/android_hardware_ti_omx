@@ -134,6 +134,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     OMX_U16 FramesPerOutBuf                 = 0;
     OMX_U16 Channels                        = 0;
 
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: AACENCFill_LCMLInitParams\n ",__LINE__);
     nIpBuf = pComponentPrivate->pInputBufferList->numBuffers;
     pComponentPrivate->nRuntimeInputBuffers = nIpBuf;
@@ -332,7 +333,12 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_STRUCT(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+        OMX_MALLOC_STRUCT_SIZE(pTemp_lcml->pIpParam,
+                               (sizeof(AACENC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
+                               AACENC_UAlgInBufParamStruct);
+        pTemp_char = (char*)pTemp_lcml->pIpParam;
+        pTemp_char += EXTRA_BYTES;
+        pTemp_lcml->pIpParam = (AACENC_UAlgInBufParamStruct*)pTemp_char;
         OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml->pIpParam %p \n",pTemp_lcml->pIpParam);
         
         pTemp_lcml->pIpParam->bLastBuffer = 0;
@@ -366,7 +372,12 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         pTemp_lcml->eDir = OMX_DirOutput;
         /* SN : Each output buffer may be accompanied by an output buffer parameters structure*/ 
 
-        OMX_MALLOC_STRUCT(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+        OMX_MALLOC_STRUCT_SIZE(pTemp_lcml->pOpParam, 
+                               (sizeof(AACENC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
+                               AACENC_UAlgOutBufParamStruct);
+        pTemp_char = (char*)pTemp_lcml->pOpParam;
+        pTemp_char += EXTRA_BYTES;
+        pTemp_lcml->pOpParam = (AACENC_UAlgOutBufParamStruct*)pTemp_char;
 
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: size of pOpParam: %d \n",__LINE__,sizeof(pTemp_lcml->pOpParam->unFrameSizes));
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: numframes of pOpParam: %d \n\n",__LINE__,sizeof(pTemp_lcml->pOpParam->unNumFramesEncoded)) ;
@@ -597,6 +608,12 @@ OMX_ERRORTYPE AACENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
     for(i=0; i<nIpBuf; i++) 
     {
+        pTemp = (char*)pTemp_lcml->pIpParam;
+        if (pTemp != NULL) 
+        {
+            pTemp -= 128;
+        }
+        pTemp_lcml->pIpParam = (AACENC_UAlgInBufParamStruct*)pTemp;
         OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
         pTemp_lcml++;
     }
@@ -606,6 +623,12 @@ OMX_ERRORTYPE AACENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
     for (i=0; i<nOpBuf; i++)
     {
+        pTemp = (char*)pTemp_lcml->pOpParam;
+        if (pTemp != NULL) 
+        {
+            pTemp -= 128;
+        }
+        pTemp_lcml->pOpParam = (AACENC_UAlgOutBufParamStruct*)pTemp;
         OMX_MEMFREE_STRUCT(pTemp_lcml->pOpParam);
         pTemp_lcml++;
     }
