@@ -887,7 +887,8 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         LCML_DPRINT("mapping buffer \n");
 
         if (bufType == EMMCodecInputBuffer || !(streamId % 2)) {
-            eError = DmmMap(phandle->dspCodec->hProc, bufferLen, bufferSizeUsed,buffer, (pDmmBuf), unCached);
+            phandle->commStruct->iBufferSize = bufferSizeUsed ? bufferSizeUsed : bufferLen;
+            eError = DmmMap(phandle->dspCodec->hProc, bufferSizeUsed ? bufferSizeUsed: bufferLen, bufferSizeUsed,buffer, (pDmmBuf), unCached);
         }
         else if (bufType == EMMCodecOuputBuffer || streamId % 2) {
             eError = DmmMap(phandle->dspCodec->hProc, bufferLen, 0,buffer, (pDmmBuf), unCached);
@@ -1247,31 +1248,8 @@ OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
     }
     LCML_DPRINT("DMM Mapped: %p, size 0x%x (%d)\n",pDmmBuf->pMapped, size,size);
 
-    if (!unCached)
-    {
-        if (sizeUsed)
-        {
-            /* Issue an initial memory flush to ensure cache coherency */
-            status = DSPProcessor_FlushMemory(ProcHandle, pDmmBuf->pAllocated, sizeUsed, 0);
-            if(DSP_FAILED(status))
-            {
-                LCML_DPRINT("Unable to flush mapped buffer: error 0x%x",(int)status);
-                goto EXIT;
-            }
-        }
-        else
-        {
-            /* Issue an initial invalidate memory to ensure cache coherency in empty
-             * output buffer */
-            status = DSPProcessor_InvalidateMemory(ProcHandle, pDmmBuf->pAllocated, size);
-            if(DSP_FAILED(status))
-            {
-                LCML_DPRINT("Unable to invalidate mapped buffer: error 0x%x",(int)status);
-                goto EXIT;
-            }
-
-        }
-    }
+    /* Previously we used to Flush or Invalidate the mapped buffer.  This was
+     * removed due to bridge is now handling the flush/invalidate operation */
     eError = OMX_ErrorNone;
 
 EXIT:
