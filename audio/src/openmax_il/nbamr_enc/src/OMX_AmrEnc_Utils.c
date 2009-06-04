@@ -2214,7 +2214,6 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     OMX_COMPONENTTYPE *pHandle;
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U8 nFrames;
-    double num_samples = 0;
     OMX_U32 buffer_duration = 0;
 
     NBAMRENC_BUFDATA* OutputFrames = NULL;
@@ -2421,12 +2420,10 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                         /* Copying time stamp information to output buffer */
                         /*pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate_CC->arrBufIndex[pComponentPrivate_CC->OpBufindex];*/
                         pLcmlHdr->buffer->nTimeStamp = pComponentPrivate_CC->TimeStamp;
-                        num_samples = pLcmlHdr->buffer->nFilledLen / (pComponentPrivate_CC->pcmParams->nChannels
-                                                                      * (pComponentPrivate_CC->pcmParams->nBitPerSample / 8));
-                        buffer_duration = (num_samples / pComponentPrivate_CC->pcmParams->nSamplingRate) * 10000;
+                        buffer_duration = (160*nFrames*1000000) /
+                          (pComponentPrivate_CC->pcmParams->nSamplingRate*pComponentPrivate_CC->pcmParams->nChannels) ;
                         /* Update time stamp information */
                         pComponentPrivate_CC->TimeStamp += (OMX_TICKS)buffer_duration;
-                        /*pComponentPrivate_CC->TimeStamp += 20 * nFrames;*/
                         /* Copying nTickCount information to output buffer */
                         pLcmlHdr->buffer->nTickCount = pComponentPrivate_CC->arrTickCount[pComponentPrivate_CC->OpBufindex];
                         pComponentPrivate_CC->OpBufindex++;
