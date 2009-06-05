@@ -102,7 +102,7 @@
  */
 /* ======================================================================= */
 #ifdef  G726ENC_DEBUG
- 		#define G726ENC_DPRINT(STR, ARG...) printf()
+    #define G726ENC_DPRINT(STR, ARG...) printf()
 #else
 
 #endif
@@ -157,7 +157,7 @@
 #define OMX_NBMEMFREE_STRUCT(_pStruct_)\
 	G726ENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
-    	SafeFree(_pStruct_);\
+        SafeFree(_pStruct_);\
 	    _pStruct_ = NULL;\
 	}
 
@@ -439,7 +439,7 @@ typedef struct G726ENC_AudioCodecParams {
 typedef struct G726ENC_ParamStruct {
     /*unsigned long bLastBuffer;	*/
     unsigned short bLastBuffer;
-} G726ENC_ParamStruct; 
+} G726ENC_ParamStruct;
 
 /* =================================================================================== */
 /**
@@ -489,54 +489,54 @@ typedef struct G726ENC_PORT_TYPE {
 */
 /* =================================================================================== */
 typedef struct G726ENC_COMPONENT_PRIVATE
-{   
-    /** callback Info */  
+{
+    /** callback Info */
     OMX_CALLBACKTYPE cbInfo;
 
-    /** port parameters Info */     
+    /** port parameters Info */
     OMX_PORT_PARAM_TYPE* sPortParam; /*Needed??*/
-    
-    /** priority management */ 
+
+    /** priority management */
     OMX_PRIORITYMGMTTYPE* sPriorityMgmt;
-    
-    /** port definition structure */ 
+
+    /** port definition structure */
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef[G726ENC_NUM_OF_PORTS];
-    
-    /** port parameter structure */ 
+
+    /** port parameter structure */
     OMX_AUDIO_PARAM_G726TYPE* G726Params[G726ENC_NUM_OF_PORTS];
-    
+
     /** Buffer info */
     G726ENC_BUFFERHEADERTYPE_INFO BufInfo[G726ENC_NUM_OF_PORTS];
-    
-    /** Component ports */ 
+
+    /** Component ports */
     G726ENC_PORT_TYPE *pCompPort[G726ENC_NUM_OF_PORTS];
-    
-    /** LCML headers */  
+
+    /** LCML headers */
     G726ENC_LCML_BUFHEADERTYPE *pLcmlBufHeader[G726ENC_NUM_OF_PORTS];
-    
+
     /** This is component handle */
     OMX_COMPONENTTYPE* pHandle;
-    
+
     /** Current state of this component */
     OMX_STATETYPE curState;
-    
+
     /** The component thread handle */
     pthread_t ComponentThread;
-    
+
     /** The pipes for sending buffers to the thread */
     int dataPipe[2];
-    
+
     /** The pipes for sending command to the thread */
     int cmdPipe[2];
-    
+
     /** The pipes for sending cmd data to the thread */
     int cmdDataPipe[2];
 
-    /** dasf mode flag */ 
-	OMX_U32 dasfMode;
+    /** dasf mode flag */
+    OMX_U32 dasfMode;
 
-    /** acdn mode flag */ 
-	OMX_U32 acdnMode;
+    /** acdn mode flag */
+    OMX_U32 acdnMode;
 
     /** rtp mode flag */
     OMX_U32 rtpMode;
@@ -544,32 +544,32 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     /** Set to indicate component is stopping */
     OMX_U32 bIsStopping;
 
-    /** stream ID */ 
-	OMX_U32 streamID;
+    /** stream ID */
+    OMX_U32 streamID;
 
-    /** port defaults allocated */ 
+    /** port defaults allocated */
     OMX_U32 bPortDefsAllocated;
 
-    /** thread started flag */ 
+    /** thread started flag */
     OMX_U32 bCompThreadStarted;
 
-    /** version number */ 
+    /** version number */
     OMX_U32 nVersion;
 
-    /** FillThisBufferCount */ 
-	OMX_U32 nFillThisBufferCount;
+    /** FillThisBufferCount */
+    OMX_U32 nFillThisBufferCount;
 
     /** FillBufferDoneCount */
-	OMX_U32 nFillBufferDoneCount;
+    OMX_U32 nFillBufferDoneCount;
 
     /** EmptyThisBufferCount */
-	OMX_U32 nEmptyThisBufferCount;
+    OMX_U32 nEmptyThisBufferCount;
 
     /** EmptyBufferDoneCount */
-	OMX_U32 nEmptyBufferDoneCount;
+    OMX_U32 nEmptyBufferDoneCount;
 
     /** InitParamsInitialized */
-	OMX_U32 bInitParamsInitialized;
+    OMX_U32 bInitParamsInitialized;
 
     /** NumInputBufPending */
     OMX_U32 nNumInputBufPending;
@@ -602,16 +602,16 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     G726ENC_BUFFERLIST *pOutputBufferList;
 
     /** LCML stream attributes */
-	LCML_STRMATTR *strmAttr;
+    LCML_STRMATTR *strmAttr;
 
     /** pointer to audio codec parameters */
-	G726ENC_AudioCodecParams *pParams;
+    G726ENC_AudioCodecParams *pParams;
 
     /** component name */
-	OMX_STRING cComponentName;
+    OMX_STRING cComponentName;
 
     /** component version */
-	OMX_VERSIONTYPE ComponentVersion;
+    OMX_VERSIONTYPE ComponentVersion;
 
     /** pending input buffer headers */
     OMX_BUFFERHEADERTYPE *pInputBufHdrPending[G726ENC_MAX_NUM_OF_BUFS];
@@ -620,7 +620,7 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     OMX_BUFFERHEADERTYPE *pOutputBufHdrPending[G726ENC_MAX_NUM_OF_BUFS];
 
     /** Flag to set when socket node stop callback should not transition
-        component to OMX_StateIdle */
+    component to OMX_StateIdle */
     OMX_U32 bNoIdleOnStop;
 
     /** Flag set when socket node is stopped */
@@ -645,22 +645,22 @@ typedef struct G726ENC_COMPONENT_PRIVATE
 #endif
     /** pointer to LCML lib */
     void* ptrLibLCML;
-   
+
     /** frame size array */
     OMX_U8 G726FrameSize[4];
-   	
+
     /** component role */
     OMX_PARAM_COMPONENTROLETYPE componentRole;
-    
+
     /** device string */
     OMX_STRING* sDeviceString;
-  	
+
     /** runtime input buffers */
     OMX_U8 nRuntimeInputBuffers;
-    
+
     /** runtime output buffers */
     OMX_U8 nRuntimeOutputBuffers;
-   
+
     /** hold buffer */
     OMX_U8 *pHoldBuffer;
 
@@ -671,7 +671,7 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     OMX_U8 *ptempBuffer;
 
     /** last out buffer arrived */
-    OMX_BUFFERHEADERTYPE *lastOutBufArrived;    
+    OMX_BUFFERHEADERTYPE *lastOutBufArrived;
 
     /** last buffer sent */
     OMX_U8 LastBufSent;
@@ -684,15 +684,15 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     OMX_U8 IpBufindex;
     /** Index to arrTimestamp[], used for output buffer timestamps */
     OMX_U8 OpBufindex;
-    
+
     /** preempted flag */
-    OMX_BOOL bPreempted;    
+    OMX_BOOL bPreempted;
 
 } G726ENC_COMPONENT_PRIVATE;
 
 
 #ifndef UNDER_CE
-	OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
+    OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
 #else
 /*  WinCE Implicit Export Syntax */
 #define OMX_EXPORT __declspec(dllexport)
@@ -775,9 +775,9 @@ OMX_ERRORTYPE G726ENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 */
 /* =================================================================================== */
 OMX_ERRORTYPE G726ENC_GetCorrespondingLCMLHeader( G726ENC_COMPONENT_PRIVATE *pComponentPrivate,
-                                                    OMX_U8 *pBuffer,
-                                       		    OMX_DIRTYPE eDir,
-                                          	    G726ENC_LCML_BUFHEADERTYPE **ppLcmlHdr);
+                                                OMX_U8 *pBuffer,
+                                                OMX_DIRTYPE eDir,
+                                                G726ENC_LCML_BUFHEADERTYPE **ppLcmlHdr);
 /* =================================================================================== */
 /**
 *  G726ENC_LCMLCallback() Callback from LCML
@@ -852,7 +852,7 @@ OMX_U32 G726ENC_HandleCommand(G726ENC_COMPONENT_PRIVATE *pComponentPrivate);
 */
 /* =================================================================================== */
 OMX_ERRORTYPE G726ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE *pBufHeader,
-        									G726ENC_COMPONENT_PRIVATE *pComponentPrivate);
+                                           G726ENC_COMPONENT_PRIVATE *pComponentPrivate);
 /* =================================================================================== */
 /**
 *  G726ENC_GetLCMLHandle()  Get the handle to the LCML
@@ -971,12 +971,12 @@ OMX_U32 G726ENC_IsValid(G726ENC_COMPONENT_PRIVATE *pComponentPrivate,
 *
 *  @param  OMX_IndexCustomG726ENCModeConfig      Sets the DASF mode
 *
-*  
+*
 */
 /*  ==================================================================== */
 typedef enum OMX_G726ENC_INDEXAUDIOTYPE {
 	OMX_IndexCustomG726ENCModeConfig = 0xFF000001,
-	OMX_IndexCustomG726ENCStreamIDConfig, 
+	OMX_IndexCustomG726ENCStreamIDConfig,
 	OMX_IndexCustomG726ENCDataPath
 }OMX_G726ENC_INDEXAUDIOTYPE;
 
