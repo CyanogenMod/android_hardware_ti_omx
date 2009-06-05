@@ -232,6 +232,8 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
                                        OMX_OUT OMX_U8 *cRole,
                                        OMX_IN OMX_U32 nIndex);
 #endif
+
+void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONENT_PRIVATE* pCompPrivate);
 /*----------------------------------------------------------------------------*/
 /**
   * OMX_ComponentInit() Set the all the function pointers of component
@@ -548,7 +550,7 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->eDir                               = OMX_DirInput;
     pPortDef->nBufferCountActual                 = VIDENC_NUM_OF_IN_BUFFERS; 
     pPortDef->nBufferCountMin                    = 1;
-    pPortDef->nBufferSize                        = 38016; 
+    pPortDef->nBufferSize                        = 0;    /* It is calculated below */
     pPortDef->bEnabled                           = OMX_TRUE;
     pPortDef->bPopulated                         = OMX_FALSE;
     pPortDef->eDomain                            = OMX_PortDomainVideo;
@@ -566,6 +568,8 @@ sDynamicFormat = getenv("FORMAT");
     /* Set the default value of the run-time Target Frame Rate to the create-time Frame Rate */
     pComponentPrivate->nTargetFrameRate = pPortDef->format.video.xFramerate;  
 
+    CalculateBufferSize(pPortDef, pComponentPrivate);
+    pComponentPrivate->nInBufferSize = 0;
 
     for (i = 0; i < VIDENC_MAX_NUM_OF_IN_BUFFERS; i++) 
     {
@@ -588,7 +592,7 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->eDir                               = OMX_DirOutput;
     pPortDef->nBufferCountActual                 = VIDENC_NUM_OF_OUT_BUFFERS;
     pPortDef->nBufferCountMin                    = 1; 
-    pPortDef->nBufferSize                        = 220000;
+    pPortDef->nBufferSize                        = 0;  /* It is calculated below */
     pPortDef->bEnabled                           = OMX_TRUE;
     pPortDef->bPopulated                         = OMX_FALSE;
     pPortDef->eDomain                            = OMX_PortDomainVideo;
@@ -628,6 +632,9 @@ sDynamicFormat = getenv("FORMAT");
     
     /* Set the default value of the run-time Target Bit Rate to the create-time Bit Rate */
     pComponentPrivate->nTargetBitRate = pPortDef->format.video.nBitrate;    
+
+    CalculateBufferSize(pPortDef, pComponentPrivate);
+    pComponentPrivate->nOutBufferSize = 0;
 
     for (i = 0; i < VIDENC_MAX_NUM_OF_OUT_BUFFERS; i++)
     {
@@ -1814,6 +1821,7 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                CalculateBufferSize(pCompPortIn->pPortDef, pComponentPrivate);
             }
             else if (pComponentParam->nPortIndex == pCompPortOut->pPortDef->nPortIndex)
             {
@@ -1826,6 +1834,7 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                CalculateBufferSize(pCompPortOut->pPortDef, pComponentPrivate);
             }
             else
             {
@@ -1847,6 +1856,7 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                CalculateBufferSize(pCompPortOut->pPortDef, pComponentPrivate);
             }
             else
             {
@@ -3089,7 +3099,7 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                "Using buffer on disabled port.\n");
     }
 
-    if (nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated)
+    if (nSizeBytes < pPortDef->nBufferSize || pPortDef->bPopulated)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
@@ -3161,10 +3171,16 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     if (nPortIndex == VIDENC_INPUT_PORT)
     {
         pBufferPrivate->pBufferHdr->pInputPortPrivate = pBufferPrivate;
+        if(!pComponentPrivate->nInBufferSize || (pComponentPrivate->nInBufferSize > nSizeBytes)) {
+            pComponentPrivate->nInBufferSize = nSizeBytes;
+        }
     }
     else
     {
        pBufferPrivate->pBufferHdr->pOutputPortPrivate = pBufferPrivate;
+        if(!pComponentPrivate->nOutBufferSize || (pComponentPrivate->nOutBufferSize > nSizeBytes)) {
+            pComponentPrivate->nOutBufferSize = nSizeBytes;
+        }
     }
     pBufferPrivate->bAllocByComponent = OMX_FALSE;
 
@@ -3425,7 +3441,6 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
                                "Allocating buffer on invalid port index.\n");
     }
-   
     if (!pPortDef->bEnabled)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
@@ -3433,7 +3448,7 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                "Allocating buffer on disabled port.\n");
     }   
 
-    if (nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated)
+    if (nSizeBytes < pPortDef->nBufferSize || pPortDef->bPopulated)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
@@ -3483,10 +3498,16 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     if (nPortIndex == VIDENC_INPUT_PORT)
     {
         pBufferPrivate->pBufferHdr->pInputPortPrivate = pBufferPrivate;
+        if(!pComponentPrivate->nInBufferSize || (pComponentPrivate->nInBufferSize > nSizeBytes)) {
+            pComponentPrivate->nInBufferSize = nSizeBytes;
+        }
     }
     else 
     {
         pBufferPrivate->pBufferHdr->pOutputPortPrivate = pBufferPrivate;
+        if(!pComponentPrivate->nOutBufferSize || (pComponentPrivate->nOutBufferSize > nSizeBytes)) {
+            pComponentPrivate->nOutBufferSize = nSizeBytes;
+        }
     }
     pBufferPrivate->bAllocByComponent = OMX_TRUE;
 
