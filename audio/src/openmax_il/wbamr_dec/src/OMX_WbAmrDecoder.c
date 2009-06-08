@@ -274,14 +274,14 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleAudioDecode);
 #endif
 
-#if ANDROID
-    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_TRUE;
-    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_TRUE;
+#if ANDROID /* currently using default values until more is understood */
+    pComponentPrivate->iPVCapabilityFlags.iIsOMXComponentMultiThreaded = OMX_TRUE; /* this should be true always for TI components */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsMovableInputBuffers = OMX_FALSE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentSupportsPartialFrames = OMX_FALSE; /* experiment with this */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentNeedsNALStartCode = OMX_FALSE; /* used only for H.264, leave this as false */
+    pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_FALSE; /* experiment with this */
 #endif
 
     WBAMR_DEC_OMX_MALLOC(pComponentPrivate->pInputBufferList, WBAMR_DEC_BUFFERLIST);
@@ -364,6 +364,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
     pComponentPrivate->pParams = NULL; /* Without this initialization repetition cases failed. */
     pComponentPrivate->LastOutbuf=NULL;
+    pComponentPrivate->using_rtsp = 0;
     strcpy((char*)pComponentPrivate->componentRole.cRole, AMRWB_DEC_ROLE);
 
 
@@ -447,7 +448,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
     /* Use bigger IN buffer size for PV-Android */
-    pPortDef_ip->nBufferSize = 640; /*INPUT_WBAMRDEC_BUFFER_SIZE;*/
+    pPortDef_ip->nBufferSize = 780; /*INPUT_WBAMRDEC_BUFFER_SIZE;*/
     pPortDef_ip->bPopulated = 0;
     pPortDef_ip->format.audio.eEncoding = OMX_AUDIO_CodingAMR;
 
@@ -1021,10 +1022,14 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 
             if (OMX_AUDIO_AMRFrameFormatConformance == pCompAmrParam->eAMRFrameFormat)
                 pComponentPrivate->mimemode = 0;
-            else if (OMX_AUDIO_AMRFrameFormatFSF == pCompAmrParam->eAMRFrameFormat)
-                pComponentPrivate->mimemode = 1;
-            else
-                pComponentPrivate->mimemode = 2; /*IF2 Format*/
+        else if (OMX_AUDIO_AMRFrameFormatIF2 == pCompAmrParam->eAMRFrameFormat)
+            pComponentPrivate->mimemode = 2;
+        else if (OMX_AUDIO_AMRFrameFormatRTPPayload == pCompAmrParam->eAMRFrameFormat){
+            pComponentPrivate->mimemode = 1;
+            pComponentPrivate->using_rtsp = 1;
+        }
+        else
+            pComponentPrivate->mimemode = 1; /*MIME Format*/
 
             /* 0 means Input port */
             if(pCompAmrParam->nPortIndex == 0) {

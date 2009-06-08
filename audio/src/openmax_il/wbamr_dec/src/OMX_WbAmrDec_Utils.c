@@ -1794,6 +1794,10 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U8 *pBufParmsTemp;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
 
+    OMX_U32 nFilledLenLocal;
+    OMX_U8 TOCentry, hh=0;
+    OMX_U8 TOCframetype[20]= {0};
+
     WBAMR_DEC_AudioCodecParams *pParams;
     OMX_U8 *pParmsTemp;
     OMX_STRING p = "damedesuStr";
@@ -1820,6 +1824,36 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 if (pComponentPrivate->mimemode == WBAMRDEC_MIMEMODE)
                 {
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "WBAMR_DEC_HandleDataBuf_FromApp - reading WBAMR_DEC_MIMEMODE\n");
+                    if(pComponentPrivate->using_rtsp==1){ /* formating data */
+                        nFilledLenLocal=pBufHeader->nFilledLen; 
+                        while(TRUE)
+                        {
+                            TOCentry = pBufHeader->pBuffer[0];
+                            TOCframetype[hh]= TOCentry & 0x7C;
+                            hh++;
+                            if (!(TOCentry & 0x80))
+                                break;
+                            memmove(pBufHeader->pBuffer,
+                                    pBufHeader->pBuffer + 1,
+                                    nFilledLenLocal);
+                        }
+                        while(nFilledLenLocal> 0 ){
+                            index = (TOCframetype[nFrames] >> 3) & 0x0F;
+                            /* adding TOC to each frame */
+                            memmove(pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->wbamrMimeBytes[index]))+1,
+                                                pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->wbamrMimeBytes[index])),
+                                                nFilledLenLocal);
+                            memcpy(pBufHeader->pBuffer+((nFrames)*(pComponentPrivate->wbamrMimeBytes[index])), 
+                                                &TOCframetype[nFrames],
+                                                sizeof(OMX_U8));
+                            if (pComponentPrivate->wbamrMimeBytes[index] > nFilledLenLocal){
+                                        nFilledLenLocal = 0;
+                            }else{
+                                        nFilledLenLocal -= pComponentPrivate->wbamrMimeBytes[index];
+                            }
+                            nFrames++;
+                        }
+                    }
                     nFrames = 0;
                     i=0;
                     while( pBufHeader->nFilledLen > 0 )
