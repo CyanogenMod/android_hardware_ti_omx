@@ -104,6 +104,8 @@ static OMX_ERRORTYPE FreeResources(LCML_DSP_INTERFACE *hInterface);
 
 void* MessagingThread(void *arg);
 
+static char *append_dsp_path(char * dll64p_name);
+
 
 /** ========================================================================
 *  GetHandle function is called by OMX component to get LCML handle
@@ -207,7 +209,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         BYTE  argsBuf[32 + sizeof(ULONG)];
 #ifndef CEXEC_DONE
         UINT argc = 1;
-        char* argv[] = {DSP_DOF_IMAGE};
+        char* argv[] = {append_dsp_path(DSP_DOF_IMAGE)};
 #endif
         int tmperr;
 
@@ -248,7 +250,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             LCML_DPRINT("%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
             status = DSPManager_RegisterObject((struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
                                                 phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
-                                                (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName);
+                                                append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName));
             DSP_ERROR_EXIT (status, "Register Component Library", ERROR)
         }
 
@@ -447,6 +449,9 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
     }
 
 ERROR:
+#ifndef CEXEC_DONE
+    free(argv);
+#endif
     LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n", __LINE__);
     return eError;
 }
@@ -476,7 +481,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     LCML_DSP_INTERFACE * phandle;
 #ifndef CEXEC_DONE
     UINT argc = 1;
-    char* argv[] = {DSP_DOF_IMAGE};
+    char* argv[] = {append_dsp_path(DSP_DOF_IMAGE)};
 #endif
     LCML_CREATEPHASEARGS crData;
     DSP_STATUS status;
@@ -527,7 +532,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         LCML_DPRINT("%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
         status = DSPManager_RegisterObject((struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
                                            phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
-                                           (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName);
+                                           append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName));
         DSP_ERROR_EXIT (status, "Register Component Library", ERROR)
     }
 
@@ -715,7 +720,11 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     PERF_Boundary(phandle->pPERF,
                   PERF_BoundaryComplete | PERF_BoundarySetup);
 #endif
+
 ERROR:
+#ifndef CEXEC_DONE
+    free(argv);
+#endif
     LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n", __LINE__);
     return eError;
 }
@@ -2302,3 +2311,18 @@ void* MessagingThread(void* arg)
     return (void*)OMX_ErrorNone;
 }
 
+static char *append_dsp_path(char * dll64p_name)
+{
+    char *dsp_path = NULL;
+    char *appended_dll = NULL;
+    if (!(dsp_path = getenv("DSP_PATH")))
+    {
+        printf("DSP_PATH Environment variable not set using /lib/dsp default");
+        dsp_path = "/lib/dsp";
+    }
+    appended_dll = (char *)calloc(strlen(dsp_path) + strlen("/") + strlen(dll64p_name),sizeof(char));
+    strcpy(appended_dll,dsp_path);
+    strcat(appended_dll,"/");
+    strcat(appended_dll,dll64p_name);
+    return appended_dll;
+}

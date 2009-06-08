@@ -154,7 +154,7 @@
 #ifdef UNDER_CE
 #define AACDEC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define AACDEC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define AACDEC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -165,7 +165,7 @@
 #ifdef UNDER_CE
 #define AACDEC_DLL_NAME "\\windows\\mpeg4aacdec_sn.dll64P"
 #else
-#define AACDEC_DLL_NAME "/lib/dsp/mpeg4aacdec_sn.dll64P"
+#define AACDEC_DLL_NAME "mpeg4aacdec_sn.dll64P"
 #endif
 
 #define DONT_CARE 0

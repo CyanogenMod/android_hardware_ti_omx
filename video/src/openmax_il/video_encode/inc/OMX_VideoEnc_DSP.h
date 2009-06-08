@@ -47,9 +47,9 @@
 #define MAXNUMSLCGPS      8  /*< max. number of slice groups*/
 
 #ifndef UNDER_CE
-    #define H264_ENC_NODE_DLL "/lib/dsp/h264venc_sn.dll64P"
-    #define MP4_ENC_NODE_DLL  "/lib/dsp/m4venc_sn.dll64P"
-    #define USN_DLL           "/lib/dsp/usn.dll64P"     
+    #define H264_ENC_NODE_DLL "h264venc_sn.dll64P"
+    #define MP4_ENC_NODE_DLL  "m4venc_sn.dll64P"
+    #define USN_DLL           "usn.dll64P"
 #else
     #define H264_ENC_NODE_DLL "/windows/h264venc_sn.dll64P"    
     #define MP4_ENC_NODE_DLL  "/windows/m4venc_sn.dll64P"    

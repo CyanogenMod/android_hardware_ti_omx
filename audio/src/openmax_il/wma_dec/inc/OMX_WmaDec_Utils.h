@@ -362,7 +362,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 #ifdef UNDER_CE
 #define WMADEC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define WMADEC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define WMADEC_USN_DLL_NAME "usn.dll64P"
 #endif
 /* ======================================================================= */
 /**
@@ -372,7 +372,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 #ifdef UNDER_CE
 #define WMADEC_DLL_NAME "\\windows\\wmadec_sn.dll64P"
 #else
-#define WMADEC_DLL_NAME "/lib/dsp/wmadec_sn.dll64P"
+#define WMADEC_DLL_NAME "wmadec_sn.dll64P"
 #endif
 /* ======================================================================= */
 /**

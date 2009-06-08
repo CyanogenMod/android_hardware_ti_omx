@@ -55,15 +55,15 @@
 #endif
 
 #ifndef UNDER_CE
-    #define H264_DEC_NODE_DLL  "/lib/dsp/h264vdec_sn.dll64P" 
-    #define MP4_DEC_NODE_DLL   "/lib/dsp/mp4vdec_sn.dll64P"
-    #define MP4720P_DEC_NODE_DLL   "/lib/dsp/mpeg4aridec_sn.dll64P"
-    #define MP2_DEC_NODE_DLL   "/lib/dsp/mp2vdec_sn.dll64P"
-    #define WMV_DEC_NODE_DLL   "/lib/dsp/wmv9dec_sn.dll64P"
-    #define RINGIO_NODE_DLL    "/lib/dsp/ringio.dll64P"
-    #define USN_DLL            "/lib/dsp/usn.dll64P" 
+    #define H264_DEC_NODE_DLL  "h264vdec_sn.dll64P"
+    #define MP4_DEC_NODE_DLL   "mp4vdec_sn.dll64P"
+    #define MP4720P_DEC_NODE_DLL   "mpeg4aridec_sn.dll64P"
+    #define MP2_DEC_NODE_DLL   "mp2vdec_sn.dll64P"
+    #define WMV_DEC_NODE_DLL   "wmv9dec_sn.dll64P"
+    #define RINGIO_NODE_DLL    "ringio.dll64P"
+    #define USN_DLL            "usn.dll64P"
  #ifdef VIDDEC_SPARK_CODE
-    #define SPARK_DEC_NODE_DLL  "/lib/dsp/sparkdec_sn.dll64P" 
+    #define SPARK_DEC_NODE_DLL  "sparkdec_sn.dll64P"
  #endif
 #else
     #define H264_DEC_NODE_DLL "\\windows\\h264vdec_sn.dll64P"

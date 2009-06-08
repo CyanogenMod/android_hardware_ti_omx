@@ -257,12 +257,12 @@ typedef struct IDMJPGE_TIGEM_DynamicParams {
 		#define PPLIB_DLL "/windows/postprocessor_dualout.dll64P"
 	#endif
 #else
-#define JPEG_ENC_NODE_DLL "/lib/dsp/jpegenc_sn.dll64P"
-#define JPEG_COMMON_DLL "/lib/dsp/usn.dll64P"
-#define USN_DLL "/lib/dsp/usn.dll64P"
-#define CONVERSIONS_DLL "/lib/dsp/conversions.dll64P"
+#define JPEG_ENC_NODE_DLL "jpegenc_sn.dll64P"
+#define JPEG_COMMON_DLL "usn.dll64P"
+#define USN_DLL "usn.dll64P"
+#define CONVERSIONS_DLL "conversions.dll64P"
 	#ifdef __JPEG_OMX_PPLIB_ENABLED__
-		#define PPLIB_DLL "/lib/dsp/postprocessor_dualout.dll64P"
+		#define PPLIB_DLL "postprocessor_dualout.dll64P"
 	#endif
 #endif
 

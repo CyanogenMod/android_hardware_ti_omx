@@ -150,7 +150,27 @@
 
 #endif /*UNDER_CE*/ 
 
+/* ======================================================================= */
+/**
+ * @def    AACENC_USN_DLL_NAME   USN DLL name
+ */
+/* ======================================================================= */
+#ifdef UNDER_CE
+#define AACENC_USN_DLL_NAME "\\windows\\usn.dll64P"
+#else
+#define AACENC_USN_DLL_NAME "usn.dll64P"
+#endif
 
+/* ======================================================================= */
+/**
+ * @def    AACENC_DLL_NAME   AAC Enc Encoder socket node DLL name
+ */
+/* ======================================================================= */
+#ifdef UNDER_CE
+#define AACENC_DLL_NAME "\\windows\\mpeg4aacdec_sn.dll64P"
+#else
+#define AACENC_DLL_NAME "mpeg4aacdec_sn.dll64P"
+#endif
 
 typedef struct 
 {

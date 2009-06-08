@@ -39,7 +39,7 @@
 #define MAX_STREAMS             10
 
 /*DSP specific*/
-#define DSP_DOF_IMAGE           "/lib/dsp/baseimage.dof"
+#define DSP_DOF_IMAGE           "baseimage.dof"
 #define TI_PROCESSOR_DSP        0
 #define LCML_MAX_NUM_OF_DLLs    10
 #define END_OF_CR_PHASE_ARGS    0xFC25
@@ -98,7 +98,6 @@ typedef enum {
     DSPMSG_MODE,
     DSPMSG_PLAYCOMPLETED
 } DSP_Messages;
-
 
 /**
  * USN structure

@@ -267,7 +267,7 @@
 #ifdef UNDER_CE
     #define WBAMRENC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-    #define WBAMRENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+    #define WBAMRENC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -278,7 +278,7 @@
 #ifdef UNDER_CE
     #define WBAMRENC_DLL_NAME "\\windows\\wbamrenc_sn.dll64P"
 #else
-    #define WBAMRENC_DLL_NAME "/lib/dsp/wbamrenc_sn.dll64P"
+    #define WBAMRENC_DLL_NAME "wbamrenc_sn.dll64P"
 #endif
 
 /* ======================================================================= */
