@@ -2072,7 +2072,19 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
     pBuffPrivate->eBufferOwner = JPEGENC_BUFFER_DSP;
 
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
+    if (pComponentPrivate->pOutParams != NULL)
+    {
+        OMX_FREE(pComponentPrivate->pOutParams);
+    }
     OMX_MALLOC(pComponentPrivate->pOutParams,sizeof(PPLIB_UALGRunTimeParam_t));
+
+    if (pComponentPrivate->pOutParams != NULL)
+    {
+    }
+    else
+    {
+        goto EXIT;
+    }
 
     eError = SendDynamicPPLibParam(pComponentPrivate,pComponentPrivate->pOutParams);
        if (eError != OMX_ErrorNone ) {
