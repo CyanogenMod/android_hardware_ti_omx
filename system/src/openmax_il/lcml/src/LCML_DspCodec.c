@@ -94,7 +94,7 @@ static OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
                      OMX_U32 sizeUsed,
                      void* pArmPtr,
                      DMM_BUFFER_OBJ* pDmmBuf,
-                     OMX_U32 unCached);
+                     OMX_U32 MapBufLen);
                      
 static OMX_ERRORTYPE DmmUnMap(DSP_HPROCESSOR ProcHandle,
                               void *pMapPtr,
@@ -783,7 +783,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     DMM_BUFFER_OBJ* pDmmBuf=NULL;
     int commandId;
     struct DSP_MSG msg;
-    OMX_U32 unCached=0;
+    OMX_U32 MapBufLen=0;
 
     LCML_DPRINT("%d :: QueueBuffer application\n",__LINE__);
 
@@ -829,15 +829,15 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     phandle->iBufinputcount = phandle->iBufinputcount % QUEUE_SIZE;
     phandle->commStruct->Bufoutindex = phandle->iBufoutputcount;
     phandle->commStruct->BufInindex = phandle->iBufinputcount;
-    if (bufType == EMMCodecInputBufferUncached)
+    if (bufType == EMMCodecInputBufferMapBufLen)
     {
         bufType = EMMCodecInputBuffer;
-        unCached = 1;
+        MapBufLen = 1;
     }
-    else if (bufType == EMMCodecOutputBufferUncached)
+    else if (bufType == EMMCodecOutputBufferMapBufLen)
     {
         bufType = EMMCodecOuputBuffer;
-        unCached = 1;
+        MapBufLen = 1;
     }
 
 
@@ -887,11 +887,21 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         LCML_DPRINT("mapping buffer \n");
 
         if (bufType == EMMCodecInputBuffer || !(streamId % 2)) {
-            phandle->commStruct->iBufferSize = bufferSizeUsed ? bufferSizeUsed : bufferLen;
-            eError = DmmMap(phandle->dspCodec->hProc, bufferSizeUsed ? bufferSizeUsed: bufferLen, bufferSizeUsed,buffer, (pDmmBuf), unCached);
+            if (MapBufLen)
+            {
+                /*using this option only when not mapping the entire memory region
+                 * can cause a DSP MMU FAULT or DSP SYS ERROR */
+
+                eError = DmmMap(phandle->dspCodec->hProc, bufferLen, bufferSizeUsed,buffer, (pDmmBuf), MapBufLen);
+            }
+            else
+            {
+                phandle->commStruct->iBufferSize = bufferSizeUsed ? bufferSizeUsed : bufferLen;
+                eError = DmmMap(phandle->dspCodec->hProc, bufferSizeUsed ? bufferSizeUsed: bufferLen, bufferSizeUsed,buffer, (pDmmBuf), MapBufLen);
+            }
         }
         else if (bufType == EMMCodecOuputBuffer || streamId % 2) {
-            eError = DmmMap(phandle->dspCodec->hProc, bufferLen, 0,buffer, (pDmmBuf), unCached);
+            eError = DmmMap(phandle->dspCodec->hProc, bufferLen, 0,buffer, (pDmmBuf), MapBufLen);
         }
         if (eError != OMX_ErrorNone)
         {
@@ -1196,7 +1206,7 @@ OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
                      OMX_U32 sizeUsed,
                      void* pArmPtr,
                      DMM_BUFFER_OBJ* pDmmBuf, 
-                     OMX_U32 unCached)
+                     OMX_U32 MapBufLen)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     DSP_STATUS status;
