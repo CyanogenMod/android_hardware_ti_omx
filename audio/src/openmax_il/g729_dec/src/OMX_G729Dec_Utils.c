@@ -421,10 +421,10 @@ OMX_ERRORTYPE G729DEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     /* Create the Component Thread */
 #ifdef UNDER_CE
     eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr,
-                             ComponentThread, pComponentPrivate);
+                             G729DEC_ComponentThread, pComponentPrivate);
 #else
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL,
-                             ComponentThread, pComponentPrivate);
+                             G729DEC_ComponentThread, pComponentPrivate);
 #endif
     if (eError || !pComponentPrivate->ComponentThread) {
         eError = OMX_ErrorInsufficientResources;

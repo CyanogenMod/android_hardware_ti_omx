@@ -99,7 +99,7 @@
 /*--------macros ----------------------------------------------*/
 
 
-void* ComponentThread (void* pThreadData)
+void* G729DEC_ComponentThread (void* pThreadData)
 {
     OMX_S16 status = 0;
     struct timespec tv;

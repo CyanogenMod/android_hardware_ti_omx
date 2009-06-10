@@ -82,6 +82,6 @@
 /*--------function prototypes ---------------------------------*/
 
 
-void* ComponentThread (void* pThreadData);
+void* G729DEC_ComponentThread (void* pThreadData);
 
 #endif
