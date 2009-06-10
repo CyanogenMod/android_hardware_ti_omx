@@ -773,9 +773,9 @@ int main(int argc, char** argv)
     LoadBaseImage();
 #endif
 
-    eError = OMX_Init();
+    eError = TIOMX_Init();
     if ( eError != OMX_ErrorNone ) {
-        PRINT("%d :: Error returned by OMX_Init()\n",__LINE__);
+        PRINT("%d :: Error returned by TIOMX_Init()\n",__LINE__);
         goto EXIT;
     }
 
@@ -825,8 +825,8 @@ int main(int argc, char** argv)
 
     /* Load the JPEGDecoder Component */
 
-    PRINT("Calling OMX_GetHandle\n");
-    eError = OMX_GetHandle(&pHandle,StrJpegDecoder, (void *)&AppData, &JPEGCaBa);
+    PRINT("Calling TIOMX_GetHandle\n");
+    eError = TIOMX_GetHandle(&pHandle,StrJpegDecoder, (void *)&AppData, &JPEGCaBa);
     if ( (eError != OMX_ErrorNone) ||  (pHandle == NULL) ) {
         fprintf (stderr,"Error in Get Handle function\n");
         goto EXIT;
@@ -1528,7 +1528,7 @@ EXIT:
     }
 
     if (pHandle) {
-        eError = OMX_FreeHandle(pHandle);
+        eError = TIOMX_FreeHandle(pHandle);
         if ( (eError != OMX_ErrorNone) )	{
             fprintf (stderr,"Error in Free Handle function\n");
         }
@@ -1540,7 +1540,7 @@ EXIT:
     }
 #endif
 
-    eError = OMX_Deinit();
+    eError = TIOMX_Deinit();
     if ( eError != OMX_ErrorNone ) {
         PRINT("Error returned by OMX_Init()\n");
         goto EXIT;

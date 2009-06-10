@@ -221,10 +221,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         }
     }
                        
-    if (pBuffer) {
-        OMX_FREE(pBuffer);
-        pBuffer = NULL;
-    }
+    OMX_FREE(pBuffer);
 
     if ( pPortDef->bEnabled && 
         ((pComponentPrivate->nCurState == OMX_StateIdle && pComponentPrivate->nToState != OMX_StateLoaded) || 
