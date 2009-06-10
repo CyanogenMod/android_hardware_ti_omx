@@ -371,6 +371,7 @@ void EmptyBufferDone(OMX_HANDLETYPE hComponent, OMX_PTR ptr, OMX_BUFFERHEADERTYP
 OMX_S16 SendInputBuffer = 0;
 OMX_S16 numInputBuffers = 0;
 OMX_S16 numOutputBuffers = 0;
+FILE *fp;
 
 int main(int argc, char* argv[])
 {
@@ -493,6 +494,7 @@ int main(int argc, char* argv[])
 
     /* Open the file of data to be decoded */
     FILE* fIn = fopen(argv[1], "r");
+    fp =fopen(argv[1], "r");
     if( fIn == NULL ) {
         APP_DPRINT( "Error:  failed to open the file %s for readonly\access\n", argv[1]);
         bExitOnError = OMX_TRUE;
@@ -646,6 +648,7 @@ int main(int argc, char* argv[])
 
             /* Open the input file to be decoded */
             fIn = fopen(argv[1], "r");
+            fp= fopen(argv[1], "r");
             if( fIn == NULL ) {
                 fprintf(stderr, "Error:  failed to open the file %s for readonly\
                                                                    access\n", argv[1]);
@@ -988,6 +991,7 @@ int main(int argc, char* argv[])
 
                 /* Open the input file for decoding */
                 fIn = fopen(argv[1], "r");
+                fp= fopen(argv[1], "r");
                 if(fIn == NULL) {
                     fprintf(stderr, "Error:  failed to open the file %s for readonly access\n", argv[1]);
                     bExitOnError = OMX_TRUE;
@@ -1202,6 +1206,7 @@ int main(int argc, char* argv[])
                 fclose(fOut);
             }
             fclose(fIn);    
+            fclose(fp);
             printf("Number of free input buffers received by test app. : %d\n",InBufCount);
             printf("Number of free output buffers received by test app. : %d\n",OutBufCount); 
             if((command == 2) || (( command == 5)&&(audioinfo->dasfMode == 0)) || (( command == 6)&&(audioinfo->dasfMode == 0))) {
@@ -1380,6 +1385,7 @@ OMX_ERRORTYPE send_input_buffer(OMX_HANDLETYPE pHandle, OMX_BUFFERHEADERTYPE* pB
 OMX_S16 fill_data_fromFile (OMX_BUFFERHEADERTYPE *pBuf, FILE *fIn, OMX_HANDLETYPE  pHandle)
 {
     OMX_S16 nRead = 0;
+    OMX_S16 nRead2 = 0;
     OMX_S16 dRead = 0;
     OMX_S16 j = 0, n = 0, k = 0, m = 0;
     /* BFI + number of bit in frame + serial bitstream */
@@ -1402,6 +1408,7 @@ OMX_S16 fill_data_fromFile (OMX_BUFFERHEADERTYPE *pBuf, FILE *fIn, OMX_HANDLETYP
     pBuf->nFlags = 0;
     for(j = 0; j < packetsPerBuffer; j++){      /* nb packets in input buffer */
 
+        nRead2=fread(serial, sizeof(OMX_S16), 2 , fp); //this is temporary
         /* read BFI and number of bits in frame */
         nRead = fread(serial, sizeof(OMX_S16), 2 , fIn);
         if(nRead != 0){
