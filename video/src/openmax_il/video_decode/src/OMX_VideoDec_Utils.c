@@ -3800,7 +3800,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
 
             OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                      EMMCodecOutputBufferUncached,
+                                      EMMCodecOuputBuffer,
                                       pBuffHead->pBuffer,
                                       pBuffHead->nAllocLen,
                                       pBuffHead->nFilledLen,
@@ -5232,9 +5232,10 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     size_dsp = sizeof(WMV9DEC_UALGInputParam);
                     ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = ++pComponentPrivate->frameCounter;
                     pUalgInpParams = pComponentPrivate->pUalgParams;
+                    /* Only WMV need to send EMMCodecInputBufferMapBufLen buffers */
                     eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                                 pLcmlHandle)->pCodecinterfacehandle,
-                                                EMMCodecInputBuffer,
+                                                EMMCodecInputBufferMapBufLen,
                                                 (OMX_U8*)&pComponentPrivate->pBufferRCV.pBuffer,
                                                 sizeof(VIDDEC_WMV_RCV_struct),
                                                 sizeof(VIDDEC_WMV_RCV_struct),
@@ -5720,7 +5721,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT)\n");
                 eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                             pLcmlHandle)->pCodecinterfacehandle,
-                                            EMMCodecInputBuffer,
+                                            ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBuffer),
                                             &pBuffHead->pBuffer[pBuffHead->nOffset],/*WMV_VC1_CHANGES*/
                                             pBuffHead->nAllocLen,
                                             pBuffHead->nFilledLen,
@@ -5903,7 +5904,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                     eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                                 pLcmlHandle)->pCodecinterfacehandle,
-                                                EMMCodecInputBuffer,
+                                                ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBuffer),
                                                 &pBuffHead->pBuffer[pBuffHead->nOffset],/*WMV_VC1_CHANGES*/
                                                 pBuffHead->nAllocLen,
                                                 pBuffHead->nFilledLen,
@@ -5918,7 +5919,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 else{
                     eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
+                                                  ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBuffer),
                                                   NULL,
                                                   0,
                                                   0,
@@ -6272,7 +6273,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                             ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = ++pComponentPrivate->frameCounter;
                             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                                         pLcmlHandle)->pCodecinterfacehandle,
-                                                        EMMCodecInputBuffer,
+                                                        EMMCodecInputBufferMapBufLen,
                                                         (OMX_U8*)&pComponentPrivate->pBufferRCV.pBuffer,
                                                         sizeof(VIDDEC_WMV_RCV_struct),
                                                         sizeof(VIDDEC_WMV_RCV_struct),
@@ -6296,7 +6297,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                             pLcmlHandle)->pCodecinterfacehandle,
-                                            EMMCodecInputBuffer,
+                                            ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBuffer), /*Only WMV need to send map buffers */
                                             &pBuffHead->pBuffer[pBuffHead->nOffset],/*WMV_VC1_CHANGES*/
                                             pBuffHead->nAllocLen,
                                             pBuffHead->nFilledLen,
@@ -7888,7 +7889,8 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             }
         }
         }
-        if ((OMX_U32)argsCb [0] == EMMCodecInputBuffer) {
+        if ((OMX_U32)argsCb [0] == EMMCodecInputBuffer ||
+                ((OMX_U32)argsCb [0] == EMMCodecInputBufferMapBufLen)) {
             OMX_PRBUFFER1(pComponentPrivate->dbg, "EMMCodecInputBuffer\n");
             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
             VIDDEC_BUFFER_PRIVATE* pBuffPriv = NULL;
@@ -8039,7 +8041,8 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             }
         }
         }
-        if ((OMX_U32)argsCb [0] == EMMCodecInputBuffer) {
+        if ((OMX_U32)argsCb [0] == EMMCodecInputBuffer ||
+                ((OMX_U32)argsCb [0] == EMMCodecInputBufferMapBufLen)) {
             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
             VIDDEC_BUFFER_PRIVATE* pBuffPriv = NULL;
             OMX_U8* pBuffer;
