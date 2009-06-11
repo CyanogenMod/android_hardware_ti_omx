@@ -302,7 +302,7 @@
 #ifdef UNDER_CE
 	#define G726ENC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-	#define G726ENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+	#define G726ENC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -313,7 +313,7 @@
 #ifdef UNDER_CE
 	#define G726ENC_DLL_NAME "\\windows\\g726enc_sn.dll64P"
 #else
-	#define G726ENC_DLL_NAME "/lib/dsp/g726enc_sn.dll64P"
+	#define G726ENC_DLL_NAME "g726enc_sn.dll64P"
 #endif
 
 /* ======================================================================= */

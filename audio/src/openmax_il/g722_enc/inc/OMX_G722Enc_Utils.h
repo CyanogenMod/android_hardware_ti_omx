@@ -140,7 +140,7 @@
 #ifdef UNDER_CE
 #define USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define USN_DLL_NAME "usn.dll64P"
 #endif
 /* ======================================================================= */
 /**
@@ -150,7 +150,7 @@
 #ifdef UNDER_CE
 #define G722ENC_DLL_NAME "\\windows\\g722enc_sn.dll64P"
 #else
-#define G722ENC_DLL_NAME "/lib/dsp/g722enc_sn.dll64P"
+#define G722ENC_DLL_NAME "g722enc_sn.dll64P"
 #endif
 /* ======================================================================= */
 /**

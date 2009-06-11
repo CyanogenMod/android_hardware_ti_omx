@@ -355,7 +355,7 @@ void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionNam
 #ifdef UNDER_CE
 #define G729ENC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define G729ENC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define G729ENC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -366,7 +366,7 @@ void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionNam
 #ifdef UNDER_CE
 #define G729ENC_DLL_NAME "\\windows\\g729enc_sn.dll64P"
 #else
-#define G729ENC_DLL_NAME "/lib/dsp/g729enc_sn.dll64P"
+#define G729ENC_DLL_NAME "g729enc_sn.dll64P"
 #endif
 
 /* ======================================================================= */

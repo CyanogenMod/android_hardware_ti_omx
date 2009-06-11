@@ -95,8 +95,8 @@
 #define USN_DLL_NAME "\\windows\\usn.dll64P" /* Path of USN DLL */
 #define G726DEC_DLL_NAME "\\windows\\g726dec_sn.dll64P" /* Path of G726 SN DLL */
 #else
-#define USN_DLL_NAME "/lib/dsp/usn.dll64P" /* Path of USN DLL */
-#define G726DEC_DLL_NAME "/lib/dsp/g726dec_sn.dll64P" /* Path of G726 SN DLL */
+#define USN_DLL_NAME "usn.dll64P" /* Path of USN DLL */
+#define G726DEC_DLL_NAME "g726dec_sn.dll64P" /* Path of G726 SN DLL */
 #endif
 
 #define DONT_CARE 0 /* Value unused or ignored */
