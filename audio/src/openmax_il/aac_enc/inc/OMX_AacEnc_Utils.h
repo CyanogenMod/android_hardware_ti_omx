@@ -167,9 +167,9 @@
  */
 /* ======================================================================= */
 #ifdef UNDER_CE
-#define AACENC_DLL_NAME "\\windows\\mpeg4aacdec_sn.dll64P"
+#define AACENC_DLL_NAME "\\windows\\mpeg4aacenc_sn.dll64P"
 #else
-#define AACENC_DLL_NAME "mpeg4aacdec_sn.dll64P"
+#define AACENC_DLL_NAME "mpeg4aacenc_sn.dll64P"
 #endif
 
 typedef struct 
