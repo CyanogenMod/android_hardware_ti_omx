@@ -299,6 +299,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->compressionFormats[0]=OMX_VIDEO_CodingAVC;
     pComponentPrivate->compressionFormats[1]=OMX_VIDEO_CodingMPEG4;
     pComponentPrivate->compressionFormats[2]=OMX_VIDEO_CodingH263;
+    pComponentPrivate->colorFormats[0]=OMX_COLOR_FormatYUV420Planar;
+    pComponentPrivate->colorFormats[1]=OMX_COLOR_FormatYCbYCr;
+    pComponentPrivate->colorFormats[2]=OMX_COLOR_FormatCbYCrY;
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERF = PERF_Create(PERF_FOURCC('V','E',' ',' '),
@@ -1418,15 +1421,14 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nPortIndex == 
                 pCompPortIn->pPortFormat->nPortIndex)
         {
-                if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex ==
-                    pCompPortIn->pPortFormat->nIndex)
+                if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex < 3)
                 {
-                ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eColorFormat = pCompPortIn->pPortFormat->eColorFormat;
+                    ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eColorFormat =
+                    pComponentPrivate->colorFormats[((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex];
                     eError = OMX_ErrorNone;
                 }
                 else 
                 {
-
                     OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorNoMore,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "No such index.\n");
@@ -1435,10 +1437,8 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             else if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nPortIndex == 
                      pCompPortOut->pPortFormat->nPortIndex)
             {
-                if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex >= 0 &&
-                    ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex < 3)
+                if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex < 3)
                 {
-/*                    OMX_TRACE("OMX_IndexParamVideoPortFormat index found\n");*/
                     ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eCompressionFormat =
                     pComponentPrivate->compressionFormats[((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex];
                     eError = OMX_ErrorNone;

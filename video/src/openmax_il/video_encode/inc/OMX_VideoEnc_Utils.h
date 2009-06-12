@@ -659,6 +659,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE
 	#endif
 	OMX_BOOL bPreempted;
 	OMX_VIDEO_CODINGTYPE compressionFormats[3];
+    OMX_COLOR_FORMATTYPE colorFormats[3];
     struct OMX_TI_Debug dbg;
     PV_OMXComponentCapabilityFlagsType* pCapabilityFlags;
 } VIDENC_COMPONENT_PRIVATE;
