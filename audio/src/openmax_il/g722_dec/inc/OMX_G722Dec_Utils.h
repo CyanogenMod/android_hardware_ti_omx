@@ -85,8 +85,8 @@
 #define USN_DLL_NAME "\\windows\\usn.dll64P" /* Path of USN DLL */
 #define G722DEC_DLL_NAME "\\windows\\g722dec_sn.dll64P" /* Path of G722 SN DLL */
 #else
-#define USN_DLL_NAME "/lib/dsp/usn.dll64P" /* Path of USN DLL */
-#define G722DEC_DLL_NAME "/lib/dsp/g722dec_sn.dll64P" /* Path of G722 SN DLL */
+#define USN_DLL_NAME "usn.dll64P" /* Path of USN DLL */
+#define G722DEC_DLL_NAME "g722dec_sn.dll64P" /* Path of G722 SN DLL */
 #endif
 
 #define DONT_CARE 0 /* Value unused or ignored */

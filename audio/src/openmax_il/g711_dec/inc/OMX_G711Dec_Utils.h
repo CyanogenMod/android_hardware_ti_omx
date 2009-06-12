@@ -112,7 +112,7 @@
 #ifdef UNDER_CE
 #define G711DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
 #else
-#define G711DEC_USN_DLL_NAME "/lib/dsp/usn.dll64P"
+#define G711DEC_USN_DLL_NAME "usn.dll64P"
 #endif
 
 /* ======================================================================= */
@@ -124,7 +124,7 @@
 #ifdef UNDER_CE
 #define G711DEC_DLL_NAME "\\windows\\g711dec_sn.dll64P"
 #else
-#define G711DEC_DLL_NAME "/lib/dsp/g711dec_sn.dll64P"
+#define G711DEC_DLL_NAME "g711dec_sn.dll64P"
 #endif
 
 
