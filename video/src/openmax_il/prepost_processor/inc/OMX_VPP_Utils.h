@@ -96,8 +96,8 @@ void LinkedList_Destroy(LinkedList *LinkedList);
 #define USN_DLL_NAME "/windows/usn.dll64P"
 #define VPP_NODE_DLL "/windows/vpp_sn.dll64P"
 #else
-#define USN_DLL_NAME "/lib/dsp/usn.dll64P"
-#define VPP_NODE_DLL "/lib/dsp/vpp_sn.dll64P"
+#define USN_DLL_NAME "usn.dll64P"
+#define VPP_NODE_DLL "vpp_sn.dll64P"
 #endif
 
 #ifdef UNDER_CE
