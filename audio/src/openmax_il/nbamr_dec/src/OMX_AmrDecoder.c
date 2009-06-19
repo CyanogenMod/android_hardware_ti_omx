@@ -492,7 +492,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->nBufferCountMin = NUM_NBAMRDEC_INPUT_BUFFERS;
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
-    pPortDef_ip->nBufferSize = 384;
+    pPortDef_ip->nBufferSize = 4096;
     pPortDef_ip->nBufferAlignment = CACHE_ALIGNMENT;
     pPortDef_ip->bPopulated = 0;   
     pPortDef_ip->format.audio.eEncoding = OMX_AUDIO_CodingAMR;

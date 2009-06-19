@@ -448,7 +448,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
     /* Use bigger IN buffer size for PV-Android */
-    pPortDef_ip->nBufferSize = 780; /*INPUT_WBAMRDEC_BUFFER_SIZE;*/
+    pPortDef_ip->nBufferSize = 8192;
     pPortDef_ip->bPopulated = 0;
     pPortDef_ip->format.audio.eEncoding = OMX_AUDIO_CodingAMR;
 

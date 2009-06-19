@@ -1484,6 +1484,8 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
         case OMX_StateMax:
             OMX_PRSTATE2(pComponentPrivate->dbg, "WBAMR_DEC_HandleCommand: Cmd OMX_StateMax::\n");
             break;
+        default:
+            break;
         } /* End of Switch */
     }
     else if (command == OMX_CommandMarkBuffer) {
@@ -1803,8 +1805,8 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
 
     OMX_U32 nFilledLenLocal;
-    OMX_U8 TOCentry, hh=0;
-    OMX_U8 TOCframetype[20]= {0};
+    OMX_U8 TOCentry, hh=0, *TOCframetype=0;
+    OMX_U16 offset = 0;
 
     WBAMR_DEC_AudioCodecParams *pParams;
     OMX_U8 *pParmsTemp;
@@ -1836,6 +1838,12 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         nFilledLenLocal=pBufHeader->nFilledLen; 
                         while(TRUE)
                         {
+                            TOCframetype = (OMX_U8*)realloc(TOCframetype, ((hh + 1) * sizeof(OMX_U8)));
+                            if (TOCframetype == NULL)
+                            {
+                              OMX_ERROR4(pComponentPrivate->dbg, "%d :WBAMR_DEC_HandleDataBuf_FromApp ERROR: Couldn't realloc memory!",__LINE__);
+                              goto EXIT;
+                            }
                             TOCentry = pBufHeader->pBuffer[0];
                             TOCframetype[hh]= TOCentry & 0x7C;
                             hh++;
@@ -1848,12 +1856,24 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         while(nFilledLenLocal> 0 ){
                             index = (TOCframetype[nFrames] >> 3) & 0x0F;
                             /* adding TOC to each frame */
-                            memmove(pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->wbamrMimeBytes[index]))+1,
-                                                pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->wbamrMimeBytes[index])),
-                                                nFilledLenLocal);
-                            memcpy(pBufHeader->pBuffer+((nFrames)*(pComponentPrivate->wbamrMimeBytes[index])), 
+                            if (offset > pBufHeader->nAllocLen){
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: WBAMR_DEC_HandleDataBuf_FromApp :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                              goto EXIT;
+                            }   
+                            else
+                                memcpy(pBufHeader->pBuffer + offset, 
                                                 &TOCframetype[nFrames],
                                                 sizeof(OMX_U8));
+                            offset+=pComponentPrivate->wbamrMimeBytes[index];
+                            if ( offset + 1 + nFilledLenLocal > pBufHeader->nAllocLen){
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: WBAMR_DEC_HandleDataBuf_FromApp :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                              goto EXIT;
+                            }   
+                            else
+                            memmove(pBufHeader->pBuffer + offset + 1,
+                                                pBufHeader->pBuffer + offset,
+                                                nFilledLenLocal);
+
                             if (pComponentPrivate->wbamrMimeBytes[index] > nFilledLenLocal){
                                         nFilledLenLocal = 0;
                             }else{
@@ -1861,7 +1881,9 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             }
                             nFrames++;
                         }
+                        free(TOCframetype);
                     }
+                    frameType = 0;
                     nFrames = 0;
                     i=0;
                     while( pBufHeader->nFilledLen > 0 )
@@ -1882,7 +1904,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 }
                 else if (pComponentPrivate->mimemode == WBAMRDEC_IF2)
                 {
-                    OMX_PRINT2(pComponentPrivate->dbg, "OMX_AmrDec_Utils.c :: NBAMRDECHandleDataBuf_FromApp - reading NBAMRDEC_IF2MODE\n");
+                    OMX_PRINT2(pComponentPrivate->dbg, "WBAMR_DEC_HandleDataBuf_FromApp - reading WBAMRDEC_IF2\n");
                     nFrames = 0;
                     i = 0;
                     while (pBufHeader->nFilledLen > 0)

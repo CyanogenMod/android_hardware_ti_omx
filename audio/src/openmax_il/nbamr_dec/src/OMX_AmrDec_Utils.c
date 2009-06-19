@@ -1507,6 +1507,8 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
         case OMX_StateMax:
            OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleCommand: Cmd OMX_StateMax::\n",__LINE__);
            break;
+        default:
+            break;
     } /* End of Switch */
     }
     else if (command == OMX_CommandMarkBuffer) {
@@ -1809,8 +1811,8 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_STRING p = "hello";
     
     OMX_U32 nFilledLenLocal;
-    OMX_U8 TOCentry, hh=0;
-    OMX_U8 TOCframetype[20]= {0};
+    OMX_U8 TOCentry, hh=0, *TOCframetype=0;
+    OMX_U16 offset = 0;
 
     if (OMX_AUDIO_AMRDTXasEFR == pComponentPrivate->iAmrMode){
         bufSize = INPUT_BUFF_SIZE_EFR;
@@ -1837,7 +1839,6 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->bBypassDSP = 0;
             if ( pComponentPrivate->nHoldLength == 0 ) 
             {
-#if 1
                 if (pComponentPrivate->mimemode == NBAMRDEC_MIMEMODE) 
                 {
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
@@ -1847,6 +1848,12 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         nFilledLenLocal=pBufHeader->nFilledLen; 
                         while(TRUE)
                         {
+                            TOCframetype = (OMX_U8*)realloc(TOCframetype, ((hh + 1) * sizeof(OMX_U8)));
+                            if (TOCframetype == NULL)
+                            {
+                              OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Couldn't realloc memory!",__LINE__);
+                              goto EXIT;
+                            }
                             TOCentry = pBufHeader->pBuffer[0];
                             TOCframetype[hh]= TOCentry & 0x7C;
                             hh++;
@@ -1859,12 +1866,23 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         while(nFilledLenLocal> 0 ){
                             index = (TOCframetype[nFrames] >> 3) & 0x0F;
                             /* adding TOC to each frame */
-                            memmove(pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->amrMimeBytes[index]))+1,
-                                                pBufHeader->pBuffer + ((nFrames+1)*(pComponentPrivate->amrMimeBytes[index])),
-                                                nFilledLenLocal);
-                            memcpy(pBufHeader->pBuffer+((nFrames)*(pComponentPrivate->amrMimeBytes[index])), 
+                            if (offset > pBufHeader->nAllocLen){
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                              goto EXIT;
+                            }   
+                            else
+                                memcpy(pBufHeader->pBuffer + offset, 
                                                 &TOCframetype[nFrames],
                                                 sizeof(OMX_U8));
+                            offset+=pComponentPrivate->amrMimeBytes[index];
+                            if ( offset + 1 + nFilledLenLocal > pBufHeader->nAllocLen){
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                              goto EXIT;
+                            }   
+                            else
+                            memmove(pBufHeader->pBuffer + offset + 1,
+                                                pBufHeader->pBuffer + offset,
+                                                nFilledLenLocal);
                             if (pComponentPrivate->amrMimeBytes[index] > nFilledLenLocal){
                                         nFilledLenLocal = 0;
                             }else{
@@ -1872,6 +1890,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             }
                             nFrames++;                                                
                         }
+                        free(TOCframetype);
                     }
                     frameType = 0;
                     nFrames = 0;
@@ -1896,8 +1915,6 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     }
                     pBufHeader->nFilledLen=nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
                 }
-                
-#endif
                 else if (pComponentPrivate->mimemode == NBAMRDEC_PADMIMEMODE)
                                 {
                                     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
