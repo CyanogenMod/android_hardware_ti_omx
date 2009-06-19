@@ -1691,18 +1691,18 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandFlush) {
         OMX_U32 aParam[3] = {0};
         if(commandData == 0x0 || commandData == -1) {
-            OMX_ERROR4(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %d\n", pComponentPrivate->nUnhandledEmptyThisBuffers);
+            OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %d\n", pComponentPrivate->nUnhandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
-                OMX_ERROR4(pComponentPrivate->dbg, "in flush IN:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
+                OMX_ERROR2(pComponentPrivate->dbg, "in flush IN:lcml_nCntApp && app_nBuf = %ld && %ld\n", pComponentPrivate->lcml_nCntApp, pComponentPrivate->app_nBuf);
                 if (pComponentPrivate->num_Sent_Ip_Buff){ //no buffers have been sent yet, no need to flush SN
                     aParam[0] = USN_STRMCMD_FLUSH;        
                     aParam[1] = 0x0; 
                     aParam[2] = 0x0; 
 
-                    OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing input port\n");
-                    OMX_ERROR4(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec FLUSH in %d\n", __LINE__);
+                    OMX_ERROR4(pComponentPrivate->dbg, "Flushing input port\n");
+                    OMX_ERROR2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec FLUSH in %d\n", __LINE__);
                     if (pComponentPrivate->codecFlush_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
                     }
@@ -1756,7 +1756,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     aParam[1] = 0x1; 
                     aParam[2] = 0x0; 
 
-                    OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing output port\n");
+                    OMX_ERROR4(pComponentPrivate->dbg, "Flushing output port\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec FLUSH out %d\n", __LINE__);
                     if (pComponentPrivate->codecFlush_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
@@ -2365,7 +2365,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         break;
 
     case EMMCodecStrmCtrlAck:
-        OMX_ERROR4(pComponentPrivate->dbg, "[LCML CALLBACK EVENT]  EMMCodecStrmCtrlAck\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "[LCML CALLBACK EVENT]  EMMCodecStrmCtrlAck\n");
         break;
     }
 
