@@ -2182,7 +2182,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                           PREF(pComponentPrivate_CC->pOutputBufHdrPending[i],pBuffer),
                                           PREF(pComponentPrivate_CC->pOutputBufHdrPending[i],nFilledLen),
                                           PERF_ModuleHLMM);
-#endif  
+#endif
                         pComponentPrivate_CC->cbInfo.FillBufferDone (pComponentPrivate_CC->pHandle,
                                                                      pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                                                      pComponentPrivate_CC->pOutputBufHdrPending[i]
