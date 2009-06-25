@@ -30,6 +30,7 @@ TI_OMX_COMP_SHARED_LIBRARIES := \
 	libbridge \
 	libOMX_Core \
 	libLCML \
+	libcutils \
 	liblog	
 
 ifeq ($(PERF_INSTRUMENTATION),1)

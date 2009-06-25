@@ -76,6 +76,9 @@
 #include "OMX_VideoDec_Thread.h"
 #include "OMX_VidDec_CustomCmd.h"
 
+/* For PPM fps measurements */
+#include <cutils/properties.h>
+static int mDebugFps = 0;
 
 #ifdef RESOURCE_MANAGER_ENABLED
 /*#ifndef UNDER_CE*/
@@ -1692,11 +1695,18 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
         }
         case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
         {
-            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                    pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
-                    pComponentPrivate->pDeblockingParamType->bDeblocking = 
-                        ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;
-                break;
+            char value[PROPERTY_VALUE_MAX];
+            property_get("debug.video.showfps", value, "0");
+            mDebugFps = atoi(value);
+            LOGD_IF(mDebugFps, "Not setting deblocking to measure fps");
+            if (mDebugFps == OMX_FALSE) {
+                if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
+                        pComponentPrivate->pDeblockingParamType->bDeblocking = 
+                            ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;
+                        LOGD("Deblocking Enable");
+                    break;
+                }
             }
             else {
                 eError = OMX_ErrorUnsupportedIndex;
