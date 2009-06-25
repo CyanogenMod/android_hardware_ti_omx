@@ -8911,7 +8911,14 @@ OMX_ERRORTYPE VIDDEC_Set_Debocking(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     char* pTmp = NULL;
     OMX_U32 cmdValues[3] = {0, 0, 0};
     void* p = NULL;
+    char value[PROPERTY_VALUE_MAX];
+    static int mDisableDeblockingIfD1 = 0;
+    OMX_BOOL bDisDeblocking = OMX_FALSE;
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
+
+    property_get("deblocking.video.disableIfD1", value, "0");
+    mDisableDeblockingIfD1 = atoi(value);
+    LOGD_IF(mDisableDeblockingIfD1, "Disabling deblocking if D1 resolution");
 
     OMX_PRDSP2(pComponentPrivate->dbg,"Initializing DSP for mpeg4 and h263 eCompressionFormat 0x%x\n",
     pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
@@ -8933,7 +8940,17 @@ OMX_ERRORTYPE VIDDEC_Set_Debocking(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pDynParams->ulDisplayWidth = 0;
     pDynParams->ulFrameSkipMode = 0;
 
-    if(pComponentPrivate->pDeblockingParamType->bDeblocking){
+
+    if(mDisableDeblockingIfD1){
+        /* Disable if resolution higher than D1 NTSC (720x480) */
+        if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 480 || 
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 480){
+           bDisDeblocking = OMX_TRUE; 
+           LOGD("D1 or higher resolution: Disable Deblocking!!");
+        }
+    }
+
+    if(pComponentPrivate->pDeblockingParamType->bDeblocking && bDisDeblocking == OMX_FALSE){
         pDynParams->ulPPType = 1; /* Enable deblocking filter*/
     }
     else{

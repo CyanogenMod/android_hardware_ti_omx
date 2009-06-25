@@ -77,7 +77,6 @@
 #include "OMX_VidDec_CustomCmd.h"
 
 /* For PPM fps measurements */
-#include <cutils/properties.h>
 static int mDebugFps = 0;
 
 #ifdef RESOURCE_MANAGER_ENABLED

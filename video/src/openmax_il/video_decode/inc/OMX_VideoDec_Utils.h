@@ -26,6 +26,7 @@
 #include <utils/Log.h>
 #define LOG_TAG "TI_Video_Decoder"
 #endif
+#include <cutils/properties.h>
 
 #ifdef UNDER_CE
     #include <windows.h>
