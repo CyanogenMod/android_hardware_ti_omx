@@ -1105,9 +1105,20 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: About to call LCML_ControlCodec(STOP)\n",__LINE__);
                 
+                pComponentPrivate->bIsStopping = 1;
+
+                if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+                    pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
+                }
                 eError = LCML_ControlCodec(
                     ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                        MMCodecControlStop,(void *)pArgs);
+                if (pComponentPrivate->codecStop_waitingsignal == 0){
+                    pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                    pComponentPrivate->codecStop_waitingsignal = 0;
+                    pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                }
+
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error Occurred in Codec Stop..\n",
                                                                       __LINE__);
@@ -1129,9 +1140,18 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             } 
             else if(pComponentPrivate->curState == OMX_StatePause) {
                 OMX_U8 *pArgs = (void*)"damedesuStr";
+                if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+                    pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
+                }
                 eError = LCML_ControlCodec(
                                            ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            MMCodecControlStop,(void *)pArgs);
+                if (pComponentPrivate->codecStop_waitingsignal == 0){
+                    pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                    pComponentPrivate->codecStop_waitingsignal = 0;
+                    pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                }
+
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif                
@@ -1552,9 +1572,20 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->curState == OMX_StateExecuting) {
                 pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
                 OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Calling LCML_ControlCodec()\n",__LINE__);
+                pComponentPrivate->bIsStopping = 1;
+
+                if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+                    pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
+                }
                 eError = LCML_ControlCodec(
                                   ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                   MMCodecControlStop,(void *)pArgs);
+                if (pComponentPrivate->codecStop_waitingsignal == 0){
+                    pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                    pComponentPrivate->codecStop_waitingsignal = 0;
+                    pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                }
+
             }
         }
     }
@@ -2763,6 +2794,13 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                 NBAMRDEC_ClearPending(pComponentPrivate, pComponentPrivate->pInputBufferList->pBufHdr[i], OMX_DirInput);
             }
         }
+        pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
+        if(pComponentPrivate->codecStop_waitingsignal == 0){
+            pComponentPrivate->codecStop_waitingsignal = 1;             
+            pthread_cond_signal(&pComponentPrivate->codecStop_threshold);
+            OMX_ERROR4(pComponentPrivate->dbg, "stop ack. received. stop waiting for sending disable command completed\n");
+        }
+        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
 
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->nNumOutputBufPending=0;
@@ -2860,9 +2898,20 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             pHandle = pComponentPrivate->pHandle;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
 #ifndef UNDER_CE
+            pComponentPrivate->bIsStopping = 1;
+
+            if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+                pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
+            }
             eError = LCML_ControlCodec(
                                        ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                        MMCodecControlStop,(void *)pArgs);
+            if (pComponentPrivate->codecStop_waitingsignal == 0){
+                pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                pComponentPrivate->codecStop_waitingsignal = 0;
+                pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+            }
+
             if(eError != OMX_ErrorNone) {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",
                               __LINE__);
@@ -2901,9 +2950,20 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                 pHandle = pComponentPrivate->pHandle;
                 pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
 #ifndef UNDER_CE
+                pComponentPrivate->bIsStopping = 1;
+
+                if (pComponentPrivate->codecStop_waitingsignal == 0){ 
+                    pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
+                }
                 eError = LCML_ControlCodec(
                                            ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            MMCodecControlStop,(void *)pArgs);
+                if (pComponentPrivate->codecStop_waitingsignal == 0){
+                    pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                    pComponentPrivate->codecStop_waitingsignal = 0;
+                    pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                }
+
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",
                                   __LINE__);

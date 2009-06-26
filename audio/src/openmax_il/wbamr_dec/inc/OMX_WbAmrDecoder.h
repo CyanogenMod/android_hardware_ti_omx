@@ -172,6 +172,13 @@ typedef enum WBAMR_DEC_COMP_PORT_TYPE {
 #define WBAMR_DEC_MAX_NUM_OF_BUFS 12
 /* ======================================================================= */
 /**
+ * @def    IP_BUFFERSIZE                      Input Port Buffer Size
+ */
+/* ======================================================================= */
+#define IP_WBAMRDEC_BUFFERSIZE 8192
+
+/* ======================================================================= */
+/**
  * @def    WBAMR_DEC_DEBUG   Turns debug messaging on and off
  */
 /* ======================================================================= */
@@ -572,6 +579,10 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
     
+    pthread_mutex_t codecStop_mutex;    
+    pthread_cond_t codecStop_threshold;
+    OMX_U8 codecStop_waitingsignal;
+
     pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
     OMX_U8 InLoaded_readytoidle;

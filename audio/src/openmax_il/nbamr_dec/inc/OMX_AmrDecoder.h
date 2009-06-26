@@ -199,6 +199,12 @@
  */
 /* ======================================================================= */
 #define MAX_NUM_OF_BUFS 12
+/* ======================================================================= */
+/**
+ * @def    IP_BUFFERSIZE                      Input Port Buffer Size
+ */
+/* ======================================================================= */
+#define IP_BUFFERSIZE 4096
 
 /* ======================================================================= */
 /**
@@ -745,6 +751,10 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
+
+    pthread_mutex_t codecStop_mutex;    
+    pthread_cond_t codecStop_threshold;
+    OMX_U8 codecStop_waitingsignal;
 
     pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
