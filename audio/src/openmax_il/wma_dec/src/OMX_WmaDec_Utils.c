@@ -482,6 +482,14 @@ OMX_ERRORTYPE WMADEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     }
     pComponentPrivate->bCompThreadStarted = 1;
  EXIT:
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -1303,6 +1311,14 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECHandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning %d\n",__LINE__,eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -1701,6 +1717,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d : Exiting from  WMADECHandleDataBuf_FromApp \n",__LINE__);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -1773,6 +1797,14 @@ OMX_ERRORTYPE WMADECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIR
     }
  EXIT:
     OMX_ERROR4(pComponentPrivate->dbg, "%d :: Exiting WMADECGetBufferDirection Function\n",__LINE__);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -2832,6 +2864,14 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         if(eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from LCML_Init() error = %d\n",__LINE__, eError);
+            /* send an event to client */
+            /* client should unload the component if the codec is not able to load */
+            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
             goto EXIT;
         }
 #else
@@ -3015,6 +3055,14 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
 
  EXIT:
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 /* ================================================================================= */
@@ -3140,6 +3188,14 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
 
     
  EXIT:
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -3383,6 +3439,14 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                             OMX_EventCmdComplete, OMX_CommandStateSet,
                                             pComponentPrivate->curState, NULL);
  EXIT:
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -3451,7 +3515,14 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c\n",__LINE__);
  EXIT:
-
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 /* ================================================================================= */

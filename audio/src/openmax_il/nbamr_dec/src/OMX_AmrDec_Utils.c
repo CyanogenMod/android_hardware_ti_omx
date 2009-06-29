@@ -964,6 +964,14 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error returned from\
                         LCML_Init()\n",__LINE__);
+                    /* send an event to client */
+                    /* client should unload the component if the codec is not able to load */
+                    pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                     goto EXIT;
                 }
 
@@ -1749,6 +1757,14 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Returning %d\n",__LINE__,eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -2398,6 +2414,14 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Returning error %d\n",__LINE__,eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 

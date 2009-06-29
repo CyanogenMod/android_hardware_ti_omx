@@ -1757,6 +1757,14 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting WBAMR_DEC_HandleCommand Function\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning %d\n",eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -2348,6 +2356,14 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting from  WBAMR_DEC_HandleDataBuf_FromApp \n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning error %d\n",eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 

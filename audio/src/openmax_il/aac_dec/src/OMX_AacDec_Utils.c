@@ -186,7 +186,7 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     plcml_Init->Timeout = OMX_AACDEC_SN_TIMEOUT;
     plcml_Init->Alignment = 0;
     plcml_Init->Priority = OMX_AACDEC_SN_PRIORITY;
-    plcml_Init->ProfileID = -1; /* Previously 0 */
+    plcml_Init->ProfileID = -1;
 
     OMX_PRINT1(pComponentPrivate->dbg, "DLL name0 = %s\n",plcml_Init->NodeInfo.AllUUIDs[0].DllName);
     OMX_PRINT1(pComponentPrivate->dbg, "DLL name1 = %s\n",plcml_Init->NodeInfo.AllUUIDs[1].DllName);
@@ -760,6 +760,14 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 p,&pLcmlHandle,(void *)p,&cb, (OMX_STRING)pComponentPrivate->sDeviceString);
                     if (eError != OMX_ErrorNone) {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error : InitMMCodec failed...>>>>>> \n",__LINE__);
+                        /* send an event to client */
+                        /* client should unload the component if the codec is not able to load */
+                        pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                         goto EXIT;
                     }
 #else
@@ -1087,18 +1095,35 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                       pComponentPrivate->pInputBufHdrPending[i] != NULL);
                         if (pComponentPrivate->pInputBufHdrPending[i] != NULL) {
                             AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
-                            AACDEC_GetCorresponding_LCMLHeader(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
-                                                               OMX_DirInput, &pLcmlHdr);
-                                AACDEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
-                                OMX_PRBUFFER2(pComponentPrivate->dbg, "Calling LCML_QueueBuffer Line %d\n",__LINE__);
-                                eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                          EMMCodecInputBuffer,
-                                                          pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
-                                                          pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
-                                                          pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
-                                                          (OMX_U8 *) pLcmlHdr->pIpParam,
-                                                          sizeof(AACDEC_UAlgInBufParamStruct),
-                                                          NULL);
+                            AACDEC_GetCorresponding_LCMLHeader(pComponentPrivate,
+                                                      pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
+                                                      OMX_DirInput,
+                                                      &pLcmlHdr);
+                            AACDEC_SetPending(pComponentPrivate,
+                                              pComponentPrivate->pInputBufHdrPending[i],
+                                              OMX_DirInput,
+                                              __LINE__);
+                            OMX_PRBUFFER2(pComponentPrivate->dbg,
+                                          "Calling LCML_QueueBuffer Line %d\n",__LINE__);
+                            eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                                      EMMCodecInputBuffer,
+                                                      pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
+                                                      pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
+                                                      pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
+                                                      (OMX_U8 *) pLcmlHdr->pIpParam,
+                                                      sizeof(AACDEC_UAlgInBufParamStruct),
+                                                      NULL);
+                            if(eError != OMX_ErrorNone) {
+                                OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                pComponentPrivate->curState = OMX_StateInvalid;
+                                pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
+                                goto EXIT;
+                            }
                         }
                     }
                     pComponentPrivate->nNumInputBufPending = 0;
@@ -1119,6 +1144,17 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       (OMX_U8 *) pLcmlHdr->pOpParam,
                                                       sizeof(AACDEC_UAlgOutBufParamStruct),
                                                       NULL);
+                                if(eError != OMX_ErrorNone) {
+                                OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for output\n");
+                                pComponentPrivate->curState = OMX_StateInvalid;
+                                pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
+                                goto EXIT;
+                            }
                         }
                     }
                     pComponentPrivate->nNumOutputBufPending = 0;
@@ -1189,10 +1225,15 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif
 
-                OMX_PRSTATE2(pComponentPrivate->dbg, "%d: AACDECUTILS::Current State = %d\n",__LINE__,pComponentPrivate->curState);
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pInputBufferList->numBuffers = %lu\n",
+                OMX_PRSTATE2(pComponentPrivate->dbg,
+                             "%d: AACDECUTILS::Current State = %d\n",
+                             __LINE__,
+                             pComponentPrivate->curState);
+                OMX_PRBUFFER2(pComponentPrivate->dbg,
+                              "pComponentPrivate->pInputBufferList->numBuffers = %lu\n",
                               pComponentPrivate->pInputBufferList->numBuffers);
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pOutputBufferList->numBuffers = %lu\n",
+                OMX_PRBUFFER2(pComponentPrivate->dbg,
+                              "pComponentPrivate->pOutputBufferList->numBuffers = %lu\n",
                               pComponentPrivate->pOutputBufferList->numBuffers);
 
                 if (pComponentPrivate->pInputBufferList->numBuffers || pComponentPrivate->pOutputBufferList->numBuffers) {
@@ -1494,6 +1535,17 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                           (OMX_U8 *) pLcmlHdr->pIpParam,
                                                           sizeof(AACDEC_UAlgInBufParamStruct),
                                                           NULL);
+                                if(eError != OMX_ErrorNone) {
+                                    OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                    pComponentPrivate->curState = OMX_StateInvalid;
+                                    pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                    pHandle->pApplicationPrivate,
+                                                                    OMX_EventError,
+                                                                    eError,
+                                                                    OMX_TI_ErrorSevere,
+                                                                    NULL);
+                                    goto EXIT;
+                                }
                         }
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
@@ -1546,6 +1598,17 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       (OMX_U8 *) pLcmlHdr->pOpParam,
                                                       sizeof(AACDEC_UAlgOutBufParamStruct),
                                                       NULL);
+                                if(eError != OMX_ErrorNone) {
+                                    OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                    pComponentPrivate->curState = OMX_StateInvalid;
+                                    pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                    pHandle->pApplicationPrivate,
+                                                                    OMX_EventError,
+                                                                    eError,
+                                                                    OMX_TI_ErrorSevere,
+                                                                    NULL);
+                                    goto EXIT;
+                                }
                         }
                     }
                     pComponentPrivate->nNumOutputBufPending = 0;    
@@ -1608,6 +1671,17 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                           (OMX_U8 *) pLcmlHdr->pIpParam,
                                                           sizeof(AACDEC_UAlgInBufParamStruct),
                                                           NULL);
+                             if(eError != OMX_ErrorNone) {
+                                OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                pComponentPrivate->curState = OMX_StateInvalid;
+                                pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
+                                goto EXIT;
+                            }
                          }
                      }
                      pComponentPrivate->nNumInputBufPending = 0;
@@ -1628,6 +1702,17 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       (OMX_U8 *) pLcmlHdr->pOpParam,
                                                       sizeof(AACDEC_UAlgOutBufParamStruct),
                                                       NULL);
+                             if(eError != OMX_ErrorNone) {
+                                OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                pComponentPrivate->curState = OMX_StateInvalid;
+                                pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                                pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
+                                goto EXIT;
+                            }
                          }
                      }
                      pComponentPrivate->nNumOutputBufPending = 0;
@@ -2149,17 +2234,29 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
                     if(!pComponentPrivate->bDspStoppedWhileExecuting) {
                         if(!pComponentPrivate->reconfigInputPort){
-                        AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
-                        OMX_PRBUFFER2(pComponentPrivate->dbg, "Calling LCML_QueueBuffer Line %d\n",__LINE__);
-                        OMX_PRBUFFER2(pComponentPrivate->dbg, "input pBufHeader->nFilledLen = %ld\n\n", pBufHeader->nFilledLen);
-                        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
-                                                  pBufHeader->pBuffer,
-                                                  pBufHeader->nAllocLen,
-                                                  pBufHeader->nFilledLen,
-                                                  (OMX_U8 *) pLcmlHdr->pIpParam,
-                                                  sizeof(AACDEC_UAlgInBufParamStruct),
-                                                  NULL);
+                            AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
+                            OMX_PRBUFFER2(pComponentPrivate->dbg, "Calling LCML_QueueBuffer Line %d\n",__LINE__);
+                            OMX_PRBUFFER2(pComponentPrivate->dbg, "input pBufHeader->nFilledLen = %ld\n\n", pBufHeader->nFilledLen);
+                            eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                                      EMMCodecInputBuffer,
+                                                      pBufHeader->pBuffer,
+                                                      pBufHeader->nAllocLen,
+                                                      pBufHeader->nFilledLen,
+                                                      (OMX_U8 *) pLcmlHdr->pIpParam,
+                                                      sizeof(AACDEC_UAlgInBufParamStruct),
+                                                      NULL);
+                            if(eError != OMX_ErrorNone) {
+                                OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in LCML QueueBuffer for input\n");
+                                pComponentPrivate->curState = OMX_StateInvalid;
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
+                                goto EXIT;
+                            }
+                        
                         }
                         else{
                            OMX_PRBUFFER4(pComponentPrivate->dbg, "DON'T queue buffers during a reconfig!!\n");
@@ -2257,8 +2354,8 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         (pComponentPrivate->numPendingBuffers < pComponentPrivate->pOutputBufferList->numBuffers))  {
                         if (!pComponentPrivate->bDspStoppedWhileExecuting){
                             if(!pComponentPrivate->reconfigOutputPort){
-                                    AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
-                                    eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
+                                eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                       EMMCodecOuputBuffer,
                                                       pBufHeader->pBuffer,
                                                       pBufHeader->nAllocLen,
@@ -2269,6 +2366,12 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 if (eError != OMX_ErrorNone ) {
                                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: Comp:: SetBuff OP: Error Occurred\n", __LINE__);
                                     eError = OMX_ErrorHardware;
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                OMX_EventError,
+                                                                eError,
+                                                                OMX_TI_ErrorSevere,
+                                                                NULL);
                                     goto EXIT;
                                 }
 

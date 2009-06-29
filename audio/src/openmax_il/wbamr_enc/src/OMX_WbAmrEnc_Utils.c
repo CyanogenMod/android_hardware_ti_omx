@@ -897,6 +897,14 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     if(eError != OMX_ErrorNone) {
                         OMX_ERROR4(pComponentPrivate->dbg,
                                    "Error returned from LCML_InitMMCodecEx\n");
+                        /* send an event to client */
+                        /* client should unload the component if the codec is not able to load */
+                        pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                         goto EXIT;
                     }
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -1663,6 +1671,14 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning = 0x%x\n",eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 
@@ -2100,6 +2116,14 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning error %d\n",eError);
+    if (eError != OMX_ErrorNone ) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+    }
     return eError;
 }
 

@@ -864,6 +864,13 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if (pLcmlHandle == NULL) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: AACENC: LCML Handle is NULL........exiting..\n",__LINE__);
+                            eError = OMX_ErrorHardware;
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                             goto EXIT;
                         }
 
@@ -874,6 +881,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from AACENCFill_LCMLInitParams()\n",__LINE__);
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorMajor,
+                                                NULL);
                             goto EXIT;
                         }
                         pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
@@ -888,6 +901,14 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from LCML_Init()\n",__LINE__);
+                            /* send an event to client */
+                            /* client should unload the component if the codec is not able to load */
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                             goto EXIT;
                         }
 
@@ -978,6 +999,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                             goto EXIT;
                         }
                         OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After MMCodecControlStop\n", __LINE__);
@@ -1075,6 +1102,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                             if(eError != OMX_ErrorNone) 
                             {
                                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Occurred in Codec StreamControl..\n",__LINE__);
+                                pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                                 goto EXIT;
                             }
                         }
@@ -1102,6 +1135,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Occurred in Codec StreamControl..\n",__LINE__);
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                             goto EXIT;
                         }
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENC: Algcontrol has been sent to DSP\n",__LINE__);
@@ -1111,6 +1150,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Occurred in Codec Start..\n", __LINE__);
+                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                             goto EXIT;
                         }
                 }
@@ -1121,6 +1166,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                     if (eError != OMX_ErrorNone) 
                     {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: While Resuming the codec\n",__LINE__);
+                        pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
                         goto EXIT;
                     }
                     for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) 
@@ -1140,6 +1191,16 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                                             (OMX_U8 *) pLcmlHdr->pIpParam,
                                             sizeof(AACENC_UAlgInBufParamStruct),
                                             NULL);
+                               if(eError != OMX_ErrorNone){
+                                   OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
+                                   pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
+                                   goto EXIT;
+                               }
                         }
                     }
                     pComponentPrivate->nNumInputBufPending =0;
@@ -1155,14 +1216,24 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                             
 
                                 eError = LCML_QueueBuffer( 
-                                ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                EMMCodecOuputBuffer,
-                                pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
-                                pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
-                                0,
-                                (OMX_U8 *) pLcmlHdr->pOpParam,
-                                sizeof(AACENC_UAlgOutBufParamStruct),
-                                NULL);
+                                             ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                             EMMCodecOuputBuffer,
+                                             pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
+                                             pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
+                                             0,
+                                             (OMX_U8 *) pLcmlHdr->pOpParam,
+                                             sizeof(AACENC_UAlgOutBufParamStruct),
+                                             NULL);
+                                if(eError != OMX_ErrorNone){
+                                   OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
+                                   pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
+                                   goto EXIT;
+                               }
                             }
                     }
                     pComponentPrivate->nNumOutputBufPending = 0;
@@ -1791,6 +1862,17 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting AACENCHandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Returning %d\n",__LINE__,eError);
+    /* report the error to the client via event */
+    if(eError != OMX_ErrorNone){
+        OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler (pHandle, 
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
+
+    }
     return eError;
 }
 
@@ -2150,6 +2232,17 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
     }
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL:Exiting from  HandleDataBuf_FromApp ..........>>>>>\n",__LINE__);
+    /* report the error to the client via event */
+    if(eError != OMX_ErrorNone){
+        OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle, 
+                                                pComponentPrivate->pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
+
+    }
     return eError;
 }
 
@@ -2777,8 +2870,17 @@ pHandle = pComponentPrivate_CC->pHandle;
 
 EXIT:
     OMX_PRINT1(pComponentPrivate_CC->dbg, "%d:pComponentPrivate->curState = %d\n",__LINE__,pComponentPrivate_CC->curState);
-
     OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: UTIL: Exiting the LCML_Callback Function\n",__LINE__);
+    /* report the error to the client via event */
+    if(eError != OMX_ErrorNone){
+        OMX_ERROR4(pComponentPrivate_CC->dbg, "%d:: Error: \n",__LINE__);
+        pComponentPrivate_CC->cbInfo.EventHandler (pComponentPrivate_CC->pHandle, 
+                                                pComponentPrivate_CC->pHandle->pApplicationPrivate,
+                                                OMX_EventError, 
+                                                eError,
+                                                OMX_TI_ErrorSevere,
+                                                NULL);
+    }
     return eError;
 }
 
