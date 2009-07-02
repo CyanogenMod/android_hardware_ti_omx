@@ -2741,7 +2741,8 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         {
         /*Copy Buffer Data to be propagated*/        
         if((pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_SLICE) &&
-                (pSNPrivateParams->ulNALUnitsPerFrame != (pSNPrivateParams->ulNALUnitIndex+1)))
+                (pSNPrivateParams->ulNALUnitsPerFrame != (pSNPrivateParams->ulNALUnitIndex+1)) &&
+                (pSNPrivateParams->ulNALUnitsPerFrame != 0))
             {
 
             pBufHead->pMarkData = NULL;
@@ -3265,7 +3266,15 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     }
 
     pCreatePhaseArgs->usNalCallback = pComponentPrivate->AVCNALFormat;
-    pCreatePhaseArgs->ulEncodingPreset = pComponentPrivate->nEncodingPreset;
+    if((pPortDefIn->format.video.nFrameWidth >= 720 &&
+        pPortDefIn->format.video.nFrameHeight >= 480))
+    {/*TODO: remove magic numbers, create an enum on dsp.h*/
+        pCreatePhaseArgs->ulEncodingPreset = 4;/*optimized for D1 resolutions*/
+    }
+    else
+    {
+        pCreatePhaseArgs->ulEncodingPreset = pComponentPrivate->nEncodingPreset;
+    }
     pCreatePhaseArgs->ulRcAlgo = 0;
     pCreatePhaseArgs->endArgs = END_OF_CR_PHASE_ARGS;
 
