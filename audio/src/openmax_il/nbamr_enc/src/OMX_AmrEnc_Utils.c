@@ -558,6 +558,8 @@ OMX_ERRORTYPE NBAMRENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_U16 i = 0;
     NBAMRENC_LCML_BUFHEADERTYPE *pTemp_lcml;
     OMX_U8* pAlgParmTemp;
+    OMX_U8* pAlgParmTempDTX;
+	
     OMX_U8* pBufParmsTemp;
     char *pTemp = NULL;
     LCML_DSP_INTERFACE *pLcmlHandle;
@@ -578,6 +580,12 @@ OMX_ERRORTYPE NBAMRENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
        pAlgParmTemp -= EXTRA_BYTES;}
     pComponentPrivate->pAlgParam = (NBAMRENC_TALGCtrl*)pAlgParmTemp;
     OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+
+    pAlgParmTempDTX = (OMX_U8*)pComponentPrivate->pAlgParamDTX;
+    if (pAlgParmTempDTX!= NULL){
+       pAlgParmTempDTX-= EXTRA_BYTES;}
+    pComponentPrivate->pAlgParamDTX= (NBAMRENC_TALGCtrlDTX*)pAlgParmTempDTX;
+    OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParamDTX);
 
         pComponentPrivate->nHoldLength = 0;
     OMX_NBMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
@@ -744,6 +752,7 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
     char *p = "hello";
     OMX_U8* pParmsTemp;
     OMX_U8* pAlgParmTemp;
+    OMX_U8* pAlgParmTempDTX;
     OMX_U16 i = 0;
     OMX_U32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
@@ -980,6 +989,12 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                    pAlgParmTemp -= EXTRA_BYTES;
                 pComponentPrivate->pAlgParam = (NBAMRENC_TALGCtrl*)pAlgParmTemp;
                 OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+
+                pAlgParmTempDTX= (OMX_U8*)pComponentPrivate->pAlgParamDTX;
+                if (pAlgParmTempDTX!= NULL)
+                   pAlgParmTempDTX-= EXTRA_BYTES;
+                pComponentPrivate->pAlgParamDTX= (NBAMRENC_TALGCtrlDTX*)pAlgParmTempDTX;
+                OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParamDTX);
                 
                 pComponentPrivate->nOutStandingFillDones = 0;
                                 pComponentPrivate->nOutStandingEmptyDones = 0; 
@@ -1049,22 +1064,23 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                                 
                 
                 NBAMRENC_OMX_MALLOC_SIZE(pAlgParmTemp, sizeof(NBAMRENC_TALGCtrl) + DSP_CACHE_ALIGNMENT,OMX_U8);
+                NBAMRENC_OMX_MALLOC_SIZE(pAlgParmTempDTX, sizeof(NBAMRENC_TALGCtrlDTX) + DSP_CACHE_ALIGNMENT,OMX_U8);
                 
                 pComponentPrivate->pAlgParam = (NBAMRENC_TALGCtrl*)(pAlgParmTemp + EXTRA_BYTES);
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: [ALLOC] %p\n",__LINE__,pComponentPrivate->pAlgParam);
-
+                pComponentPrivate->pAlgParamDTX= (NBAMRENC_TALGCtrlDTX*)(pAlgParmTempDTX+ EXTRA_BYTES);
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: [ALLOC] %p\n",__LINE__,pComponentPrivate->pAlgParamDTX);
                 pComponentPrivate->pAlgParam->iBitrate = pComponentPrivate->amrParams->eAMRBandMode;
                 if (pComponentPrivate->amrParams->eAMRDTXMode == OMX_AUDIO_AMRDTXModeOnAuto) {
-                    pComponentPrivate->pAlgParam->iDTX = OMX_TRUE;
+                    pComponentPrivate->pAlgParamDTX->iVADFlag = OMX_TRUE;
                 }
                 else {
-                    pComponentPrivate->pAlgParam->iDTX = OMX_FALSE;
+                    pComponentPrivate->pAlgParamDTX->iVADFlag = OMX_FALSE;
                 }
-
                 pComponentPrivate->pAlgParam->iSize = sizeof (NBAMRENC_TALGCtrl);
-
+                pComponentPrivate->pAlgParamDTX->iSize = sizeof (NBAMRENC_TALGCtrlDTX);
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: pAlgParam->iBitrate = %d\n",__LINE__,pComponentPrivate->pAlgParam->iBitrate);
-                OMX_PRINT2(pComponentPrivate->dbg, "%d :: pAlgParam->iDTX  = %d\n",__LINE__,pComponentPrivate->pAlgParam->iDTX);
+                OMX_PRINT2(pComponentPrivate->dbg, "%d :: pAlgParamDTX->iVADFlag  = %d\n",__LINE__,pComponentPrivate->pAlgParamDTX->iVADFlag);
 
                 cmdValues[0] = ALGCMD_BITRATE;                  /*setting the bit-rate*/
                 cmdValues[1] = (OMX_U32)pComponentPrivate->pAlgParam;
@@ -1079,8 +1095,8 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                     goto EXIT;
                 }
                 cmdValues[0] = ALGCMD_DTX;                  /*setting DTX mode*/
-                cmdValues[1] = (OMX_U32)pComponentPrivate->pAlgParam;
-                cmdValues[2] = sizeof (NBAMRENC_TALGCtrl);
+                cmdValues[1] = (OMX_U32)pComponentPrivate->pAlgParamDTX;
+                cmdValues[2] = sizeof (NBAMRENC_TALGCtrlDTX);
                 p = (void *)&cmdValues;
                 OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: EMMCodecControlAlgCtrl-2 Sending...\n",__LINE__);
                 /* Sending ALGCTRL MESSAGE BITRATE to DSP via LCML_ControlCodec*/
@@ -3243,7 +3259,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 {
     DSP_STATUS status = DSP_SOK;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-/*    printf("OMX UnReserve DSP: %p\n",pResPtr);*/
     if(pMapPtr == NULL)
     {
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "pMapPtr is NULL\n");

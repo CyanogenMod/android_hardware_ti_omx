@@ -649,23 +649,23 @@ typedef struct NBAMRENC_AudioCodecParams {
 /* =================================================================================== */
 /**
 * NBAMRENC_TALGCtrl                 Socket Node Alg Control parameters.
+* NBAMRENC_TALGCtrlDTX                 Socket Node Alg Control parameters (DTX).
 * NBAMRENC_UAlgInBufParamStruct     Input Buffer Param Structure
 * NBAMRENC_UAlgOutBufParamStruct    Output Buffer Param Structure
 */
 /* =================================================================================== */
 /* Algorithm specific command parameters */
 typedef struct {
-    unsigned int iSize;
+    int iSize;
     unsigned int iBitrate;
-    unsigned int iDTX;
-    unsigned int iMode;
-    unsigned int iFrameSize;
-    unsigned int iNoiseSuppressionMode;
-    unsigned int ittyTddMode;
-    unsigned int idtmfMode;
-    unsigned int idataTransmit;
+
 }NBAMRENC_TALGCtrl;
 
+typedef struct {
+    int iSize;
+    unsigned int iVADFlag;
+
+}NBAMRENC_TALGCtrlDTX;
 /* =================================================================================== */
 /**
 * NBAMRENC_UAlgInBufParamStruct     Input Buffer Param Structure
@@ -874,6 +874,8 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     LCML_STRMATTR *strmAttr;
 
     NBAMRENC_TALGCtrl *pAlgParam;
+
+    NBAMRENC_TALGCtrlDTX *pAlgParamDTX;
 
     NBAMRENC_AudioCodecParams *pParams;
 
