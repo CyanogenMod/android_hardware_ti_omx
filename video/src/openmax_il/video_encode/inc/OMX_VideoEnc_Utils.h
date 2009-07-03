@@ -80,6 +80,7 @@
 #define VIDENC_NUM_OF_OUT_BUFFERS 4 
 #define VIDENC_NUM_OF_PORTS 2
 
+#define VIDENC_MAXBITRATES 7
 
 #if 1 
     #define GPP_PRIVATE_NODE_HEAP
@@ -443,7 +444,6 @@ typedef enum VIDENC_CUSTOM_INDEX
     VideoEncodeCustomConfigIndexTargetFrameRate,
     VideoEncodeCustomConfigIndexQPI,
     VideoEncodeCustomConfigIndexAIRRate,
-    VideoEncodeCustomConfigIndexTargetBitRate,
     /*Segment mode Metadata*/
 	VideoEncodeCustomConfigIndexMVDataEnable,
 	VideoEncodeCustomConfigIndexResyncDataEnable,
@@ -562,7 +562,6 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_VIDEO_PARAM_MOTIONVECTORTYPE* pMotionVector;     /* for searchRange, maxMVperMB, qpi */
     OMX_VIDEO_PARAM_MPEG4TYPE* pMpeg4;
     OMX_VIDEO_PARAM_H263TYPE* pH263;
-    OMX_VIDEO_PARAM_BITRATETYPE* pVidParamBitrate;
     OMX_VIDEO_PARAM_QUANTIZATIONTYPE* pQuantization;
 
     OMX_CALLBACKTYPE sCbData;
@@ -595,7 +594,6 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     unsigned int nTargetFrameRate;  /* should be OMX_CONFIG_FRAMERATETYPE */
     unsigned int nQPI;              /* same as OMX_VIDEO_PARAM_QUANTIZATIONTYPE */
     unsigned int nAIRRate;          /* same as OMX_VIDEO_PARAM_INTRAREFRESHTYPE */
-    unsigned int nTargetBitRate;    /* should be OMX_VIDEO_CONFIG_BITRATETYPE */
 	OMX_U32 nMIRRate;
     
     OMX_U32 nInBufferSize;
@@ -729,5 +727,16 @@ void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
 OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height);
+
+OMX_U32 OMX_VIDENC_GetDefaultBitRate(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
+
+void printMpeg4Params(MP4VE_GPP_SN_Obj_CreatePhase* pCreatePhaseArgs,
+                      struct OMX_TI_Debug *dbg);
+
+void printH264CreateParams(H264VE_GPP_SN_Obj_CreatePhase* pCreatePhaseArgs, struct OMX_TI_Debug *dbg);
+
+void printMpeg4UAlgInParam(MP4VE_GPP_SN_UALGInputParams* pUalgInpParams, int printAlways, struct OMX_TI_Debug *dbg);
+
+void printH264UAlgInParam(H264VE_GPP_SN_UALGInputParams* pUalgInpParams, int printAlways, struct OMX_TI_Debug *dbg);
 
 #endif

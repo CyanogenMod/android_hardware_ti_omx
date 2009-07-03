@@ -248,6 +248,10 @@ static int fToQ16(float f)
     return(int)(f*fQ16_Const);
 }
 
+extern OMX_U32 VIDENC_STRUCT_H264DEFBITRATE [VIDENC_MAXBITRATES][2];
+extern OMX_U32 VIDENC_STRUCT_MPEG4DEFBITRATE [VIDENC_MAXBITRATES][2];
+extern OMX_U32 VIDENC_STRUCT_H263DEFBITRATE [VIDENC_MAXBITRATES][2];
+
 /*----------------------------------------------------------------------------*/
 /**
   * OMX_ComponentInit() Set the all the function pointers of component
@@ -516,10 +520,6 @@ sDynamicFormat = getenv("FORMAT");
                   sizeof(OMX_VIDEO_PARAM_H263TYPE), 
                   OMX_VIDEO_PARAM_H263TYPE, 
                   pMemoryListHead, dbg);
-    VIDENC_MALLOC(pComponentPrivate->pVidParamBitrate, 
-                  sizeof(OMX_VIDEO_PARAM_BITRATETYPE), 
-                  OMX_VIDEO_PARAM_BITRATETYPE, 
-                  pMemoryListHead, dbg);
     VIDENC_MALLOC(pComponentPrivate->pQuantization, 
                   sizeof(OMX_VIDEO_PARAM_QUANTIZATIONTYPE), 
                   OMX_VIDEO_PARAM_QUANTIZATIONTYPE, 
@@ -583,7 +583,7 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->format.video.eColorFormat          = OMX_COLOR_FormatYUV420Planar;
     
     /* Set the default value of the run-time Target Frame Rate to the create-time Frame Rate */
-    pComponentPrivate->nTargetFrameRate = pPortDef->format.video.xFramerate;  
+    pComponentPrivate->nTargetFrameRate = Q16Tof(pPortDef->format.video.xFramerate);
 
     CalculateBufferSize(pPortDef, pComponentPrivate);
     pComponentPrivate->nInBufferSize = 0;
@@ -618,7 +618,6 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->format.video.nFrameHeight          = 144;
     pPortDef->format.video.nStride               = -1; 
     pPortDef->format.video.nSliceHeight          = -1; 
-    pPortDef->format.video.nBitrate              = 64000;  
     pPortDef->format.video.xFramerate            = fToQ16(15.0); 
     pPortDef->format.video.bFlagErrorConcealment = OMX_FALSE;
 
@@ -628,28 +627,29 @@ sDynamicFormat = getenv("FORMAT");
         {
             pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
             pPortDef->format.video.cMIMEType             = "mp4";
+            pPortDef->format.video.nBitrate              = VIDENC_STRUCT_MPEG4DEFBITRATE[0][1];  
 		}
         else if (strcmp(sDynamicFormat,  "H263") == 0 )
         {
             pPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
             pPortDef->format.video.cMIMEType             = "mp4";
+            pPortDef->format.video.nBitrate              = VIDENC_STRUCT_H263DEFBITRATE[0][1];  
 		}
         else if (strcmp(sDynamicFormat,  "H264") == 0 )
         {
             pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC;
             pPortDef->format.video.cMIMEType             = "264";
+            pPortDef->format.video.nBitrate              = VIDENC_STRUCT_H264DEFBITRATE[0][1];  
 		}
     }
     else
     {
         pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC;
         pPortDef->format.video.cMIMEType             = "264";
+        pPortDef->format.video.nBitrate              = VIDENC_STRUCT_H264DEFBITRATE[0][1];  
     }
 
     pPortDef->format.video.eColorFormat          = OMX_COLOR_FormatUnused;
-    
-    /* Set the default value of the run-time Target Bit Rate to the create-time Bit Rate */
-    pComponentPrivate->nTargetBitRate = pPortDef->format.video.nBitrate;    
 
     CalculateBufferSize(pPortDef, pComponentPrivate);
     pComponentPrivate->nOutBufferSize = 0;
@@ -806,11 +806,6 @@ sDynamicFormat = getenv("FORMAT");
 	pCompPortOut->pErrorCorrectionType->nResynchMarkerSpacing = 1024;
 
 	pCompPortOut->pIntraRefreshType->nAirRef = 10;
-    /* Set pVidParamBitrate defaults */
-    OMX_CONF_INIT_STRUCT(pComponentPrivate->pVidParamBitrate, OMX_VIDEO_PARAM_BITRATETYPE);
-    pComponentPrivate->pVidParamBitrate->nPortIndex     = VIDENC_OUTPUT_PORT;
-    pComponentPrivate->pVidParamBitrate->eControlRate   = OMX_Video_ControlRateConstant; 
-    pComponentPrivate->pVidParamBitrate->nTargetBitrate = 64000;
 	/**/
 	pComponentPrivate->nMIRRate=0;
     /* Set pQuantization defaults */
@@ -860,18 +855,26 @@ sDynamicFormat = getenv("FORMAT");
 
 	OMX_CONF_INIT_STRUCT(pCompPortOut->pBitRateTypeConfig, OMX_VIDEO_CONFIG_BITRATETYPE);
 	pCompPortOut->pBitRateTypeConfig->nPortIndex = VIDENC_OUTPUT_PORT;
-	pCompPortOut->pBitRateTypeConfig->nEncodeBitrate = 64000;
+    if(pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
+        pCompPortOut->pBitRateTypeConfig->nEncodeBitrate = VIDENC_STRUCT_MPEG4DEFBITRATE[0][1];
+    }
+    else if(pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+        pCompPortOut->pBitRateTypeConfig->nEncodeBitrate = VIDENC_STRUCT_H263DEFBITRATE[0][1];
+    }
+    else {
+        pCompPortOut->pBitRateTypeConfig->nEncodeBitrate = VIDENC_STRUCT_H264DEFBITRATE[0][1];
+    }
 
 #endif
 	OMX_CONF_INIT_STRUCT(pCompPortIn->pBitRateType, OMX_VIDEO_PARAM_BITRATETYPE);
 	pCompPortIn->pBitRateType->nPortIndex = VIDENC_INPUT_PORT;
 	pCompPortIn->pBitRateType->eControlRate = OMX_Video_ControlRateDisable;
-	pCompPortIn->pBitRateType->nTargetBitrate = 64000;
+    pCompPortIn->pBitRateType->nTargetBitrate = 0;
 
 	OMX_CONF_INIT_STRUCT(pCompPortOut->pBitRateType, OMX_VIDEO_PARAM_BITRATETYPE);
 	pCompPortOut->pBitRateType->nPortIndex = VIDENC_OUTPUT_PORT;
 	pCompPortOut->pBitRateType->eControlRate = OMX_Video_ControlRateConstant;
-	pCompPortOut->pBitRateType->nTargetBitrate = 64000;
+    pCompPortOut->pBitRateType->nTargetBitrate = pCompPortOut->pBitRateTypeConfig->nEncodeBitrate;
 
     /*set the capability Flags needed by Opencore*/
     pComponentPrivate->pCapabilityFlags->iIsOMXComponentMultiThreaded=OMX_TRUE;
@@ -1400,8 +1403,8 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
         case OMX_IndexParamPortDefinition:
 		{
-            if (((OMX_PARAM_PORTDEFINITIONTYPE*)(ComponentParameterStructure))->nPortIndex == 
-                pCompPortIn->pPortDef->nPortIndex)
+            OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = (OMX_PARAM_PORTDEFINITIONTYPE*)(ComponentParameterStructure);
+            if (pPortDef->nPortIndex == pCompPortIn->pPortDef->nPortIndex)
             {
                 pTmp = memcpy(ComponentParameterStructure, 
                               pCompPortIn->pPortDef, 
@@ -1413,8 +1416,7 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            "Failed to copy parameter.\n");
                 }
             }
-            else if (((OMX_PARAM_PORTDEFINITIONTYPE*)(ComponentParameterStructure))->nPortIndex == 
-                pCompPortOut->pPortDef->nPortIndex)
+            else if (pPortDef->nPortIndex == pCompPortOut->pPortDef->nPortIndex)
             {
                 pTmp = memcpy(ComponentParameterStructure, 
                               pCompPortOut->pPortDef, 
@@ -1538,12 +1540,12 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
         case OMX_IndexParamVideoBitrate:
             if (((OMX_VIDEO_PARAM_BITRATETYPE*)(ComponentParameterStructure))->nPortIndex == 
-                pComponentPrivate->pVidParamBitrate->nPortIndex) 
+            pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType->nPortIndex)
             {
-                pTmp = memcpy(ComponentParameterStructure, 
-                              pComponentPrivate->pVidParamBitrate,
+                pTmp = memcpy(ComponentParameterStructure,
+                              pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType,
                               sizeof(OMX_VIDEO_PARAM_BITRATETYPE));
-                if (pTmp == NULL) 
+                if (pTmp == NULL)
                 {
                 OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
                                        pComponentPrivate->dbg, OMX_TRACE4,
@@ -1557,11 +1559,11 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             break;
 
         case OMX_IndexParamVideoH263:
-            if (((OMX_VIDEO_PARAM_H263TYPE*)(ComponentParameterStructure))->nPortIndex == 
+            if (((OMX_VIDEO_PARAM_H263TYPE*)(ComponentParameterStructure))->nPortIndex ==
                 pComponentPrivate->pH263->nPortIndex)
             {
                 pTmp = memcpy(ComponentParameterStructure,
-                              pComponentPrivate->pH263, 
+                              pComponentPrivate->pH263,
                               sizeof(OMX_VIDEO_PARAM_H263TYPE));
                 if (pTmp == NULL)
                 {
@@ -1853,6 +1855,13 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            "Failed to copy parameter.\n");
                 }
                 CalculateBufferSize(pCompPortOut->pPortDef, pComponentPrivate);
+                if(!pCompPortOut->pPortDef->format.video.nBitrate)
+                {
+                    pCompPortOut->pPortDef->format.video.nBitrate = OMX_VIDENC_GetDefaultBitRate(pComponentPrivate);
+                }
+                pCompPortOut->pBitRateTypeConfig->nEncodeBitrate =
+                pCompPortOut->pBitRateType->nTargetBitrate =
+                pCompPortOut->pPortDef->format.video.nBitrate;
             }
             else
             {
@@ -1934,9 +1943,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case OMX_IndexParamVideoBitrate:
         {
             OMX_VIDEO_PARAM_BITRATETYPE* pComponentParam = (OMX_VIDEO_PARAM_BITRATETYPE*)pCompParam;
-            if (pComponentParam->nPortIndex == pComponentPrivate->pVidParamBitrate->nPortIndex)
+            if (pComponentParam->nPortIndex == pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType->nPortIndex)
             {
-                pTmp = memcpy(pComponentPrivate->pVidParamBitrate,
+                pTmp = memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType,
                               pCompParam, 
                               sizeof(OMX_VIDEO_PARAM_BITRATETYPE));
                 if (pTmp == NULL)
@@ -1945,6 +1954,13 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                if(!pCompPortOut->pBitRateType->nTargetBitrate)
+                {
+                    pCompPortOut->pBitRateType->nTargetBitrate = OMX_VIDENC_GetDefaultBitRate(pComponentPrivate);
+                }
+                pCompPortOut->pPortDef->format.video.nBitrate =
+                pCompPortOut->pBitRateTypeConfig->nEncodeBitrate =
+                pCompPortOut->pBitRateType->nTargetBitrate;                
             }
             else
             {
@@ -2024,26 +2040,27 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             {
 		        pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
 				pCompPortOut->pPortFormat->eCompressionFormat = OMX_VIDEO_CodingMPEG4;
-				}
+                pCompPortOut->pPortDef->format.video.nBitrate = VIDENC_STRUCT_MPEG4DEFBITRATE[0][1];
+            }
             else if (strcmp((char *)pRole->cRole,"video_encoder.h263")==0)
             {
 				pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingH263;
 				pCompPortOut->pPortFormat->eCompressionFormat = OMX_VIDEO_CodingH263;
-				}
+                pCompPortOut->pPortDef->format.video.nBitrate = VIDENC_STRUCT_H263DEFBITRATE[0][1];
+            }
             else if (strcmp((char *)pRole->cRole,"video_encoder.avc")==0)
             {
 				pCompPortOut->pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingAVC;
 				pCompPortOut->pPortFormat->eCompressionFormat= OMX_VIDEO_CodingAVC;
-				}
-				
+                pCompPortOut->pPortDef->format.video.nBitrate = VIDENC_STRUCT_H264DEFBITRATE[0][1];
+            }
+
 			pCompPortOut->pPortFormat->eColorFormat = OMX_COLOR_FormatUnused;
-			pCompPortOut->pPortDef->eDomain = OMX_PortDomainVideo; 
+			pCompPortOut->pPortDef->eDomain = OMX_PortDomainVideo;
     		pCompPortOut->pPortDef->format.video.eColorFormat = OMX_COLOR_FormatUnused;
         	pCompPortOut->pPortDef->format.video.nFrameWidth = 176;
 		    pCompPortOut->pPortDef->format.video.nFrameHeight = 144;
-			pCompPortOut->pPortDef->format.video.nBitrate = 64000;
             pCompPortOut->pPortDef->format.video.xFramerate = fToQ16(15.0);
-		
         }
         else
         {
@@ -2051,23 +2068,22 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 		}
 		break;
 
-	case OMX_IndexParamVideoProfileLevelCurrent:
-			{
-	            sProfileLevel= (OMX_VIDEO_PARAM_PROFILELEVELTYPE*)pCompParam;
-	            if (sProfileLevel -> nPortIndex == VIDENC_INPUT_PORT) 
-	            {
-	                pCompPortIn -> pProfileType = sProfileLevel;
-	            }
-	            else if (sProfileLevel -> nPortIndex == VIDENC_OUTPUT_PORT)
-	            {
-	                pCompPortOut -> pProfileType = sProfileLevel;
-	            }
-	            else
-	            {
-	                eError = OMX_ErrorBadPortIndex;
-	            }
-	            break;			
-
+    case OMX_IndexParamVideoProfileLevelCurrent:
+        {
+            sProfileLevel= (OMX_VIDEO_PARAM_PROFILELEVELTYPE*)pCompParam;
+	        if (sProfileLevel -> nPortIndex == VIDENC_INPUT_PORT)
+	        {
+	            pCompPortIn -> pProfileType = sProfileLevel;
+	        }
+	        else if (sProfileLevel -> nPortIndex == VIDENC_OUTPUT_PORT)
+	        {
+	            pCompPortOut -> pProfileType = sProfileLevel;
+	        }
+	        else
+	        {
+	            eError = OMX_ErrorBadPortIndex;
+	        }
+	        break;
 		}
 #endif
 		/*valid for H264 only*/
@@ -2144,9 +2160,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
             break;
         case VideoEncodeCustomConfigIndexAIRRate:
             (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->nAIRRate;
-            break;
-        case VideoEncodeCustomConfigIndexTargetBitRate:
-            (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->nTargetBitRate;
             break;
         /*ASO/FMO*/
         case VideoEncodeCustomConfigIndexNumSliceASO:
@@ -2352,9 +2365,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomConfigIndexAIRRate:
             pComponentPrivate->nAIRRate = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
             break;
-        case VideoEncodeCustomConfigIndexTargetBitRate:
-            pComponentPrivate->nTargetBitRate = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
-            break;
         /*ASO/FMO*/
         case VideoEncodeCustomConfigIndexNumSliceASO:
             pComponentPrivate->numSliceASO = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
@@ -2387,27 +2397,34 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
             }
             break;
 	case OMX_IndexConfigVideoFramerate:
-			{
-            memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pFrameRateConfig,
-				ComponentConfigStructure, 
-				sizeof(OMX_CONFIG_FRAMERATETYPE));
-	}
+    {
+        memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pFrameRateConfig,
+               ComponentConfigStructure,
+               sizeof(OMX_CONFIG_FRAMERATETYPE));
+    }
 	break;
 	case OMX_IndexConfigVideoBitrate:
-		{
-		memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig,
-				ComponentConfigStructure,
-				sizeof(OMX_VIDEO_CONFIG_BITRATETYPE));
+    {
+        memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig,
+               ComponentConfigStructure,
+               sizeof(OMX_VIDEO_CONFIG_BITRATETYPE));
 
-	}
-break;
-	case OMX_IndexParamVideoErrorCorrection:
-		{
-		memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
-				ComponentConfigStructure,
-				sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));	
-		}
-		break;
+        if(!pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate)
+        {
+            pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate = OMX_VIDENC_GetDefaultBitRate(pComponentPrivate);
+        }
+        pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortDef->format.video.nBitrate =
+        pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType->nTargetBitrate =
+        pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate;
+    }
+    break;
+    case OMX_IndexParamVideoErrorCorrection:
+    {
+        memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
+               ComponentConfigStructure,
+               sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
+    }
+    break;
 	case OMX_IndexParamVideoIntraRefresh:
 		{
 		memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
@@ -2497,7 +2514,6 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
         {"OMX.TI.VideoEncode.Config.TargetFrameRate", VideoEncodeCustomConfigIndexTargetFrameRate},
         {"OMX.TI.VideoEncode.Config.QPI", VideoEncodeCustomConfigIndexQPI},
         {"OMX.TI.VideoEncode.Config.AIRRate", VideoEncodeCustomConfigIndexAIRRate},                                    
-        {"OMX.TI.VideoEncode.Config.TargetBitRate", VideoEncodeCustomConfigIndexTargetBitRate},
 
         /*Segment mode Metadata*/
         {"OMX.TI.VideoEncode.Config.MVDataEnable", VideoEncodeCustomConfigIndexMVDataEnable},
