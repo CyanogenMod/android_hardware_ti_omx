@@ -200,7 +200,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                         PERF_ReceivedCommand(pComponentPrivate->pPERFcomp,
                                              eCmd, 0, PERF_ModuleLLMM);
 #endif
-                if (eCmd == -1)
+                if (eCmd == (OMX_COMMANDTYPE)-1)
                 {
                     OMX_PRCOMM2(pComponentPrivate->dbg, "Received thread close command.\n");
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorNone);
@@ -297,7 +297,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     (pComponentPrivate->eState != OMX_StatePause &&
                     pComponentPrivate->eState != OMX_StateIdle)) 
                 {
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FilledInBuf\n");
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FilledInBuf\n");
                     eError = OMX_VIDENC_Process_FilledInBuf(pComponentPrivate);      
                     if (eError != OMX_ErrorNone)
                     {
@@ -308,14 +308,14 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                                                  NULL);
                         OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
                     }
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FilledInBuf\n");
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FilledInBuf\n");
                 }
                 
                 if (FD_ISSET(pComponentPrivate->nFree_oPipe[0], &rfds) && 
                     (pComponentPrivate->eState != OMX_StatePause && 
                     pComponentPrivate->eState != OMX_StateIdle))
                 {
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FreeOutBuf\n");
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FreeOutBuf\n");
                     eError = OMX_VIDENC_Process_FreeOutBuf(pComponentPrivate);
                     if (eError != OMX_ErrorNone)
                     {
@@ -326,7 +326,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                                                  NULL);
                         OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
                     }
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FreeOutBuf\n");
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FreeOutBuf\n");
                 }
             }
         }

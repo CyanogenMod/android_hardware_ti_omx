@@ -60,6 +60,10 @@
     #endif
 #include <OMX_TI_Debug.h>
 #include <OMX_Component.h>
+#ifdef LOG_TAG
+    #undef LOG_TAG
+#endif
+#define LOG_TAG "TI_OMX_VideoEnc"
 
 #ifdef UNDER_CE
     #include <oaf_debug.h>
@@ -81,7 +85,7 @@
     #define GPP_PRIVATE_NODE_HEAP
 #endif
 
-#define VIDENC_NUM_CUSTOM_INDEXES 23
+#define VIDENC_NUM_CUSTOM_INDEXES 24
 
 #if 1
     #define __KHRONOS_CONF__

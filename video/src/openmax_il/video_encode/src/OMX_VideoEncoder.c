@@ -234,6 +234,20 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
 void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONENT_PRIVATE* pCompPrivate);
+
+static const int iQ16_Const = 1 << 16;
+static const float fQ16_Const = (float)(1 << 16);
+
+static float Q16Tof(int nQ16)
+{
+    return nQ16 / fQ16_Const;
+}
+
+static int fToQ16(float f)
+{
+    return(int)(f*fQ16_Const);
+}
+
 /*----------------------------------------------------------------------------*/
 /**
   * OMX_ComponentInit() Set the all the function pointers of component
@@ -563,7 +577,7 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->format.video.nFrameHeight          = 144;
     pPortDef->format.video.nStride               = -1; 
     pPortDef->format.video.nSliceHeight          = -1; 
-    pPortDef->format.video.xFramerate            = 15; 
+    pPortDef->format.video.xFramerate            = fToQ16(15.0); 
     pPortDef->format.video.bFlagErrorConcealment = OMX_FALSE;
     pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingUnused;
     pPortDef->format.video.eColorFormat          = OMX_COLOR_FormatYUV420Planar;
@@ -599,37 +613,38 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->bEnabled                           = OMX_TRUE;
     pPortDef->bPopulated                         = OMX_FALSE;
     pPortDef->eDomain                            = OMX_PortDomainVideo;
-    pPortDef->format.video.cMIMEType             = "264";
     pPortDef->format.video.pNativeRender         = NULL; 
     pPortDef->format.video.nFrameWidth           = 176;
     pPortDef->format.video.nFrameHeight          = 144;
     pPortDef->format.video.nStride               = -1; 
     pPortDef->format.video.nSliceHeight          = -1; 
     pPortDef->format.video.nBitrate              = 64000;  
-    pPortDef->format.video.xFramerate            = (15<<16); 
+    pPortDef->format.video.xFramerate            = fToQ16(15.0); 
     pPortDef->format.video.bFlagErrorConcealment = OMX_FALSE;
 
     if (sDynamicFormat != NULL)
     {
         if ( strcmp(sDynamicFormat,  "MPEG4") == 0 )
         {
-
-		pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
+            pPortDef->format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
+            pPortDef->format.video.cMIMEType             = "mp4";
 		}
         else if (strcmp(sDynamicFormat,  "H263") == 0 )
         {
-
-		pPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
+            pPortDef->format.video.eCompressionFormat  = OMX_VIDEO_CodingH263;
+            pPortDef->format.video.cMIMEType             = "mp4";
 		}
         else if (strcmp(sDynamicFormat,  "H264") == 0 )
         {
-		pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC; 
+            pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC;
+            pPortDef->format.video.cMIMEType             = "264";
 		}
-		}
+    }
     else
     {
-		pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC; 
-		}
+        pPortDef->format.video.eCompressionFormat    = OMX_VIDEO_CodingAVC;
+        pPortDef->format.video.cMIMEType             = "264";
+    }
 
     pPortDef->format.video.eColorFormat          = OMX_COLOR_FormatUnused;
     
@@ -1138,7 +1153,7 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
             }
             break;
         case OMX_CommandFlush:
-            if (nParam1 > 1 && nParam1 != -1)
+            if (nParam1 > 1 && nParam1 != (OMX_U32)-1)
             {
             OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
                                    pComponentPrivate->dbg, OMX_PRBUFFER4,
@@ -1168,14 +1183,14 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
 
             if (nParam1 == VIDENC_INPUT_PORT || 
                 nParam1 == VIDENC_OUTPUT_PORT || 
-                nParam1 == -1)
+                nParam1 == (OMX_U32)-1)
             {
-                if (nParam1 == VIDENC_INPUT_PORT || nParam1 == -1)
+                if (nParam1 == VIDENC_INPUT_PORT || nParam1 == (OMX_U32)-1)
                 {
 
                     pPortDefIn->bEnabled = OMX_FALSE;
                 }
-                if (nParam1 == VIDENC_OUTPUT_PORT || nParam1 == -1)
+                if (nParam1 == VIDENC_OUTPUT_PORT || nParam1 == (OMX_U32)-1)
                 {
 
                     pPortDefOut->bEnabled = OMX_FALSE;
@@ -1211,13 +1226,13 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
 
             if (nParam1 == VIDENC_INPUT_PORT ||
                 nParam1 == VIDENC_OUTPUT_PORT ||
-                nParam1 == -1)
+                nParam1 == (OMX_U32)-1)
             {
-                if (nParam1 == VIDENC_INPUT_PORT || nParam1 == -1)
+                if (nParam1 == VIDENC_INPUT_PORT || nParam1 == (OMX_U32)-1)
                 {
                     pPortDefIn->bEnabled = OMX_TRUE;
                 }
-                if (nParam1 == VIDENC_OUTPUT_PORT || nParam1 == -1)
+                if (nParam1 == VIDENC_OUTPUT_PORT || nParam1 == (OMX_U32)-1)
                 {
                     pPortDefOut->bEnabled = OMX_TRUE;
                 }
@@ -1249,9 +1264,9 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
         case OMX_CommandMarkBuffer:
             if (nParam1 > 0)
             {
-            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+            OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex,
                                    pComponentPrivate->dbg, OMX_PRBUFFER4,
-                                   "Invalid mark nParam1 (%lu).\n", nParam1);
+                                   "Invalid port number (%lu).\n", nParam1);
             }
             nRet = write(pComponentPrivate->nCmdPipe[1], &Cmd, sizeof(Cmd));
             if (nRet == -1)
@@ -1750,16 +1765,19 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCompParam, 1, 1);
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
-    {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
-                               pComponentPrivate->dbg, OMX_PRSTATE3,
-                               "Component is in invalid state.\n");
-    }   
-    
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
     pCompPortIn     = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT];
     pCompPortOut    = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT];
+
+    if ((pComponentPrivate->eState != OMX_StateLoaded) && 
+        (pComponentPrivate->eState != OMX_StateWaitForResources) &&
+        (nParamIndex != OMX_IndexParamPortDefinition || 
+            (pCompPortIn->pPortDef->bEnabled && pCompPortOut->pPortDef->bEnabled)))
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Call in an invalid state.\n");
+    }
 
     switch (nParamIndex) 
     {
@@ -2024,7 +2042,7 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         	pCompPortOut->pPortDef->format.video.nFrameWidth = 176;
 		    pCompPortOut->pPortDef->format.video.nFrameHeight = 144;
 			pCompPortOut->pPortDef->format.video.nBitrate = 64000;
-        	pCompPortOut->pPortDef->format.video.xFramerate = (15 << 16);
+            pCompPortOut->pPortDef->format.video.xFramerate = fToQ16(15.0);
 		
         }
         else
@@ -2473,36 +2491,36 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
     VIDENC_CUSTOM_DEFINITION sVideoEncodeCustomIndex[VIDENC_NUM_CUSTOM_INDEXES] = 
     {
         {"OMX.TI.VideoEncode.Param.VBVSize", VideoEncodeCustomParamIndexVBVSize},
-                                    {"OMX.TI.VideoEncode.Param.DeblockFilter", VideoEncodeCustomParamIndexDeblockFilter},
-                                    {"OMX.TI.VideoEncode.Config.ForceIFrame", VideoEncodeCustomConfigIndexForceIFrame},
-                                    {"OMX.TI.VideoEncode.Config.IntraFrameInterval", VideoEncodeCustomConfigIndexIntraFrameInterval},
-                                    {"OMX.TI.VideoEncode.Config.TargetFrameRate", VideoEncodeCustomConfigIndexTargetFrameRate},
-                                    {"OMX.TI.VideoEncode.Config.QPI", VideoEncodeCustomConfigIndexQPI},
-                                    {"OMX.TI.VideoEncode.Config.AIRRate", VideoEncodeCustomConfigIndexAIRRate},                                    
-                                    {"OMX.TI.VideoEncode.Config.TargetBitRate", VideoEncodeCustomConfigIndexTargetBitRate},
+        {"OMX.TI.VideoEncode.Param.DeblockFilter", VideoEncodeCustomParamIndexDeblockFilter},
+        {"OMX.TI.VideoEncode.Config.ForceIFrame", VideoEncodeCustomConfigIndexForceIFrame},
+        {"OMX.TI.VideoEncode.Config.IntraFrameInterval", VideoEncodeCustomConfigIndexIntraFrameInterval},
+        {"OMX.TI.VideoEncode.Config.TargetFrameRate", VideoEncodeCustomConfigIndexTargetFrameRate},
+        {"OMX.TI.VideoEncode.Config.QPI", VideoEncodeCustomConfigIndexQPI},
+        {"OMX.TI.VideoEncode.Config.AIRRate", VideoEncodeCustomConfigIndexAIRRate},                                    
+        {"OMX.TI.VideoEncode.Config.TargetBitRate", VideoEncodeCustomConfigIndexTargetBitRate},
 
-									/*Segment mode Metadata*/
-									{"OMX.TI.VideoEncode.Config.MVDataEnable", VideoEncodeCustomConfigIndexMVDataEnable},
-									{"OMX.TI.VideoEncode.Config.ResyncDataEnable", VideoEncodeCustomConfigIndexResyncDataEnable},
+        /*Segment mode Metadata*/
+        {"OMX.TI.VideoEncode.Config.MVDataEnable", VideoEncodeCustomConfigIndexMVDataEnable},
+        {"OMX.TI.VideoEncode.Config.ResyncDataEnable", VideoEncodeCustomConfigIndexResyncDataEnable},
 
-                                    /*ASO*/
-                                    {"OMX.TI.VideoEncode.Config.NumSliceASO", VideoEncodeCustomConfigIndexNumSliceASO},
-                                    {"OMX.TI.VideoEncode.Config.AsoSliceOrder", VideoEncodeCustomConfigIndexAsoSliceOrder},
-                                    /*FMO*/
-                                    {"OMX.TI.VideoEncode.Config.NumSliceGroups", VideoEncodeCustomConfigIndexNumSliceGroups},
-                                    {"OMX.TI.VideoEncode.Config.SliceGroupMapType", VideoEncodeCustomConfigIndexSliceGroupMapType},
-                                    {"OMX.TI.VideoEncode.Config.SliceGroupChangeDirectionFlag", VideoEncodeCustomConfigIndexSliceGroupChangeDirectionFlag},
-                                    {"OMX.TI.VideoEncode.Config.SliceGroupChangeRate", VideoEncodeCustomConfigIndexSliceGroupChangeRate},
-                                    {"OMX.TI.VideoEncode.Config.SliceGroupChangeCycle", VideoEncodeCustomConfigIndexSliceGroupChangeCycle},
-                                    {"OMX.TI.VideoEncode.Config.SliceGroupParams", VideoEncodeCustomConfigIndexSliceGroupParams},
-                                    /**/
-								    {"OMX.TI.VideoEncode.Config.MIRRate", VideoEncodeCustomConfigIndexMIRRate},
-                                     {"OMX.TI.VideoEncode.Config.MaxMVperMB", VideoEncodeCustomConfigIndexMaxMVperMB},
-                                     {"OMX.TI.VideoEncode.Config.Intra4x4EnableIdc", VideoEncodeCustomConfigIndexIntra4x4EnableIdc},
-                                     {"OMX.TI.VideoEncode.Config.EncodingPreset", VideoEncodeCustomParamIndexEncodingPreset},
+        /*ASO*/
+        {"OMX.TI.VideoEncode.Config.NumSliceASO", VideoEncodeCustomConfigIndexNumSliceASO},
+        {"OMX.TI.VideoEncode.Config.AsoSliceOrder", VideoEncodeCustomConfigIndexAsoSliceOrder},
+        /*FMO*/
+        {"OMX.TI.VideoEncode.Config.NumSliceGroups", VideoEncodeCustomConfigIndexNumSliceGroups},
+        {"OMX.TI.VideoEncode.Config.SliceGroupMapType", VideoEncodeCustomConfigIndexSliceGroupMapType},
+        {"OMX.TI.VideoEncode.Config.SliceGroupChangeDirectionFlag", VideoEncodeCustomConfigIndexSliceGroupChangeDirectionFlag},
+        {"OMX.TI.VideoEncode.Config.SliceGroupChangeRate", VideoEncodeCustomConfigIndexSliceGroupChangeRate},
+        {"OMX.TI.VideoEncode.Config.SliceGroupChangeCycle", VideoEncodeCustomConfigIndexSliceGroupChangeCycle},
+        {"OMX.TI.VideoEncode.Config.SliceGroupParams", VideoEncodeCustomConfigIndexSliceGroupParams},
+        /**/
+        {"OMX.TI.VideoEncode.Config.MIRRate", VideoEncodeCustomConfigIndexMIRRate},
+        {"OMX.TI.VideoEncode.Config.MaxMVperMB", VideoEncodeCustomConfigIndexMaxMVperMB},
+        {"OMX.TI.VideoEncode.Config.Intra4x4EnableIdc", VideoEncodeCustomConfigIndexIntra4x4EnableIdc},
+        {"OMX.TI.VideoEncode.Config.EncodingPreset", VideoEncodeCustomParamIndexEncodingPreset},
         {"OMX.TI.VideoEncode.Config.NALFormat", VideoEncodeCustomParamIndexNALFormat},
         {"OMX.TI.VideoEncode.Debug", VideoEncodeCustomConfigIndexDebug}
-                                   }; 
+    }; 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nIndex = 0;
  
@@ -3315,7 +3333,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                                "Freeing buffer on invalid port index.\n");
     }
     
-    if (pPortDef->bEnabled && pComponentPrivate->eState != OMX_StateIdle)
+    if (pPortDef->bEnabled && pComponentPrivate->eState != OMX_StateIdle && pComponentPrivate->eState != OMX_StateInvalid)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
