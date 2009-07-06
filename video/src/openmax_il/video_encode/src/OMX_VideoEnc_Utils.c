@@ -2634,12 +2634,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulFrameIndex         = pComponentPrivate->nFrameCnt;
     pUalgInpParams->ulTargetFrameRate    = pComponentPrivate->nTargetFrameRate;
     pUalgInpParams->ulTargetBitRate      = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate;
-    if(pComponentPrivate->nFrameCnt == 0 && pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
-    {
-        pUalgInpParams->ulGenerateHeader     = 1;
-    }
-    else
-        pUalgInpParams->ulGenerateHeader     = 0;
+    pUalgInpParams->ulGenerateHeader     = 0;
     pUalgInpParams->ulForceIFrame        = pComponentPrivate->bForceIFrame;
     pUalgInpParams->ulResyncInterval     = pCompPortOut->pErrorCorrectionType->nResynchMarkerSpacing;
     if(pCompPortOut->pErrorCorrectionType->bEnableHEC)
@@ -2698,6 +2693,28 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulQpMax             = 31;
     pUalgInpParams->ulQpMin             = 2;
     ++pComponentPrivate->nFrameCnt;
+
+    if(pComponentPrivate->bRequestVOLHeader == OMX_TRUE)
+    {
+        /*In the case of Mpeg4 we have to send an extra Buffer to LCML requesting for VOL Header*/
+        memcpy(pComponentPrivate->pTempUalgInpParams,pUalgInpParams,sizeof(MP4VE_GPP_SN_UALGInputParams));
+        pComponentPrivate->pTempUalgInpParams->ulGenerateHeader = 1;
+        pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                  EMMCodecInputBuffer,
+                                  pComponentPrivate->pTempUalgInpParams,/*send any buffer*/
+                                  1,
+                                  0,
+                                  pComponentPrivate->pTempUalgInpParams,
+                                  sizeof(MP4VE_GPP_SN_UALGInputParams),
+                                  (OMX_U8*)pBufHead);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_PRDSP2(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
+        }
+        pComponentPrivate->bRequestVOLHeader = OMX_FALSE;
+    }
+
     OMX_PRDSP1(pComponentPrivate->dbg,
                "TargetFrameRate -> %d\n\
                TargetBitRate   -> %d\n\
@@ -2839,8 +2856,17 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                  pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
         {
-            OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pBufHead, pComponentPrivate->sCircularBuffer,
-                                               pComponentPrivate);
+            /*We ignore the first Mpeg4 buffer which contains VOL Header since we did not add it to the circular list*/
+            if(pComponentPrivate->bWaitingForVOLHeaderBuffer == OMX_FALSE)
+            {
+                OMX_CONF_CIRCULAR_BUFFER_MOVE_HEAD(pBufHead, pComponentPrivate->sCircularBuffer,
+                                                   pComponentPrivate);
+            }
+            else
+            {
+                pComponentPrivate->bWaitingForVOLHeaderBuffer = OMX_FALSE;
+            }
+
             pBufHead->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
             /* Set cFrameType*/
@@ -2956,10 +2982,9 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeInBuf(VIDENC_COMPONENT_PRIVATE* pComponentP
                           0,
                           PERF_ModuleHLMM);
 #endif
-
-   pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
-                                              pComponentPrivate->pHandle->pApplicationPrivate,
-                                              pBufHead);
+    pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               pBufHead);
    }
 
 OMX_CONF_CMD_BAIL:
@@ -3475,6 +3500,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
     {
         pCreatePhaseArgs->ucIsMPEG4 = 1;
+        /*Initialize variables for the generation of VOL Header*/
+        pComponentPrivate->bRequestVOLHeader = OMX_TRUE;
+        pComponentPrivate->bWaitingForVOLHeaderBuffer = OMX_TRUE;
+        pComponentPrivate->bWaitingVOLHeaderCallback = OMX_TRUE;
     }
     else
     {
@@ -3742,6 +3771,17 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
             pTemp += 128;
             pUalgParam = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
             pCompPort->pBufferPrivate[nBufferCnt]->pUalgParam = pUalgParam;
+            if(eCompressionFormat == OMX_VIDEO_CodingMPEG4)
+            {/*Structure needed to send the request for VOLHeader to SN*/
+                VIDENC_MALLOC(pComponentPrivate->pTempUalgInpParams,
+                              sizeof(MP4VE_GPP_SN_UALGInputParams) + 256,
+                              MP4VE_GPP_SN_UALGInputParams,
+                              pMemoryListHead,
+                              pComponentPrivate->dbg);
+                pTemp = (char*)pComponentPrivate->pTempUalgInpParams;
+                pTemp += 128;
+                pComponentPrivate->pTempUalgInpParams = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
+            }
         }
     }
     else if (nPortIndex == VIDENC_OUTPUT_PORT)
@@ -3868,7 +3908,8 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
 
             OMX_PRDSP1(pComponentPrivate->dbg, " [IN] -> %p\n", pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_COMPONENT;
-            if (pComponentPrivate->bCodecStarted == OMX_TRUE)
+            /*we should ignore the callback asociated to the VOL Header request*/
+            if (pComponentPrivate->bCodecStarted == OMX_TRUE && pComponentPrivate->bWaitingVOLHeaderCallback == OMX_FALSE)
             {
                 OMX_PRDSP1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FreeInBuf\n");
                eError = OMX_VIDENC_Process_FreeInBuf(pComponentPrivate, pBufHead);
@@ -3882,6 +3923,10 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event,void* argsCb [10])
                  OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
                }
                 OMX_PRDSP1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FreeInBuf\n");
+            }
+            else if(pComponentPrivate->bWaitingVOLHeaderCallback == OMX_TRUE)
+            {
+                pComponentPrivate->bWaitingVOLHeaderCallback = OMX_FALSE;
             }
         }
     }

@@ -664,6 +664,11 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_COLOR_FORMATTYPE colorFormats[3];
     struct OMX_TI_Debug dbg;
     PV_OMXComponentCapabilityFlagsType* pCapabilityFlags;
+    /*Variables neded to manage the VOL header request*/
+    MP4VE_GPP_SN_UALGInputParams* pTempUalgInpParams;
+    OMX_BOOL bRequestVOLHeader;
+    OMX_BOOL bWaitingForVOLHeaderBuffer;
+    OMX_BOOL bWaitingVOLHeaderCallback;
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
