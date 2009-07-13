@@ -56,10 +56,9 @@
 #endif
 
 #ifndef UNDER_CE
-#define MP3D_RM_MANAGER /* Enable to use Resource Manager functionality */
-/* #include <ResourceManagerProxyAPI.h> */
-#else
-#undef MP3D_RM_MANAGER /* Enable to use Resource Manager functionality */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
 #endif
 
 
@@ -82,7 +81,7 @@
     #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #endif
 
-
+#endif
 
 #define MP3DEC_MAJOR_VER 0x1/* Major number of the component */
 #define MP3DEC_MINOR_VER 0x1 /* Mnor number of the component */
@@ -674,10 +673,12 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_PORT_PARAM_TYPE* pPortParamType;
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
-	
-/*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
-	OMX_BOOL bPreempted;
-	
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+    OMX_BOOL bPreempted;
+    
     /** Contains the port related info of both the ports */
     MP3D_AUDIODEC_PORT_TYPE *pCompPort[NUM_OF_PORTS];
     /* Checks whether or not buffer were allocated by appliction */
@@ -1073,6 +1074,7 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent);
 /* ================================================================================ * */
 void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 
+#ifdef RESOURCE_MANAGER_ENABLED
 /* =================================================================================== */
 /**
 *  MP3_ResourceManagerCallback() Callback from Resource Manager
@@ -1082,7 +1084,8 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 *  @return None
 */
 /* =================================================================================== */
-/* void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
+void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 void MP3DEC_SetPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber);

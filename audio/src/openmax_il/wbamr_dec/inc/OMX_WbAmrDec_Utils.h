@@ -24,8 +24,9 @@
 #include <OMX_Component.h>
 #include "OMX_TI_Common.h"
 #include "OMX_WbAmrDecoder.h"
-/* #include <ResourceManagerProxyAPI.h> */
-
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 
 /* ======================================================================= */
@@ -424,7 +425,9 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 /*================================================================== */
 OMX_U32 WBAMR_DEC_IsValid(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 
-/* void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
+#ifdef RESOURCE_MANAGER_ENABLED
+void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
 

@@ -47,7 +47,11 @@
 #include "LCML_DspCodec.h"
 #include <pthread.h>
 #include <sched.h>
-/* #include <ResourceManagerProxyAPI.h> */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 #ifdef UNDER_CE
 #include <windows.h>
 #include <oaf_osal.h>
@@ -845,7 +849,10 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
 
-	/* RMPROXY_CALLBACKTYPE rmproxyCallback; */
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
 
 	
@@ -1323,8 +1330,9 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 /*================================================================== */
 OMX_U32 AACDEC_IsValid(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 
-/* void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
-
+#ifdef RESOURCE_MANAGER_ENABLED
+void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 /*=======================================================================*/
 /*! @fn AACDec_GetSampleRateIndexL
 

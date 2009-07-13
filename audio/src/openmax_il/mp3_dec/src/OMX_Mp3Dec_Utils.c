@@ -82,7 +82,6 @@
 #include <decode_common_ti.h>
 #include "usn.h"
 
-/*#ifdef MP3D_RM_MANAGER*/
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
@@ -3607,3 +3606,30 @@ OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
     nOutput = nOutput >> (32 - nBits) ;
     return nOutput;
 }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+{
+    OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
+    OMX_STATETYPE state = OMX_StateIdle;
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
+    MP3DEC_COMPONENT_PRIVATE *pCompPrivate = NULL;
+
+    pCompPrivate = (MP3DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesPreempted) {
+        if (pCompPrivate->curState == OMX_StateExecuting ||
+            pCompPrivate->curState == OMX_StatePause) {
+            write (pCompPrivate->cmdPipe[1], &Cmd, sizeof(Cmd));
+            write (pCompPrivate->cmdDataPipe[1], &state ,sizeof(OMX_U32));
+            pCompPrivate->bPreempted = 1;
+        }
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
+        pCompPrivate->cbInfo.EventHandler (pHandle,
+                                           pHandle->pApplicationPrivate,
+                                           OMX_EventResourcesAcquired, 0,0,
+                                           NULL);
+    }
+}
+#endif

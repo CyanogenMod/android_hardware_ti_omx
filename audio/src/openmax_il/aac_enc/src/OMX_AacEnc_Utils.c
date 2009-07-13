@@ -3381,8 +3381,8 @@ int myfree(void *dp, int line, char *s){
 }
 #endif
 
-
-/* void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+#ifdef RESOURCE_MANAGER_ENABLED
+void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
     OMX_STATETYPE state = OMX_StateIdle;
@@ -3410,4 +3410,4 @@ int myfree(void *dp, int line, char *s){
     }
 
 }
-*/
+#endif

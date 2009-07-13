@@ -55,6 +55,10 @@
 #include "perf.h"
 #endif
 
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 #include <OMX_Component.h> 
 
 #ifndef ANDROID
@@ -862,6 +866,10 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     OMX_U8 SendAfterEOS;		
  
     OMX_BOOL bPreempted;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
 	
     /* Removing sleep() calls. Definition. */
 #ifndef UNDER_CE
@@ -1340,7 +1348,9 @@ OMX_U32 WMADEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 /*  =========================================================================*/
 OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData);
 
-
+#ifdef RESOURCE_MANAGER_ENABLED
+void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 #endif
 

@@ -70,6 +70,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 /*-------program files ----------------------------------------*/
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 #include "OMX_G726Enc_Utils.h"
 #include "g726enc_sn_uuid.h"
 #include <encode_common_ti.h>
@@ -726,10 +731,13 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 
 #ifdef RESOURCE_MANAGER_ENABLED
                 /* Need check the resource with RM */
-                pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) G726_ResourceManagerCallback;
-				if (pComponentPrivate->curState != OMX_StateWaitForResources) {
-				    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_G726_Encoder_COMPONENT, 
-                                                               G726ENC_CPU, 3456,&(pComponentPrivate->rmproxyCallback));
+                pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) G726ENC_ResourceManagerCallback;
+                if (pComponentPrivate->curState != OMX_StateWaitForResources) {
+                    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource,
+                                                      OMX_G726_Encoder_COMPONENT, 
+                                                      G726ENC_CPU,
+                                                      3456,
+                                                      &(pComponentPrivate->rmproxyCallback));
                 if(rm_error == OMX_ErrorNone) {
                     /* resource is available */
                     pComponentPrivate->curState = OMX_StateIdle;
@@ -2230,3 +2238,34 @@ EXIT:
     return eError;
 }
 
+#ifdef RESOURCE_MANAGER_ENABLED
+/***********************************
+ *  Callback to the RM                                       *
+ ***********************************/
+void G726ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+{
+    OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
+    OMX_STATETYPE state = OMX_StateIdle;
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
+    G726ENC_COMPONENT_PRIVATE *pCompPrivate = NULL;
+
+    pCompPrivate = (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesPreempted){
+        if (pCompPrivate->curState == OMX_StateExecuting || 
+            pCompPrivate->curState == OMX_StatePause) {
+
+            write (pCompPrivate->cmdPipe[1], &Cmd, sizeof(Cmd));
+            write (pCompPrivate->cmdDataPipe[1], &state ,sizeof(OMX_U32));
+
+            pCompPrivate->bPreempted = 1;
+        }
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
+        pCompPrivate->cbInfo.EventHandler ( pHandle, 
+                                            pHandle->pApplicationPrivate,
+                                            OMX_EventResourcesAcquired, 
+                                            0, 0, NULL);
+    }
+}
+#endif

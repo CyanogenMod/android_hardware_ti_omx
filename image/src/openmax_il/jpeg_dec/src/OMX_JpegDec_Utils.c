@@ -2196,15 +2196,15 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
-    OMX_ERRORTYPE RM_Error = *(cbData.RM_Error);
+    OMX_ERRORTYPE eError = *(cbData.RM_Error);
     
     pComponentPrivate = (JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); 
 
-    OMX_PRINT1(pComponentPrivate->dbg, "RM_Error = %x\n", RM_Error);
+    OMX_PRINT1(pComponentPrivate->dbg, "RM_Error = %x\n", eError);
 
-    if (RM_Error == OMX_RmProxyCallback_ResourcesPreempted) {
+    if (eError == OMX_RmProxyCallback_ResourcesPreempted) {
 
         pComponentPrivate->bPreempted = 1;
         
@@ -2234,7 +2234,7 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         write (pComponentPrivate->nCmdDataPipe[1], &(pComponentPrivate->nToState) ,sizeof(OMX_U32));
         
     }
-    else if (RM_Error == OMX_RmProxyCallback_ResourcesAcquired ){
+    else if (eError == OMX_RmProxyCallback_ResourcesAcquired ){
 
         if (pComponentPrivate->nCurState == OMX_StateWaitForResources) /* Wait for Resource Response */
         {
@@ -2255,7 +2255,8 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         }            
         
     }
-
+    EXIT:
+        OMX_PRMGR2(pComponentPrivate->dbg, "OMX_RmProxyCallback exiting.\n");
 }
 #endif
 

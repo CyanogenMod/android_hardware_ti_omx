@@ -46,6 +46,10 @@
 #include <OMX_Component.h>
 #include <pthread.h>
 
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 
 /* ======================================================================= */
 /**

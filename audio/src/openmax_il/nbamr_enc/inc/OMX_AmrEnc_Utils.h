@@ -65,7 +65,10 @@
 #include "OMX_TI_Common.h"
 #include "OMX_TI_Debug.h"
 #include <TIDspOmx.h>
-/* #include <ResourceManagerProxyAPI.h> */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
@@ -763,7 +766,10 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     OMX_PORT_PARAM_TYPE* sPortParam;
     OMX_PRIORITYMGMTTYPE* sPriorityMgmt;
     
-    /* RMPROXY_CALLBACKTYPE rmproxyCallback; */
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
     
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef[NBAMRENC_NUM_OF_PORTS];
@@ -1235,9 +1241,9 @@ OMX_U32 NBAMRENC_IsValid(AMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                          OMX_U8 *pBuffer,
                          OMX_DIRTYPE eDir);
 
-                         
-/* void NBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
-
+#ifdef RESOURCE_MANAGER_ENABLED
+void NBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 /* ======================================================================= */
 /** OMX_NBAMRENC_INDEXAUDIOTYPE  Defines the custom configuration settings
 *                              for the component

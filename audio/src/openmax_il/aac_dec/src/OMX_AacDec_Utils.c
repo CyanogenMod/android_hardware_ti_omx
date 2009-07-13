@@ -77,15 +77,15 @@
 #include <stdio.h>
 
 /*------- Program Header Files -----------------------------------------------*/
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 #include "LCML_DspCodec.h"
 #include "OMX_AacDec_Utils.h"
 #include "Aacdecsocket_ti.h"
 #include <decode_common_ti.h>
 #include "usn.h"
-
-#ifdef RESOURCE_MANAGER_ENABLED
-#include <ResourceManagerProxyAPI.h>
-#endif
 
 #ifdef UNDER_CE
 #define HASHINGENABLE 1
@@ -3831,7 +3831,8 @@ OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
     nOutput = nOutput >> (32 - nBits) ;
     return nOutput;
 }
-/*
+
+#ifdef RESOURCE_MANAGER_ENABLED
 void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
@@ -3850,11 +3851,10 @@ void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         }
     }
     else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
-        pCompPrivate->cbInfo.EventHandler (
-	                        pHandle, pHandle->pApplicationPrivate,
-	                        OMX_EventResourcesAcquired, 0,0,
-	                        NULL);
+        pCompPrivate->cbInfo.EventHandler (pHandle,
+                                           pHandle->pApplicationPrivate,
+                                           OMX_EventResourcesAcquired, 0,0,
+                                           NULL);
     }
 }
-
-*/
+#endif

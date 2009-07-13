@@ -46,7 +46,10 @@
 #include <OMX_Component.h>
 #include <pthread.h>
 #include <OMX_TI_Debug.h>
-/* #include <ResourceManagerProxyAPI.h> */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
@@ -56,9 +59,6 @@
 #include <AudioManagerAPI.h>
 #endif
 
-#ifndef UNDER_CE
-/*#include <ResourceManagerProxyAPI.h> */
-#endif
 
 #ifndef ANDROID
     #define ANDROID
@@ -578,9 +578,6 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     /** The pipes for sending buffers to the thread */
     int cmdDataPipe[2];
 
-    /** The pipes for sending buffers to the thread */
-    /* int lcml_Pipe[2]; */
-
     /** Set to indicate component is stopping */
     OMX_U32 bIsStopping;
 
@@ -802,7 +799,9 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
 
-/*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
 
     OMX_BOOL bPreempted;
     OMX_BOOL bFrameLost;

@@ -790,7 +790,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->rmproxyCallback.RMPROXY_Callback = 
                     (void *) G711DEC_ResourceManagerCallback;
                     
-                if (pComponentPrivate->curState != OMX_StateWaitForResources){                
+                if (pComponentPrivate->curState != OMX_StateWaitForResources){
                     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, 
                                                       OMX_PCM_Decoder_COMPONENT, 
                                                       OMX_G711DEC_CPU,

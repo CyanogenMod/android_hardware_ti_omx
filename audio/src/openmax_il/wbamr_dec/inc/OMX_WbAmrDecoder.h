@@ -55,7 +55,10 @@
 #ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
 #endif
-/* #include <ResourceManagerProxyAPI.h> */
+ 
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 #endif
 
 #ifndef ANDROID
@@ -621,9 +624,11 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
-    
-/*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
-    
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
     OMX_BOOL bFrameLost;
 

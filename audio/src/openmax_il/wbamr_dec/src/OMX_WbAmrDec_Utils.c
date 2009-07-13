@@ -3582,7 +3582,8 @@ EXIT:
      return ret;
 }
 #endif
-/*
+
+#ifdef RESOURCE_MANAGER_ENABLED
 void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
@@ -3611,4 +3612,4 @@ void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     }
 
 }
-*/
+#endif

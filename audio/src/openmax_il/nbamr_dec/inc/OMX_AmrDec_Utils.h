@@ -193,16 +193,11 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10]);
 OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pHandle,
                   LCML_DSP *plcml_Init,OMX_U16 arr[]);
 
-
 OMX_ERRORTYPE NBAMRDECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIRTYPE *eDir);
 OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE *pBufHeader,
         AMRDEC_COMPONENT_PRIVATE *pComponentPrivate);
-
-
-/* OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromLCML(AMRDEC_COMPONENT_PRIVATE* pComponentPrivate); */
-
 
 void  AddHeader(BYTE **pFileBuf);    
 void  ResetPtr(BYTE **pFileBuf);     
@@ -217,7 +212,10 @@ OMX_U32 NBAMRDEC_IsValid(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pB
 /* OMX_ERRORTYPE NBAMRDEC_TransitionToIdle(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate); */
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr);
-/*void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 #ifdef UNDER_CE
 	#ifndef _OMX_EVENT_

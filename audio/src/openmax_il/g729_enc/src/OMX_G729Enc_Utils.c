@@ -2688,3 +2688,34 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     return eError;
 }
 
+#ifdef RESOURCE_MANAGER_ENABLED
+/***********************************
+ *  Callback to the RM                                       *
+ ***********************************/
+void G729ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+{
+    OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
+    OMX_STATETYPE state = OMX_StateIdle;
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
+    G729ENC_COMPONENT_PRIVATE *pCompPrivate = NULL;
+
+    pCompPrivate = (G729ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesPreempted){
+        if (pCompPrivate->curState == OMX_StateExecuting || 
+            pCompPrivate->curState == OMX_StatePause) {
+
+            write (pCompPrivate->cmdPipe[1], &Cmd, sizeof(Cmd));
+            write (pCompPrivate->cmdDataPipe[1], &state ,sizeof(OMX_U32));
+
+            pCompPrivate->bPreempted = 1;
+        }
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
+        pCompPrivate->cbInfo.EventHandler ( pHandle, 
+                                            pHandle->pApplicationPrivate,
+                                            OMX_EventResourcesAcquired, 
+                                            0, 0, NULL);
+    }
+}
+#endif

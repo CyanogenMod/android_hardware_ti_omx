@@ -51,13 +51,13 @@
 #include "LCML_DspCodec.h"
 #include <TIDspOmx.h>
 
-/*#ifdef DSP_RENDERING_ON
+#ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
-#endif*/
+#endif
 
-/*#ifndef UNDER_CE
-  #include <ResourceManagerProxyAPI.h>
-  #endif*/
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #ifdef UNDER_CE
 #define sleep Sleep
@@ -824,7 +824,12 @@ typedef struct G711ENC_COMPONENT_PRIVATE
     OMX_U8 InLoaded_readytoidle;
 #endif
 
-    OMX_BOOL bPreempted;    
+    OMX_BOOL bPreempted;
+
+    /** Pointer to RM callback **/
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
 
 } G711ENC_COMPONENT_PRIVATE;
 
@@ -1130,5 +1135,12 @@ typedef enum OMX_G711ENC_INDEXAUDIOTYPE {
  */
 /*================================================================== */
 void* G711ENC_CompThread(void* pThreadData);
+
+#ifdef RESOURCE_MANAGER_ENABLED
+/***********************************
+ *  Callback to the RM                                       *
+ ***********************************/
+void G711ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 #endif  /* OMX_G711ENC_UTILS__H */

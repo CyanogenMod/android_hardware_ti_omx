@@ -3549,7 +3549,8 @@ EXIT:
 }
 #endif
 
-/*void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+#ifdef RESOURCE_MANAGER_ENABLED
+void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
     OMX_STATETYPE state = OMX_StateIdle;
@@ -3572,9 +3573,6 @@ EXIT:
                             pHandle, pHandle->pApplicationPrivate,
                             OMX_EventResourcesAcquired, 0,0,
                             NULL);
-            
-        
     }
-
 }
-*/
+#endif

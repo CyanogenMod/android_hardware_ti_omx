@@ -74,20 +74,20 @@
 #include <dbapi.h>
 
 /*------- Program Header Files -----------------------------------------------*/
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #include "LCML_DspCodec.h"
 #include "OMX_AacDec_Utils.h"
 #include <TIDspOmx.h>
 
-#ifdef DSP_RENDERING_ON
-#include <AudioManagerAPI.h>
-#endif
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
 
 #ifdef DSP_RENDERING_ON
-
+#include <AudioManagerAPI.h>
 #define FIFO1 "/dev/fifo.1"
 #define FIFO2 "/dev/fifo.2"
 #define PERMS 0666

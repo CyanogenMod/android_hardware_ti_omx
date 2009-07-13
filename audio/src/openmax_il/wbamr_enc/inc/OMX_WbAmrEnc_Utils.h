@@ -61,7 +61,10 @@
 
 #include "LCML_DspCodec.h"
 #include <semaphore.h>
-/* #include <ResourceManagerProxyAPI.h> */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
@@ -606,8 +609,11 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE
     OMX_CALLBACKTYPE cbInfo;
     OMX_PORT_PARAM_TYPE* sPortParam;
     OMX_PRIORITYMGMTTYPE* sPriorityMgmt;
-    
-    /*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
 
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef[WBAMRENC_NUM_OF_PORTS];
@@ -1072,7 +1078,9 @@ OMX_U32 WBAMRENC_IsValid(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr);
 
-/* void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
+#ifdef RESOURCE_MANAGER_ENABLED
+void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 /*===============================================================*/
 

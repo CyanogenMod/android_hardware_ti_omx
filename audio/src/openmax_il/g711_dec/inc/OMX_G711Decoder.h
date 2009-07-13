@@ -47,9 +47,17 @@
 #include <pthread.h>
 
 #ifndef UNDER_CE
+
+#ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
+#endif
+
+#ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
+
+#endif
+
 
 /* ======================================================================= */
 /**
@@ -706,7 +714,10 @@ typedef struct G711DEC_COMPONENT_PRIVATE
     OMX_U8 OpBufindex;
 
     /** Pointer to RM callback **/
+#ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
 
     
@@ -720,6 +731,8 @@ typedef enum OMX_G711DEC_INDEXAUDIOTYPE {
     OMX_IndexCustomG711DecDataPath
 }OMX_G711DEC_INDEXAUDIOTYPE;
 
+#ifdef RESOURCE_MANAGER_ENABLED
 void G711DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 #endif /* OMX_G711DECODER_H */

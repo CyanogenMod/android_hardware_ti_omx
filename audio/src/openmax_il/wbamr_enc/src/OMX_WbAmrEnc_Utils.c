@@ -3339,8 +3339,8 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
  EXIT:
     return eError;
 }
-
-/* void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+#ifdef RESOURCE_MANAGER_ENABLED
+void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
     OMX_STATETYPE state = OMX_StateIdle;
@@ -3367,4 +3367,5 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
     }
 
-} */
+}
+#endif

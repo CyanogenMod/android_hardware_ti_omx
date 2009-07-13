@@ -26,7 +26,10 @@
 #include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 #include "OMX_AacEncoder.h"
-/* #include <ResourceManagerProxyAPI.h> */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
 
 #define AACENC_MAJOR_VER 0x0001
 #define AACENC_MINOR_VER 0x0001
@@ -357,7 +360,10 @@ typedef struct AACENC_COMPONENT_PRIVATE
     
     OMX_PRIORITYMGMTTYPE* sPriorityMgmt;
     
-/*  RMPROXY_CALLBACKTYPE rmproxyCallback; */
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
     OMX_BOOL bPreempted;
     
     OMX_AUDIO_PARAM_PORTFORMATTYPE sInPortFormat;
@@ -394,9 +400,6 @@ typedef struct AACENC_COMPONENT_PRIVATE
     int cmdPipe[2];
     /** The pipes for sending buffers to the thread */
     int cmdDataPipe[2];
-
-    /** The pipes for sending buffers to the thread */
-  /*  int lcml_Pipe[2];  */
 
     /** Set to indicate component is stopping */
     OMX_U32 bIsStopping;
@@ -566,7 +569,7 @@ typedef struct AACENC_COMPONENT_PRIVATE
     pthread_cond_t codecFlush_threshold;
     OMX_U8 codecFlush_waitingsignal;
 
-pthread_mutex_t InLoaded_mutex;
+    pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
     OMX_U8 InLoaded_readytoidle;
     
@@ -663,7 +666,6 @@ OMX_U32 AACENC_IsPending(AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
 *          OMX Error code = Error
 */
 /*================================================================== */
-/*OMX_ERRORTYPE AACENC_TransitionToIdle(AACENC_COMPONENT_PRIVATE *pComponentPrivate); */
 
 OMX_ERRORTYPE AACENC_TransitionToPause(AACENC_COMPONENT_PRIVATE *pComponentPrivate);
 
@@ -671,7 +673,9 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 
 OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr);
 
-/* void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData); */
+#ifdef RESOURCE_MANAGER_ENABLED
+void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
 
 #ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
