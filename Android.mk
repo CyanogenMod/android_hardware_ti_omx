@@ -113,6 +113,14 @@ include $(TI_OMX_AUDIO)/g729_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/g729_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/g729_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/g729_enc/tests/Android.mk
+include $(TI_OMX_AUDIO)/ilbc_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/ilbc_dec/tests/Android.mk
+include $(TI_OMX_AUDIO)/ilbc_enc/src/Android.mk
+include $(TI_OMX_AUDIO)/ilbc_enc/tests/Android.mk
+include $(TI_OMX_AUDIO)/g723_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/g723_dec/tests/Android.mk
+include $(TI_OMX_AUDIO)/g723_enc/src/Android.mk
+include $(TI_OMX_AUDIO)/g723_enc/tests/Android.mk
 
 #call to video
 include $(TI_OMX_VIDEO)/video_decode/Android.mk
