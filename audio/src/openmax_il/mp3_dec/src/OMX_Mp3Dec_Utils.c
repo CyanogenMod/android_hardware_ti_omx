@@ -2494,7 +2494,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     }else{ 
                         time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (pComponentPrivate->pcmParams->nChannels * 
                                                                      (pComponentPrivate->pcmParams->nBitPerSample / 8));
-                        time_stmp = (time_stmp / pComponentPrivate->pcmParams->nSamplingRate) * 1000000;
+                        time_stmp = (time_stmp / pComponentPrivate->pcmParams->nSamplingRate) * 1000;
                         /* Update time stamp information */
                         pComponentPrivate->temp_TS += time_stmp;
                         pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->temp_TS;

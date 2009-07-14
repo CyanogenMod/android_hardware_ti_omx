@@ -2573,7 +2573,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 }else {/* OMX_AUDIO_ChannelModeMono */
                     time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (1 * (pComponentPrivate->pcmParams->nBitPerSample / 8));
                 }
-                time_stmp = (time_stmp / pComponentPrivate->pcmParams->nSamplingRate) * 1000000;
+                time_stmp = (time_stmp / pComponentPrivate->pcmParams->nSamplingRate) * 1000;
                 /* Update time stamp information */
                 pComponentPrivate->temp_TS += (OMX_U32)time_stmp;
                 pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->temp_TS;
