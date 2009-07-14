@@ -2629,7 +2629,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             /* Copying time stamp information to output buffer */
             time_stmp = pLcmlHdr->buffer->nFilledLen / (1 * (((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nBitPerSample / 8));
             time_stmp = (time_stmp / ((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nSamplingRate) * 1000;
-            TS += (OMX_U32)(time_stmp*1000);
+            TS += (OMX_U32)time_stmp;
             pLcmlHdr->buffer->nTimeStamp = TS;
             /* Copying nTickCount information to output buffer */
             pLcmlHdr->buffer->nTickCount = pComponentPrivate->arrTickCount[pComponentPrivate->OpBufindex];
