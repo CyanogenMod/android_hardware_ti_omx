@@ -2420,7 +2420,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                         /* Copying time stamp information to output buffer */
                         /*pLcmlHdr->buffer->nTimeStamp = (OMX_TICKS)pComponentPrivate_CC->arrBufIndex[pComponentPrivate_CC->OpBufindex];*/
                         pLcmlHdr->buffer->nTimeStamp = pComponentPrivate_CC->TimeStamp;
-                        buffer_duration = (160*nFrames*1000000) /
+                        buffer_duration = (160*nFrames*1000) /
                           (pComponentPrivate_CC->pcmParams->nSamplingRate*pComponentPrivate_CC->pcmParams->nChannels) ;
                         /* Update time stamp information */
                         pComponentPrivate_CC->TimeStamp += (OMX_TICKS)buffer_duration;
