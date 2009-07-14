@@ -75,25 +75,26 @@ typedef enum _RMPROXY_COMMANDTYPE
  */
 typedef struct _RMPROXY_COMMANDDATATYPE
 {
-  OMX_HANDLETYPE		hComponent;  
-  OMX_U32                           nPid;
-  RMPROXY_COMMANDTYPE	RM_Cmd; 
-  sem_t					*sem;
-  OMX_U32				param1;  
-  OMX_U32				param2; 
-  OMX_U32                          param3;
-  OMX_U32                          param4;
-  OMX_ERRORTYPE			*RM_Error;
-} RMPROXY_COMMANDDATATYPE; 
+  OMX_HANDLETYPE        hComponent;
+  OMX_U32               nPid;
+  RMPROXY_COMMANDTYPE   RM_Cmd;
+  sem_t                 *sem;
+  OMX_U32               param1;
+  OMX_U32               param2;
+  OMX_U32               param3;
+  OMX_U32               param4;
+  OMX_ERRORTYPE         *RM_Error;
+} RMPROXY_COMMANDDATATYPE;
 
 
 /** The _RM_HANDLETYPE structure defines handle structure
  */
 typedef struct _RMPROXY_HANDLETYPE
 {
-  pthread_t		threadId;  
-  int			tothread[2]; 
-} RMPROXY_HANDLETYPE; 
+  pthread_t    threadId;
+  int          tothread[2];
+} RMPROXY_HANDLETYPE;
+
 typedef struct RMPROXY_CALLBACKTYPE {
     void (*RMPROXY_Callback) (RMPROXY_COMMANDDATATYPE cbData);
 }RMPROXY_CALLBACKTYPE;
@@ -102,8 +103,7 @@ typedef struct RMPROXY_CALLBACKTYPE {
  */
 typedef enum _OMX_COMPONENTINDEXTYPE
 {
-   
-	/* audio component*/
+        /* audio component*/
         OMX_MP3_Decoder_COMPONENT = 0,
         OMX_AAC_Decoder_COMPONENT,
         OMX_AAC_Encoder_COMPONENT,
@@ -134,7 +134,7 @@ typedef enum _OMX_COMPONENTINDEXTYPE
         OMX_ILBC_Encoder_COMPONENT,
         OMX_IMAADPCM_Decoder_COMPONENT,
         OMX_IMAADPCM_Encoder_COMPONENT,		
-		OMX_RAGECKO_Decoder_COMPONENT,
+        OMX_RAGECKO_Decoder_COMPONENT,
 
         /* video*/
         OMX_MPEG4_Decode_COMPONENT,
@@ -145,7 +145,7 @@ typedef enum _OMX_COMPONENTINDEXTYPE
         OMX_H264_Encode_COMPONENT,
         OMX_WMV_Decode_COMPONENT,
         OMX_MPEG2_Decode_COMPONENT,
-	
+
         /* image*/
         OMX_JPEG_Decoder_COMPONENT,
         OMX_JPEG_Encoder_COMPONENT,
@@ -158,14 +158,14 @@ typedef enum _OMX_COMPONENTINDEXTYPE
 
 typedef enum _OMX_LINUX_COMPONENTTYPE
 {
-	OMX_COMPONENTTYPE_AUDIO = 0,
-	OMX_COMPONENTTYPE_VIDEO,
-	OMX_COMPONENTTYPE_VPP,
-	OMX_COMPONENTTYPE_IMAGE,
-	OMX_COMPONENTTYPE_CAMERA,
-	OMX_COMPONENTTYPE_DISPLAY1,
-	OMX_COMPONENTTYPE_DISPLAY2
-} OMX_LINUX_COMPONENTTYPE ;  
+    OMX_COMPONENTTYPE_AUDIO = 0,
+    OMX_COMPONENTTYPE_VIDEO,
+    OMX_COMPONENTTYPE_VPP,
+    OMX_COMPONENTTYPE_IMAGE,
+    OMX_COMPONENTTYPE_CAMERA,
+    OMX_COMPONENTTYPE_DISPLAY1,
+    OMX_COMPONENTTYPE_DISPLAY2
+} OMX_LINUX_COMPONENTTYPE ;
 
 typedef enum _OMX_LINUX_CALLBACK_EVENTTYPE
 {

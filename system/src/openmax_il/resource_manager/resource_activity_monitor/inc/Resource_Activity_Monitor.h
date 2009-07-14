@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
-#define RAM_ENABLED
+/* move this to omx/Android.mk */
+//#define RAM_ENABLED
 
 #define OPERATING_POINT_1 1
 #define OPERATING_POINT_1_MHZ 90
