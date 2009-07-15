@@ -651,10 +651,14 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     ptCreateString[14] = 320; /* Maximum Horizontal Size of the Thumbnail for App13 marker */
     ptCreateString[15] = 240; /* Maximum Vertical Size of the Thumbnail for App13 marker */
     ptCreateString[16] = 0; /* Number of scans is always 0 */
-    if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar)
+
+/*
+this option supportsonly up to 3 mega pixels
+	if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar)
     {
     	ptCreateString[16] = 1;
     }
+*/
 
     ptCreateString[17] = 0;
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888){
