@@ -60,8 +60,6 @@
 
 #include <ResourceManagerProxy.h>
 
-
-
 int nInstances = 0;
 int threadCreated = 0;
 

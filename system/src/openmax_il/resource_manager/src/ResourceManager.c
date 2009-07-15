@@ -108,7 +108,7 @@ POLICYMANAGER_RESPONSEDATATYPE policyresponse_data;
 int main()
 {
 #ifdef __ENABLE_RMPM_STUB__
-    fprintf(stderr, "Warning - using stub version of Resource Manager!!\n");
+    RM_DPRINT("Warning - using stub version of Resource Manager!!\n");
 #endif
     RM_DPRINT("[Resource Manager] - start resource manager main function\n");
         
@@ -163,7 +163,8 @@ int main()
      if((pmfdread=open(PM_SERVER_OUT,O_RDONLY))<0)
         RM_DPRINT("[Policy Manager] - failure to open the READ pipe\n");
 
-#endif    // create pipe for read
+#endif    
+    // create pipe for read
 
     if((fdread=open(RM_SERVER_IN,O_RDONLY))<0)
         RM_DPRINT("[Resource Manager] - failure to open the READ pipe\n");
@@ -1022,7 +1023,6 @@ void *RM_CPULoadThread(int pipeToWatch)
     while (1) {
         results = NULL;
         NumFound = 0;
-
         /* get the ARM maximum operating point */
         FILE *fp = fopen("/sys/power/vdd1_opp_value","r");
         if (fp == NULL) RM_DPRINT("open file failed\n");

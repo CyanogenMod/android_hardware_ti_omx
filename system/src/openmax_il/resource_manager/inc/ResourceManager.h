@@ -135,7 +135,7 @@ struct QOSRESOURCE_PROCESSOR *p;
 struct QOSDATA **results = NULL;
 RM_CPULoadStruct cpuStruct;
 
-
+/* defining the DSP opp points for vdd1 */
 #define RM_OPERATING_POINT_1 1
 #define RM_OPERATING_POINT_1_MHZ 90
 
