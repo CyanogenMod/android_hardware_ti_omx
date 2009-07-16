@@ -1440,16 +1440,35 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                     }
                     break;
                 case OMX_VIDEO_CodingMPEG4:
+                    switch(pComponentPrivate->pMpeg4->eLevel)
                     {
-                        int frequency;
-                        frequency = ((4115 + numMBps) / 147);
-                        OMX_PRDSP1(pComponentPrivate->dbg, "Requesting %d MHz from DSP for Video Encoder\n", frequency);
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
-                                                        RMProxy_RequestResource,
-                                                        OMX_MPEG4_Encode_COMPONENT,
-                                                        frequency,
-                                                        3456,
-                                                        &(pComponentPrivate->cRMCallBack));
+                        case 0:
+                        case 1:
+                        case 100:
+                            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                                         RMProxy_RequestResource,
+                                                         OMX_MPEG4_Encode_COMPONENT,
+                                                         30,
+                                                         3456,
+                                                         &(pComponentPrivate->cRMCallBack));
+                            break;
+                        case 2:
+                        case 3:
+                            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                                         RMProxy_RequestResource,
+                                                         OMX_MPEG4_Encode_COMPONENT,
+                                                         110,
+                                                         3456,
+                                                         &(pComponentPrivate->cRMCallBack));
+                            break;
+                        case 4:
+                        default:
+                            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                                         RMProxy_RequestResource,
+                                                         OMX_MPEG4_Encode_COMPONENT,
+                                                         300,
+                                                         3456,
+                                                         &(pComponentPrivate->cRMCallBack));
                     }
                     break;
                 case OMX_VIDEO_CodingH263:
