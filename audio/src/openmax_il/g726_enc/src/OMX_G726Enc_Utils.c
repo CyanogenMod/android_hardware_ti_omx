@@ -762,6 +762,13 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_G726_Encoder_COMPONENT, OMX_StateIdle, 3456,NULL);
 				
               }
+                pComponentPrivate->curState = OMX_StateIdle;
+                pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                        pHandle->pApplicationPrivate,
+                                                        OMX_EventCmdComplete,
+                                                        OMX_CommandStateSet,
+                                                        pComponentPrivate->curState,
+                                                        NULL);    				
 #else                
                 pComponentPrivate->curState = OMX_StateIdle;
                 pComponentPrivate->cbInfo.EventHandler( pHandle,
