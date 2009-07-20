@@ -625,10 +625,11 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     /** Pointer to port priority management structure */
     OMX_PRIORITYMGMTTYPE* pPriorityMgmt;
 
-    #ifdef RESOURCE_MANAGER_ENABLED
-         RMPROXY_CALLBACKTYPE rmproxyCallback;
-    #endif
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
 
+    OMX_BOOL bPreempted;
     OMX_BOOL bFrameLost;
 
     /** Flag to mark RTSP**/
