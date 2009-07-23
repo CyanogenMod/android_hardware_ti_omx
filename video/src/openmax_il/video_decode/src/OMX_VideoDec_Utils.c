@@ -5049,12 +5049,13 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             }
         }
 
-        /*Get minimum OUTPUT buffer size & verify if the actual allocated size is enough*/
+        /*Get minimum OUTPUT buffer size, 
+         * verify if the actual allocated size is the same as require by display driver*/
         nOutMinBufferSize = pComponentPrivate->pOutPortDef->format.video.nFrameWidth *
                             pComponentPrivate->pOutPortDef->format.video.nFrameHeight *
                             ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
 
-        if(nOutPortActualAllocLen < nOutMinBufferSize){
+        if(nOutPortActualAllocLen != nOutMinBufferSize){
             pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
             bOutPortSettingsChanged = OMX_TRUE;
             OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%x \n", nOutMinBufferSize);
