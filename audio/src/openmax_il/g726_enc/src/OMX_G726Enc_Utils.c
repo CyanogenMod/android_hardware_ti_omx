@@ -1429,14 +1429,7 @@ OMX_ERRORTYPE G726ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 pComponentPrivate->nEmptyBufferDoneCount++;
             }
             if(pBufHeader->nFlags == OMX_BUFFERFLAG_EOS) {
-
-                pComponentPrivate->pOutputBufferList->pBufHdr[0]->nFlags |= OMX_BUFFERFLAG_EOS;
-                pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle,
-                                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                                        OMX_EventBufferFlag,
-                                                        pComponentPrivate->pOutputBufferList->pBufHdr[0]->nOutputPortIndex,
-                                                        pComponentPrivate->pOutputBufferList->pBufHdr[0]->nFlags, NULL);
-                pBufHeader->nFlags = 0;
+              pComponentPrivate->pOutputBufferList->pBufHdr[0]->nFlags |= OMX_BUFFERFLAG_EOS;
             }
             if(pBufHeader->pMarkData){
                 /* copy mark to output buffer header */
@@ -1895,6 +1888,7 @@ OMX_ERRORTYPE G726ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             if(pComponentPrivate->lastOutBufArrived!=NULL && !pComponentPrivate->dasfMode){
                      pComponentPrivate->lastOutBufArrived->nFlags = OMX_BUFFERFLAG_EOS;
                      pComponentPrivate->LastBufSent=0;
+                     /*TODO: add eventhandler to report eos to application*/
             }
         }
     }
