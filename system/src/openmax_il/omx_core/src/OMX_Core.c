@@ -215,7 +215,12 @@ OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentNam
 
     /* Get a function pointer to the "OMX_ComponentInit" function.  If 
      * there is an error, we can't go on, so set the error code and exit */
+    dlerror();
     pComponentInit = dlsym(pModules[i], "OMX_ComponentInit");
+    const char* errstring = dlerror();
+    if (errstring != NULL) LOGE("dlsym in omx_core --- dlerror returned %s=================", errstring);
+    else LOGE("dlsym in omx_core --- dlerror returned null=================");
+
     if( (pErr != NULL) || (pComponentInit == NULL) ) {
         err = OMX_ErrorInvalidComponent;
         goto EXIT;
