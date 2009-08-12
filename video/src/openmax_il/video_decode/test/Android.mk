@@ -1,0 +1,25 @@
+LOCAL_PATH:= $(call my-dir)
+
+include $(CLEAR_VARS)
+
+LOCAL_PRELINK_MODULE := false
+
+LOCAL_SRC_FILES:= \
+	VidDecTest.c \
+	MPEG4DecFunctions.c \
+	MPEG2DecFunctions.c \
+	H264DecFunctions.c \
+	WMV9DecFunctions.c
+	
+LOCAL_C_INCLUDES := \
+	$(TI_OMX_VIDEO)/video_decode/inc \
+	$(TI_OMX_COMP_C_INCLUDES)
+
+LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES)
+
+	
+LOCAL_CFLAGS := $(TI_OMX_CFLAGS)
+
+LOCAL_MODULE:= VidDecTest_common
+
+include $(BUILD_EXECUTABLE)
