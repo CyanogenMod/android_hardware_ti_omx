@@ -3333,10 +3333,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     }
 
     pCreatePhaseArgs->usNalCallback = pComponentPrivate->AVCNALFormat;
-    if((pPortDefIn->format.video.nFrameWidth >= 720 &&
+    if((pPortDefIn->format.video.nFrameWidth >= 640 &&
         pPortDefIn->format.video.nFrameHeight >= 480))
     {/*TODO: remove magic numbers, create an enum on dsp.h*/
-        pCreatePhaseArgs->ulEncodingPreset = 4;/*optimized for D1 resolutions*/
+        pCreatePhaseArgs->ulEncodingPreset = 4;/*optimized for VGA and D1 resolutions*/
     }
     else
     {
