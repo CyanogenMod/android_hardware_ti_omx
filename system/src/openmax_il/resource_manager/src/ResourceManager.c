@@ -119,7 +119,6 @@ int main()
                         PERF_ModuleImageDecode | PERF_ModuleImageEncode |
                         PERF_ModuleSystem);
 #endif
-    RM_DPRINT("[Resource Manager] - start resource manager main function\n");
     
     int size = 0;
     int ret;
@@ -1023,12 +1022,18 @@ void *RM_CPULoadThread(int pipeToWatch)
     while (1) {
         results = NULL;
         NumFound = 0;
+        int op;
+
+#ifdef RAM_ENABLED
         /* get the ARM maximum operating point */
         FILE *fp = fopen("/sys/power/vdd1_opp_value","r");
         if (fp == NULL) RM_DPRINT("open file failed\n");
-        int op;
         fscanf(fp, "%d",&op);
         fclose(fp);
+#else
+        // if sysfs is not available, use opp3 constraints
+        op = RM_OPERATING_POINT_4;
+#endif
 
         int maxMhz=0; 
 
