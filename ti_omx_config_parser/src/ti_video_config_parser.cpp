@@ -63,7 +63,7 @@ OSCL_DLL_ENTRY_POINT_DEFAULT()
 
 int32 GetNAL_Config(uint8** bitstream, int32* size);
 
-OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs, tiVideoConfigParserOutputs *aOutputs)
+OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs, tiVideoConfigParserOutputs *aOutputs, char* pComponentName)
 {
     if (aInputs->iMimeType == PVMF_MIME_M4V) //m4v
     {
@@ -91,6 +91,12 @@ OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs,
         aOutputs->height = (uint32)display_height;
         aOutputs->profile = (uint32)profile_level; // for mp4, profile/level info is packed
         aOutputs->level = 0;
+	/*When 720p is supposed to be handled by other Video Decoder OMX Component, this will let PV know that it will need to load other compponent*/
+	if ((width  > WVGA_MAX_WIDTH || height > WVGA_MAX_HEIGHT) && 0 == oscl_strncmp (pComponentName, TI_VID_DEC, oscl_strlen (TI_VID_DEC)))
+	{
+		return -1;
+
+	}
     }
     else if (aInputs->iMimeType == PVMF_MIME_H2631998 ||
              aInputs->iMimeType == PVMF_MIME_H2632000)//h263
