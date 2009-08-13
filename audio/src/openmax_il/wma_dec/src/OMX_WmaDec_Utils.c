@@ -1528,7 +1528,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->IpBufindex++;
             pComponentPrivate->IpBufindex %= pComponentPrivate->pPortDef[OUTPUT_PORT]->nBufferCountActual;
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: Output Buffer TimeStamp %lld\n", __LINE__, pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex]);
-
+#ifdef ANDROID
             if(pComponentPrivate->first_buffer)
             {
                 pComponentPrivate->rcaheader->iPayload=pBufHeader->nFilledLen;
@@ -1557,7 +1557,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             }   
             OMX_PRBUFFER2(pComponentPrivate->dbg, "Before sending input buffer\n");
             OMX_PRBUFFER2(pComponentPrivate->dbg, "pBufHeader->nFilledLen=%ld\n",pBufHeader->nFilledLen);                                                
-
+#endif
             if (pComponentPrivate->curState == OMX_StateExecuting)
             {
                 if(!pComponentPrivate->bDspStoppedWhileExecuting)
@@ -1680,6 +1680,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if(!pComponentPrivate->bDspStoppedWhileExecuting){
                             WMADEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput);
                                     pBufHeader;
+                                pComponentPrivate->LastOutputBufferHdrQueued =  pBufHeader;
                                 eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                           EMMCodecOuputBuffer, 
                                                           (OMX_U8 *)pBufHeader->pBuffer, 
@@ -4039,3 +4040,4 @@ void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 }
 #endif
+
