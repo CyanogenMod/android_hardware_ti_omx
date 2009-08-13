@@ -1105,8 +1105,6 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: About to call LCML_ControlCodec(STOP)\n",__LINE__);
                 
-                pComponentPrivate->bIsStopping = 1;
-
                 if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                     pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
                 }
@@ -1572,7 +1570,6 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->curState == OMX_StateExecuting) {
                 pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
                 OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Calling LCML_ControlCodec()\n",__LINE__);
-                pComponentPrivate->bIsStopping = 1;
 
                 if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                     pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
@@ -2898,8 +2895,6 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             pHandle = pComponentPrivate->pHandle;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
 #ifndef UNDER_CE
-            pComponentPrivate->bIsStopping = 1;
-
             if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                 pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
             }
@@ -2950,8 +2945,6 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                 pHandle = pComponentPrivate->pHandle;
                 pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
 #ifndef UNDER_CE
-                pComponentPrivate->bIsStopping = 1;
-
                 if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                     pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
                 }
