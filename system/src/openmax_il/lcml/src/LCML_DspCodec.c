@@ -452,7 +452,7 @@ ERROR:
 #ifndef CEXEC_DONE
     free(argv);
 #endif
-    LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n", __LINE__);
+    LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n error = %x\n", __LINE__, eError);
     return eError;
 }
 

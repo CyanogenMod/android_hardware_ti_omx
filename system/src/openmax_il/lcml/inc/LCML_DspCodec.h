@@ -52,16 +52,27 @@
     #define __ERROR_PROPAGATION__ 
 #endif
 
+/*switch on/off here */
+#define LCML_DEBUG
 
+#ifdef LCML_DEBUG
 #ifndef UNDER_CE
+#ifdef ANDROID
+    #include <utils/Log.h>
+    #undef LOG_TAG
+    #define LOG_TAG "LCML"
+    #define LCML_ERROR_PRINT LOGE
+    #define LCML_DPRINT LOGD
+#else
     #define LCML_ERROR_PRINT printf
-/*    #define LCML_DPRINT(...)    fprintf(stderr,__VA_ARGS__)*/
-   #define LCML_DPRINT(...) 
+    #define LCML_DPRINT printf
+#endif
 #else
     #include <oaf_osal.h>
     #include <oaf_debug.h>
 #endif
 
+#endif //LCML_DEBUG
 
 
 #ifdef __PERF_INSTRUMENTATION__
