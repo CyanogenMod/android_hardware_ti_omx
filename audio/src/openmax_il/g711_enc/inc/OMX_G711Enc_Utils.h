@@ -238,16 +238,20 @@
 #define G711ENC_OUTPUT_BUFFER_SIZE 80
 /* ======================================================================= */
 /**
- * @def G711ENC_INPUT_FRAME_SIZE   Default output buffer size
+ * @def G711ENC_INPUT_FRAME_SIZE   Default input buffer size
  */
 /* ======================================================================= */
 #define G711ENC_INPUT_FRAME_SIZE 160
+#define G711ENC_INPUT_FRAME_SIZE_20MS 320
+#define G711ENC_INPUT_FRAME_SIZE_30MS 480
 /* ======================================================================= */
 /**
  * @def G711ENC_OUTPUT_FRAME_SIZE   Default output buffer size
  */
 /* ======================================================================= */
 #define G711ENC_OUTPUT_FRAME_SIZE 80
+#define G711ENC_OUTPUT_FRAME_SIZE_20MS 160
+#define G711ENC_OUTPUT_FRAME_SIZE_30MS 240
 /* ======================================================================= */
 /**
  * @def G711ENC_APP_ID  App ID Value setting

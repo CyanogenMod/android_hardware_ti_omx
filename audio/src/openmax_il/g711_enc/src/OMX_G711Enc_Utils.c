@@ -1391,8 +1391,10 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U8 nFrames = 0,i = 0;
     LCML_DSP_INTERFACE * phandle = NULL;
     OMX_U8* pBufParmsTemp = NULL;
-    OMX_U32 frameLength = 0;
-    
+
+    OMX_U32 frameLength_in;
+    OMX_U32 frameLength_out;
+
     LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *) pComponentPrivate->pLcmlHandle;
     G711ENC_DPRINT ("%d :: Entering G711ENC_HandleDataBufFromApp Function\n",__LINE__);
     /*Find the direction of the received buffer from buffer list */
@@ -1416,9 +1418,22 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     G711ENC_DPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
                     goto EXIT;
                 }
-                
-                frameLength = G711ENC_INPUT_FRAME_SIZE;  
-                nFrames = (OMX_U8)(pBufHeader->nFilledLen / frameLength);
+                switch (pComponentPrivate->frametype) {
+                case 0:
+                  frameLength_in = G711ENC_INPUT_FRAME_SIZE;
+                  break;
+                case 1:
+                  frameLength_in = G711ENC_INPUT_FRAME_SIZE_20MS;
+                  break;
+                case 2:
+                  frameLength_in = G711ENC_INPUT_FRAME_SIZE_30MS;
+                  break;
+                default:
+                  frameLength_in = G711ENC_INPUT_FRAME_SIZE;
+                  break;
+                }
+
+                nFrames = (OMX_U8)(pBufHeader->nFilledLen / frameLength_in);
                 pComponentPrivate->nNumOfFramesSent = nFrames;
                 phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
@@ -1556,6 +1571,21 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             goto EXIT;
         }
 
+        switch (pComponentPrivate->frametype) {
+        case 0:
+          frameLength_out = G711ENC_OUTPUT_FRAME_SIZE;
+          break;
+        case 1:
+          frameLength_out = G711ENC_OUTPUT_FRAME_SIZE_20MS;
+          break;
+        case 2:
+          frameLength_out = G711ENC_OUTPUT_FRAME_SIZE_30MS;
+          break;
+        default:
+          frameLength_out = G711ENC_OUTPUT_FRAME_SIZE;
+          break;
+        }
+
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
         if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && 
@@ -1608,7 +1638,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
                                                    EMMCodecOuputBuffer,
                                                    (OMX_U8 *)pBufHeader->pBuffer,
-                                                   G711ENC_OUTPUT_FRAME_SIZE * nFrames,
+                                                   frameLength_out * nFrames,
                                                    0,
                                                    (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                    sizeof(G711ENC_ParamStruct),
