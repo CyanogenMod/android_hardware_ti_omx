@@ -69,9 +69,9 @@
 #define RM_AUDIO 3
 #define RM_LCD 4
 #define RM_CAMERA 5
-#define PM_NUM_COMPONENTS 45
+#define PM_NUM_COMPONENTS 47
 #define OMX_POLICY_MAX_COMBINATION_LENGTH 50
-#define OMX_POLICY_MAX_COMBINATIONS 100
+#define OMX_POLICY_MAX_COMBINATIONS 110
 
 char *PM_ComponentTable[PM_NUM_COMPONENTS]= {
 	/* audio component*/
@@ -116,6 +116,8 @@ char *PM_ComponentTable[PM_NUM_COMPONENTS]= {
 	"OMX_H264_Encode_COMPONENT",
        "OMX_WMV_Decode_COMPONENT",
        "OMX_MPEG2_Decode_COMPONENT",
+        "OMX_720P_Decode_COMPONENT",
+        "OMX_720P_Encode_COMPONENT",
 	
 	/* image*/
 	"OMX_JPEG_Decoder_COMPONENT",
