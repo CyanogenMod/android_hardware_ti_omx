@@ -53,7 +53,7 @@
 #endif
 
 /*switch on/off here */
-#define LCML_DEBUG
+#undef LCML_DEBUG
 
 #ifdef LCML_DEBUG
 #ifndef UNDER_CE
@@ -72,6 +72,14 @@
     #include <oaf_debug.h>
 #endif
 
+#else /* No debug messages only error messages */
+  #ifdef ANDROID
+    #define LCML_DPRINT(...)
+    #include <utils/Log.h>
+    #undef LOG_TAG
+    #define LOG_TAG "LCML"
+    #define LCML_ERROR_PRINT LOGE
+  #endif //if android
 #endif //LCML_DEBUG
 
 
