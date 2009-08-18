@@ -17,6 +17,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES := \
 	libdl 		\
+	liblog \
 	libbridge	\
 	libOMX_Core \
 
