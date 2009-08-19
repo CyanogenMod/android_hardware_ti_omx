@@ -659,6 +659,8 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
         case OMX_H264_Encode_COMPONENT:
         case OMX_WMV_Decode_COMPONENT:
         case OMX_MPEG2_Decode_COMPONENT:
+        case OMX_720P_Decode_COMPONENT:
+        case OMX_720P_Encode_COMPONENT:
             componentType = RM_VIDEO;
         break;
 

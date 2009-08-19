@@ -145,6 +145,8 @@ typedef enum _OMX_COMPONENTINDEXTYPE
         OMX_H264_Encode_COMPONENT,
         OMX_WMV_Decode_COMPONENT,
         OMX_MPEG2_Decode_COMPONENT,
+        OMX_720P_Decode_COMPONENT,
+        OMX_720P_Encode_COMPONENT,
 
         /* image*/
         OMX_JPEG_Decoder_COMPONENT,
