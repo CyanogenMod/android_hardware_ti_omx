@@ -38,6 +38,9 @@
 #define MAX_OBJS                10
 #define MAX_STREAMS             10
 
+/* 720p implementation */
+#define MAX_DMM_BUFFERS 20
+
 /*DSP specific*/
 #define DSP_DOF_IMAGE           "baseimage.dof"
 #define TI_PROCESSOR_DSP        0
@@ -48,13 +51,11 @@
 #define QUEUE_SIZE              20
 #define ROUND_TO_PAGESIZE(n)    ((((n)+4095)/DMM_PAGE_SIZE)*DMM_PAGE_SIZE)
 
-#if 1
-    #define __ERROR_PROPAGATION__ 
-#endif
+#define __ERROR_PROPAGATION__
+
 
 /*switch on/off here */
 #undef LCML_DEBUG
-
 #ifdef LCML_DEBUG
 #ifndef UNDER_CE
 #ifdef ANDROID
@@ -71,7 +72,6 @@
     #include <oaf_osal.h>
     #include <oaf_debug.h>
 #endif
-
 #else /* No debug messages only error messages */
   #ifdef ANDROID
     #define LCML_DPRINT(...)
@@ -79,8 +79,8 @@
     #undef LOG_TAG
     #define LOG_TAG "LCML"
     #define LCML_ERROR_PRINT LOGE
-  #endif //if android
-#endif //LCML_DEBUG
+  #endif /* if android */
+#endif /* LCML_DEBUG */
 
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -190,9 +190,9 @@ typedef struct
 
 /** ========================================================================
 *  The LCML_WaitForEvent Wait for a event sychronously
-*  @param  hInterface -  Handle of the component to be accessed.  This is the 
+*  @param  hInterface -  Handle of the component to be accessed.  This is the
 *      component handle returned by the call to the GetHandle function.
-*  @param  event - Event occured 
+*  @param  event - Event occured
 *  @param  args - Array of "void *" that contains the associated arguments for
 *             occured event
 *
@@ -209,11 +209,11 @@ typedef struct
         event,                                             \
         args)                          /* Macro End */
 
-        
+
 /** ========================================================================
-*  The LCML_QueueBuffer send data to DSP convert it into USN format and send 
+*  The LCML_QueueBuffer send data to DSP convert it into USN format and send
 *  it to DSP via setbuff
-*  @param [in] hInterface -  Handle of the component to be accessed.  This is 
+*  @param [in] hInterface -  Handle of the component to be accessed.  This is
 *      the component handle returned by the call to the GetHandle function.
 *  @param  bufType - type of buffer
 *  @param  buffer - pointer to buffer
@@ -221,7 +221,7 @@ typedef struct
 *  @param  bufferSizeUsed - length of used buffer
 *  @param  auxInfo - pointer to parameter
 *  @param  auxInfoLen - length of  parameter
-*  @param  usrArg - not used 
+*  @param  usrArg - not used
 *  @return OMX_ERRORTYPE
 *      If the command successfully executes, the return code will be
 *      OMX_NoError.  Otherwise the appropriate OMX error will be returned.
@@ -246,9 +246,9 @@ typedef struct
         usrArg)
 
 /** ========================================================================
-*  The LCML_ControlCodec send command to DSP convert it into USN format and 
+*  The LCML_ControlCodec send command to DSP convert it into USN format and
 *  send it to DSP
-*  @param  hInterface -  Handle of the component to be accessed.  This is the 
+*  @param  hInterface -  Handle of the component to be accessed.  This is the
 *      component handle returned by the call to the GetHandle function.
 *  @param  bufType - type of buffer
 *  @param  iCodecCmd -  command refer TControlCmd
@@ -276,14 +276,14 @@ typedef struct
 OMX_ERRORTYPE GetHandle (OMX_HANDLETYPE* hInterface );
 
 /**
-* Struct derives codec interface which have interface to implement for using 
-* generic codec and also have pointer to DSP specific data and have queues for 
+* Struct derives codec interface which have interface to implement for using
+* generic codec and also have pointer to DSP specific data and have queues for
 * storing input and output data
 */
 typedef struct LCML_DSP_INTERFACE
 {
     OMX_HANDLETYPE pCodecinterfacehandle;  /* handle to interface struct LCML_CODEC_INTERFACE *dspcodecinterface */
-    struct LCML_DSP *dspCodec; 
+    struct LCML_DSP *dspCodec;
     OMX_PTR pComponentPrivate;
     void * iUsrArg;
     /*queue to store USN structure*/
@@ -293,11 +293,11 @@ typedef struct LCML_DSP_INTERFACE
     OMX_U32 iBufinputcount;
     OMX_U32 iBufoutputcount;
     OMX_U32 pshutdownFlag;
-#ifdef __ERROR_PROPAGATION__    
+#ifdef __ERROR_PROPAGATION__
     struct DSP_NOTIFICATION * g_aNotificationObjects[3];
 #else
     struct DSP_NOTIFICATION * g_aNotificationObjects[1];
-#endif    
+#endif
     pthread_t g_tidMessageThread;
     OMX_U32 algcntlmapped[QUEUE_SIZE];
     DMM_BUFFER_OBJ *pAlgcntlDmmBuf[QUEUE_SIZE];
@@ -310,6 +310,10 @@ typedef struct LCML_DSP_INTERFACE
 #ifdef __PERF_INSTRUMENTATION__
     PERF_OBJHANDLE pPERF, pPERFcomp;
 #endif
+    DMM_BUFFER_OBJ mapped_dmm_buffers[MAX_DMM_BUFFERS];
+    OMX_U32 mapped_buffer_count;
+    OMX_BOOL ReUseMap;
+    pthread_mutex_t m_isStopped_mutex;
 
 }LCML_DSP_INTERFACE;
 
