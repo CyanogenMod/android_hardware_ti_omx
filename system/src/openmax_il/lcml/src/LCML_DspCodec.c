@@ -859,10 +859,6 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
             bufType = EMMCodecOuputBuffer;
             phandle->ReUseMap = 1;
             break;
-        default:
-            eError=OMX_ErrorBadParameter;
-            goto EXIT;
-            break;
     }
 
     if ((bufType >= EMMCodecStream0) && (bufType <= (EMMCodecStream0 + 20)))
