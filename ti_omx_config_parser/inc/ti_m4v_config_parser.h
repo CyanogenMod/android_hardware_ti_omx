@@ -21,6 +21,9 @@
 #include "oscl_base.h"
 #include "oscl_types.h"
 
+#include <utils/Log.h>
+#define LOG_TAG "TI_Parser_Utils"
+
 #define USE_LATER 0  // for some code that will be needed in the future
 
 #define MP4_INVALID_VOL_PARAM -1
@@ -46,6 +49,11 @@
 
 #define SHORT_VIDEO_START_MARKER		0x20
 #define SHORT_VIDEO_START_MARKER_LENGTH  22
+
+/*Some H264 profiles*/
+#define H264_PROFILE_IDC_BASELINE 66
+#define H264_PROFILE_IDC_MAIN 77
+#define H264_PROFILE_IDC_EXTENDED 88
 
 typedef struct
 {
