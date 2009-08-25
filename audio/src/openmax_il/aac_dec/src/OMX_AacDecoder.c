@@ -698,7 +698,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
 {
-    OMXDBG_PRINT(stderr, PRINT, 1, 0,"%d :: Entering OMX_GetParameter\n", __LINE__);
+    OMXDBG_PRINT(stderr, PRINT, 2, 0,"%d :: Entering OMX_GetParameter\n", __LINE__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE  *pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;

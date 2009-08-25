@@ -1857,7 +1857,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_BUFFERHEADERTYPE *pBufferHeader = NULL;
 
 
-    OMXDBG_PRINT(stderr, PRINT, 1, 0, ":: Entering AllocateBuffer\n");
+    OMXDBG_PRINT(stderr, PRINT, 4, 0, ":: Entering AllocateBuffer\n");
     MP3D_OMX_CONF_CHECK_CMD(hComponent,1,1);
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     

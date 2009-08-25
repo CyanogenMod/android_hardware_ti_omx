@@ -235,10 +235,7 @@
 #else /* for Linux */
 
 #ifdef  AACDEC_DEBUG
-    #define AACDEC_DPRINT printf    //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ",__FUNCTION__, __LINE__);\
-	                            //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                            //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
-
+    #define AACDEC_DPRINT printf
     #undef AACDEC_BUFPRINT printf
     #undef AACDEC_MEMPRINT printf
     #define AACDEC_STATEPRINT printf
@@ -268,10 +265,6 @@
 
 #define AACDEC_EPRINT LOGE
 
-                           /* __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::	ERROR",__FUNCTION__, __LINE__);\
-	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
-    	                    __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n"); */
-
 #endif
 
 /* ======================================================================= */
@@ -289,7 +282,7 @@
         goto EXIT;                                                  \
     }                                                               \
     memset(_pStruct_,0,sizeof(_sName_));                            \
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
+    OMXDBG_PRINT(stderr, PRINT, 4, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
 
 /* ======================================================================= */
 /**
@@ -306,7 +299,7 @@
         goto EXIT;                                              \
     }                                                           \
     memset(_ptr_,0,_size_);                                     \
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
+    OMXDBG_PRINT(stderr, PRINT, 4, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 /* ======================================================================= */
 /**
@@ -340,7 +333,7 @@
 /* ======================================================================= */
 #define AACDEC_OMX_FREE(ptr)                                            \
     if(NULL != ptr) {                                                   \
-        OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Freeing Address = %p\n",__LINE__,ptr);   \
+        OMXDBG_PRINT(stderr, PRINT, 4, 0, "%d :: Freeing Address = %p\n",__LINE__,ptr);   \
         newfree(ptr);                                                   \
         ptr = NULL;                                                     \
     }

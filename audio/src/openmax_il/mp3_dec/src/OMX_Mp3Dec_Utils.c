@@ -2523,7 +2523,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                         pComponentPrivate->first_buff = 2;
                         pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->first_TS;
                         pComponentPrivate->temp_TS = pLcmlHdr->pBufHdr->nTimeStamp;
-                        OMX_ERROR4(pComponentPrivate->dbg, "first_ts = %lld\n",
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, "first_ts = %lld\n",
                                    pComponentPrivate->temp_TS);
                     }else{ 
                         time_stmp = pLcmlHdr->pBufHdr->nFilledLen / (pComponentPrivate->pcmParams->nChannels * 
@@ -2532,7 +2532,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                         /* Update time stamp information */
                         pComponentPrivate->temp_TS += time_stmp;
                         pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->temp_TS;
-                        OMX_ERROR4(pComponentPrivate->dbg, "out ts = %lld\n",
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, "out ts = %lld\n",
                                    pComponentPrivate->temp_TS);
                     }
                 }

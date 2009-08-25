@@ -1911,9 +1911,6 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
 
     if (iObjectType == OBJECTTYPE_HE){
         externsionSamplingFrequencyIdx = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
-        /*pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = externsionSamplingFrequencyIdx;*/
-        /*pComponentPrivate->pcmParams->nSamplingRate = 
-            AACDec_GetSampleRatebyIndex(externsionSamplingFrequencyIdx);*/
     }else {
         syncExtensionType = AACDEC_GetBits(&nBitPosition, 3, pHeaderStream, OMX_TRUE);
         syncExtensionType = AACDEC_GetBits(&nBitPosition, 11, pHeaderStream, OMX_TRUE);
@@ -2255,7 +2252,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             if(!pComponentPrivate->framemode){
 	        if(pComponentPrivate->first_buff == 0){
 		    pComponentPrivate->first_TS = pBufHeader->nTimeStamp;
-                    OMXDBG_PRINT(stderr, PRINT, 2, 0, "in ts-%ld\n",pBufHeader->nTimeStamp);
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "in ts-%ld\n",pBufHeader->nTimeStamp);
 		    pComponentPrivate->first_buff = 1;
 	        }
             }
@@ -2713,7 +2710,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 pLcmlHdr->pBufHdr->nTimeStamp = pComponentPrivate->temp_TS;
 			}
             }
-                        OMXDBG_PRINT(stderr, PRINT, 2, 0, "out ts-%lld\n",pLcmlHdr->pBufHdr->nTimeStamp);
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, "outs-%lld\n",pLcmlHdr->pBufHdr->nTimeStamp);
 
   			/*Copying tick count information to output buffer*/
               pLcmlHdr->pBufHdr->nTickCount = (OMX_U32)pComponentPrivate->arrBufIndexTick[pComponentPrivate->OpBufindex];
