@@ -337,19 +337,9 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml++;
     }
     pComponentPrivate->bPortDefsAllocated = 1;
-    if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectMain){
-        pComponentPrivate->nProfile = 0;
-    } else if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectLC){
-        pComponentPrivate->nProfile = 1;
-    } else if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectSSR){
-        pComponentPrivate->nProfile = 2;
-    } else if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectLTP){
-        pComponentPrivate->nProfile = 3;
-    } else if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectHE){
-        pComponentPrivate->nProfile = 1;
+    if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectHE){
         pComponentPrivate->SBR = 1;
     } else if (pComponentPrivate->aacParams->eAACProfile == OMX_AUDIO_AACObjectHE_PS){
-        pComponentPrivate->nProfile = 1;
         pComponentPrivate->parameteric_stereo = PARAMETRIC_STEREO_AACDEC;
     }
 
@@ -1004,7 +994,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         }
                     }
 
-                    OMX_PRINT2(pComponentPrivate->dbg, "%d :: pComponentPrivate->nProfile %lu \n",__LINE__,pComponentPrivate->nProfile);
+                    OMX_PRINT2(pComponentPrivate->dbg, "%d :: pComponentPrivate->dualMonoMode %lu \n",__LINE__,pComponentPrivate->dualMonoMode);
                     OMX_PRINT2(pComponentPrivate->dbg, "%d :: pComponentPrivate->parameteric_stereo  %lu \n",
                                    __LINE__,pComponentPrivate->parameteric_stereo);
                     OMX_PRINT2(pComponentPrivate->dbg, "%d :: pComponentPrivate->SBR  %lu \n",__LINE__,pComponentPrivate->SBR);
@@ -1019,7 +1009,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                             }
                         }
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS        = 1;/*Added for eAAC*/
-                        pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->nProfile;
+                        pComponentPrivate->AACDEC_UALGParam->dualMonoMode     = pComponentPrivate->dualMonoMode;
                         pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
                         pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 0;
                         if(pComponentPrivate->aacParams->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
@@ -1038,7 +1028,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                 }
                             }
                             pComponentPrivate->AACDEC_UALGParam->iEnablePS        = 0;
-                            pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->nProfile;
+                            pComponentPrivate->AACDEC_UALGParam->dualMonoMode     = pComponentPrivate->dualMonoMode;
                             pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
                             pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 0;
                             if(pComponentPrivate->aacParams->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
@@ -1059,8 +1049,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         OMX_PRINT2(pComponentPrivate->dbg, "%d::pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx::%ld\n",
                                       __LINE__,pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx);
                         OMX_PRINT2(pComponentPrivate->dbg, "%d::pComponentPrivate->SBR::%lu\n",__LINE__,pComponentPrivate->SBR);
-                        OMX_PRINT2(pComponentPrivate->dbg, "%d::pComponentPrivate->AACDEC_UALGParam->nProfile::%ld\n",
-                                      __LINE__,pComponentPrivate->AACDEC_UALGParam->nProfile);
+                        OMX_PRINT2(pComponentPrivate->dbg, "%d::pComponentPrivate->AACDEC_UALGParam->dualMonoMode::%ld\n",
+                                      __LINE__,pComponentPrivate->AACDEC_UALGParam->dualMonoMode);
                         OMX_PRINT2(pComponentPrivate->dbg, "%d::pComponentPrivate->AACDEC_UALGParam->bRawFormat::%ld\n",
                                       __LINE__,pComponentPrivate->AACDEC_UALGParam->bRawFormat);
                         pValues1[0] = IUALG_CMD_SETSTATUS;
@@ -1879,19 +1869,26 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U32 externsionSamplingFrequencyIdx = 0;
 
     iObjectType = AACDEC_GetBits(&nBitPosition, 5, pHeaderStream, OMX_TRUE);
-    if(iObjectType == OBJECTTYPE_LC){
-        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
+
+    switch(iObjectType){
+        case OBJECTTYPE_HE:
+            pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
+            break;
+        case OBJECTTYPE_HE2:
+            pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
+            break;
+        case OBJECTTYPE_LTP:
+            pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLTP;
+            break;
+        case OBJECTTYPE_LC:
+        default:
+            pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectLC;
+            break;
     }
-    else if (iObjectType == OBJECTTYPE_HE){
-        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
-    }
-    else if (iObjectType == OBJECTTYPE_HE2){
-        pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE_PS;
-    }
+
                     
     iSampleRateIndex = AACDEC_GetBits(&nBitPosition, 4, pHeaderStream, OMX_TRUE);
     pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = iSampleRateIndex;
-    pComponentPrivate->nProfile = pComponentPrivate->aacParams->eAACProfile;
 
     if(pComponentPrivate->pcmParams->nSamplingRate != AACDec_GetSampleRatebyIndex(iSampleRateIndex)){
         // output port needs reconfig. set the new values and mark the flag to do reconfig below.
@@ -2124,27 +2121,21 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                 switch(pComponentPrivate->aacParams->eAACProfile){
                     case OMX_AUDIO_AACObjectLTP:
-                        pComponentPrivate->nProfile = EProfileLTP;
-                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLTP;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
-                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 0;
+                        pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                         break;
                     case OMX_AUDIO_AACObjectHE_PS:
-                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                         pComponentPrivate->parameteric_stereo = PARAMETRIC_STEREO_AACDEC;
                         break;
                     case OMX_AUDIO_AACObjectHE:
-                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
 			break;
                     case OMX_AUDIO_AACObjectLC:
                     default: /* we will use LC profile as the default, SSR and Main Profiles are not supported */
                         OMX_PRDSP2(pComponentPrivate->dbg, "%s: IN Switch::ObjectLC\n", __FUNCTION__);
-                        pComponentPrivate->nProfile = EProfileLC;
-                        pComponentPrivate->AACDEC_UALGParam->nProfile = EProfileLC;
                         pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
 
                         // always use down sample flag on for LC content, 
@@ -2164,7 +2155,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pComponentPrivate->AACDEC_UALGParam->lOutputFormat    = EAUDIO_INTERLEAVED;
                     }
                     pComponentPrivate->AACDEC_UALGParam->iEnablePS        = 1;/*Added for eAAC*/
-                    pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->aacParams->eAACProfile;
+                    pComponentPrivate->AACDEC_UALGParam->dualMonoMode     = pComponentPrivate->dualMonoMode;
                     pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
                     pComponentPrivate->AACDEC_UALGParam->bRawFormat       = 0;
                     if(pComponentPrivate->aacParams->eAACStreamFormat == OMX_AUDIO_AACStreamFormatRAW){
@@ -2180,7 +2171,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pComponentPrivate->AACDEC_UALGParam->lOutputFormat    = EAUDIO_INTERLEAVED;
                     }
                     pComponentPrivate->AACDEC_UALGParam->iEnablePS        = 0;
-                    pComponentPrivate->AACDEC_UALGParam->nProfile         = pComponentPrivate->nProfile;
+                    pComponentPrivate->AACDEC_UALGParam->dualMonoMode     = pComponentPrivate->dualMonoMode;
                     pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = AACDec_GetSampleRateIndexL(pComponentPrivate->aacParams->nSampleRate);
 
 
@@ -2196,7 +2187,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 #endif
 
                 OMX_PRCOMM2(pComponentPrivate->dbg, "Sending codec config params ::: \n");
-                OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->AACDEC_UALGParam->nProfile = %ld\n", pComponentPrivate->AACDEC_UALGParam->nProfile);
+                OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->AACDEC_UALGParam->dualMonoMode = %ld\n", pComponentPrivate->AACDEC_UALGParam->dualMonoMode);
                 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx = %ld\n", pComponentPrivate->AACDEC_UALGParam->lSamplingRateIdx);
                 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->AACDEC_UALGParam->iEnablePS = %ld\n", pComponentPrivate->AACDEC_UALGParam->iEnablePS);
                 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = %ld\n", pComponentPrivate->AACDEC_UALGParam->DownSampleSbr);
@@ -2890,7 +2881,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
 #ifndef ANDROID
                 pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
-                pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectHE;
                 pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
                 pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
 
@@ -2924,7 +2914,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
 
 #ifndef ANDROID
-                pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectLC;
                 pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
                 pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                 pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;

@@ -82,6 +82,7 @@
 #endif
  
 #define OBJECTTYPE_LC 2
+#define OBJECTTYPE_LTP 4
 #define OBJECTTYPE_HE 5
 #define OBJECTTYPE_HE2 29
 
@@ -547,8 +548,8 @@ typedef struct {
     long       DownSampleSbr;
     long       iEnablePS;
     long       lSamplingRateIdx;
-    long       nProfile;
     long       bRawFormat;
+    long       dualMonoMode;
 } MPEG4AACDEC_UALGParams;
 
 /* ======================================================================= */
@@ -885,7 +886,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
 
     OMX_U32 nOpBit;
     OMX_U32 parameteric_stereo;
-    OMX_U32 nProfile;
+    OMX_U32 dualMonoMode;
     OMX_U32 SBR;
     OMX_U32 RAW;
     OMX_U32 nFillThisBufferCount;

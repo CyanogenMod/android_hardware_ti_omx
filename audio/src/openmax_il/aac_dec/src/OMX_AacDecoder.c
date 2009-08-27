@@ -345,7 +345,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->nOpBit = 0;
-    pComponentPrivate->nProfile = EProfileLC;
+    pComponentPrivate->dualMonoMode = 0;
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
     pComponentPrivate->sOutPortFormat.eEncoding = OMX_AUDIO_CodingPCM;
 
@@ -1091,7 +1091,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     case OMX_IndexParamAudioAac:
         aac_params = (OMX_AUDIO_PARAM_AACPROFILETYPE*)ComponentConfigStructure;
         if(aac_params->eAACProfile == OMX_AUDIO_AACObjectHE_PS){
-            pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectHE_PS;
             pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
             pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
 
@@ -1114,7 +1113,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
             }
         }
         if(aac_params->eAACProfile == OMX_AUDIO_AACObjectHE){
-            pComponentPrivate->AACDEC_UALGParam->nProfile = OMX_AUDIO_AACObjectHE;
             pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
             pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
 
