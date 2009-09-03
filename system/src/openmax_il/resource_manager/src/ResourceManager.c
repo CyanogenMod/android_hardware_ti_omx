@@ -81,6 +81,7 @@ int fdread, fdwrite;
 int pmfdread, pmfdwrite;
 int eErrno;
 unsigned int totalCpu=0;
+unsigned int peakBufferCpu=0;
 unsigned int imageTotalCpu=0;
 unsigned int videoTotalCpu=0;
 unsigned int audioTotalCpu=0;
@@ -724,8 +725,12 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
             else {
                 RM_DPRINT("ERROR - unknown component type\n");
             }
-
-            totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu + cameraTotalCpu + lcdTotalCpu;
+            if ((unsigned int)(componentList.component[index].componentCPU * 0.10) > peakBufferCpu)
+            {
+                peakBufferCpu = (unsigned int)componentList.component[index].componentCPU * 0.10;
+            }
+            totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
+                       cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
             /* Inform the Resource Activity Monitor of the new CPU usage */
             omap_pm_set_constraint(componentType,totalCpu);        
         }
@@ -753,7 +758,14 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
             }
             
             /* Inform the Resource Activity Monitor of the new CPU usage */
-            totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu + cameraTotalCpu + lcdTotalCpu;
+            totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
+                       cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
+            if(totalCpu == peakBufferCpu)
+            {
+                peakBufferCpu = (unsigned int) 0;
+                totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
+                           cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
+            }
             
             omap_pm_set_constraint(componentType,totalCpu);
         }
@@ -1012,6 +1024,7 @@ void *RM_CPULoadThread(int pipeToWatch)
     int sum=0;
     DSP_STATUS status = DSP_SOK;
     int currentOverallUtilization=0;
+    struct timespec tv;
     unsigned int dsp_currload=0, dsp_predload=0, dsp_currfreq=0, dsp_predfreq=0;
     cpuStruct.snapshotsCaptured = 0;
     cpuStruct.averageCpuLoad = 0;
@@ -1021,6 +1034,9 @@ void *RM_CPULoadThread(int pipeToWatch)
         cpuStruct.cpuLoadSnapshots[i] = 0;
     }
     
+    tv.tv_nsec = 100000000;
+    tv.tv_sec = 0;
+
     while (1) {
         results = NULL;
         NumFound = 0;
@@ -1028,12 +1044,12 @@ void *RM_CPULoadThread(int pipeToWatch)
 
 #ifdef RAM_ENABLED
         /* get the ARM maximum operating point */
-        FILE *fp = fopen("/sys/power/vdd1_opp_value","r");
+        FILE *fp = fopen("/sys/power/vdd1_opp","r");
         if (fp == NULL) RM_DPRINT("open file failed\n");
         fscanf(fp, "%d",&op);
         fclose(fp);
 #else
-        // if sysfs is not available, use opp3 constraints
+        // if sysfs is not available, use opp4 constraints
         op = RM_OPERATING_POINT_4;
 #endif
 
@@ -1119,7 +1135,8 @@ void *RM_CPULoadThread(int pipeToWatch)
         cpuStruct.cyclesAvailable = RM_OPERATING_POINT_5_MHZ - cpuStruct.cyclesInUse;
 
         /* wait for RM_CPUAVERAGEDELAY seconds */
-        sleep(RM_CPUAVERAGEDELAY);
+        //sleep(RM_CPUAVERAGEDELAY);
+        nanosleep(&tv, NULL);
         free(results);
         }
 

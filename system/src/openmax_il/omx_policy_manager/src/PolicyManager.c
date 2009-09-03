@@ -49,7 +49,7 @@
 #include <sys/ioctl.h>  // for ioctl support
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/errno.h>
+//#include <sys/errno.h>
 #include <string.h>     // for memset
 #include <stdio.h>      // for buffered io
 #include <fcntl.h>      // for opening files.
@@ -111,17 +111,22 @@ int main()
 
 
     /* Fill policy table based on text file */
-    PopulatePolicyTable();
+    ret = PopulatePolicyTable();
+    if (ret != 0)
+    {
+        fprintf (stderr, "[Policy Manager] Populate Table failed. Check policy table and launch PM again\n"); 
+        exit (-1);
+    }
     
     PM_DPRINT("[Policy Manager] - going to create the read & write pipe\n");
     unlink(PM_SERVER_IN);
     unlink(PM_SERVER_OUT);
         
-    if((mknod(PM_SERVER_IN,S_IFIFO|PERMS,0)<0)&&(eErrno!=EEXIST)) 
-        PM_DPRINT("[Policy Manager] - mknod failure to create the read pipe, error=%d\n", eErrno);
+    if((mknod(PM_SERVER_IN,S_IFIFO|PERMS,0)<0)&&(errno!=EEXIST)) 
+        PM_DPRINT("[Policy Manager] - mknod failure to create the read pipe, error=%d\n", errno);
         
-    if((mknod(PM_SERVER_OUT,S_IFIFO|PERMS,0)<0)&&(eErrno!=EEXIST)) 
-        PM_DPRINT("[Policy Manager] - mknod failure to create the write pipe, error=%d\n", eErrno);
+    if((mknod(PM_SERVER_OUT,S_IFIFO|PERMS,0)<0)&&(errno!=EEXIST)) 
+        PM_DPRINT("[Policy Manager] - mknod failure to create the write pipe, error=%d\n", errno);
 
 
 
@@ -411,7 +416,7 @@ void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid)
     }
 }
 
-void PopulatePolicyTable()
+int PopulatePolicyTable()
 {
     int i,j;
     char line[PM_MAXSTRINGLENGTH];
@@ -420,10 +425,14 @@ void PopulatePolicyTable()
     int index=0;
     char *tablefile= getenv ("PM_TBLFILE");
     FILE *policytablefile;
+    char *result = NULL;   
+    int ret=0;
 
     if (tablefile == NULL)
     {
-        fprintf (stderr, "No policy table file set\n");
+        PM_DPRINT ("No policy table file set\n");
+        ret = -1;
+        goto EXIT;
     }
     else
     {
@@ -443,17 +452,36 @@ void PopulatePolicyTable()
         }
 
         if (policytablefile == NULL) {
-            printf("Could not open file\n");
+            fprintf(stderr, "[Policy Manager] Could not open file. Run again\n");
+            ret = -1;
+            goto EXIT;
         }
         else {
             while (fgets(line,PM_MAXSTRINGLENGTH,policytablefile) != NULL) {
-                char *result = NULL;   
+                if ( combinationIndex >= OMX_POLICY_MAX_COMBINATIONS )
+                {
+                  /*policy table contains more info than can actually be stored
+                   * either fix the policy table or increment the number of
+                   * combinations possible */
+                  PM_DPRINT (stderr, "[Policy Manager] Policy table is bigger than expected.  Run again\n");
+                  ret = -1;
+                  goto EXIT;
+                }
+                result = NULL;
                 result = strtok( line, "," );
                 policyCombinationTable[combinationIndex].component[0].component = PolicyStringToIndex(result);
                 result = strtok( NULL, " ,\n" );
                 policyCombinationTable[combinationIndex].component[0].priority = atoi(result);
                 policyIndex = 1;
                 while (result != NULL) {
+                    if (policyIndex >= OMX_POLICY_MAX_COMBINATION_LENGTH) {
+                        /*policy table contains records with more info than can actually be stored
+                         * either fix the policy table or increment the number of
+                         * combinations possible */
+                        PM_DPRINT (stderr, "[Policy Manager] Policy Table Record is wider than expected. Run again\n");
+						ret = -1;
+                        goto EXIT;
+                    }
                     result = strtok( NULL, " ,\n" );
                     if (result != NULL) {
                         if (!(index % 2)) {
@@ -467,11 +495,20 @@ void PopulatePolicyTable()
                 }
                 policyCombinationTable[combinationIndex++].numComponentsInCombination = policyIndex;
             } 
+            if (!combinationIndex)
+            {
+             /*policy table is empty it's safer to quit*/
+             fprintf (stderr, "Policy table is empty. Run Policy Manager again\n");
+             ret = -1;
+             goto EXIT;
+            }
 
         }
     }
 
     numCombinations = combinationIndex;    
+EXIT:    
+    return(ret);
 }
 
 

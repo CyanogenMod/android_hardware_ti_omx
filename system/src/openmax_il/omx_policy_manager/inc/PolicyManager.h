@@ -75,58 +75,58 @@
 
 char *PM_ComponentTable[PM_NUM_COMPONENTS]= {
 	/* audio component*/
-	"OMX_MP3_Decoder_COMPONENT",
-	"OMX_AAC_Decoder_COMPONENT",
-	"OMX_AAC_Encoder_COMPONENT",
+    "OMX_MP3_Decoder_COMPONENT",
+    "OMX_AAC_Decoder_COMPONENT",
+    "OMX_AAC_Encoder_COMPONENT",
     "OMX_ARMAAC_Encoder_COMPONENT",
     "OMX_ARMAAC_Decoder_COMPONENT",
     "OMX_PCM_Decoder_COMPONENT",
-	"OMX_PCM_Encoder_COMPONENT",
-	"OMX_NBAMR_Decoder_COMPONENT",
-	"OMX_NBAMR_Encoder_COMPONENT",
-	"OMX_WBAMR_Decoder_COMPONENT",
-	"OMX_WBAMR_Encoder_COMPONENT",
-	"OMX_WMA_Decoder_COMPONENT",
-	"OMX_G711_Decoder_COMPONENT",
-	"OMX_G711_Encoder_COMPONENT",
-	"OMX_G722_Decoder_COMPONENT",
-	"OMX_G722_Encoder_COMPONENT",
-	"OMX_G723_Decoder_COMPONENT",
-	"OMX_G723_Encoder_COMPONENT",
-	"OMX_G726_Decoder_COMPONENT",
-	"OMX_G726_Encoder_COMPONENT",
-	"OMX_G729_Decoder_COMPONENT",
-	"OMX_G729_Encoder_COMPONENT",
+    "OMX_PCM_Encoder_COMPONENT",
+    "OMX_NBAMR_Decoder_COMPONENT",
+    "OMX_NBAMR_Encoder_COMPONENT",
+    "OMX_WBAMR_Decoder_COMPONENT",
+    "OMX_WBAMR_Encoder_COMPONENT",
+    "OMX_WMA_Decoder_COMPONENT",
+    "OMX_G711_Decoder_COMPONENT",
+    "OMX_G711_Encoder_COMPONENT",
+    "OMX_G722_Decoder_COMPONENT",
+    "OMX_G722_Encoder_COMPONENT",
+    "OMX_G723_Decoder_COMPONENT",
+    "OMX_G723_Encoder_COMPONENT",
+    "OMX_G726_Decoder_COMPONENT",
+    "OMX_G726_Encoder_COMPONENT",
+    "OMX_G729_Decoder_COMPONENT",
+    "OMX_G729_Encoder_COMPONENT",
     "OMX_GSMFR_Decoder_COMPONENT",
     "OMX_GSMHR_Decoder_COMPONENT",
     "OMX_GSMFR_Encoder_COMPONENT",
-	"OMX_GSMHR_Encoder_COMPONENT",
-	"OMX_ILBC_Decoder_COMPONENT",
-	"OMX_ILBC_Encoder_COMPONENT",
-	"OMX_IMAADPCM_Decoder_COMPONENT",
-	"OMX_IMAADPCM_Encoder_COMPONENT",	
-	"OMX_RAGECKO_Decoder_COMPONENT",
+    "OMX_GSMHR_Encoder_COMPONENT",
+    "OMX_ILBC_Decoder_COMPONENT",
+    "OMX_ILBC_Encoder_COMPONENT",
+    "OMX_IMAADPCM_Decoder_COMPONENT",
+    "OMX_IMAADPCM_Encoder_COMPONENT",	
+    "OMX_RAGECKO_Decoder_COMPONENT",
 
-	/* video*/
-	"OMX_MPEG4_Decode_COMPONENT",
-	"OMX_MPEG4_Encode_COMPONENT",
-	"OMX_H263_Decode_COMPONENT",
-	"OMX_H263_Encode_COMPONENT",
-	"OMX_H264_Decode_COMPONENT",
-	"OMX_H264_Encode_COMPONENT",
-       "OMX_WMV_Decode_COMPONENT",
-       "OMX_MPEG2_Decode_COMPONENT",
-        "OMX_720P_Decode_COMPONENT",
-        "OMX_720P_Encode_COMPONENT",
-	
-	/* image*/
-	"OMX_JPEG_Decoder_COMPONENT",
-	"OMX_JPEG_Encoder_COMPONENT",
-	"OMX_VPP_COMPONENT",
+    /* video*/
+    "OMX_MPEG4_Decode_COMPONENT",
+    "OMX_MPEG4_Encode_COMPONENT",
+    "OMX_H263_Decode_COMPONENT",
+    "OMX_H263_Encode_COMPONENT",
+    "OMX_H264_Decode_COMPONENT",
+    "OMX_H264_Encode_COMPONENT",
+    "OMX_WMV_Decode_COMPONENT",
+    "OMX_MPEG2_Decode_COMPONENT",
+    "OMX_720P_Decode_COMPONENT",
+    "OMX_720P_Encode_COMPONENT",
 
-	/* camera*/
-	"OMX_CAMERA_COMPONENT",
-	"OMX_DISPLAY_COMPONENT"
+    /* image*/
+    "OMX_JPEG_Decoder_COMPONENT",
+    "OMX_JPEG_Encoder_COMPONENT",
+    "OMX_VPP_COMPONENT",
+
+    /* camera*/
+    "OMX_CAMERA_COMPONENT",
+    "OMX_DISPLAY_COMPONENT"
 
 };
 
@@ -172,7 +172,7 @@ void RM_itoa(int n, char s[]);
 void RM_reverse(char s[]);
 void GrantPolicy(OMX_HANDLETYPE hComponent, OMX_U8 aComponentIndex, OMX_U8 aPriority, OMX_U32 aPid);
 void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid) ;
-void PopulatePolicyTable();
+int PopulatePolicyTable();
 OMX_COMPONENTINDEXTYPE PolicyStringToIndex(char* aString) ;
 OMX_BOOL CheckActiveCombination(OMX_COMPONENTINDEXTYPE componentRequestingPolicy, int *priority);
 OMX_BOOL CheckAllCombinations(OMX_COMPONENTINDEXTYPE componentRequestingPolicy, int *combination, int *priority);

@@ -50,7 +50,7 @@ void omap_pm_set_constraint(int ID, int MHz)
     printf("[setting operating point] MHz = %d operatingPoint = %d\n",MHz,operatingPoint);
     strcpy(command,"echo -n ");
     strcat(command,ram_itoa(operatingPoint));
-    strcat(command," > /sys/power/vdd1_opp_value");
+    strcat(command," > /sys/power/vdd1_opp");
     system(command);
 #endif    
 }

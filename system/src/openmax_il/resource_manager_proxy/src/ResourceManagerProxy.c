@@ -648,20 +648,13 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     strcpy(namedPipeName,RM_SERVER_OUT);
                     strcat(namedPipeName,"_");
                     strcat(namedPipeName,handleString);
-#if 0
-                  unlink(namedPipeName);
 
-                    if((mknod(namedPipeName,S_IFIFO|PERMS_PROXY,0)<0) && (errno!=EEXIST))
-                        RMPROXY_DPRINT("[Resource Manager] - mknod failure to create the write pipe, error=%d\n", errno);
-
-//as a test, try creating the pipe from RM (runs as ROOT) which has permissions that are needed
-#endif
                     //send the request to open (and now create) the pipe
                     if ((write(RMProxyfdwrite, &rm_data, sizeof(rm_data))) < 0)
                         RMPROXY_DPRINT("[RM_Proxy] - failure write data to resource manager\n");
 
                     //wait for the pipe to be created
-                    sleep(5); //@TODO: should use a semaphore here to be more precise about it...
+                    sleep(.1); //@TODO: should use a semaphore here to be more precise about it...
                     RMPROXY_DPRINT("[RM_Proxy] - try to open the IN Pipe, RM_SERVER_OUT for PID %d\n", (int)getpid());
                     //now try to open it
                     RMPROXY_DPRINT("namedPipeName = %s\n", (char*)namedPipeName);
@@ -705,7 +698,7 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 close(RMProxyfdwrite);
                 
                 if(unlink(namedPipeName)<0) {
-                    RMPROXY_DPRINT("[Resource Manager] - unlink RM_SERVER_OUT error\n");
+                    /*RMPROXY_DPRINT("[Resource Manager] - unlink RM_SERVER_OUT = %s error\n", namedPipeName);*/
                 }
 
                 
