@@ -94,6 +94,7 @@
 #include "OMX_VideoDecoder.h"
 #include "OMX_VidDec_CustomCmd.h"
 #include "OMX_TI_Common.h"
+#include "overlay_common.h"
 
 
 #ifdef KHRONOS_1_1
@@ -159,9 +160,16 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #endif
 
 #define __STD_COMPONENT__
+
+#ifdef ANDROID
+#define MAX_PRIVATE_IN_BUFFERS              NUM_OVERLAY_BUFFERS_REQUESTED
+#define MAX_PRIVATE_OUT_BUFFERS             NUM_OVERLAY_BUFFERS_REQUESTED
+#define MAX_PRIVATE_BUFFERS                 NUM_OVERLAY_BUFFERS_REQUESTED
+#else
 #define MAX_PRIVATE_IN_BUFFERS              4
 #define MAX_PRIVATE_OUT_BUFFERS             4
 #define MAX_PRIVATE_BUFFERS                 4
+#endif
 #define NUM_OF_PORTS                        2
 #define VIDDEC_MAX_NAMESIZE                 128
 #define VIDDEC_NOPORT                       0xfffffffe
