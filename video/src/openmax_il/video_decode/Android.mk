@@ -11,6 +11,8 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 	$(TI_OMX_VIDEO)/video_decode/inc \
+        hardware/ti/omap3/liboverlay \
+	
 
 ifeq ($(PERF_INSTRUMENTATION),1)
 LOCAL_C_INCLUDES += \
