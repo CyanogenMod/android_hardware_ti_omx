@@ -1790,7 +1790,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting WBAMR_DEC_HandleCommand Function\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning %d\n",eError);
-    if (eError != OMX_ErrorNone ) {
+    if (eError != OMX_ErrorNone && eError != WBAMR_DEC_EXIT_COMPONENT_THRD ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,

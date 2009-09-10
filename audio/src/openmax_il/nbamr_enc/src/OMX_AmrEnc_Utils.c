@@ -1644,7 +1644,7 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting NBAMRENC_HandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
-    if (eError != OMX_ErrorNone ) {
+    if (eError != OMX_ErrorNone && eError != NBAMRENC_EXIT_COMPONENT_THRD) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,

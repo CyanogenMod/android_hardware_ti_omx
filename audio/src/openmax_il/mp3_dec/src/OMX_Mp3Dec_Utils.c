@@ -1811,7 +1811,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting HandleCommand Function, error = %d\n", eError);
-    if (eError != OMX_ErrorNone ) {
+    if (eError != OMX_ErrorNone && eError != EXIT_COMPONENT_THRD) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,

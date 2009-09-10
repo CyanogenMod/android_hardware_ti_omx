@@ -1671,7 +1671,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning = 0x%x\n",eError);
-    if (eError != OMX_ErrorNone ) {
+    if (eError != OMX_ErrorNone && eError != WBAMRENC_EXIT_COMPONENT_THRD) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,

@@ -1863,7 +1863,7 @@ EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting AACENCHandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Returning %d\n",__LINE__,eError);
     /* report the error to the client via event */
-    if(eError != OMX_ErrorNone){
+    if(eError != OMX_ErrorNone && eError != EXIT_COMPONENT_THRD){
         OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
         pComponentPrivate->cbInfo.EventHandler (pHandle, 
                                                 pHandle->pApplicationPrivate,
