@@ -13,13 +13,14 @@
 #include <pthread.h>
 #include <utils/Log.h>
 
+#undef LOG_TAG
+#define LOG_TAG "TIOMX_CORE"
 
-/* #include "OMX_RegLib.h" */
 #include "OMX_Component.h"
 #include "OMX_Core.h"
 #include "OMX_ComponentRegistry.h"
-//#include "pvlogger.h"
 
+/** determine capabilities of a component before acually using it */
 #include "ti_omx_config_parser.h"
 
 /** size for the array of allocated components.  Sets the maximum 
@@ -37,9 +38,10 @@ static void* pModules[MAXCOMP] = {0};
 /** Array to hold the component handles for each allocated component */
 static void* pComponents[COUNTOF(pModules)] = {0};
 
-/* count for call OMX_Init() */
+/** count will be used as a reference counter for OMX_Init()
+    so all changes to count should be mutex protected */
 int count = 0;
-pthread_mutex_t mutex;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int tableCount = 0;
 ComponentTable componentTable[MAX_TABLE_SIZE];
@@ -48,7 +50,7 @@ char compName[60][200];
 
 
 char *tComponentName[MAXCOMP][2] = {
-    /*video and image components */
+    /**video and image components */
     {"OMX.TI.JPEG.decode", "image_decoder.jpeg" },
     {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"}, 
     {"OMX.TI.Video.Decoder", "video_decoder.h263"},
@@ -113,18 +115,24 @@ char *tComponentName[MAXCOMP][2] = {
 OMX_ERRORTYPE TIOMX_Init()
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::TI:OMX_Init  ",__FUNCTION__, __LINE__);
+
+    if(pthread_mutex_lock(&mutex) != 0) 
+    {
+        printf("%d :: Core: Error in Mutex lock\n",__LINE__);
+    }
 
     count++;
+    LOGD("init count = %d\n", count);
 
     if (count == 1)
     {
-        pthread_mutex_init(&mutex, NULL);  
-	//__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "calling BuildComponentTable\n");  
         eError = TIOMX_BuildComponentTable();
-	//__android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "buildCOmpoentTable done\n");
     }
-    //__android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d::  ",__FUNCTION__, __LINE__);
+
+    if(pthread_mutex_unlock(&mutex) != 0) 
+    {
+        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
+    } 
     return eError;
 }
 /******************************Public*Routine******************************\
@@ -162,8 +170,7 @@ OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentNam
     int i;
     char buf[sizeof(prefix) + MAXNAMESIZE +sizeof(postfix)];
     const char* pErr = dlerror();
-    
-  //  PVLOGGER2ANDROID((0,"OMX_Core::GetHandle IN"));
+
     if(pthread_mutex_lock(&mutex) != 0) 
     {
         printf("%d :: Core: Error in Mutex lock\n",__LINE__);
@@ -258,7 +265,7 @@ OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentNam
        *pHandle = NULL;
        pComponents[i] = NULL;
         dlclose(pModules[i]);
-     /*  err = OMX_ErrorComponentNotFound; */
+
        goto EXIT;
     }   
     err = OMX_ErrorNone;
@@ -267,7 +274,6 @@ EXIT:
     {
         printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
     } 
-  //  PVLOGGER2ANDROID((0,"OMX_Core::GetHandle OUT"));
     return (err);
 }
  
@@ -303,8 +309,8 @@ OMX_ERRORTYPE TIOMX_FreeHandle (OMX_HANDLETYPE hComponent)
     for(i=0; i< COUNTOF(pModules); i++) {
         if(pComponents[i] == hComponent) break;
     }
-    
-    
+
+
     if(i == COUNTOF(pModules)) {
         retVal = OMX_ErrorBadParameter;
         goto EXIT;
@@ -323,7 +329,7 @@ OMX_ERRORTYPE TIOMX_FreeHandle (OMX_HANDLETYPE hComponent)
 
     pComponents[i] = NULL;
     retVal = OMX_ErrorNone;
-   
+
 EXIT:
     /* The unload is now complete, so set the error code to pass and exit */
     if(pthread_mutex_unlock(&mutex) != 0) 
@@ -348,18 +354,17 @@ EXIT:
 \**************************************************************************/
 OMX_ERRORTYPE TIOMX_Deinit()
 {
-    count--;
-
     if(pthread_mutex_lock(&mutex) != 0)
         printf("%d :: Core: Error in Mutex lock\n",__LINE__); 
+    
+    count--;
+    LOGD("deinit count = %d\n", count);
         
     if(count == 0)
     {
         if(pthread_mutex_unlock(&mutex) != 0)
             printf("%d :: Core: Error in Mutex unlock\n",__LINE__); 
-        if(pthread_mutex_destroy(&mutex) != 0) {
-            /*printf("%d :: Core: Error in Mutex destroy\n",__LINE__);*/
-		}
+        pthread_mutex_destroy(&mutex);
     }
     else{
         if(pthread_mutex_unlock(&mutex) != 0)
@@ -486,7 +491,7 @@ OMX_API OMX_ERRORTYPE TIOMX_GetRolesOfComponent (
     OMX_U32 j = 0;
     OMX_BOOL bFound = OMX_FALSE;
 
-    if (cComponentName == NULL)
+    if (cComponentName == NULL || pNumRoles == NULL)
     {
         eError = OMX_ErrorBadParameter;
         goto EXIT;       
@@ -548,7 +553,7 @@ OMX_API OMX_ERRORTYPE TIOMX_GetComponentsOfRole (
     OMX_U32 j = 0;
     OMX_U32 k = 0;
 
-    if (role == NULL)
+    if (role == NULL || pNumComps == NULL)
     {
        eError = OMX_ErrorBadParameter;
        goto EXIT;
@@ -589,139 +594,48 @@ OMX_API OMX_ERRORTYPE TIOMX_GetComponentsOfRole (
 OMX_ERRORTYPE TIOMX_BuildComponentTable()
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CALLBACKTYPE sCallbacks;
-#ifndef STATIC_TABLE    
-    OMX_HANDLETYPE hComp  = 0;
-    OMX_U8 cRole[MAXNAMESIZE];
-    OMX_STRING tempName = NULL;
-    OMX_STRING temp = NULL;
-    static OMX_STRING namePrefix = "OMX";
-    static OMX_STRING filePrefix = "libOMX.";
-    static OMX_STRING suffix = ".so";
-#endif    
+    OMX_CALLBACKTYPE sCallbacks;    
     int j = 0;
     int numFiles = 0;
-	int i;
-  //  PVLOGGER2ANDROID((0,"OMX_Core::BuildComponentTable: IN"));
+    int i;
+
     /* set up dummy call backs */
     sCallbacks.EventHandler    = ComponentTable_EventHandler;
     sCallbacks.EmptyBufferDone = ComponentTable_EmptyBufferDone;
     sCallbacks.FillBufferDone  = ComponentTable_FillBufferDone;
 
-#ifndef STATIC_TABLE
-    /* allocate the name table */
-	/*
-    compName = (OMX_STRING *) malloc(MAX_TABLE_SIZE * sizeof(OMX_STRING));
-    sRoleArray = (OMX_STRING**) malloc(MAX_TABLE_SIZE * sizeof(OMX_STRING));
-	*/
-    
-    /* scan the target/lib directory and create a list of files in the directory */
-    numFiles= scandir(libdir, &namelist, 0, 0);
-    tableCount = 0;
-    while (numFiles--){
-        /*  check if the file is an OMX component */
-        if (strncmp(namelist[numFiles]->d_name, filePrefix, strlen(filePrefix)) == 0){
 
-            /* if the file is an OMX component, trim the prefix and suffix */
-            tempName = (OMX_STRING) malloc(sizeof(namelist[numFiles]->d_name) + 1);   /* adding one ensures */
-            memset(tempName, 0x00, sizeof(namelist[numFiles]->d_name) + 1);                  /*  that a null terminator will */
-                                                                                                                                  /*  always be present */
-            /* copy only the name without the suffix */                                                                                                           
-            strncpy(tempName, namelist[numFiles]->d_name,strlen(namelist[numFiles]->d_name) - strlen(suffix));
-            /* set a pointer to be after the lib prefix, i.e the beginning of the component name */
-            temp = strstr(tempName, namePrefix);
 
-            /* then copy the component name to the table */
-			/*
-            compName[tableCount]= (OMX_STRING) malloc(MAXNAMESIZE);
-			*/
-            strncpy(compName[tableCount], temp, strlen(temp) + 1);
-            componentTable[tableCount].name = compName[tableCount];
-
-            /* get the handle for the component and query for the roles of each component */
-            eError = OMX_GetHandle(&hComp, componentTable[tableCount].name, 0x0, &sCallbacks);
-            if (eError == OMX_ErrorNone){  
-                j = 0;
-                while (eError != OMX_ErrorNoMore){
-                    eError = ((OMX_COMPONENTTYPE *) hComp)->ComponentRoleEnum(hComp, cRole, j++);
-                    if (eError == OMX_ErrorNotImplemented){
-                        j = 1;
-                        break;
-                    }
-                }
-                nRoles = j-1;
-                componentTable[tableCount].nRoles = nRoles;
-                /* sRoleArray[tableCount] = (OMX_STRING *) malloc(nRoles * sizeof(OMX_STRING)); */
-                if (nRoles > 0){                
-                    /* sRoleArray[tableCount] = (OMX_STRING *) malloc(nRoles * sizeof(OMX_STRING)); */
-                    for (j = 0; j<nRoles; j++) {
-                        sRoleArray[tableCount][j] = (OMX_STRING) malloc( sizeof(OMX_U8) * MAXNAMESIZE);
-                        ((OMX_COMPONENTTYPE *) hComp)->ComponentRoleEnum(hComp, (OMX_U8*)sRoleArray[tableCount][j], j);
-                        componentTable[tableCount].pRoleArray[j] =sRoleArray[tableCount][j];
-                    }   
-                }
-                else
+    for (i = 0, numFiles = 0; i < MAXCOMP; i ++) {
+        if (tComponentName[i][0] == NULL) {
+            break;
+        }
+        for (j = 0; j < numFiles; j ++) {
+            if (!strcmp(componentTable[j].name, tComponentName[i][0])) {
+                /* insert the role */
+                if (tComponentName[i][1] != NULL)
                 {
-                    /* sRoleArray[tableCount] = (OMX_STRING *) malloc(sizeof(OMX_STRING));    */                            
-                    sRoleArray[tableCount][j] = (OMX_STRING) malloc(sizeof(OMX_U8) * MAXNAMESIZE);
-                    strcpy(sRoleArray[tableCount][j], EMPTY_STRING);
-                    componentTable[tableCount].pRoleArray[j] = sRoleArray[tableCount][j];
+   	            componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
+                    componentTable[j].nRoles ++;
                 }
+                break;
             }
-            if (hComp)
-            {
-                /* free the component handle */
-                eError = OMX_FreeHandle(hComp);
-                if (eError != OMX_ErrorNone){
-                    goto EXIT;
-                }
+        }
+        if (j == numFiles) { /* new component */
+            if (tComponentName[i][1] != NULL){
+                componentTable[numFiles].pRoleArray[0] = tComponentName[i][1];
+                componentTable[numFiles].nRoles = 1;
             }
-            /* increment the table counter index only if above was successful */
-            tableCount++;
-            if (tempName != NULL)
-            {
-                free(tempName);
-            }
-
+            strcpy(compName[numFiles], tComponentName[i][0]);
+            componentTable[numFiles].name = compName[numFiles];
+            numFiles ++;
         }
     }
- 
-#endif
-
-	for (i = 0, numFiles = 0; i < MAXCOMP; i ++) {
-		if (tComponentName[i][0] == NULL) {
-			break;
-		}
-
-		for (j = 0; j < numFiles; j ++) {
-			if (!strcmp(componentTable[j].name, tComponentName[i][0])) {
-				/* insert the role */
-				if (tComponentName[i][1] != NULL)
-				{
-    		   		    componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
-	    			    componentTable[j].nRoles ++;
-	    			}
-				break;
-			}
-		}
-
-		if (j == numFiles) { /* new component */
-		    if (tComponentName[i][1] != NULL){
-		        componentTable[numFiles].pRoleArray[0] = tComponentName[i][1];
-		        componentTable[numFiles].nRoles = 1;
-		    }
-		    strcpy(compName[numFiles], tComponentName[i][0]);
-		    componentTable[numFiles].name = compName[numFiles];
-			numFiles ++;
-		}
-	}
-	tableCount = numFiles;
-
-
+    tableCount = numFiles;
     if (eError != OMX_ErrorNone){
         printf("Error:  Could not build Component Table\n");
     }
-  //  PVLOGGER2ANDROID((0,"OMX_Core::BuildComponentTable: OUT"));
+
     return eError;
 }
 
