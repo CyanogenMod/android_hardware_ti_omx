@@ -621,7 +621,9 @@ OMX_ERRORTYPE WBAMR_DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 
         OMX_PRBUFFER2(pComponentPrivate->dbg, "[FREE] %p\n",pTemp_lcml->pFrameParam);
         if(pTemp_lcml->pFrameParam!=NULL){
-            pTemp_lcml->pFrameParam = (WAMRDEC_FrameStruct *)(pTemp_lcml->pFrameParam - 16);
+            pParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam;
+            pParmsTemp -= EXTRA_BYTES;
+            pTemp_lcml->pFrameParam = (WAMRDEC_FrameStruct *)pParmsTemp;
             OMX_WBDECMEMFREE_STRUCT(pTemp_lcml->pFrameParam);
             pTemp_lcml->pFrameParam = NULL;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
@@ -656,7 +658,8 @@ OMX_ERRORTYPE WBAMR_DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
         if(pTemp_lcml->pFrameParam!=NULL){
             pBufParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam;
             pBufParmsTemp -= EXTRA_BYTES ;
-            OMX_WBDECMEMFREE_STRUCT(pBufParmsTemp);
+            pTemp_lcml->pFrameParam = (WAMRDEC_FrameStruct *)pBufParmsTemp;
+            OMX_WBDECMEMFREE_STRUCT(pTemp_lcml->pFrameParam);
             pBufParmsTemp = NULL;
             pTemp_lcml->pFrameParam = NULL;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
@@ -1030,10 +1033,12 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         goto EXIT;
                     }
 
-                    WBAMR_DEC_OMX_MALLOC_SIZE(pParmsTemp, (sizeof(WBAMR_DEC_AudioCodecParams) + DSP_CACHE_ALIGNMENT),OMX_U8);
-                    pParams = (WBAMR_DEC_AudioCodecParams*)(pParmsTemp + EXTRA_BYTES );
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pParams);
-                    pComponentPrivate->pParams = pParams;
+                    WBAMR_DEC_OMX_MALLOC_SIZE(pComponentPrivate->pParams, (sizeof(WBAMR_DEC_AudioCodecParams) + DSP_CACHE_ALIGNMENT),WBAMR_DEC_AudioCodecParams);
+                    pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
+                    pParmsTemp += EXTRA_BYTES;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pParmsTemp);
+                    pComponentPrivate->pParams = (WBAMR_DEC_AudioCodecParams *)pParmsTemp;
+                    pParams = (WBAMR_DEC_AudioCodecParams *)pParmsTemp;
 
                     pParams->iAudioFormat = 1;
                     pParams->iSamplingRate = 16000;
@@ -1837,6 +1842,8 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     WBAMR_DEC_AudioCodecParams *pParams;
     OMX_U8 *pParmsTemp;
     OMX_STRING p = "damedesuStr";
+    DSP_STATUS status;
+    OMX_BOOL isFrameParamChanged=OMX_FALSE;
 
     LCML_DSP_INTERFACE * phandle;
 
@@ -2123,7 +2130,9 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
             if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
-                pLcmlHdr->pFrameParam = (WAMRDEC_FrameStruct *)(pLcmlHdr->pFrameParam - 16);
+              pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam;
+               pBufParmsTemp -= EXTRA_BYTES;
+               pLcmlHdr->pFrameParam = (WAMRDEC_FrameStruct *)pBufParmsTemp;
                 OMX_WBDECMEMFREE_STRUCT(pLcmlHdr->pFrameParam); /*This means that more memory need to be used*/
                 pLcmlHdr->pFrameParam = NULL;
                 OMX_DmmUnMap(phandle->dspCodec->hProc, /*Unmap DSP memory used*/
@@ -2133,10 +2142,13 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             }
 
             if(pLcmlHdr->pFrameParam==NULL ){
-                WBAMR_DEC_OMX_MALLOC_SIZE(pLcmlHdr->pFrameParam, (sizeof(WAMRDEC_FrameStruct)*(nFrames+32)),WAMRDEC_FrameStruct);
-                pLcmlHdr->pFrameParam = (WAMRDEC_FrameStruct *)(pLcmlHdr->pFrameParam + 16);
+              WBAMR_DEC_OMX_MALLOC_SIZE(pLcmlHdr->pFrameParam, ((sizeof(WAMRDEC_FrameStruct)*nFrames) + DSP_CACHE_ALIGNMENT),WAMRDEC_FrameStruct);
+               pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam;
+               pBufParmsTemp += EXTRA_BYTES;
+               pLcmlHdr->pFrameParam =  (WAMRDEC_FrameStruct*)pBufParmsTemp;
                 eError = OMX_DmmMap(phandle->dspCodec->hProc,
-                                    nFrames*sizeof(WAMRDEC_FrameStruct),(void*)pLcmlHdr->pFrameParam,
+                                    nFrames*sizeof(WAMRDEC_FrameStruct),
+                                    (void*)pLcmlHdr->pFrameParam,
                                     (pLcmlHdr->pDmmBuf));
                 if (eError != OMX_ErrorNone){
                     OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n\n");
@@ -2162,6 +2174,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     pComponentPrivate->bFrameLost = OMX_FALSE;
                 }
             }
+            isFrameParamChanged = OMX_TRUE;
 
             /** ring tone**/
             if(pComponentPrivate->SendAfterEOS == 1){
@@ -2184,10 +2197,12 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                                "AM: No Stream ID Available");
                         goto EXIT;
                     }
-                    WBAMR_DEC_OMX_MALLOC_SIZE(pParmsTemp, (sizeof(WBAMR_DEC_AudioCodecParams) + DSP_CACHE_ALIGNMENT),OMX_U8);
-                    pParams = (WBAMR_DEC_AudioCodecParams*)(pParmsTemp + EXTRA_BYTES );
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pParams);
-                    pComponentPrivate->pParams = pParams;
+                    WBAMR_DEC_OMX_MALLOC_SIZE(pComponentPrivate->pParams, (sizeof(WBAMR_DEC_AudioCodecParams) + DSP_CACHE_ALIGNMENT),WBAMR_DEC_AudioCodecParams);
+                    pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
+                    pParmsTemp += EXTRA_BYTES;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pParmsTemp);
+                    pComponentPrivate->pParams = (WBAMR_DEC_AudioCodecParams*)pParmsTemp;
+                    pParams =  (WBAMR_DEC_AudioCodecParams*)pParmsTemp;
 
                     pParams->iAudioFormat = 1;
                     pParams->iSamplingRate = 16000;
@@ -2232,6 +2247,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
             if((pBufHeader->nFlags & OMX_BUFFERFLAG_EOS) == OMX_BUFFERFLAG_EOS) {
                 (pLcmlHdr->pFrameParam+(nFrames-1))->usLastFrame |= OMX_BUFFERFLAG_EOS;
+                isFrameParamChanged = OMX_TRUE;
                 pBufHeader->nFlags = 0;
                 if(!pComponentPrivate->dasfmode){
                     if(!pBufHeader->nFilledLen){
@@ -2247,6 +2263,17 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 OMX_PRINT1(pComponentPrivate->dbg, "OMX_WbAmrDec_Utils.c : pComponentPrivate->SendAfterEOS %d\n",pComponentPrivate->SendAfterEOS);
             }
 
+            if (isFrameParamChanged == OMX_TRUE) {
+               isFrameParamChanged = OMX_FALSE;
+               //Issue an initial memory flush to ensure cache coherency */
+               OMX_PRINT1(pComponentPrivate->dbg, "OMX_WbAmrDec_Utils.c : flushing pFrameParam\n");
+              status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam, nFrames*sizeof(WAMRDEC_FrameStruct), 0);
+               if(DSP_FAILED(status))
+               {
+                 OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
+                 goto EXIT;
+               }
+            }
             pLcmlHdr->pBufferParam->usNbFrames = nFrames;
             /*---------------------------------------------------------------*/
             /* Store time stamp information */
@@ -2349,7 +2376,8 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
             pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam;
             pBufParmsTemp -=EXTRA_BYTES ;
-            OMX_WBDECMEMFREE_STRUCT(pBufParmsTemp);
+            pLcmlHdr->pFrameParam = (WAMRDEC_FrameStruct *)pBufParmsTemp;
+            OMX_WBDECMEMFREE_STRUCT(pLcmlHdr->pFrameParam);
             pLcmlHdr->pFrameParam = NULL;
             OMX_DmmUnMap(phandle->dspCodec->hProc, /*Unmap DSP memory used*/
                          (void*)pLcmlHdr->pBufferParam->pParamElem,
@@ -2358,8 +2386,10 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         }
 
         if(pLcmlHdr->pFrameParam==NULL ){
-            WBAMR_DEC_OMX_MALLOC_SIZE(pBufParmsTemp, ((sizeof(WAMRDEC_FrameStruct)*nFrames) + DSP_CACHE_ALIGNMENT),OMX_U8);
-            pLcmlHdr->pFrameParam =  (WAMRDEC_FrameStruct*)(pBufParmsTemp + EXTRA_BYTES );
+            WBAMR_DEC_OMX_MALLOC_SIZE(pLcmlHdr->pFrameParam, ((sizeof(WAMRDEC_FrameStruct)*nFrames) + DSP_CACHE_ALIGNMENT),WAMRDEC_FrameStruct);
+            pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam;
+            pBufParmsTemp += EXTRA_BYTES;
+            pLcmlHdr->pFrameParam =  (WAMRDEC_FrameStruct*)pBufParmsTemp;
 
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                 nFrames*sizeof(WAMRDEC_FrameStruct),
@@ -2381,6 +2411,16 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
             (pLcmlHdr->pFrameParam+i)->usFrameLost = 0;
         }
+
+        //Issue an initial memory flush to ensure cache coherency */
+        OMX_PRINT1(pComponentPrivate->dbg, "OMX_WbAmrDec_Utils.c : flushing pFrameParam output\n");
+        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam, nFrames*sizeof(WAMRDEC_FrameStruct), 0);
+        if(DSP_FAILED(status))
+        {
+           OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
+           goto EXIT;
+        }
+
         if (pComponentPrivate->curState == OMX_StateExecuting) {
             if (!WBAMR_DEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)) {
                 WBAMR_DEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
@@ -2523,6 +2563,8 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 #ifndef UNDER_CE
     char *pArgs = "damedesuStr";
 #endif
+    DSP_STATUS status;
+    LCML_DSP_INTERFACE *dspphandle = (LCML_DSP_INTERFACE *)args[6];
 
     WBAMR_DEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     pComponentPrivate = (WBAMR_DEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)args[6])->pComponentPrivate;
@@ -2658,6 +2700,14 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
                     pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
                     OMX_PRCOMM2(pComponentPrivate->dbg, "On Component receiving OMX_BUFFERFLAG_EOS on output\n");
+                    //Issue an initial memory flush to ensure cache coherency */
+                    OMX_PRINT1(pComponentPrivate->dbg, "OMX_WbAmrDec_Utils.c : flushing pFrameParam2\n");
+                    status = DSPProcessor_FlushMemory(dspphandle->dspCodec->hProc, pLcmlHdr->pFrameParam, pLcmlHdr->pBufferParam->usNbFrames*sizeof(WAMRDEC_FrameStruct), 0);
+                    if(DSP_FAILED(status))
+                    {
+                      OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
+                      goto EXIT;
+                    }
                     break;
                 }
             }
