@@ -551,15 +551,13 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
 
 
     fdmax = RMProxy_Handle.tothread[0];
-
+    tv.tv_sec = 0;
+    tv.tv_nsec = 100000000;
     while (1)
     {
         //RMPROXY_DPRINT("RMProxy - Beginning of thread while loop\n");
         FD_ZERO(&rfds2);
         FD_SET(RMProxy_Handle.tothread[0], &rfds2);
-
-        tv.tv_sec = 0;
-        tv.tv_nsec = 100000000;
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
@@ -649,22 +647,24 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     strcat(namedPipeName,"_");
                     strcat(namedPipeName,handleString);
 
-                    //send the request to open (and now create) the pipe
-                    if ((write(RMProxyfdwrite, &rm_data, sizeof(rm_data))) < 0)
+                    //send the request to open the pipe
+
+                    if ((write(RMProxyfdwrite, &rm_data, sizeof(rm_data))) < 0) 
                         RMPROXY_DPRINT("[RM_Proxy] - failure write data to resource manager\n");
 
-                    //wait for the pipe to be created
-                    sleep(.1); //@TODO: should use a semaphore here to be more precise about it...
+                    /* wait for the pipe to be created while trying to open it
+                       assumes the pipe open will eventually succeed */
                     RMPROXY_DPRINT("[RM_Proxy] - try to open the IN Pipe, RM_SERVER_OUT for PID %d\n", (int)getpid());
-                    //now try to open it
                     RMPROXY_DPRINT("namedPipeName = %s\n", (char*)namedPipeName);
-                    if ((RMProxyfdread=open(namedPipeName, O_RDONLY ))<0)
+                    while((RMProxyfdread=open(namedPipeName, O_RDONLY )) < 0)
+//                     if ((RMProxyfdread=open(namedPipeName, O_RDONLY ))<0)
                     {
-                        RMPROXY_DPRINT("[RM_Proxy] - failure to open READ pipe [RMProxyfdread=%d], [errno=%d]\n", RMProxyfdread, errno);
-                    } else{
-                        readPipeOpened = 1;
-                        RMPROXY_DPRINT("[RM_Proxy] - read pipe opened successfully\n");
+                        RMPROXY_DPRINT("[RM_Proxy] - waiting on pipe creation [RMProxyfdread=%d], [errno=%d]\n", RMProxyfdread, errno);
+                        sleep(.05);
                     }
+                    readPipeOpened = 1;
+                    RMPROXY_DPRINT("[RM_Proxy] - read pipe opened successfully\n");
+
                 }
                 else {
                     rm_data.RM_Cmd = RMProxy_ReusePipe;

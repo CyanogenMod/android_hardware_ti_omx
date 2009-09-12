@@ -1857,6 +1857,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     }
  EXIT:
+    /* @NOTE: EXIT_COMPONENT_THRD is not REALLY an error, but a signal to ComponentThread.c */
     return eError;
 }
 

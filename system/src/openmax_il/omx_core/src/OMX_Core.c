@@ -354,17 +354,9 @@ OMX_ERRORTYPE TIOMX_Deinit()
     
     count--;
     LOGD("deinit count = %d\n", count);
-        
-    if(count == 0)
-    {
-        if(pthread_mutex_unlock(&mutex) != 0)
-            printf("%d :: Core: Error in Mutex unlock\n",__LINE__); 
-        pthread_mutex_destroy(&mutex);
-    }
-    else{
-        if(pthread_mutex_unlock(&mutex) != 0)
-            printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
-    }            
+
+    if(pthread_mutex_unlock(&mutex) != 0)
+        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
 
     return OMX_ErrorNone;
 }
