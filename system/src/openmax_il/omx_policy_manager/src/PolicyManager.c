@@ -49,7 +49,6 @@
 #include <sys/ioctl.h>  // for ioctl support
 #include <sys/file.h>
 #include <sys/stat.h>
-//#include <sys/errno.h>
 #include <string.h>     // for memset
 #include <stdio.h>      // for buffered io
 #include <fcntl.h>      // for opening files.
@@ -114,7 +113,7 @@ int main()
     ret = PopulatePolicyTable();
     if (ret != 0)
     {
-        fprintf (stderr, "[Policy Manager] Populate Table failed. Check policy table and launch PM again\n"); 
+        PM_DPRINT ("[Policy Manager] Populate Table failed. Check policy table and launch PM again\n"); 
         exit (-1);
     }
     
@@ -463,7 +462,7 @@ int PopulatePolicyTable()
                   /*policy table contains more info than can actually be stored
                    * either fix the policy table or increment the number of
                    * combinations possible */
-                  PM_DPRINT (stderr, "[Policy Manager] Policy table is bigger than expected.  Run again\n");
+                  PM_DPRINT ("[Policy Manager] Policy table is bigger than expected.  Run again\n");
                   ret = -1;
                   goto EXIT;
                 }
@@ -478,7 +477,7 @@ int PopulatePolicyTable()
                         /*policy table contains records with more info than can actually be stored
                          * either fix the policy table or increment the number of
                          * combinations possible */
-                        PM_DPRINT (stderr, "[Policy Manager] Policy Table Record is wider than expected. Run again\n");
+                        PM_DPRINT ("[Policy Manager] Policy Table Record is wider than expected. Run again\n");
 						ret = -1;
                         goto EXIT;
                     }

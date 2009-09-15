@@ -53,9 +53,20 @@
 #include "dasf_ti.h"
 */
 
-#undef PM_DEBUG 
+#undef PM_DEBUG
+#ifndef ANDROID
+#define ANDROID 
+#endif
+
 #ifdef  PM_DEBUG
-        #define PM_DPRINT(...)    fprintf(stdout,__VA_ARGS__)
+  #ifdef ANDROID
+    #define PM_DPRINT LOGD
+    #undef LOG_TAG
+    #define LOG_TAG "OMX Policy Manager"
+    #include <utils/Log.h>
+  #else
+    #define PM_DPRINT(...)    fprintf(stdout,__VA_ARGS__)
+  #endif
 #else
         #define PM_DPRINT(...)
 #endif

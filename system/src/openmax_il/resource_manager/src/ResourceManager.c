@@ -709,6 +709,7 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
                  totalCpu usage of all of the components */
             if (componentType == RM_AUDIO) {
                 audioTotalCpu += componentList.component[index].componentCPU;
+                RM_DPRINT("RM_AUDIO request for resources\n");
             }
             else if (componentType == RM_VIDEO) {
                 videoTotalCpu += componentList.component[index].componentCPU;
@@ -732,6 +733,7 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
             totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
                        cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
             /* Inform the Resource Activity Monitor of the new CPU usage */
+            RM_DPRINT("total CPU to set constraint = %d\n", totalCpu);
             omap_pm_set_constraint(componentType,totalCpu);        
         }
         else if (previousState == OMX_StateExecuting && (newState == OMX_StateIdle || newState == OMX_StatePause)) {
@@ -906,15 +908,14 @@ int RM_RemoveComponentFromList(OMX_HANDLETYPE hComponent,OMX_U32 aPid)
     if (index != -1) {
         /* Shift all other components in the list up */    
         for(i=index; i < componentList.numRegisteredComponents-1; i++) {
-            componentList.component[i].componentCPU = componentList.component[i+1].componentCPU;            
-            componentList.component[i].componentHandle = componentList.component[i+1].componentHandle;            
+            componentList.component[i].componentCPU = componentList.component[i+1].componentCPU;
+            componentList.component[i].componentHandle = componentList.component[i+1].componentHandle;
             componentList.component[i].componentState = componentList.component[i+1].componentState;
             componentList.component[i].componentPipe = componentList.component[i+1].componentPipe;
             componentList.component[i].reason = componentList.component[i+1].reason;
             componentList.component[i].status = componentList.component[i+1].status;
             componentList.component[i].nPid = componentList.component[i+1].nPid;
         }
-
         /* Decrement the count of registered components */
         componentList.numRegisteredComponents--;
     }
@@ -922,6 +923,8 @@ int RM_RemoveComponentFromList(OMX_HANDLETYPE hComponent,OMX_U32 aPid)
     return 0;
 }
 
+/* Install_Bridge not being used in Android releases
+   since it is easier to build this module into the kernel */
 int Install_Bridge()
 {
     int fd;
@@ -937,6 +940,8 @@ int Install_Bridge()
     return 0;
 }
 
+/* Uninstall_Bridge not being used in Android releases
+   since it is easier to build this module into the kernel */
 int Uninstall_Bridge()
 {
     system("rmmod bridgedriver");
@@ -947,6 +952,8 @@ int Uninstall_Bridge()
 }
 
 
+/* Load_Baseimage not being used in Android releases
+   since it is easier to use a service in init.rc */
 int LoadBaseimage()
 {
     int fd;
@@ -1011,8 +1018,6 @@ int LoadBaseimage()
 void ReloadBaseimage()
 {
 }
-
-
 
 
 void *RM_CPULoadThread(int pipeToWatch)
@@ -1145,7 +1150,8 @@ void *RM_CPULoadThread(int pipeToWatch)
     return NULL;
 }
 
-
+/* RM_FatalErrorWatch not being used because a new bridge
+   daemon is in use, deprecate */
 void *RM_FatalErrorWatchThread()
 {
 

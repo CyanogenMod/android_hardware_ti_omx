@@ -62,7 +62,7 @@
         goto label;                               \
     }                                              /**/
 
-#define RM_DEBUG 
+#undef RM_DEBUG 
 #ifdef  RM_DEBUG
         #include <utils/Log.h>
         #define LOG_TAG "OMXRM"

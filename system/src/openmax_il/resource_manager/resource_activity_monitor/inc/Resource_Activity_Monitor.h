@@ -19,8 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/* move this to omx/Android.mk */
-//#define RAM_ENABLED
+#define RAM_DEBUG
+
+#ifdef RAM_DEBUG
+  #include <utils/Log.h>
+  #undef LOG_TAG
+  #define LOG_TAG "OMX VDD MONITOR"
+  #define RAM_DPRINT LOGD
+#endif
 
 #define OPERATING_POINT_1 1
 #define OPERATING_POINT_1_MHZ 90
