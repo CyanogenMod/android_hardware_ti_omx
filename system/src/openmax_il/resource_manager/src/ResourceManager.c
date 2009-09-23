@@ -272,8 +272,8 @@ int main()
                 else {
                 close(fdread);
                 if((fdread=open(RM_SERVER_IN,O_RDONLY))<0)                                
-                    RM_DPRINT("[Audio Manager] - failure to re-open the Read pipe\n");
-                RM_DPRINT("[Audio Manager] - re-opened Read pipe\n");
+                    RM_DPRINT("[Resource Manager] - failure to re-open the Read pipe\n");
+                RM_DPRINT("[Resource Manager] - re-opened Read pipe\n");
             }
         }
 #ifndef __ENABLE_RMPM_STUB__        

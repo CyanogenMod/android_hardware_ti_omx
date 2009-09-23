@@ -29,29 +29,42 @@ void omap_pm_set_constraint(int ID, int MHz)
 {
 #ifdef RAM_ENABLED
     char command[100];
-    unsigned int operatingPoint;
 
-    if (MHz < OPERATING_POINT_1_MHZ) {
-        operatingPoint = OPERATING_POINT_1;
-    }
-    else if (MHz < OPERATING_POINT_2_MHZ) {
-        operatingPoint = OPERATING_POINT_2;
+    /* initialize both vdd1 & vdd2 at 2
+       idea is to prohobit vdd1=1 during MM use cases */
+    unsigned int vdd1_opp = OPERATING_POINT_2;
+    unsigned int vdd2_opp = OPERATING_POINT_2;
+
+    if (MHz < OPERATING_POINT_2_MHZ) {
+        vdd1_opp = OPERATING_POINT_2;
     }
     else if (MHz < OPERATING_POINT_3_MHZ) {
-        operatingPoint = OPERATING_POINT_3;
+        vdd1_opp = OPERATING_POINT_3;
     }
     else if (MHz < OPERATING_POINT_4_MHZ) {
-        operatingPoint = OPERATING_POINT_4;
+        vdd1_opp = OPERATING_POINT_4;
     }
     else {
-        operatingPoint = OPERATING_POINT_5;
+        vdd1_opp = OPERATING_POINT_5;
     }
-    
-    RAM_DPRINT("[setting operating point] MHz = %d operatingPoint = %d\n",MHz,operatingPoint);
+
+    RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
     strcpy(command,"echo -n ");
-    strcat(command,ram_itoa(operatingPoint));
-    strcat(command," > /sys/power/vdd1_opp");
+    strcat(command,ram_itoa(vdd1_opp));
+    strcat(command," > /sys/power/vdd1_lock");
     system(command);
+
+    if(vdd1_opp > OPERATING_POINT_2)
+    {
+        vdd2_opp = OPERATING_POINT_3;
+        RAM_DPRINT("[setting operating point] MHz = %d vdd2 = %d\n",MHz,vdd2_opp);
+    }
+    strcpy(command,"echo -n ");
+    strcat(command,ram_itoa(vdd2_opp));
+    strcat(command," > /sys/power/vdd2_lock");
+    system(command);
+
+
 #endif    
 }
 
