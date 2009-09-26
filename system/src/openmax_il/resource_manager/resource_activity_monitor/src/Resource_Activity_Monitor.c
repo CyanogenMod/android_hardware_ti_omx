@@ -48,6 +48,12 @@ void omap_pm_set_constraint(int ID, int MHz)
         vdd1_opp = OPERATING_POINT_5;
     }
 
+/* temp until more tuning is done
+    seems some usecases need opp higher than
+    what is requested */
+    if (vdd1_opp < OPERATING_POINT_5)
+        vdd1_opp++;
+
     RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
     strcpy(command,"echo -n ");
     strcat(command,ram_itoa(vdd1_opp));
