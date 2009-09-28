@@ -2014,15 +2014,11 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
     LCML_DSP_INTERFACE* pLcmlHandle = NULL;
     JPEGENC_BUFFER_PRIVATE* pBuffPrivate = NULL;
     int ret;
-#ifdef __JPEG_OMX_PPLIB_ENABLED__
-    OMX_U8 *ptInputParam;
-#endif
 
     OMX_PRINT1(pComponentPrivate->dbg, "Inside HandleFreeOutputBufferFromApp function\n");
     
     pLcmlHandle = (LCML_DSP_INTERFACE *)(pComponentPrivate->pLCML);
     pPortDefOut = pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortDef;
-
 
     ret = read(pComponentPrivate->free_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
     if ( ret == -1 ) {
@@ -2078,9 +2074,11 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
     if (pComponentPrivate->pOutParams != NULL)
     {
-        OMX_FREE(pComponentPrivate->pOutParams);
+        pComponentPrivate->pOutParams = (OMX_U8*)pComponentPrivate->pOutParams - PADDING_128_BYTE;
+	OMX_FREE(pComponentPrivate->pOutParams);
     }
-    OMX_MALLOC(pComponentPrivate->pOutParams,sizeof(PPLIB_UALGRunTimeParam_t));
+    OMX_MALLOC(pComponentPrivate->pOutParams,sizeof(PPLIB_UALGRunTimeParam_t) + PADDING_256_BYTE);
+    pComponentPrivate->pOutParams = (OMX_U8*)pComponentPrivate->pOutParams + PADDING_128_BYTE;
 
     if (pComponentPrivate->pOutParams != NULL)
     {
@@ -3140,6 +3138,7 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 void LinkedList_Create(LinkedList *LinkedList) {
     LinkedList->pRoot = NULL;
+    pthread_mutex_init(&LinkedList->lock, NULL);
 }
 
 void LinkedList_AddElement(LinkedList *LinkedList, void *pValue) {
@@ -3149,6 +3148,8 @@ void LinkedList_AddElement(LinkedList *LinkedList, void *pValue) {
     /*printf("LinkedList:::: Pointer=%p has been added.\n", pNewNode->pValue); */
     /* add new node on the root to implement quick FIFO */
     /* modify new node pointers */
+
+    pthread_mutex_lock(&LinkedList->lock);
     if(LinkedList->pRoot == NULL) {
         pNewNode->pNextNode = NULL;
     }
@@ -3157,9 +3158,11 @@ void LinkedList_AddElement(LinkedList *LinkedList, void *pValue) {
     }
     /*modify root */
     LinkedList->pRoot = pNewNode;
+    pthread_mutex_unlock(&LinkedList->lock);
 }
 
 void LinkedList_FreeElement(LinkedList *LinkedList, void *pValue) {
+    pthread_mutex_lock(&LinkedList->lock);
     Node *pNode = LinkedList->pRoot;
     Node *pPastNode = NULL;
     while (pNode != NULL) {
@@ -3173,25 +3176,33 @@ void LinkedList_FreeElement(LinkedList *LinkedList, void *pValue) {
             }
             /*printf("LinkedList:::: Pointer=%p has been freed\n", pNode->pValue); */
             free(pNode->pValue);
+            pNode->pValue = NULL;
             free(pNode);
+            pNode = NULL;
             break;
         }
         pPastNode = pNode;
         pNode = pNode->pNextNode;
     }
+    pthread_mutex_unlock(&LinkedList->lock);
 }
 
 void LinkedList_FreeAll(LinkedList *LinkedList) {
     Node *pTempNode;
     int nodes = 0;
+    pthread_mutex_lock(&LinkedList->lock);
     while (LinkedList->pRoot != NULL) {
         pTempNode = LinkedList->pRoot->pNextNode;
         /*printf("LinkedList:::: Pointer=%p has been freed\n", LinkedList->pRoot->pValue); */
-        free(LinkedList->pRoot->pValue);
+        if(LinkedList->pRoot->pValue != NULL) {
+		free(LinkedList->pRoot->pValue);
+		LinkedList->pRoot->pValue = NULL;
+	}
         free(LinkedList->pRoot);
         LinkedList->pRoot = pTempNode;
         nodes++;
     }
+    pthread_mutex_unlock(&LinkedList->lock);
     /*printf("==================No. of deleted nodes: %d=======================================\n\n", nodes); */
 }
 
@@ -3205,9 +3216,9 @@ void LinkedList_DisplayAll(LinkedList *LinkedList) {
         pNode = pNode->pNextNode;
         nodes++;
     }
-     printf("==================No. of existing nodes: %d=======================================\n\n", nodes);
+    printf("==================No. of existing nodes: %d=======================================\n\n", nodes);
 }
 
 void LinkedList_Destroy(LinkedList *LinkedList) {
-    /* do nothing */
+    pthread_mutex_destroy(&LinkedList->lock);
 }
