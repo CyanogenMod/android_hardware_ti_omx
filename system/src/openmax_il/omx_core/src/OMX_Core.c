@@ -48,26 +48,23 @@ ComponentTable componentTable[MAX_TABLE_SIZE];
 char * sRoleArray[60][20];
 char compName[60][200];
 
-
 char *tComponentName[MAXCOMP][2] = {
-    /**video and image components */
-    {"OMX.TI.JPEG.decode", "image_decoder.jpeg" },
-    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"}, 
+    /*video and image components */
+    {"OMX.TI.JPEG.Decoder", "image_decoder.jpeg" },
+    {"OMX.TI.JPEG.Encoder", "image_encoder.jpeg"},
     {"OMX.TI.Video.Decoder", "video_decoder.h263"},
     {"OMX.TI.Video.Decoder", "video_decoder.avc"},
     {"OMX.TI.Video.Decoder", "video_decoder.mpeg2"},
     {"OMX.TI.Video.Decoder", "video_decoder.mpeg4"},
-    {"OMX.TI.720P.Decoder", "video_decoder.mpeg4"},
     {"OMX.TI.Video.Decoder", "video_decoder.wmv"},
     {"OMX.TI.Video.encoder", "video_encoder.mpeg4"},
-    {"OMX.TI.720P.Encoder", "video_encoder.mpeg4"},
     {"OMX.TI.Video.encoder", "video_encoder.h263"},
     {"OMX.TI.Video.encoder", "video_encoder.avc"},
     {"OMX.TI.VPP", "iv_renderer.yuv.overlay"},
-    {"OMX.TI.Camera", "camera.yuv"}, 
-
+    {"OMX.TI.Camera", "camera.yuv"},
+    
     /* Speech components */
-  /*  {"OMX.TI.G729.encode", NULL},
+/*  {"OMX.TI.G729.encode", NULL},
     {"OMX.TI.G729.decode", NULL},	
     {"OMX.TI.G722.encode", NULL},
     {"OMX.TI.G722.decode", NULL},
@@ -78,22 +75,24 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.G726.encode", NULL},
     {"OMX.TI.G726.decode", NULL},
     {"OMX.TI.GSMFR.encode", NULL},
-    {"OMX.TI.GSMFR.decode", NULL}, */
+    {"OMX.TI.GSMFR.decode", NULL},
+*/
     {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},
-    {"OMX.TI.AMR.decode", "audio_decoder.amrnb"},	
+    {"OMX.TI.AMR.decode", "audio_decoder.amrnb"},
     {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"},
-    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},	
+    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},
 
     /* Audio components */
-    {"OMX.TI.MP3.decode", "audio_decoder.mp3"},	
-    {"OMX.TI.AAC.encode", "audio_encoder.aac"}, 
-    {"OMX.TI.AAC.decode", "audio_decoder.aac"},	
-/*    {"OMX.TI.PCM.encode", NULL},
-    {"OMX.TI.PCM.decode", NULL}, */
-    {"OMX.TI.WMA.decode", "audio_decoder.wma"},	
-/*    {"OMX.TI.RAG.decode", "audio_decoder.ra"},	
-    {"OMX.TI.IMAADPCM.decode", NULL},	
-    {"OMX.TI.IMAADPCM.encode", NULL},	*/
+    {"OMX.TI.MP3.decode", "audio_decoder.mp3"},
+    {"OMX.TI.AAC.encode", "audio_encoder.aac"},
+    {"OMX.TI.AAC.decode", "audio_decoder.aac"},
+    {"OMX.TI.WMA.decode", "audio_decoder.wma"},
+/*  {"OMX.TI.PCM.encode", NULL},
+    {"OMX.TI.PCM.decode", NULL},     
+    {"OMX.TI.RAG.decode", "audio_decoder.ra"},
+    {"OMX.TI.IMAADPCM.decode", NULL},
+    {"OMX.TI.IMAADPCM.encode", NULL},
+*/
 
     /* terminate the table */
     {NULL, NULL},
@@ -116,9 +115,10 @@ OMX_ERRORTYPE TIOMX_Init()
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    if(pthread_mutex_lock(&mutex) != 0) 
+    if(pthread_mutex_lock(&mutex) != 0)
     {
-        printf("%d :: Core: Error in Mutex lock\n",__LINE__);
+        LOGE("%d :: Core: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
     }
 
     count++;
@@ -129,10 +129,11 @@ OMX_ERRORTYPE TIOMX_Init()
         eError = TIOMX_BuildComponentTable();
     }
 
-    if(pthread_mutex_unlock(&mutex) != 0) 
+    if(pthread_mutex_unlock(&mutex) != 0)
     {
-        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
-    } 
+        LOGE("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
     return eError;
 }
 /******************************Public*Routine******************************\
@@ -160,118 +161,149 @@ OMX_ERRORTYPE TIOMX_Init()
 \**************************************************************************/
 
 OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentName,
-    OMX_PTR pAppData, OMX_CALLBACKTYPE* pCallBacks) 
+    OMX_PTR pAppData, OMX_CALLBACKTYPE* pCallBacks)
 {
     static const char prefix[] = "lib";
     static const char postfix[] = ".so";
     OMX_ERRORTYPE (*pComponentInit)(OMX_HANDLETYPE*);
-    OMX_ERRORTYPE err = OMX_ErrorNone;  /* This was ErrorUndefined */
+    OMX_ERRORTYPE err = OMX_ErrorNone;
     OMX_COMPONENTTYPE *componentType;
-    int i;
-    char buf[sizeof(prefix) + MAXNAMESIZE +sizeof(postfix)];
     const char* pErr = dlerror();
 
-    if(pthread_mutex_lock(&mutex) != 0) 
+    if(pthread_mutex_lock(&mutex) != 0)
     {
-        printf("%d :: Core: Error in Mutex lock\n",__LINE__);
+        LOGE("%d :: Core: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
     }
 
     if ((NULL == cComponentName) || (NULL == pHandle) || (NULL == pCallBacks)) {
         err = OMX_ErrorBadParameter;
-        goto EXIT;
+        goto UNLOCK_MUTEX;
     }
 
     /* Verify that the name is not too long and could cause a crash.  Notice
      * that the comparison is a greater than or equals.  This is to make
      * sure that there is room for the terminating NULL at the end of the
      * name. */
-    if( strlen(cComponentName) >= MAXNAMESIZE) {
-
+    if(strlen(cComponentName) >= MAXNAMESIZE) {
         err = OMX_ErrorInvalidComponentName;
-        goto EXIT;
+        goto UNLOCK_MUTEX;
     }
     /* Locate the first empty slot for a component.  If no slots
      * are available, error out */
+    int i = 0;
     for(i=0; i< COUNTOF(pModules); i++) {
         if(pModules[i] == NULL) break;
     }
     if(i == COUNTOF(pModules)) {
-         err = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-
-    /* load the component and check for an error.  If filename is not an 
-     * absolute path (i.e., it does not  begin with a "/"), then the 
-     * file is searched for in the following locations:
-     *
-     *     The LD_LIBRARY_PATH environment variable locations
-     *     The library cache, /etc/ld.so.cache.
-     *     /lib
-     *     /usr/lib
-     * 
-     * If there is an error, we can't go on, so set the error code and exit */
-    strcpy(buf, prefix);                      /* the lengths are defined herein or have been */
-    strcat(buf, cComponentName);  /* checked already, so strcpy and strcat are  */
-    strcat(buf, postfix);                      /* are safe to use in this context. */
-    pModules[i] = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
-    if( pModules[i] == NULL ) {
-        fprintf (stderr, "Failed because %s\n", dlerror());
-        err = OMX_ErrorComponentNotFound;
-        goto EXIT;
-    }
-
-    /* Get a function pointer to the "OMX_ComponentInit" function.  If 
-     * there is an error, we can't go on, so set the error code and exit */
-    pComponentInit = dlsym(pModules[i], "OMX_ComponentInit");
-    if( (pErr != NULL) || (pComponentInit == NULL) ) {
-        err = OMX_ErrorInvalidComponent;
-        goto EXIT;
-    }
-
-
-    /* We now can access the dll.  So, we need to call the "OMX_ComponentInit"
-     * method to load up the "handle" (which is just a list of functions to 
-     * call) and we should be all set.*/
-    *pHandle = malloc(sizeof(OMX_COMPONENTTYPE));
-    if(*pHandle == NULL) {
         err = OMX_ErrorInsufficientResources;
-        printf("%d:: malloc of pHandle* failed\n", __LINE__);
-        goto EXIT;
+        goto UNLOCK_MUTEX;
     }
-    pComponents[i] = *pHandle;
-    componentType = (OMX_COMPONENTTYPE*) *pHandle;
-    componentType->nSize = sizeof(OMX_COMPONENTTYPE);   
-    err = (*pComponentInit)(*pHandle);
-    if (OMX_ErrorNone == err) {
-        err = (componentType->SetCallbacks)(*pHandle, pCallBacks, pAppData);
-        if (err != OMX_ErrorNone) {
-            printf("%d :: Core: Error Returned From Component\
-                    SetCallBack\n",__LINE__);
-            goto EXIT;
-        }    
-    } 
-    else {
-       /* when the component fails to initialize, release the
-       component handle structure */
-       free(*pHandle);
-       /* mark the component handle as NULL to prevent the caller from
-       actually trying to access the component with it, should they
-       ignore the return code */
-       *pHandle = NULL;
-       pComponents[i] = NULL;
-        dlclose(pModules[i]);
 
-       goto EXIT;
-    }   
-    err = OMX_ErrorNone;
-EXIT:
-    if(pthread_mutex_unlock(&mutex) != 0) 
+    int refIndex = 0;
+    for (refIndex=0; refIndex < MAX_TABLE_SIZE; refIndex++) {
+        //get the index for the component in the table
+        if (strcmp(componentTable[refIndex].name, cComponentName) == 0) {
+            LOGD("Found component %s with refCount %d\n",
+                  cComponentName, componentTable[refIndex].refCount);
+
+            /* check if the component is already loaded */
+            if (componentTable[refIndex].refCount >= MAX_CONCURRENT_INSTANCES) {
+                err = OMX_ErrorInsufficientResources;
+                LOGE("Max instances of component %s already created.\n", cComponentName);
+                goto UNLOCK_MUTEX;
+            } else {  // we have not reached the limit yet
+                /* do what was done before need to limit concurrent instances of each component */
+
+                /* load the component and check for an error.  If filename is not an
+                 * absolute path (i.e., it does not  begin with a "/"), then the
+                 * file is searched for in the following locations:
+                 *
+                 *     The LD_LIBRARY_PATH environment variable locations
+                 *     The library cache, /etc/ld.so.cache.
+                 *     /lib
+                 *     /usr/lib
+                 *
+                 * If there is an error, we can't go on, so set the error code and exit */
+
+                /* the lengths are defined herein or have been
+                 * checked already, so strcpy and strcat are
+                 * are safe to use in this context. */
+                char buf[sizeof(prefix) + MAXNAMESIZE + sizeof(postfix)];
+                strcpy(buf, prefix);
+                strcat(buf, cComponentName);
+                strcat(buf, postfix);
+
+                pModules[i] = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
+                if( pModules[i] == NULL ) {
+                    LOGE("dlopen %s failed because %s\n", buf, dlerror());
+                    err = OMX_ErrorComponentNotFound;
+                    goto UNLOCK_MUTEX;
+                }
+
+                /* Get a function pointer to the "OMX_ComponentInit" function.  If
+                 * there is an error, we can't go on, so set the error code and exit */
+                pComponentInit = dlsym(pModules[i], "OMX_ComponentInit");
+                if( (pErr != NULL) || (pComponentInit == NULL) ) {
+                    LOGE("%d:: dlsym failed for module %p\n", __LINE__, pModules[i]);
+                    err = OMX_ErrorInvalidComponent;
+                    goto CLEAN_UP;
+                }
+
+               /* We now can access the dll.  So, we need to call the "OMX_ComponentInit"
+                * method to load up the "handle" (which is just a list of functions to
+                * call) and we should be all set.*/
+                *pHandle = malloc(sizeof(OMX_COMPONENTTYPE));
+                if(*pHandle == NULL) {
+                    err = OMX_ErrorInsufficientResources;
+                    LOGE("%d:: malloc of pHandle* failed\n", __LINE__);
+                    goto CLEAN_UP;
+                }
+
+                pComponents[i] = *pHandle;
+                componentType = (OMX_COMPONENTTYPE*) *pHandle;
+                componentType->nSize = sizeof(OMX_COMPONENTTYPE);
+                err = (*pComponentInit)(*pHandle);
+                if (OMX_ErrorNone == err) {
+                    err = (componentType->SetCallbacks)(*pHandle, pCallBacks, pAppData);
+                    if (err != OMX_ErrorNone) {
+                        LOGE("%d :: Core: SetCallBack failed %d\n",__LINE__, err);
+                        goto CLEAN_UP;
+                    }
+                    /* finally, OMX_ComponentInit() was successful and
+                       SetCallbacks was successful, we have a valid instance,
+                       so no we increment refCount */
+                    componentTable[refIndex].pHandle[componentTable[refIndex].refCount] = *pHandle;
+                    componentTable[refIndex].refCount += 1;
+                    goto UNLOCK_MUTEX;  // Component is found, and thus we are done
+                }
+            }
+        }
+    }
+
+    // If we are here, we have not found the component
+    err = OMX_ErrorComponentNotFound;
+
+CLEAN_UP:
+    if(*pHandle != NULL)
+    /* cover the case where we error out before malloc'd */
     {
-        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
-    } 
+        free(*pHandle);
+        *pHandle = NULL;
+    }
+    pComponents[i] = NULL;
+    dlclose(pModules[i]);
+    pModules[i] = NULL;
+
+UNLOCK_MUTEX:
+    if(pthread_mutex_unlock(&mutex) != 0)
+    {
+        LOGE("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        err = OMX_ErrorUndefined;
+    }
     return (err);
 }
- 
+
 
 /******************************Public*Routine******************************\
 * OMX_FreeHandle()
@@ -293,44 +325,62 @@ OMX_ERRORTYPE TIOMX_FreeHandle (OMX_HANDLETYPE hComponent)
 
     OMX_ERRORTYPE retVal = OMX_ErrorUndefined;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)hComponent;
-    int i;
 
-    if(pthread_mutex_lock(&mutex) != 0) 
+    if(pthread_mutex_lock(&mutex) != 0)
     {
-        printf("%d :: Core: Error in Mutex lock\n",__LINE__);
+        LOGE("%d :: Core: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
     }
 
     /* Locate the component handle in the array of handles */
+    int i = 0;
     for(i=0; i< COUNTOF(pModules); i++) {
         if(pComponents[i] == hComponent) break;
     }
 
-
     if(i == COUNTOF(pModules)) {
+        LOGE("%d :: Core: component %p is not found\n", __LINE__, hComponent);
         retVal = OMX_ErrorBadParameter;
         goto EXIT;
     }
 
     retVal = pHandle->ComponentDeInit(hComponent);
     if (retVal != OMX_ErrorNone) {
-        printf("%d :: Error From ComponentDeInit..\n",__LINE__);
-        goto EXIT; 
+        LOGE("%d :: ComponentDeInit failed %d\n",__LINE__, retVal);
+        goto EXIT;
     }
 
-    /* release the component and the component handle */
-    dlclose(pModules[i]);
-    pModules[i] = NULL;
-    free(pComponents[i]);
+    int refIndex = 0, handleIndex = 0;
+    for (refIndex=0; refIndex < MAX_TABLE_SIZE; refIndex++) {
+        for (handleIndex=0; handleIndex < componentTable[refIndex].refCount; handleIndex++){
+            /* get the position for the component in the table */
+            if (componentTable[refIndex].pHandle[handleIndex] == hComponent){
+                LOGD("Found matching pHandle(%p) at index %d with refCount %d",
+                      hComponent, refIndex, componentTable[refIndex].refCount);
+                if (componentTable[refIndex].refCount) {
+                    componentTable[refIndex].refCount -= 1;
+                }
+                componentTable[refIndex].pHandle[handleIndex] = NULL;
+                dlclose(pModules[i]);
+                pModules[i] = NULL;
+                free(pComponents[i]);
+                pComponents[i] = NULL;
+                retVal = OMX_ErrorNone;
+                goto EXIT;
+            }
+        }
+    }
 
-    pComponents[i] = NULL;
-    retVal = OMX_ErrorNone;
+    // If we are here, we have not found the matching component
+    retVal = OMX_ErrorComponentNotFound;
 
 EXIT:
     /* The unload is now complete, so set the error code to pass and exit */
-    if(pthread_mutex_unlock(&mutex) != 0) 
+    if(pthread_mutex_unlock(&mutex) != 0)
     {
-        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
-    } 
+        LOGE("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
 
     return retVal;
 }
@@ -349,14 +399,21 @@ EXIT:
 \**************************************************************************/
 OMX_ERRORTYPE TIOMX_Deinit()
 {
-    if(pthread_mutex_lock(&mutex) != 0)
-        printf("%d :: Core: Error in Mutex lock\n",__LINE__); 
-    
-    count--;
+    if(pthread_mutex_lock(&mutex) != 0) {
+        LOGE("%d :: Core: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
+
+    if (count) {
+        count--;
+    }
+
     LOGD("deinit count = %d\n", count);
 
-    if(pthread_mutex_unlock(&mutex) != 0)
-        printf("%d :: Core: Error in Mutex unlock\n",__LINE__);
+    if(pthread_mutex_unlock(&mutex) != 0) {
+        LOGE("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
 
     return OMX_ErrorNone;
 }
@@ -483,36 +540,48 @@ OMX_API OMX_ERRORTYPE TIOMX_GetRolesOfComponent (
         eError = OMX_ErrorBadParameter;
         goto EXIT;       
     }
-
-
-    while(!bFound && i < tableCount)
+    while (i < tableCount)
     {
         if (strcmp(cComponentName, componentTable[i].name) == 0)
         {
             bFound = OMX_TRUE;
+            break;
         }
-        else
-        {
-            i++;
-        }
-    }   
+        i++;
+    }
+    if (!bFound)
+    {
+        eError = OMX_ErrorComponentNotFound;
+        LOGE("component not found\n");
+        goto EXIT;
+    } 
     if (roles == NULL)
     { 
         *pNumRoles = componentTable[i].nRoles;
-        goto EXIT;
     }
     else
     {
-        if (bFound && (*pNumRoles == componentTable[i].nRoles))
-       {
-           for (j = 0; j<componentTable[i].nRoles; j++) 
-           {
-               strcpy((OMX_STRING)roles[j], componentTable[i].pRoleArray[j]);
-           }
-       }
-   }
-   EXIT:
-   return eError;
+        /* must be second of two calls,
+           pNumRoles is input in this context.
+           If pNumRoles is < actual number of roles
+           than we return an error */
+        if (*pNumRoles >= componentTable[i].nRoles)
+        {
+            for (j = 0; j<componentTable[i].nRoles; j++) 
+            {
+                strcpy((OMX_STRING)roles[j], componentTable[i].pRoleArray[j]);
+            }
+            *pNumRoles = componentTable[i].nRoles;
+        }
+        else
+        {
+            eError = OMX_ErrorBadParameter;
+            LOGE("pNumRoles is less than actual number of roles \
+                   for this component\n");
+        }
+    }
+    EXIT:
+    return eError;
 }
 
 /*************************************************************************
@@ -539,38 +608,85 @@ OMX_API OMX_ERRORTYPE TIOMX_GetComponentsOfRole (
     OMX_U32 i = 0;
     OMX_U32 j = 0;
     OMX_U32 k = 0;
+    OMX_U32 compOfRoleCount = 0;
 
     if (role == NULL || pNumComps == NULL)
     {
        eError = OMX_ErrorBadParameter;
+       LOGE("BadParameter: role=NULL\n");
        goto EXIT;
     }
 
    /* This implies that the componentTable is not filled */
-    if (componentTable[i].pRoleArray[j] == NULL)
+    if (!tableCount)
     {
-        eError = OMX_ErrorBadParameter;
+        eError = OMX_ErrorUndefined;
+        LOGE("table is empty, reload OMX Core\n");
         goto EXIT;
     }
 
-
+    /* no matter, we always want to know number of matching components
+       so this will always run */ 
     for (i = 0; i < tableCount; i++)
     {
-        for (j = 0; j<componentTable[i].nRoles; j++) 
+        for (j = 0; j < componentTable[i].nRoles; j++) 
         { 
             if (strcmp(componentTable[i].pRoleArray[j], role) == 0)
             {
                 /* the first call to this function should only count the number
-                    of roles so that for the second call compNames can be allocated
-                    with the proper size for that number of roles */
-                if (compNames != NULL)
-                {
-                    compNames[k] = (OMX_U8*)componentTable[i].name;
-                }
-                k++;
+                   of roles 
+                */
+                compOfRoleCount++;
             }
         }
-        *pNumComps = k;
+    }
+    if (compOfRoleCount == 0)
+    {
+        eError = OMX_ErrorComponentNotFound;
+        LOGE("Component supporting %s was not found\n", role);
+    }
+    if (compNames == NULL)
+    {
+        /* must be the first of two calls */
+        *pNumComps = compOfRoleCount;
+    }
+    else
+    {
+        /* must be the second of two calls */
+        if (*pNumComps < compOfRoleCount)
+        {
+            /* pNumComps is input in this context,
+               it can not be less, this would indicate
+               the array is not large enough
+            */
+            eError = OMX_ErrorBadParameter;
+            LOGE("Bad Parameter, pNumComps is not enough\n");
+        }
+        else
+        {
+            k = 0;
+            for (i = 0; i < tableCount; i++)
+            {
+                for (j = 0; j < componentTable[i].nRoles; j++) 
+                { 
+                    if (strcmp(componentTable[i].pRoleArray[j], role) == 0)
+                    {
+                        /*  the second call compNames can be allocated
+                            with the proper size for that number of roles.
+                        */
+                        compNames[k] = (OMX_U8*)componentTable[i].name;
+                        k++;
+                        if (k == compOfRoleCount)
+                        {
+                            /* there are no more components of this role
+                               so we can exit here */
+                            *pNumComps = k;
+                            goto EXIT;
+                        } 
+                    }
+                }
+            }
+        }        
     }
 
     EXIT:
@@ -581,17 +697,10 @@ OMX_API OMX_ERRORTYPE TIOMX_GetComponentsOfRole (
 OMX_ERRORTYPE TIOMX_BuildComponentTable()
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CALLBACKTYPE sCallbacks;    
+    OMX_CALLBACKTYPE sCallbacks;
     int j = 0;
     int numFiles = 0;
     int i;
-
-    /* set up dummy call backs */
-    sCallbacks.EventHandler    = ComponentTable_EventHandler;
-    sCallbacks.EmptyBufferDone = ComponentTable_EmptyBufferDone;
-    sCallbacks.FillBufferDone  = ComponentTable_FillBufferDone;
-
-
 
     for (i = 0, numFiles = 0; i < MAXCOMP; i ++) {
         if (tComponentName[i][0] == NULL) {
@@ -602,7 +711,8 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
                 /* insert the role */
                 if (tComponentName[i][1] != NULL)
                 {
-   	            componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
+                    componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
+                    componentTable[j].pHandle[componentTable[j].nRoles] = NULL; //initilize the pHandle element
                     componentTable[j].nRoles ++;
                 }
                 break;
@@ -615,6 +725,7 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
             }
             strcpy(compName[numFiles], tComponentName[i][0]);
             componentTable[numFiles].name = compName[numFiles];
+            componentTable[numFiles].refCount = 0; //initialize reference counter.
             numFiles ++;
         }
     }
@@ -624,33 +735,6 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
     }
 
     return eError;
-}
-
-OMX_ERRORTYPE ComponentTable_EventHandler(
-        OMX_IN OMX_HANDLETYPE hComponent,
-        OMX_IN OMX_PTR pAppData,
-        OMX_IN OMX_EVENTTYPE eEvent,
-        OMX_IN OMX_U32 nData1,
-        OMX_IN OMX_U32 nData2,
-        OMX_IN OMX_PTR pEventData)
-{
-    return OMX_ErrorNotImplemented;
-}
-
-OMX_ERRORTYPE ComponentTable_EmptyBufferDone(
-        OMX_OUT OMX_HANDLETYPE hComponent,
-        OMX_OUT OMX_PTR pAppData,
-        OMX_OUT OMX_BUFFERHEADERTYPE* pBuffer)
-{
-    return OMX_ErrorNotImplemented;
-}
-
-OMX_ERRORTYPE ComponentTable_FillBufferDone(
-        OMX_OUT OMX_HANDLETYPE hComponent,
-        OMX_OUT OMX_PTR pAppData,
-        OMX_OUT OMX_BUFFERHEADERTYPE* pBuffer)
-{
-    return OMX_ErrorNotImplemented;
 }
 
 OMX_BOOL TIOMXConfigParserRedirect(
