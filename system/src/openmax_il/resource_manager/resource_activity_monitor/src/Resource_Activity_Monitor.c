@@ -33,7 +33,7 @@ void omap_pm_set_constraint(int ID, int MHz)
     /* initialize both vdd1 & vdd2 at 2
        idea is to prohobit vdd1=1 during MM use cases */
     unsigned int vdd1_opp = OPERATING_POINT_2;
-    unsigned int vdd2_opp = OPERATING_POINT_2;
+    unsigned int vdd2_opp = OPERATING_POINT_3;
 
     if (MHz < OPERATING_POINT_2_MHZ) {
         vdd1_opp = OPERATING_POINT_2;
@@ -54,6 +54,11 @@ void omap_pm_set_constraint(int ID, int MHz)
     if (vdd1_opp < OPERATING_POINT_5)
         vdd1_opp++;
 
+    if(MHz == 0)
+    {
+        vdd1_opp = 0;  //clear locks for idle MM case
+        vdd2_opp = 0;
+    }
     RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
     strcpy(command,"echo -n ");
     strcat(command,ram_itoa(vdd1_opp));
@@ -63,8 +68,8 @@ void omap_pm_set_constraint(int ID, int MHz)
     if(vdd1_opp > OPERATING_POINT_2)
     {
         vdd2_opp = OPERATING_POINT_3;
-        RAM_DPRINT("[setting operating point] MHz = %d vdd2 = %d\n",MHz,vdd2_opp);
     }
+    RAM_DPRINT("[setting operating point] MHz = %d vdd2 = %d\n",MHz,vdd2_opp);
     strcpy(command,"echo -n ");
     strcat(command,ram_itoa(vdd2_opp));
     strcat(command," > /sys/power/vdd2_lock");
