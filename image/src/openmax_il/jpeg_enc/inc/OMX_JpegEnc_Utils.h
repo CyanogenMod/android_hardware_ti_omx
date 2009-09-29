@@ -87,6 +87,8 @@
 
 #define OMX_CustomCommandStopThread (OMX_CommandMax - 1)
 
+#define PADDING_128_BYTE	128
+#define PADDING_256_BYTE	256
 
 #ifdef UNDER_CE
     #include <oaf_debug.h>
@@ -114,6 +116,7 @@ typedef struct Node {
 
 typedef struct LinkedList {
     Node *pRoot;
+    pthread_mutex_t lock;
 }   LinkedList;
 
 LinkedList AllocList;
