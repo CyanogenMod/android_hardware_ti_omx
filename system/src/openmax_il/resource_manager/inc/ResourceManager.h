@@ -65,6 +65,7 @@
 #undef RM_DEBUG 
 #ifdef  RM_DEBUG
         #include <utils/Log.h>
+        #undef LOG_TAG
         #define LOG_TAG "OMXRM"
         #define RM_DPRINT LOGD
 //    fprintf(stdout,__VA_ARGS__)
