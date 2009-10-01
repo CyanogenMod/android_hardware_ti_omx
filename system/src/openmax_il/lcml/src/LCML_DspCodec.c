@@ -1543,7 +1543,8 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
         LCML_DPRINT("%d :: Deleted the DASF node Successfully\n",__LINE__);
     }
 	/* delete SN */
-	status = DSPNode_Delete(hInterface->dspCodec->hNode);
+    status = DSPNode_Delete(hInterface->dspCodec->hNode);
+    DSP_ERROR_EXIT (status, "DeInit: Codec Node Delete ", EXIT);
     LCML_DPRINT("%d :: Deleted the node Successfully\n",__LINE__);
 
     LCML_DPRINT("%d :: Entering UnLoadDLLs \n", __LINE__);
