@@ -298,6 +298,13 @@
 /* ======================================================================= */
 #define _ERROR_PROPAGATION__
 
+/* ======================================================================= */
+/**
+* pthread variable to indicate OMX returned all buffers to app 
+*/
+/* ======================================================================= */
+pthread_mutex_t bufferReturned_mutex; 
+pthread_cond_t bufferReturned_condition; 
 
 /* ======================================================================= */
 /** NBAMRDEC_COMP_PORT_TYPE  Port Type
@@ -837,5 +844,18 @@ typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
         OMX_IndexCustomNbAmrDecNextFrameLost,
         OMX_IndexCustomDebug
 }OMX_NBAMRDEC_INDEXAUDIOTYPE;
+
+/*=======================================================================*/
+/*! @fn SignalIfAllBuffersAreReturned 
+
+ * @brief Sends pthread signal to indicate OMX has returned all buffers to app 
+
+ * @param  none 
+
+ * @Return void 
+
+ */
+/*=======================================================================*/
+void SignalIfAllBuffersAreReturned(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #endif /* OMX_AMRDECODER_H */
