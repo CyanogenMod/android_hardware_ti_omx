@@ -95,7 +95,7 @@
  char file[500][50];
 
 void * mymalloc(int line, char *s, int size);
-int myfree(void *dp, int line, char *s);
+void myfree(void *dp, int line, char *s);
 #endif
 
 
@@ -3465,7 +3465,7 @@ void* mymalloc(int line, char *s, int size)
 * @return None
 */
 /* ========================================================================== */
-int myfree(void *dp, int line, char *s){
+void myfree(void *dp, int line, char *s){
 
     int q;
     for(q=0;q<500;q++){

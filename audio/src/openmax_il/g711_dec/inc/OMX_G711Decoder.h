@@ -263,8 +263,8 @@
     G711DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
 
 #define OMX_G711DECMEMFREE_STRUCT(_pStruct_)                    \
-    G711DEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);   \
     if(_pStruct_ != NULL){                                      \
+    G711DEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);   \
         newfree(_pStruct_);                                     \
         _pStruct_ = NULL;                                       \
     }

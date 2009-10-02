@@ -83,7 +83,7 @@ extern char file[500][50] = {""};
 #define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
 void * mymalloc(int line, char *s, int size);
 #define newfree(z) myfree(z,__LINE__,__FILE__)
-int myfree(void *dp, int line, char *s);
+void myfree(void *dp, int line, char *s);
 #else
 #define newmalloc(x) malloc(x)
 #define newfree(z) free(z)
@@ -299,6 +299,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bIdleCommandPending = 0;
     pComponentPrivate->bDisableCommandParam = 0;
     pComponentPrivate->bEnableCommandParam = 0;
+    pComponentPrivate->nRuntimeInputBuffers = 0;
     
     for (i=0; i < MAX_NUM_OF_BUFS; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -2020,7 +2021,7 @@ void * mymalloc(int line, char *s, int size)
     }
 }
 
-int myfree(void *dp, int line, char *s){
+void myfree(void *dp, int line, char *s){
     int q = 0;
     for(q=0;q<500;q++){
         if(arr[q]==dp){

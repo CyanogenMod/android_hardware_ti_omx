@@ -559,6 +559,9 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
             pComponentPrivate->pPriorityMgmt = NULL;
         }
         
+    if (pComponentPrivate->pHoldBuffer != NULL ) {
+            OMX_NBDECMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+    }
 
    OMX_PRMGR2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::[NBAMRDEC_FreeCompResources] \n", __LINE__);
    if (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]) {
@@ -638,7 +641,6 @@ OMX_ERRORTYPE NBAMRDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
         pParmsTemp -= EXTRA_BYTES;
         pComponentPrivate->pParams = (AMRDEC_AudioCodecParams*)pParmsTemp;
         OMX_NBDECMEMFREE_STRUCT(pComponentPrivate->pParams);
-        pComponentPrivate->pParams = NULL;
     }
           
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
@@ -1138,7 +1140,6 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bStopSent=1;
                 if (pComponentPrivate->pHoldBuffer) {
                     OMX_NBDECMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-                    pComponentPrivate->pHoldBuffer = NULL;
             } 
                 pComponentPrivate->nHoldLength = 0;
             } 

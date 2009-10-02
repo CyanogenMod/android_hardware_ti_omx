@@ -456,6 +456,7 @@ OMX_ERRORTYPE ILBCENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     ILBCENC_COMPONENT_PRIVATE *pComponentPrivate = (ILBCENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
+    OMX_U8* pParmsTemp = NULL;
     ILBCENC_DPRINT("%d Entering ILBCENC_FreeCompResources\n",__LINE__);
 
     if (pComponentPrivate->bCompThreadStarted) {
@@ -476,6 +477,15 @@ OMX_ERRORTYPE ILBCENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat);
     OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]);
     OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]);
+
+    if(pComponentPrivate->pParams != NULL){
+        pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
+        if (pParmsTemp != NULL){
+            pParmsTemp -= 128;
+        }
+        pComponentPrivate->pParams = (ILBCENC_AudioCodecParams*)pParmsTemp;
+        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pParams);
+    }
 
     OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->sPortParam);
     OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);

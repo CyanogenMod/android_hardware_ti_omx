@@ -503,6 +503,11 @@ OMX_ERRORTYPE NBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AMRENC_COMPONENT_PRIVATE *pComponentPrivate = (AMRENC_COMPONENT_PRIVATE *)
                                                      pHandle->pComponentPrivate;
+
+    OMX_U8* pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
+    OMX_U8* pAlgParmTempDTX = (OMX_U8*)pComponentPrivate->pAlgParamDTX;
+    OMX_U8* pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering NBAMRENC_FreeCompResources\n",__LINE__);
 
     if (pComponentPrivate->bCompThreadStarted) {
@@ -513,6 +518,21 @@ OMX_ERRORTYPE NBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_NBCLOSE_PIPE(pComponentPrivate->cmdDataPipe[0],err);
         OMX_NBCLOSE_PIPE(pComponentPrivate->cmdDataPipe[1],err);
     }
+
+    if (pAlgParmTemp != NULL)
+        pAlgParmTemp -= EXTRA_BYTES;
+    pComponentPrivate->pAlgParam = (NBAMRENC_TALGCtrl*)pAlgParmTemp;
+    OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+
+    if (pAlgParmTempDTX != NULL)
+        pAlgParmTempDTX -= EXTRA_BYTES;
+    pComponentPrivate->pAlgParamDTX = (NBAMRENC_TALGCtrlDTX*)pAlgParmTempDTX;
+    OMX_NBMEMFREE_STRUCT(pComponentPrivate->pAlgParamDTX);
+
+    if (pParmsTemp != NULL)
+        pParmsTemp -= EXTRA_BYTES;
+    pComponentPrivate->pParams = (NBAMRENC_AudioCodecParams*)pParmsTemp;
+    OMX_NBMEMFREE_STRUCT(pComponentPrivate->pParams);
 
     OMX_NBMEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT]);
     OMX_NBMEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRENC_OUTPUT_PORT]);

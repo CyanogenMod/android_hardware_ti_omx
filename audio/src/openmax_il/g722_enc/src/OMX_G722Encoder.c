@@ -1131,6 +1131,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
  EXIT:
     if(streamInfo)
     {
+        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,streamInfo);
         free(streamInfo);
         streamInfo = NULL;
     }

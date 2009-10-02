@@ -218,6 +218,7 @@ OMX_ERRORTYPE iLBCDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     pComponentPrivate = pHandle->pComponentPrivate;
 
     nIpBuf = pComponentPrivate->pInputBufferList->numBuffers;
+    pComponentPrivate->nRuntimeInputBuffers = nIpBuf;
     
     OMX_U16 iLBCcodecType = pComponentPrivate->iLBCcodecType;
     nIpBufSize = STD_iLBCDEC_BUF_SIZE;              
@@ -226,6 +227,8 @@ OMX_ERRORTYPE iLBCDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     }
 
     nOpBuf = pComponentPrivate->pOutputBufferList->numBuffers;
+    pComponentPrivate->nRuntimeOutputBuffers = nOpBuf;
+
     OMX_U16 codecMode = pComponentPrivate->iLBCcodecType;
     nOpBufSize = iLBCD_OUTPUT_BUFFER_SIZE;
     if (codecMode == 1) {
@@ -551,6 +554,7 @@ OMX_ERRORTYPE iLBCDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         iLBCD_OMX_FREE(pComponentPrivate->pPortDef[iLBCD_OUTPUT_PORT]);
         iLBCD_OMX_FREE(pComponentPrivate->iLBCParams);
         iLBCD_OMX_FREE(pComponentPrivate->pcmParams);
+        iLBCD_OMX_FREE(pComponentPrivate->sPortParam);
     }
         
     pComponentPrivate->bPortDefsAllocated = 0;
@@ -600,7 +604,7 @@ OMX_ERRORTYPE iLBCDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[iLBCD_INPUT_PORT];
 
-    for(i=0; i<pComponentPrivate->pInputBufferList->numBuffers; i++) {
+    for(i=0; i<pComponentPrivate->nRuntimeInputBuffers; i++) {
         if(pTemp_lcml->pFrameParam != NULL) {             
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
             pLcmlHandleAux = (LCML_DSP_INTERFACE *)
@@ -624,7 +628,7 @@ OMX_ERRORTYPE iLBCDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[iLBCD_OUTPUT_PORT];
 
-    for(i=0; i<pComponentPrivate->pOutputBufferList->numBuffers; i++){
+    for(i=0; i<pComponentPrivate->nRuntimeOutputBuffers; i++){
         if(pTemp_lcml->pFrameParam!=NULL){
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
             pLcmlHandleAux = (LCML_DSP_INTERFACE *)

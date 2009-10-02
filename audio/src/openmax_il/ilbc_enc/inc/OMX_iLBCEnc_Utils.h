@@ -153,8 +153,8 @@
     (_s_)->nVersion.s.nStep = 0x0
 
 #define OMX_ILBCMEMFREE_STRUCT(_pStruct_)\
-    ILBCENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
     if(_pStruct_ != NULL){\
+    ILBCENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
         newfree(_pStruct_);\
         _pStruct_ = NULL;\
     }

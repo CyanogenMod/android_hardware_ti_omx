@@ -313,6 +313,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->nOutStandingFillDones  = 0;
     pComponentPrivate->bStopSent              = 0;
     pComponentPrivate->bBypassDSP             = OMX_FALSE;
+    pComponentPrivate->nRuntimeInputBuffers   = 0;
+    pComponentPrivate->nRuntimeOutputBuffers  = 0;
     pComponentPrivate->bNoIdleOnStop          = OMX_FALSE;
     pComponentPrivate->pParams                = NULL;
     pComponentPrivate->LastOutbuf             = NULL;

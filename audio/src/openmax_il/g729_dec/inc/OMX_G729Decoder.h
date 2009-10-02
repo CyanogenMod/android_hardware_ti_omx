@@ -203,9 +203,9 @@
     (_s_)->nVersion.s.nStep = 0x0;
 
 #define OMX_G729MEMFREE_STRUCT(_pStruct_)                       \
-    G729DEC_MEMPRINT("%d :: [FREE] %p\n", __LINE__, _pStruct_); \
     if(_pStruct_ != NULL)                                       \
     {                                                           \
+        G729DEC_MEMPRINT("%d :: [FREE] %p\n", __LINE__, _pStruct_); \
         free(_pStruct_);                                        \
         _pStruct_ = NULL;                                       \
     }

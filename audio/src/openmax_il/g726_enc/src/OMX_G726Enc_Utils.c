@@ -524,6 +524,7 @@ OMX_ERRORTYPE G726ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     G726ENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     OMX_U8* pBufParmsTemp = NULL;
+    OMX_U8* pParamsTemp = NULL;        
     G726ENC_COMPONENT_PRIVATE *pComponentPrivate = (G726ENC_COMPONENT_PRIVATE *)
                                                      pHandle->pComponentPrivate;
     G726ENC_DPRINT("%d :: Entering G726ENC_CleanupInitParams()\n", __LINE__);
@@ -545,6 +546,10 @@ OMX_ERRORTYPE G726ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
           pTemp_lcml++;
     }
 
+    pParamsTemp = (OMX_U8*)pComponentPrivate->pParams;
+    if (pParamsTemp != NULL)
+        pParamsTemp -= 128;
+    OMX_NBMEMFREE_STRUCT(pParamsTemp);
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726ENC_OUTPUT_PORT];
 
     for(i=0; i<pComponentPrivate->nRuntimeOutputBuffers; i++) {

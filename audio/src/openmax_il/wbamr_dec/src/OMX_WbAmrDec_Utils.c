@@ -536,6 +536,10 @@ OMX_ERRORTYPE WBAMR_DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         pComponentPrivate->pPriorityMgmt = NULL;
     }
 
+    if (pComponentPrivate->pHoldBuffer != NULL ) {
+        OMX_WBDECMEMFREE_STRUCT (pComponentPrivate->pHoldBuffer);
+    }
+
     OMX_PRBUFFER1(pComponentPrivate->dbg, "[WBAMR_DEC_FreeCompResources] \n");
     if (pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, "[FREE] %p\n",pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]);

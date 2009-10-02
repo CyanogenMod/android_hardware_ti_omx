@@ -508,6 +508,10 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate = (WBAMRENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
+
+    OMX_U8* pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
+    OMX_U8* pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
+
     OMX_PRINT1(pComponentPrivate->dbg, "Entering\n");
 
     if (pComponentPrivate->bCompThreadStarted) {
@@ -519,6 +523,16 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_WBCLOSE_PIPE(pComponentPrivate->cmdDataPipe[0],err);
         OMX_WBCLOSE_PIPE(pComponentPrivate->cmdDataPipe[1],err);
     }
+
+    if (pAlgParmTemp != NULL)
+        pAlgParmTemp -= EXTRA_BYTES;
+    pComponentPrivate->pAlgParam = (WBAMRENC_TALGCtrl*)pAlgParmTemp;
+    OMX_WBMEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+
+    if (pParmsTemp != NULL)
+        pParmsTemp -= EXTRA_BYTES;
+    pComponentPrivate->pParams = (WBAMRENC_AudioCodecParams*)pParmsTemp;
+    OMX_WBMEMFREE_STRUCT(pComponentPrivate->pParams);
 
     OMX_PRDSP1(pComponentPrivate->dbg, "Freeing private memory structures\n");
     OMX_WBMEMFREE_STRUCT(pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]);

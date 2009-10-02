@@ -432,6 +432,8 @@ OMX_ERRORTYPE G729ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G729ENC_COMPONENT_PRIVATE *pComponentPrivate = (G729ENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
+    OMX_U8* pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
+    OMX_U8* pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
     
     G729ENC_DPRINT("Entering\n");
     if (pComponentPrivate->bPortDefsAllocated)
@@ -450,6 +452,17 @@ OMX_ERRORTYPE G729ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_G729CLOSE_PIPE(pComponentPrivate->cmdDataPipe[1],err);
 
     }
+
+    if (pAlgParmTemp != NULL)
+        pAlgParmTemp -= 128;
+    pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)pAlgParmTemp;
+    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+
+    if (pParmsTemp != NULL)
+        pParmsTemp -= 128;
+    pComponentPrivate->pParams = (G729ENC_AudioCodecParams*)pParmsTemp;
+    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pParams);
+
     if (pComponentPrivate->bPortDefsAllocated)
     {
         OMX_G729MEMFREE_STRUCT(pComponentPrivate->pPortDef[G729ENC_INPUT_PORT]);
@@ -881,8 +894,8 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                         goto EXIT;      
                     }
                     memset(pAlgParmTemp, 0x0, sizeof(G729ENC_TALGCtrl) + 256);
+                    G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pAlgParmTemp);
                     pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)(pAlgParmTemp + 128);
-                    G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pComponentPrivate->pAlgParam);
                     pComponentPrivate->pAlgParam->vadFlag = pComponentPrivate->g729Params->bDTX;
                     pComponentPrivate->pAlgParam->size = sizeof( G729ENC_TALGCtrl );
                     pComponentPrivate->pAlgParam->frameSize = 0;

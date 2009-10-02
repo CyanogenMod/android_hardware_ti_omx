@@ -717,7 +717,7 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
         }
 
         if (pComponentPrivate->pcmParams) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->g722Params[G722ENC_INPUT_PORT]);
+            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pcmParams);
             free(pComponentPrivate->pcmParams);
             pComponentPrivate->pcmParams = NULL;
         }
