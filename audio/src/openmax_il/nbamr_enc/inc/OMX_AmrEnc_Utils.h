@@ -804,9 +804,9 @@ typedef struct AMRENC_COMPONENT_PRIVATE
 
     OMX_U32 nMultiFrameMode;
 
-    OMX_U32 fdwrite;
+    OMX_S32 fdwrite;
 
-    OMX_U32 fdread;
+    OMX_S32 fdread;
 
     /** Set to indicate component is stopping */
     OMX_U32 bIsStopping;
