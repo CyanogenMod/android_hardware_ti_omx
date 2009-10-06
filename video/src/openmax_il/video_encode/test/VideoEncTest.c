@@ -372,6 +372,7 @@ typedef struct MYDATATYPE {
     unsigned int nEncodingPreset;
     OMX_U8 NalFormat;
     OMX_U8 bLastOutBuffer;
+    OMX_U32  nQPIoF;
 } MYDATATYPE;
 
 typedef struct EVENT_PRIVATE {
@@ -2142,6 +2143,7 @@ OMX_ERRORTYPE VIDENCTEST_CheckOptionalArgs(MYDATATYPE* pAppData, int argc, char*
         {"nEncodingPreset",   1, NULL, 'p'},
         {"nRrker",   1, NULL, 'e'},
         {"NALFormat",   1, NULL, 'n'},
+        {"nQPIoF", 1, NULL, 'q'},
         {NULL,          0, NULL,   0}
     };
 
@@ -2175,6 +2177,9 @@ OMX_ERRORTYPE VIDENCTEST_CheckOptionalArgs(MYDATATYPE* pAppData, int argc, char*
                 printf("%d Nal Format found, Value= %s\n",next_option,optarg);
                 pAppData->NalFormat=atoi(optarg);
                 break;
+            case 'q':
+                printf("%d QPI value changed each %d frames\n",next_option,atoi(optarg));
+                pAppData->nQPIoF=atoi(optarg);
             case -1:
                 break;
             default:
@@ -2223,6 +2228,8 @@ OMX_ERRORTYPE VIDENCTEST_CheckArgs(int argc, char** argv, MYDATATYPE** pAppDataT
     pAppData->nIntraFrameInterval=VIDENCTEST_USE_DEFAULT_VALUE;
     pAppData->nEncodingPreset=VIDENCTEST_USE_DEFAULT_VALUE_UI;
     pAppData->NalFormat = 0;
+    pAppData->nQPIoF = 0;
+    pAppData->bForceIFrame = 0;
 
 
     if (argc < 15){
@@ -2883,6 +2890,27 @@ int main(int argc, char** argv)
                 }
 
                 if(pAppData->eCurrentState == VIDENCTEST_StateEncoding){
+                    if(pAppData->nQPIoF > 0) {
+                        if(!(pAppData->nCurrentFrameIn % pAppData->nQPIoF)) {
+                            pAppData->bForceIFrame = OMX_TRUE;
+
+                            eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.ForceIFrame", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error in OMX_GetExtensionIndex function");
+                            eError = OMX_SetConfig(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->bForceIFrame));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for bForceIFrame");
+                            eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.QPI", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error in OMX_GetExtensionIndex function");
+                            eError = OMX_SetConfig(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->nQpI));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for bForceIFrame");
+                        }
+                        else {
+                            pAppData->bForceIFrame = OMX_FALSE;
+                            eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.ForceIFrame", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error in OMX_GetExtensionIndex function");
+                            eError = OMX_SetConfig(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->bForceIFrame));
+                            VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for bForceIFrame");
+                        }
+                    }
                     eError = pAppData->pComponent->EmptyThisBuffer(pHandle, pBuffer);
                     VIDENCTEST_CHECK_ERROR(eError, "Error at EmptyThisBuffer function");
                     pAppData->nInBufferCount--;

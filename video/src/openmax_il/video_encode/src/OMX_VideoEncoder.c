@@ -3141,11 +3141,17 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                "Using buffer on disabled port.\n");
     }
 
-    if (nSizeBytes < pPortDef->nBufferSize || pPortDef->bPopulated)
+    if (pPortDef->bPopulated)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
-                               "Using duplicate buffer or of invalid size.\n");
+                               "Allocating duplicate buffer\n");
+    }
+    if (nSizeBytes < pPortDef->nBufferSize)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+            pComponentPrivate->dbg, OMX_PRBUFFER4,
+            "Allocating invalid size buffer: nBufferSize: %lu nSizeBytes: %lu\n", pPortDef->nBufferSize, nSizeBytes);
     }
 
 
@@ -3490,11 +3496,17 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                                "Allocating buffer on disabled port.\n");
     }
 
-    if (nSizeBytes < pPortDef->nBufferSize || pPortDef->bPopulated)
+    if (pPortDef->bPopulated)
     {
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
-                               "Allocating duplicate buffer or of invalid size.\n");
+                               "Allocating duplicate buffer\n");
+    }
+    if (nSizeBytes < pPortDef->nBufferSize)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
+            pComponentPrivate->dbg, OMX_PRBUFFER4,
+            "Allocating invalid size buffer: nBufferSize: %lu nSizeBytes: %lu\n", pPortDef->nBufferSize, nSizeBytes);
     }
 
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
