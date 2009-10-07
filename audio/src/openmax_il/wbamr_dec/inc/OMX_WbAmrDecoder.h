@@ -243,6 +243,13 @@ typedef enum OMX_INDEXAUDIOTYPE_WBAMRDEC {
     OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE_WBAMRDEC;
 
+/* ======================================================================= */
+/**
+ * pthread variable to indicate OMX returned all buffers to app 
+ */
+/* ======================================================================= */
+pthread_mutex_t bufferReturned_mutex; 
+pthread_cond_t bufferReturned_condition; 
 
 /* ======================================================================= */
 /** WBAMR_DEC_StreamType  Stream types
@@ -651,5 +658,18 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     struct OMX_TI_Debug dbg;    
 
 } WBAMR_DEC_COMPONENT_PRIVATE;
+
+/*=======================================================================*/
+/*! @fn SignalIfAllBuffersAreReturned 
+
+ * @brief Sends pthread signal to indicate OMX has returned all buffers to app 
+
+ * @param  none 
+
+ * @Return void 
+
+ */
+/*=======================================================================*/
+void SignalIfAllBuffersAreReturned(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #endif /* OMX_WBAMR_DECODER_H */

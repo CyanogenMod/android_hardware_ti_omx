@@ -1567,6 +1567,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                        pComponentPrivate->pInputBufferList->pBufHdr[i]
                                        );
+                    SignalIfAllBuffersAreReturned(pComponentPrivate);
                 }
             }            
         }
@@ -1873,12 +1874,16 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
 			pComponentPrivate->pHandle->pApplicationPrivate,
 			pBufHeader);
+        pComponentPrivate->nEmptyBufferDoneCount++;
+        SignalIfAllBuffersAreReturned(pComponentPrivate);
 		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
 		}
 	else if (eDir == OMX_DirOutput) {
 		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
 			pComponentPrivate->pHandle->pApplicationPrivate,
 			pBufHeader);
+        pComponentPrivate->nFillBufferDoneCount++;
+        SignalIfAllBuffersAreReturned(pComponentPrivate);
 		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
 		}
 	goto EXIT;
@@ -2049,6 +2054,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                                        pBufHeader);
+                            SignalIfAllBuffersAreReturned(pComponentPrivate);
                         }
                         else {
                             pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
@@ -2117,6 +2123,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    pBufHeader);
+                        SignalIfAllBuffersAreReturned(pComponentPrivate);
                         goto EXIT;
                     }
                     else {
@@ -2134,6 +2141,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 pComponentPrivate->cbInfo.EmptyBufferDone( pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            pComponentPrivate->pInputBufferList->pBufHdr[0]);
+                SignalIfAllBuffersAreReturned(pComponentPrivate);
                 goto EXIT;
             }
             else{
@@ -2401,6 +2409,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     pComponentPrivate->cbInfo.EmptyBufferDone( pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pBufHeader);
+                    SignalIfAllBuffersAreReturned(pComponentPrivate);
                 }                
             }
         }
@@ -2702,6 +2711,7 @@ HoldLength = %ld\n",__LINE__,pComponentPrivate->nHoldLength);
                 pComponentPrivate->cbInfo.EmptyBufferDone (pHandle,
                                                            pHandle->pApplicationPrivate,
                                                            pLcmlHdr->buffer);
+                SignalIfAllBuffersAreReturned(pComponentPrivate);
                 pComponentPrivate->lcml_nIpBuf--;
                 pComponentPrivate->app_nBuf++;
             }
@@ -2783,6 +2793,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             pComponentPrivate->cbInfo.FillBufferDone (pHandle,
                                                       pHandle->pApplicationPrivate,
                                                       pLcmlHdr->buffer);
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
             pComponentPrivate->lcml_nOpBuf--;
             pComponentPrivate->app_nBuf++;
             pComponentPrivate->nOutStandingFillDones--;
@@ -2800,6 +2811,8 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                         pComponentPrivate->cbInfo.EmptyBufferDone (pHandle,
                                                                    pHandle->pApplicationPrivate,
                                                                    pComponentPrivate->pInputBufHdrPending[i]);
+                        pComponentPrivate->nEmptyBufferDoneCount++;
+                        SignalIfAllBuffersAreReturned(pComponentPrivate);
                         pComponentPrivate->pInputBufHdrPending[i] = NULL;
                     }
                     pComponentPrivate->nNumInputBufPending=0;
@@ -2821,6 +2834,8 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                         pComponentPrivate->cbInfo.FillBufferDone (pHandle,
                                                                   pHandle->pApplicationPrivate,
                                                                   pComponentPrivate->pOutputBufHdrPending[i]);
+                        pComponentPrivate->nFillBufferDoneCount++;
+                        SignalIfAllBuffersAreReturned(pComponentPrivate);
                         pComponentPrivate->pOutputBufHdrPending[i] = NULL;
                     }
                     pComponentPrivate->nNumOutputBufPending=0;
@@ -2842,13 +2857,18 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
 		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
 				pComponentPrivate->pHandle->pApplicationPrivate,
 				pComponentPrivate->pInputBufHdrPending[i]);
-				pComponentPrivate->pInputBufHdrPending[i] = NULL;
+        pComponentPrivate->nEmptyBufferDoneCount++;   
+		pComponentPrivate->pInputBufHdrPending[i] = NULL;
+        SignalIfAllBuffersAreReturned(pComponentPrivate);
+
 	}
 	pComponentPrivate->nNumInputBufPending = 0;
 	for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
 		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
 			pComponentPrivate->pHandle->pApplicationPrivate,
 			pComponentPrivate->pOutputBufHdrPending[i]);
+            pComponentPrivate->nFillBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
 		pComponentPrivate->nOutStandingFillDones--;
 		pComponentPrivate->pOutputBufHdrPending[i] = NULL;
 	}
@@ -2882,6 +2902,24 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                                             3456, 
                                             NULL);
 #endif
+            if((pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount) || (pComponentPrivate->nFillThisBufferCount != pComponentPrivate->nFillBufferDoneCount)) {
+                if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
+                {
+                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
+                }
+                OMXDBG_PRINT(stderr, PRINT, 1, 0, "pthread_cond_waiting for OMX to return all input and outbut buffers");
+                pthread_cond_wait(&bufferReturned_condition, &bufferReturned_mutex);
+                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
+                if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
+                {
+                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
+                }
+            }
+            else
+            {
+                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
+            }
+
             if(pComponentPrivate->bPreempted == 0){
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                    pHandle->pApplicationPrivate,
@@ -2934,7 +2972,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             pHandle = pComponentPrivate->pHandle;
             OMX_PRDSP1(pComponentPrivate->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
             if(pComponentPrivate->LastOutbuf!=NULL && !pComponentPrivate->dasfmode){
-                pComponentPrivate->LastOutbuf->nFlags = OMX_BUFFERFLAG_EOS;
+                pComponentPrivate->LastOutbuf->nFlags |= OMX_BUFFERFLAG_EOS;
             }
                  
             /* add callback to application to indicate SN/USN has completed playing of current set of date */
@@ -3704,6 +3742,37 @@ EXIT:
      return ret;
 }
 #endif
+
+/* ========================================================================== */
+/**
+* @SignalIfAllBuffersAreReturned() This function send signals if OMX returned all buffers to app 
+*
+* @param AMRDEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @pre None
+*
+* @post None
+*
+* @return None
+*/
+/* ========================================================================== */
+void SignalIfAllBuffersAreReturned(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    if((pComponentPrivate->nEmptyThisBufferCount == pComponentPrivate->nEmptyBufferDoneCount) && (pComponentPrivate->nFillThisBufferCount == pComponentPrivate->nFillBufferDoneCount))
+    {
+        if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
+        {
+            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
+        }
+        pthread_cond_broadcast(&bufferReturned_condition);
+        OMXDBG_PRINT(stderr, PRINT, 1, 0, "Sending pthread signal that OMX has returned all buffers to app"); 
+        if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
+        {
+            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
+        }
+        return;
+    }
+}
 
 #ifdef RESOURCE_MANAGER_ENABLED
 void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)

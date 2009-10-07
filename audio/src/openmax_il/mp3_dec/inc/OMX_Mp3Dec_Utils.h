@@ -324,6 +324,14 @@ typedef enum MP3D_COMP_PORT_TYPE {
 }MP3D_COMP_PORT_TYPE;
 
 /* ======================================================================= */
+/**
+ * pthread variable to indicate OMX returned all buffers to app 
+ */
+/* ======================================================================= */
+    pthread_mutex_t bufferReturned_mutex; 
+    pthread_cond_t bufferReturned_condition; 
+
+/* ======================================================================= */
 /** OMX_INDEXAUDIOTYPE: This enum is used by the TI OMX Component.
 * 
 * @param : 
@@ -473,6 +481,7 @@ typedef struct USN_AudioCodecParams{
 typedef struct {
     /* Number of frames in a buffer */
     unsigned long ulFrameCount;
+    unsigned long ulIsLastBuffer;
 }MP3DEC_UAlgOutBufParamStruct;
 
 /* ======================================================================= */
@@ -1101,5 +1110,18 @@ void* MP3DEC_ComponentThread (void* pThreadData);
 /*            and returns the value in a TUint value.                        */
 /*  =========================================================================*/
 OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition);
+
+/*=======================================================================*/
+/*! @fn SignalIfAllBuffersAreReturned 
+
+ * @brief Sends pthread signal to indicate OMX has returned all buffers to app 
+
+ * @param  none 
+
+ * @Return void 
+
+ */
+/*=======================================================================*/
+void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #endif
