@@ -158,8 +158,8 @@ void* AACENC_ComponentThread (void* pThreadData)
                                                     OMX_ErrorHardware,
                                                     OMX_TI_ErrorSevere,
                                                     "Error from Component Thread in select");
-            exit(1);
-
+            eError = OMX_ErrorHardware;
+            break;
         } 
 
         else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds)) && (pComponentPrivate->curState != OMX_StatePause)) 
@@ -244,6 +244,6 @@ EXIT:
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting ComponentThread\n", __LINE__);
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }
 

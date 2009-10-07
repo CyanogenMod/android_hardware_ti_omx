@@ -165,8 +165,8 @@ void* NBAMRENC_CompThread(void* pThreadData)
                                                      OMX_ErrorInsufficientResources,
                                                      OMX_TI_ErrorSevere,
                                                      "Error from Component Thread in select");
-            exit(1);
-
+            eError = OMX_ErrorInsufficientResources;
+            break;
         } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))
                    && (pComponentPrivate->curState != OMX_StatePause)) {
             OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);
@@ -227,5 +227,5 @@ EXIT:
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }

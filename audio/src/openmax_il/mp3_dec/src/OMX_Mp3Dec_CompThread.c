@@ -164,8 +164,8 @@ void* MP3DEC_ComponentThread (void* pThreadData)
                                                     OMX_ErrorInsufficientResources, 
                                                     OMX_TI_ErrorSevere,
                                                     "Error from COmponent Thread in select");
-            goto EXIT;
-
+            eError = OMX_ErrorInsufficientResources; 
+            break;
         } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
             int ret;
             OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
@@ -186,9 +186,7 @@ void* MP3DEC_ComponentThread (void* pThreadData)
             nRet = MP3DEC_HandleCommand (pComponentPrivate);
             if (nRet == EXIT_COMPONENT_THRD) {
                 OMX_PRDSP2(pComponentPrivate->dbg, "Exiting from Component thread\n");
-                OMX_PRDSP2(pComponentPrivate->dbg, "Exiting from Component thread\n");
                 MP3DEC_CleanupInitParams(pHandle);
-                OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
                 OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
 
                 pComponentPrivate->curState = OMX_StateLoaded;
@@ -223,5 +221,5 @@ EXIT:
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
     OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }
