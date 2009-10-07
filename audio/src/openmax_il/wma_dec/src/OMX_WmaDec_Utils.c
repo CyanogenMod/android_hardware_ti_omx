@@ -470,10 +470,10 @@ OMX_ERRORTYPE WMADEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     /* Create the Component Thread */
 #ifdef UNDER_CE     
     eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, 
-                             ComponentThread, pComponentPrivate);
+                             WMADEC_ComponentThread, pComponentPrivate);
 #else   
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL,
-                             ComponentThread, pComponentPrivate);
+                             WMADEC_ComponentThread, pComponentPrivate);
 #endif
     if (eError || !pComponentPrivate->ComponentThread)
     {

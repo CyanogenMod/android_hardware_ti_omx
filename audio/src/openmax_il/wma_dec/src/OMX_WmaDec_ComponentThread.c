@@ -69,12 +69,12 @@
 #include "OMX_WmaDec_Utils.h" 
 /* ================================================================================= */
 /**
-* @fn ComponentThread() Component thread
+* @fn WMADEC_ComponentThread() Component thread
 *
 *  @see         OMX_ComponentThread.h
 */
 /* ================================================================================ */
-void* ComponentThread (void* pThreadData)
+void* WMADEC_ComponentThread (void* pThreadData)
 {
     int status;
     struct timespec tv;

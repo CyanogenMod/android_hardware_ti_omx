@@ -1301,7 +1301,7 @@ OMX_U32 WMADEC_IsValid(WMADEC_COMPONENT_PRIVATE *pComponentPrivate,
 OMX_ERRORTYPE WMADEC_TransitionToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate);
 /* ===========================================================  */
 /**
- *  ComponentThread()  Component thread
+ *  WMADEC_ComponentThread()  Component thread
  *
  *  @param pThreadData		Thread data
  *
@@ -1310,7 +1310,7 @@ OMX_ERRORTYPE WMADEC_TransitionToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivat
  *
  */
 /*================================================================== */
-void* ComponentThread (void* pThreadData);
+void* WMADEC_ComponentThread (void* pThreadData);
  
 
 /* ======================================================================= */

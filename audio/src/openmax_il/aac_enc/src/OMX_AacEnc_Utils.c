@@ -482,9 +482,9 @@ OMX_ERRORTYPE AACENC_StartComponentThread(OMX_HANDLETYPE pComponent)
 
     /* create the pipe used to send commands to the thread */
 #ifdef UNDER_CE     
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, ComponentThread, pComponentPrivate);
+    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, AACENC_ComponentThread, pComponentPrivate);
 #else   
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, ComponentThread, pComponentPrivate);
+    eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, AACENC_ComponentThread, pComponentPrivate);
 #endif
     if (eError || !pComponentPrivate->ComponentThread) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Inside  AACENC_StartComponentThread\n", __LINE__);

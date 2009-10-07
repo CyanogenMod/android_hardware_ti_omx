@@ -72,7 +72,7 @@
 #include "OMX_AacEnc_CompThread.h"
 
 
-void* ComponentThread (void* pThreadData)
+void* AACENC_ComponentThread (void* pThreadData)
 {
     int status;
     struct timespec tv;
