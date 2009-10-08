@@ -3278,20 +3278,14 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                              PERF_ModuleMemory);
 #endif
 
-           pTemp = (OMX_U8*)(pBuffHead->pBuffer);
-#ifdef VIDDEC_WMVPOINTERFIXED
-            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV &&
-                nPortIndex == VIDDEC_INPUT_PORT &&
-                pComponentPrivate->ProcessMode == 0) {
-                pTemp -= VIDDEC_WMV_BUFFER_OFFSET;
-                OMX_PRBUFFER1(pComponentPrivate->dbg, "Removing extra wmv padding %d pBuffer 0x%p\n", VIDDEC_WMV_BUFFER_OFFSET, 
-                    pTemp);
-            }
-#endif
-           pTemp -= VIDDEC_PADDING_HALF;
-           pBuffHead->pBuffer = (OMX_U8*)pTemp;
-           free(pBuffHead->pBuffer);
-           pBuffHead->pBuffer = NULL;
+      /* Freeing the original buffer position were data buffer was allocated */
+           if(pBufferPrivate->pOriginalBuffer != NULL){
+              pBuffHead->pBuffer = pBufferPrivate->pOriginalBuffer;
+              pBufferPrivate->pOriginalBuffer = NULL;
+              OMX_FREE(pBuffHead->pBuffer);
+           } else{
+              OMX_FREE(pBuffHead->pBuffer);
+           }
         }
     }
 
@@ -3421,10 +3415,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef = NULL;
     VIDDEC_PORT_TYPE* pCompPort = NULL;
-    OMX_U8* pTemp = NULL;
     OMX_U8 pBufferCnt = 0;
-    OMX_U32 nTempSizeBytes = 0;
-    nTempSizeBytes = nSizeBytes;
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
 
@@ -3434,14 +3425,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PRBUFFER1(pComponentPrivate->dbg, "+++Entering pHandle 0x%p pBuffHead 0x%p nPortIndex 0x%lx nSizeBytes 0x%lx\n",
         hComponent, *pBuffHead, nPortIndex, nSizeBytes);
 
-#ifdef VIDDEC_WMVPOINTERFIXED
-    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
-        nPortIndex == VIDDEC_INPUT_PORT &&
-        pComponentPrivate->ProcessMode == 0) {
-        nTempSizeBytes += VIDDEC_WMV_BUFFER_OFFSET;
-        OMX_PRBUFFER1(pComponentPrivate->dbg, "Adding extra wmv buffer add %d size %lu\n", VIDDEC_WMV_BUFFER_OFFSET, nTempSizeBytes);
-    }
-#endif
+
     if (nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
         pCompPort = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT];
         pBufferCnt = pCompPort->nBufferCnt;
@@ -3472,8 +3456,9 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     *pBuffHead = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr;
     memset(*pBuffHead, 0, sizeof(OMX_BUFFERHEADERTYPE));
     OMX_CONF_INIT_STRUCT(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, OMX_BUFFERHEADERTYPE, pComponentPrivate->dbg);
-    OMX_MALLOC_STRUCT_SIZED(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, OMX_U8, nSizeBytes + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
-    if (!pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer) {
+    /* Allocate Video Decoder buffer */
+    OMX_MALLOC_STRUCT_SIZED((*pBuffHead)->pBuffer, OMX_U8, OMX_GET_DATABUFF_SIZE(nSizeBytes), NULL);
+    if (!((*pBuffHead)->pBuffer)) {
         eError = OMX_ErrorInsufficientResources;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3483,37 +3468,23 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                                                NULL);
         goto EXIT;
     }
-    pTemp = (OMX_U8*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
-    pTemp += VIDDEC_PADDING_HALF;
+    /* Align and add padding for data buffer */
+    pCompPort->pBufferPrivate[pBufferCnt]->pOriginalBuffer = (*pBuffHead)->pBuffer;
+    (*pBuffHead)->pBuffer += VIDDEC_PADDING_HALF;
+    OMX_ALIGN_BUFFER((*pBuffHead)->pBuffer, VIDDEC_ALIGNMENT);
 #ifdef VIDDEC_WMVPOINTERFIXED
-    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
-        nPortIndex == VIDDEC_INPUT_PORT &&
-        pComponentPrivate->ProcessMode == 0) {
-        pTemp += VIDDEC_WMV_BUFFER_OFFSET;
-        pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = (OMX_U8*)pTemp;
-        (*pBuffHead)->nOffset = 0;
-        OMX_PRBUFFER1(pComponentPrivate->dbg, "Adding extra wmv padding %d pBuffer 0x%p\n", VIDDEC_WMV_BUFFER_OFFSET,
-            pTemp);
-    }
+    pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = (*pBuffHead)->pBuffer;
+    (*pBuffHead)->nOffset = 0;
 #endif
-    pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer = (OMX_U8*)pTemp;
-    (*pBuffHead)->pBuffer = (pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer);
-    (*pBuffHead)->nAllocLen = nTempSizeBytes;
+
+    (*pBuffHead)->nAllocLen = nSizeBytes;
     (*pBuffHead)->pAppPrivate = pAppPrivate;
     (*pBuffHead)->pPlatformPrivate = NULL;
     (*pBuffHead)->pInputPortPrivate = NULL;
     (*pBuffHead)->pOutputPortPrivate = NULL;
     (*pBuffHead)->nFlags = VIDDEC_CLEARFLAGS;
     (*pBuffHead)->pMarkData = NULL;
-#ifndef VIDDEC_WMVPOINTERFIXED
-    if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM &&
-        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
-        pComponentPrivate->ProcessMode == 0 &&
-        nPortIndex == VIDDEC_INPUT_PORT) {
-        /* vc-1 fix */
-        (*pBuffHead)->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
-    }
-#endif
+
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERFcomp,
                        (*pBuffHead)->pBuffer,
@@ -3560,7 +3531,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pCompPort->pBufferPrivate[pBufferCnt]->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
     }
 
-    pPortDef->nBufferSize = nTempSizeBytes;
+    pPortDef->nBufferSize = nSizeBytes;
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead 0x%p nAllocLen 0x%lx pBuffer %p eBufferOwner %d\n",
         *pBuffHead, (*pBuffHead)->nAllocLen, pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, 
         pCompPort->pBufferPrivate[pBufferCnt]->eBufferOwner);
