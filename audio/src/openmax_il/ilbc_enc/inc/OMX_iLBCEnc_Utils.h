@@ -605,10 +605,10 @@ typedef struct ILBCENC_COMPONENT_PRIVATE
     OMX_U32 nMultiFrameMode;
 
     /** Writing pipe Used for DSP_RENDERING_ON */
-    OMX_U32 fdwrite;
+    OMX_S32 fdwrite;
 
     /** Writing pipe Used for DSP_RENDERING_ON */
-    OMX_U32 fdread;
+    OMX_S32 fdread;
 
     /** Flag set when buffer should not be queued to the DSP */
     OMX_U32 bBypassDSP;
