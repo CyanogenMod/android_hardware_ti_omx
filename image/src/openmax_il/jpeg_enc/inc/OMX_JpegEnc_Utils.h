@@ -402,6 +402,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     OMX_BOOL bSetLumaQuantizationTable;
     OMX_BOOL bSetChromaQuantizationTable;
     OMX_BOOL bSetHuffmanTable;
+	OMX_BOOL bConvert420pTo422i;
     OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pCustomLumaQuantTable;
     OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pCustomChromaQuantTable;
     JPEGENC_CUSTOM_HUFFMANTTABLETYPE *pHuffmanTable;
@@ -587,7 +588,8 @@ typedef enum OMX_JPEGE_INDEXTYPE  {
     OMX_IndexCustomQFactor,
     OMX_IndexCustomDRI,
     OMX_IndexCustomHuffmanTable,
-    OMX_IndexCustomDebug
+    OMX_IndexCustomDebug,
+	OMX_IndexCustomColorFormatConvertion_420pTo422i
 }OMX_INDEXIMAGETYPE;
 
 typedef struct IUALG_Buf {
