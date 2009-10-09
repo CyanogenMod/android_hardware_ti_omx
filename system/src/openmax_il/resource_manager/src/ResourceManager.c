@@ -1033,6 +1033,9 @@ void *RM_CPULoadThread(int pipeToWatch)
     unsigned int dsp_currload=0, dsp_predload=0, dsp_currfreq=0, dsp_predfreq=0;
     cpuStruct.snapshotsCaptured = 0;
     cpuStruct.averageCpuLoad = 0;
+    int maxMhz=0;
+    int cur_freq=0;
+    int op=0;
 
     /* initialize array */
     for (i=0; i < RM_CPUAVGDEPTH; i++) {
@@ -1045,53 +1048,58 @@ void *RM_CPULoadThread(int pipeToWatch)
     while (1) {
         results = NULL;
         NumFound = 0;
-        int op;
 
 #ifdef RAM_ENABLED
         /* get the ARM maximum operating point */
-        FILE *fp = fopen("/sys/power/vdd1_opp","r");
+        FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
         if (fp == NULL) RM_DPRINT("open file failed\n");
-        fscanf(fp, "%d",&op);
+        fscanf(fp, "%d",&cur_freq);
         fclose(fp);
-#else
-        // if sysfs is not available, use opp4 constraints
-        op = RM_OPERATING_POINT_4;
-#endif
+        cur_freq /= 1000;
 
-        int maxMhz=0; 
+        switch (cur_freq)
+        {
+            case RM_ARM_OPERATING_POINT_1_MHZ:
+                op = RM_OPERATING_POINT_1;
+                maxMhz = RM_DSP_OPERATING_POINT_1_MHZ;
+                break;
 
-        switch (op) {
-            case RM_OPERATING_POINT_1 : 
-                maxMhz = RM_OPERATING_POINT_1_MHZ;
-            break;
+            case RM_ARM_OPERATING_POINT_2_MHZ:
+                op = RM_OPERATING_POINT_2;
+                maxMhz = RM_DSP_OPERATING_POINT_2_MHZ;
+                break;
 
-            case RM_OPERATING_POINT_2 : 
-                maxMhz = RM_OPERATING_POINT_2_MHZ;
-            break;
+            case RM_ARM_OPERATING_POINT_3_MHZ:
+                op = RM_OPERATING_POINT_3;
+                maxMhz = RM_DSP_OPERATING_POINT_3_MHZ;
+                break;
 
-            case RM_OPERATING_POINT_3: 
-                maxMhz = RM_OPERATING_POINT_3_MHZ;
-            break;
+            case RM_ARM_OPERATING_POINT_4_MHZ:
+                op = RM_OPERATING_POINT_4;
+                maxMhz = RM_DSP_OPERATING_POINT_4_MHZ;
+                break;
 
-            case RM_OPERATING_POINT_4: 
-                maxMhz = RM_OPERATING_POINT_4_MHZ;
-            break;
-
-            case RM_OPERATING_POINT_5: 
-                maxMhz = RM_OPERATING_POINT_5_MHZ;
-            break;
+            case RM_ARM_OPERATING_POINT_5_MHZ:
+                op = RM_OPERATING_POINT_5;
+                maxMhz = RM_DSP_OPERATING_POINT_5_MHZ;
+                break;
 
             default:
-                RM_DPRINT("RM read incorrect operating point\n");
-            break;
+                RM_DPRINT("Read incorrect frequency from sysfs\n");
+                return NULL;
         }
+
+#else
+        // if sysfs is not available, use opp4 constraints
+        maxMHz = RM_DSP_OPERATING_POINT_4_MHZ;
+#endif
 
 
         status = QosTI_GetProcLoadStat (&dsp_currload, &dsp_predload, &dsp_currfreq, &dsp_predfreq);
         if (DSP_SUCCEEDED(status)) 
         {
             /* get the dsp load from the Qos call without a DSP wake up*/
-            currentOverallUtilization = dsp_currload * maxMhz / RM_OPERATING_POINT_5_MHZ;
+            currentOverallUtilization = dsp_currload * maxMhz / RM_DSP_OPERATING_POINT_5_MHZ;
         } 
         else 
         {
@@ -1114,7 +1122,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 NumFound = 0;
             }
             p = (struct  QOSRESOURCE_PROCESSOR *) results[0];
-            currentOverallUtilization = p->currentLoad * maxMhz / RM_OPERATING_POINT_5_MHZ;
+            currentOverallUtilization = p->currentLoad * maxMhz / RM_DSP_OPERATING_POINT_5_MHZ;
         }
 
         /* If we have not yet captured RM_CPUAVGDEPTH samples add this to the next slot in the array */
@@ -1136,11 +1144,10 @@ void *RM_CPULoadThread(int pipeToWatch)
             sum += cpuStruct.cpuLoadSnapshots[i];
         }
         cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
-        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * RM_OPERATING_POINT_5_MHZ) / 100);
-        cpuStruct.cyclesAvailable = RM_OPERATING_POINT_5_MHZ - cpuStruct.cyclesInUse;
+        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * RM_DSP_OPERATING_POINT_5_MHZ) / 100);
+        cpuStruct.cyclesAvailable = RM_DSP_OPERATING_POINT_5_MHZ - cpuStruct.cyclesInUse;
 
         /* wait for RM_CPUAVERAGEDELAY seconds */
-        //sleep(RM_CPUAVERAGEDELAY);
         nanosleep(&tv, NULL);
         free(results);
         }

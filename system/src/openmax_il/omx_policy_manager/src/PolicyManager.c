@@ -270,7 +270,7 @@ void HandleRequestPolicy(POLICYMANAGER_COMMANDDATATYPE cmd)
     }
 
     /* If not, determine whether there is a policy combination which will allow the new request to run at all */
-   returnValue = CheckAllCombinations(cmd.param1,&combination, &priority);
+    returnValue = CheckAllCombinations(cmd.param1,&combination, &priority);
 
     if (returnValue == OMX_TRUE) {
         for (i=0; i < registeredComponents  ; i++) {  /* The -1 is temporary until logic fixed */

@@ -19,13 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define RAM_DEBUG
+#undef RAM_DEBUG
 
 #ifdef RAM_DEBUG
   #include <utils/Log.h>
   #undef LOG_TAG
   #define LOG_TAG "OMX VDD MONITOR"
   #define RAM_DPRINT LOGD
+#else
+  #define RAM_DPRINT(...)
 #endif
 
 #define OPERATING_POINT_1 1
