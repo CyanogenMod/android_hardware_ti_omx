@@ -2623,7 +2623,7 @@ pHandle = pComponentPrivate_CC->pHandle;
         if(pComponentPrivate_CC->codecStop_waitingsignal == 0){
             pComponentPrivate_CC->codecStop_waitingsignal = 1;             
             pthread_cond_signal(&pComponentPrivate_CC->codecStop_threshold);
-            OMX_ERROR4(pComponentPrivate_CC->dbg, "stop ack. received. stop waiting for sending disable command completed\n");
+            OMX_PRINT2(pComponentPrivate_CC->dbg, "stop ack. received. stop waiting for sending disable command completed\n");
         }
         pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
 		
@@ -3364,7 +3364,6 @@ OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivat
 int AACEnc_GetSampleRateIndexL( const int aRate)
 {
     int index = 0;
-    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d::aRate:%d\n",__LINE__,aRate);
 
     switch( aRate ){
     case 96000:
@@ -3404,11 +3403,9 @@ int AACEnc_GetSampleRateIndexL( const int aRate)
         index = 11;
         break;
     default:
-        OMXDBG_PRINT(stderr, PRINT, 2, 0, "Invalid sampling frequency\n");
         break;
     }
 
-    OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d::index:%d\n",__LINE__,index);
     return index;
 }
 
