@@ -1076,6 +1076,8 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+void WBAMRENC_HandleUSNError (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
 /*===============================================================*/
 
 typedef enum {
