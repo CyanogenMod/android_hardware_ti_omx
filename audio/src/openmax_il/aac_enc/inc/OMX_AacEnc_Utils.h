@@ -692,6 +692,17 @@ OMX_ERRORTYPE AACENC_StopComponentThread(OMX_HANDLETYPE pHandle);
 
 OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 
+/*  =========================================================================*/
+/*  func    AACENC_HandleUSNError
+/*
+/*  desc    Handles error messages returned by the dsp
+/*
+/*@return n/a
+/*
+/*  =========================================================================*/
+void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
+
 #endif
 
 

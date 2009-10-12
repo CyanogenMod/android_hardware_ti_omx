@@ -2689,131 +2689,49 @@ pHandle = pComponentPrivate_CC->pHandle;
     
     else if (event == EMMCodecDspError) 
     {
-
-        for(j=0;j<9;j++)
+        OMX_PRSTATE2(pComponentPrivate_CC->dbg, "%d :: commandedState  = %d\n",__LINE__,(int)args[0]);
+        OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d :: arg4 = %d\n",__LINE__,(int)args[4]);
+        OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d :: arg5 = %d\n",__LINE__,(int)args[5]);
+        OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d ::UTIL: EMMCodecDspError Here\n",__LINE__);
+        switch ( (OMX_U32) args [4])
         {
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "arg [%d] = %p \n",j,args[j]);
-        }
+            /* USN_ERR_NONE,: Indicates that no error encountered during execution of the command and the command execution completed succesfully.
+             * USN_ERR_WARNING,: Indicates that process function returned a warning. The exact warning is returned in Arg2 of this message.
+             * USN_ERR_PROCESS,: Indicates that process function returned a error type. The exact error type is returnd in Arg2 of this message.
+             * USN_ERR_PAUSE,: Indicates that execution of pause resulted in error.
+             * USN_ERR_STOP,: Indicates that execution of stop resulted in error.
+             * USN_ERR_ALGCTRL,: Indicates that execution of alg control resulted in error.
+             * USN_ERR_STRMCTRL,: Indiactes the execution of STRM control command, resulted in error.
+             * USN_ERR_UNKNOWN_MSG,: Indicates that USN received an unknown command. */
 
 #ifdef _ERROR_PROPAGATION__
-        /* Cheking for MMU_fault */
-        if((args[4] == (void*)USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) 
-        {
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
-            pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
-            OMX_PRSTATE2(pComponentPrivate_CC->dbg, "State changed to OMX_StateInvalid Line %d\n",__LINE__);
-            
-            pComponentPrivate_CC->curState = OMX_StateInvalid;
-            pHandle = pComponentPrivate_CC->pHandle;
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                                   pHandle->pApplicationPrivate,
-                                   OMX_EventError,
-                                   OMX_ErrorHardware, 
-                                   OMX_TI_ErrorSevere,
-                                   NULL);
-        }
-#endif      
-        if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) 
-        {
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: UTIL: Inside the LCML_Callback: IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
-            pHandle = pComponentPrivate_CC->pHandle;
-            pComponentPrivate_CC->bPlayCompleteFlag = 1;
-            
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: UTIL: pComponentPrivate_CC->bPlayCompleteFlag = %ld \n",__LINE__,pComponentPrivate_CC->bPlayCompleteFlag);
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "bPlayCompleteFlag\n");
-            pComponentPrivate_CC->LastOutbuf->nFlags |= OMX_BUFFERFLAG_EOS;  /* Extra feature Not used */
-            OMX_PRBUFFER2(pComponentPrivate_CC->dbg, "%d :: UTIL: Buffer with EOS flag: %p \n",__LINE__,pComponentPrivate_CC->LastOutbuf);
-            /* add callback to application to indicate SN/USN has completed playing of current set of date */
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle,                
-                                    pHandle->pApplicationPrivate,
-                                    OMX_EventBufferFlag,
-                                    (OMX_U32)NULL,
-                                    OMX_BUFFERFLAG_EOS,NULL);
-        }
-
-        if((int)args[5] == IUALG_ERR_GENERAL) 
-        {
-            char *pArgs = "damedesuStr";
-            OMX_ERROR4(pComponentPrivate_CC->dbg,  "Algorithm error. Cannot continue" );
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: arg5 = %p\n",__LINE__,args[5]);
-            OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d :: LCML_Callback: IUALG_ERR_GENERAL\n",__LINE__);
-            pHandle = pComponentPrivate_CC->pHandle;
-            pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
-
-#ifndef UNDER_CE
-
-                        pComponentPrivate_CC->bIsStopping = 1;
-					if (pComponentPrivate_CC->codecStop_waitingsignal == 0){ 
-						pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex); 	
-					}
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  MMCodecControlStop,(void *)pArgs);
-
-                    if (pComponentPrivate_CC->codecStop_waitingsignal == 0){
-                        pthread_cond_wait(&pComponentPrivate_CC->codecStop_threshold, &pComponentPrivate_CC->codecStop_mutex);
-                        pComponentPrivate_CC->codecStop_waitingsignal = 0;
-                        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
-                    }
-            if(eError != OMX_ErrorNone) 
-            {
-                OMX_ERROR4(pComponentPrivate_CC->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
-                goto EXIT;
-            }
-            OMX_PRSTATE2(pComponentPrivate_CC->dbg, "%d :: AACENC: Codec has been Stopped here\n",__LINE__);
-            pComponentPrivate_CC->curState = OMX_StateIdle;
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                OMX_EventCmdComplete, OMX_CommandStateSet,OMX_StateIdle, NULL);
-#else
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                                                        pHandle->pApplicationPrivate,
-                                                        OMX_EventError, 
-                                                        OMX_ErrorUndefined,
-                                                        OMX_TI_ErrorSevere, 
-                                                        NULL);
+            case USN_ERR_PAUSE:
+            case USN_ERR_STOP:
+            case USN_ERR_ALGCTRL:
+            case USN_ERR_STRMCTRL:
+            case USN_ERR_UNKNOWN_MSG:
+                {
+                    pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
+                    pComponentPrivate_CC->curState = OMX_StateInvalid;
+                    pHandle = pComponentPrivate_CC->pHandle;
+                    pComponentPrivate_CC->cbInfo.EventHandler(pHandle,
+                            pHandle->pApplicationPrivate,
+                            OMX_EventError,
+                            OMX_ErrorInvalidState,
+                            OMX_TI_ErrorSevere,
+                            NULL);
+                }
+                break;
 #endif
+
+            case USN_ERR_WARNING:
+            case USN_ERR_PROCESS:
+                AACENC_HandleUSNError (pComponentPrivate_CC, (OMX_U32)args[5]);
+                break;
+            default:
+                break;
         }
 
-        
-        if( (int)args[5] == IUALG_ERR_DATA_CORRUPT )
-        {
-            char *pArgs = "damedesuStr";
-            OMX_PRINT2(pComponentPrivate_CC->dbg,  "Algorithm error. Corrupt data" );
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: arg5 = %p\n",__LINE__,args[5]);
-            OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d :: LCML_Callback: IUALG_ERR_DATA_CORRUPT\n",__LINE__);
-            pHandle = pComponentPrivate_CC->pHandle;
-            pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
-#ifndef UNDER_CE
-
-                        pComponentPrivate_CC->bIsStopping = 1;
-					if (pComponentPrivate_CC->codecStop_waitingsignal == 0){ 
-						pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex); 	
-					}
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  MMCodecControlStop,(void *)pArgs);
-
-                    if (pComponentPrivate_CC->codecStop_waitingsignal == 0){
-                        pthread_cond_wait(&pComponentPrivate_CC->codecStop_threshold, &pComponentPrivate_CC->codecStop_mutex);
-                        pComponentPrivate_CC->codecStop_waitingsignal = 0;
-                        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
-                    }
-            if(eError != OMX_ErrorNone) 
-            {
-                OMX_ERROR4(pComponentPrivate_CC->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
-                goto EXIT;
-            }
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "%d :: AACENC: Codec has been Stopped here\n",__LINE__);
-            pComponentPrivate_CC->curState = OMX_StateIdle;
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                      OMX_EventCmdComplete, OMX_ErrorNone,0, NULL);
-#else
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                                                    pHandle->pApplicationPrivate,
-                                                    OMX_EventError, 
-                                                    OMX_ErrorUndefined,
-                                                    OMX_TI_ErrorSevere, 
-                                                    NULL);
-#endif                  
-        }
     }
 
 
@@ -3479,6 +3397,84 @@ void myfree(void *dp, int line, char *s){
          OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n\nPointer not found. Line:%d    File%s!!\n\n",line, s);
 }
 #endif
+
+/*  =========================================================================*/
+/*  func    AACENC_HandleUSNError
+/*
+/*  desc    Handles error messages returned by the dsp
+/*
+/*@return n/a
+/*
+/*  =========================================================================*/
+void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
+{
+    OMX_COMPONENTTYPE *pHandle = NULL;
+    OMX_U32 i;
+    switch (arg)
+    {
+
+        case IUALG_WARN_CONCEALED:
+        case IUALG_WARN_UNDERFLOW:
+        case IUALG_WARN_OVERFLOW:
+        case IUALG_WARN_ENDOFDATA:
+            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
+            /* all of these are informative messages, Algo can recover, no need to notify the
+             * IL Client at this stage of the implementation */
+            break;
+        case IUALG_WARN_PLAYCOMPLETED:
+
+            {
+                OMX_PRINT2(pComponentPrivate->dbg, "%d :: UTIL: IUALG_WARN_PLAYCOMPLETED/USN_ERR_WARNING event received\n", __LINE__);
+                pComponentPrivate->bPlayCompleteFlag = 1;
+#ifndef UNDER_CE
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+                pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;
+#else
+                /* add callback to application to indicate SN/USN has completed playing of current set of date */
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+#endif
+            }
+            break;
+
+#ifdef _ERROR_PROPAGATION__
+        case IUALG_ERR_BAD_HANDLE:
+        case IUALG_ERR_DATA_CORRUPT:
+        case IUALG_ERR_NOT_SUPPORTED:
+        case IUALG_ERR_ARGUMENT:
+        case IUALG_ERR_NOT_READY:
+        case IUALG_ERR_GENERAL:
+
+            {
+                /* all of these are fatal messages, Algo can not recover
+                 * hence return an error */
+                OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error, cannot recover" );
+                pComponentPrivate->bIsInvalidState=OMX_TRUE;
+                pComponentPrivate->curState = OMX_StateInvalid;
+                pHandle = pComponentPrivate->pHandle;
+                pComponentPrivate->cbInfo.EventHandler(pHandle,
+                        pHandle->pApplicationPrivate,
+                        OMX_EventError,
+                        OMX_ErrorInvalidState,
+                        OMX_TI_ErrorSevere,
+                        NULL);
+            }
+            break;
+#endif
+        default:
+            break;
+    }
+}
+
 
 #ifdef RESOURCE_MANAGER_ENABLED
 void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
