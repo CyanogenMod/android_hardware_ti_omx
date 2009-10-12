@@ -1350,6 +1350,16 @@ OMX_U32 WMADEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 /*  =========================================================================*/
 OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData, struct OMX_TI_Debug dbg);
 
+/*  =========================================================================*/
+/*  func    WMADEC_HandleUSNError                                                                                    */
+/*                                                                                                                                              */
+/*  desc    Handles error messages returned by the dsp                                                        */
+/*                                                                                                                                              */
+/*@return n/a                                                                                                                           */
+/*                                                                                                                                              */
+/*  =========================================================================*/
+void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
 #ifdef RESOURCE_MANAGER_ENABLED
 void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif

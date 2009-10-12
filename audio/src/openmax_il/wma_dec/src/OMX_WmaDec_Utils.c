@@ -1988,8 +1988,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     phandle = (LCML_DSP_INTERFACE *)args[6];
 #endif
     pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
-    OMX_PRINT1(pComponentPrivate_CC->dbg, "[CURRENT STATE-------------------------------------->] %d",
-                  pComponentPrivate_CC->curState);
+
     switch(event)
     {
     case EMMCodecDspError:
@@ -2289,93 +2288,45 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     else if (event == EMMCodecDspError)
     {
 
+        switch ( (OMX_U32) args [4])
+        {
+            /* USN_ERR_NONE,: Indicates that no error encountered during execution of the command and the command execution completed succesfully.
+             * USN_ERR_WARNING,: Indicates that process function returned a warning. The exact warning is returned in Arg2 of this message.
+             * USN_ERR_PROCESS,: Indicates that process function returned a error type. The exact error type is returnd in Arg2 of this message.
+             * USN_ERR_PAUSE,: Indicates that execution of pause resulted in error.
+             * USN_ERR_STOP,: Indicates that execution of stop resulted in error.
+             * USN_ERR_ALGCTRL,: Indicates that execution of alg control resulted in error.
+             * USN_ERR_STRMCTRL,: Indiactes the execution of STRM control command, resulted in error.
+             * USN_ERR_UNKNOWN_MSG,: Indicates that USN received an unknown command. */
+
 #ifdef _ERROR_PROPAGATION__
-        for(i=0;i<9;i++)
-        {
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "arg [%d] = %p ",i,args[i]);
-        }
-        /* Cheking for MMU_fault */
-        OMX_PRINT2(pComponentPrivate_CC->dbg, "Printing ERROR CODE args 4 =%d",(int)args[4]);
-        OMX_PRINT2(pComponentPrivate_CC->dbg, "Printing ERROR CODE args 5 =%d",(int)args[5]);
-        
-        if((args[4] == (void *)USN_ERR_UNKNOWN_MSG) && (args[5] == NULL))
-        {               
-            pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
-            pComponentPrivate_CC->curState = OMX_StateInvalid;
-            pHandle = pComponentPrivate_CC->pHandle;
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorInvalidState, 
-                                                      OMX_TI_ErrorSevere,
-                                                      NULL);
-        }
-#endif
-        if (((int)args[4] == USN_ERR_WARNING) && 
-            ((int)args[5] == IUALG_WARN_PLAYCOMPLETED))
-        {
-            OMX_PRDSP2(pComponentPrivate_CC->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED",
-                          __LINE__);
+            case USN_ERR_PAUSE:
+            case USN_ERR_STOP:
+            case USN_ERR_ALGCTRL:
+            case USN_ERR_STRMCTRL:
+            case USN_ERR_UNKNOWN_MSG:
 
-            for (i=0; i < pComponentPrivate_CC->pOutputBufferList->numBuffers; i++) {
-                if (WMADEC_IsPending(pComponentPrivate_CC,pComponentPrivate_CC->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
-                    pComponentPrivate_CC->lastout = pComponentPrivate_CC->pOutputBufferList->pBufHdr[i];
+                {
+                    pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
+                    pComponentPrivate_CC->curState = OMX_StateInvalid;
+                    pHandle = pComponentPrivate_CC->pHandle;
+                    pComponentPrivate_CC->cbInfo.EventHandler(pHandle,
+                            pHandle->pApplicationPrivate,
+                            OMX_EventError,
+                            OMX_ErrorInvalidState,
+                            OMX_TI_ErrorSevere,
+                            NULL);
                 }
-            }
-            for (i=0; i < pComponentPrivate_CC->pOutputBufferList->numBuffers; i++) {
-                if (WMADEC_IsPending(pComponentPrivate_CC,pComponentPrivate_CC->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
-#ifdef __PERF_INSTRUMENTATION__
-                    PERF_SendingFrame(pComponentPrivate_CC->pPERFcomp,
-                                      PREF(pComponentPrivate_CC->pOutputBufferList->pBufHdr[i], pBuffer),
-                                      0,
-                                      PERF_ModuleHLMM);
+                break;
 #endif
-                    pComponentPrivate_CC->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
-                    if(pComponentPrivate_CC->lastout == pComponentPrivate_CC->pOutputBufferList->pBufHdr[i]){
-                        pComponentPrivate_CC->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
-                    }
-                    pComponentPrivate_CC->cbInfo.FillBufferDone (pComponentPrivate_CC->pHandle,
-                                                                 pComponentPrivate_CC->pHandle->pApplicationPrivate,
-                                                                 pComponentPrivate_CC->pOutputBufferList->pBufHdr[i]);
-                    pComponentPrivate_CC->nOutStandingFillDones++;
-                    pending_buffers = OMX_TRUE;
-                }else{
-                  if((i == pComponentPrivate_CC->pOutputBufferList->numBuffers-1) && !pending_buffers){
-                    /*is last iteration and no pending buffers were found*/
-                    pending_buffers = OMX_FALSE;
-                  }
-                }
-            }
-            if(!pComponentPrivate_CC->dasfmode)
-            {
-              if(!pending_buffers){
-                /*turning on EOS on last buffer queued (extra check)*/
-                    pComponentPrivate_CC->LastOutputBufferHdrQueued->nFlags |=
-                      OMX_BUFFERFLAG_EOS;
-                    pComponentPrivate_CC->cbInfo.FillBufferDone (pComponentPrivate_CC->pHandle,
-                                                                     pComponentPrivate_CC->pHandle->pApplicationPrivate,
-                                                                     pComponentPrivate_CC->LastOutputBufferHdrQueued);
-                                                                     }
-                pComponentPrivate_CC->cbInfo.EventHandler(
-                                                          pComponentPrivate_CC->pHandle,
-                                                          pComponentPrivate_CC->pHandle->pApplicationPrivate,
-                                                          OMX_EventBufferFlag,
-                                                          pComponentPrivate_CC->LastOutputBufferHdrQueued->nOutputPortIndex,
-                                                          pComponentPrivate_CC->LastOutputBufferHdrQueued->nFlags, (OMX_PTR)OMX_BUFFERFLAG_EOS);
 
-            } else
-            {
-#ifndef UNDER_CE
-                pComponentPrivate_CC->cbInfo.EventHandler(
-                                                          pComponentPrivate_CC->pHandle,
-                                                          pComponentPrivate_CC->pHandle->pApplicationPrivate,
-                                                          OMX_EventBufferFlag,
-                                                          (OMX_U32) NULL,
-                                                          OMX_BUFFERFLAG_EOS, (OMX_PTR)OMX_BUFFERFLAG_EOS);
-#endif              
-            }
+            case USN_ERR_WARNING:
+            case USN_ERR_PROCESS:
+                WMADEC_HandleUSNError (pComponentPrivate_CC, (OMX_U32)args[5]);
+                break;
+            default:
+                break;
         }
-        pComponentPrivate_CC->first_buffer = 1;
     }
     
     if(event == EMMCodecDspMessageRecieved) {
@@ -3972,6 +3923,133 @@ OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData, struct OMX
     OMX_PRINT1 (dbg, "Exiting WMADEC_Parser function");
     return eError;
 }
+
+/*  =========================================================================*/
+/*  func    WMADEC_HandleUSNError                                                                                    */
+/*                                                                                                                                              */
+/*  desc    Handles error messages returned by the dsp                                                        */
+/*                                                                                                                                              */
+/*@return n/a                                                                                                                           */
+/*                                                                                                                                              */
+/*  =========================================================================*/
+void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
+{
+    OMX_COMPONENTTYPE *pHandle = NULL;
+    OMX_U8 pending_buffers = OMX_FALSE;
+    OMX_U32 i;
+    switch (arg)
+    {
+        case IUALG_WARN_CONCEALED:
+        case IUALG_WARN_UNDERFLOW:
+        case IUALG_WARN_OVERFLOW:
+        case IUALG_WARN_ENDOFDATA:
+            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
+            /* all of these are informative messages, Algo can recover, no need to notify the
+             * IL Client at this stage of the implementation */
+            break;
+
+        case IUALG_WARN_PLAYCOMPLETED:
+
+            {
+                OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n", __LINE__);
+                pComponentPrivate->first_buffer = 1;
+                for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++)
+                {
+                    if (WMADEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput))
+                    {
+                        pComponentPrivate->lastout = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+                    }
+                }
+                for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++)
+                {
+                    if (WMADEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput))
+                    {
+#ifdef __PERF_INSTRUMENTATION__
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i], pBuffer),
+                                0,
+                                PERF_ModuleHLMM);
+#endif
+                        pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
+                        if(pComponentPrivate->lastout == pComponentPrivate->pOutputBufferList->pBufHdr[i])
+                        {
+                            pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
+                        }
+                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                pComponentPrivate->pHandle->pApplicationPrivate,
+                                pComponentPrivate->pOutputBufferList->pBufHdr[i]);
+                        pComponentPrivate->nOutStandingFillDones++;
+                        pending_buffers = OMX_TRUE;
+                    }
+                    else
+                    {
+                        if((i == pComponentPrivate->pOutputBufferList->numBuffers-1) && !pending_buffers)
+                        {
+                            /*is last iteration and no pending buffers were found*/
+                            pending_buffers = OMX_FALSE;
+                        }
+                    }
+                }
+                if(!pComponentPrivate->dasfmode)
+                {
+                    if(!pending_buffers)
+                    {
+                        /*turning on EOS on last buffer queued (extra check)*/
+                        pComponentPrivate->LastOutputBufferHdrQueued->nFlags |=
+                            OMX_BUFFERFLAG_EOS;
+                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                pComponentPrivate->pHandle->pApplicationPrivate,
+                                pComponentPrivate->LastOutputBufferHdrQueued);
+                   }
+                    pComponentPrivate->cbInfo.EventHandler(
+                            pComponentPrivate->pHandle,
+                            pComponentPrivate->pHandle->pApplicationPrivate,
+                            OMX_EventBufferFlag,
+                            pComponentPrivate->LastOutputBufferHdrQueued->nOutputPortIndex,
+                            pComponentPrivate->LastOutputBufferHdrQueued->nFlags, (OMX_PTR)OMX_BUFFERFLAG_EOS);
+
+                }
+                else
+                {
+                    pComponentPrivate->cbInfo.EventHandler(
+                            pComponentPrivate->pHandle,
+                            pComponentPrivate->pHandle->pApplicationPrivate,
+                            OMX_EventBufferFlag,
+                            (OMX_U32) NULL,
+                            OMX_BUFFERFLAG_EOS, (OMX_PTR)OMX_BUFFERFLAG_EOS);
+                }
+            }
+            break;
+
+#ifdef _ERROR_PROPAGATION__
+        case IUALG_ERR_BAD_HANDLE:
+        case IUALG_ERR_DATA_CORRUPT:
+        case IUALG_ERR_NOT_SUPPORTED:
+        case IUALG_ERR_ARGUMENT:
+        case IUALG_ERR_NOT_READY:
+        case IUALG_ERR_GENERAL:
+
+            {
+                /* all of these are fatal messages, Algo can not recover
+                 * hence return an error */
+                OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error, cannot recover" );
+                pComponentPrivate->bIsInvalidState=OMX_TRUE;
+                pComponentPrivate->curState = OMX_StateInvalid;
+                pHandle = pComponentPrivate->pHandle;
+                pComponentPrivate->cbInfo.EventHandler(pHandle,
+                        pHandle->pApplicationPrivate,
+                        OMX_EventError,
+                        OMX_ErrorInvalidState,
+                        OMX_TI_ErrorSevere,
+                        NULL);
+            }
+            break;
+#endif
+        default:
+            break;
+    }
+}
+
 
 #ifdef RESOURCE_MANAGER_ENABLED
 void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)

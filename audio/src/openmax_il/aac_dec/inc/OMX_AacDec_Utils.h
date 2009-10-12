@@ -1362,6 +1362,16 @@ OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
 /*  =========================================================================*/
 OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BOOL bIcreasePosition);
 
+/*  =========================================================================*/
+/*  func    AACDEC_HandleUSNError
+/*
+/*  desc    Handles error messages returned by the dsp
+/*
+/*@return n/a
+/*
+/*  =========================================================================*/
+void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
 /*=======================================================================*/
 /*! @fn SignalIfAllBuffersAreReturned 
  * @brief Sends pthread signal to indicate OMX has returned all buffers to app 

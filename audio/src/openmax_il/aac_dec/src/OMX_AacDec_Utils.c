@@ -2830,167 +2830,43 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: arg4 = %d\n",__LINE__,(int)args[4]);
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: arg5 = %d\n",__LINE__,(int)args[5]);
         OMX_PRDSP2(pComponentPrivate->dbg, "%d ::UTIL: EMMCodecDspError Here\n",__LINE__);
+        switch ( (OMX_U32) args [4])
+        {
+            /* USN_ERR_NONE,: Indicates that no error encountered during execution of the command and the command execution completed succesfully.
+             * USN_ERR_WARNING,: Indicates that process function returned a warning. The exact warning is returned in Arg2 of this message.
+             * USN_ERR_PROCESS,: Indicates that process function returned a error type. The exact error type is returnd in Arg2 of this message.
+             * USN_ERR_PAUSE,: Indicates that execution of pause resulted in error.
+             * USN_ERR_STOP,: Indicates that execution of stop resulted in error.
+             * USN_ERR_ALGCTRL,: Indicates that execution of alg control resulted in error.
+             * USN_ERR_STRMCTRL,: Indiactes the execution of STRM control command, resulted in error.
+             * USN_ERR_UNKNOWN_MSG,: Indicates that USN received an unknown command. */
+
 #ifdef _ERROR_PROPAGATION__
-        /* Cheking for MMU_fault */
-        if((args[4] == (void*)USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) {
-            OMX_ERROR4(pComponentPrivate->dbg, "\n%d :: UTIL: MMU_Fault \n",__LINE__);
-            pComponentPrivate->bIsInvalidState = OMX_TRUE;
-            pComponentPrivate->curState = OMX_StateInvalid;
-            pHandle = pComponentPrivate->pHandle;
-            pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventError,
-                                                   OMX_ErrorHardware, 
-                                                   OMX_TI_ErrorSevere,
-                                                   NULL);
-        }
-#endif
-        if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
-            OMX_PRINT2(pComponentPrivate->dbg, "%d :: UTIL: IUALG_WARN_PLAYCOMPLETED/USN_ERR_WARNING event received\n", __LINE__);
-#ifndef UNDER_CE
-            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                   OMX_EventBufferFlag,
-                                                   (OMX_U32)NULL,
-                                                   OMX_BUFFERFLAG_EOS,
-                                                   NULL);
-            pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;
-#else
-            /* add callback to application to indicate SN/USN has completed playing of current set of date */
-            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                   OMX_EventBufferFlag,
-                                                   (OMX_U32)NULL,
-                                                   OMX_BUFFERFLAG_EOS,
-                                                   NULL);
-#endif
-		}
-
-        if((int)args[5] == IUALG_WARN_CONCEALED) {
-            OMX_PRDSP2(pComponentPrivate->dbg,  "Algorithm issued a warning. But can continue" );
-            OMX_PRINT2(pComponentPrivate->dbg, "%d :: arg5 = %p\n",__LINE__,args[5]);
-        }
-
-        if((int)args[5] == IUALG_ERR_GENERAL) {
-            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm error. Cannot continue" );
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: arg5 = %x\n",__LINE__,(int)args[5]);
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: LCML_Callback: IUALG_ERR_GENERAL\n",__LINE__);
-            pHandle = pComponentPrivate->pHandle;
-            pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventError, 
-                                                   OMX_ErrorUndefined,
-                                                   OMX_TI_ErrorSevere, 
-                                                   NULL);
-        }
-
-        if( (int)args[5] == IUALG_ERR_DATA_CORRUPT ) {
-            char *pArgs = "damedesuStr";
-            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm error. Corrupt data" );
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: arg5 = %x\n",__LINE__,(int)args[5]);
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: LCML_Callback: IUALG_ERR_DATA_CORRUPT\n",__LINE__);
-            pHandle = pComponentPrivate->pHandle;
-            pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
-#ifndef UNDER_CE
-            pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventError, 
-                                                   OMX_ErrorStreamCorrupt, 
-                                                   OMX_TI_ErrorMajor, 
-                                                   NULL);
-
-#else
-                OMX_ERROR4(pComponentPrivate->dbg, "Should stop codec first :: ERROR!\n");
-            pComponentPrivate->cbInfo.EventHandler(pHandle, 
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventError, 
-                                                   OMX_ErrorUndefined,
-                                                   0, 
-                                                   NULL);
-#endif
-
-        }
-
-        if ( ( (int)args[4] == USN_ERR_WARNING ) && ( (int)args[5] == AACDEC_SBR_CONTENT)) {
-            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: SBR content detected \n" ,__LINE__);
-            if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE &&
-               pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
-
-#ifndef ANDROID
-                pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
-                pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
-                pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
-
-                pValues[0] = IUALG_CMD_SETSTATUS;
-                pValues[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
-                pValues[2] = sizeof(MPEG4AACDEC_UALGParams);
-
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                                           EMMCodecControlAlgCtrl,(void *)pValues);
-                if(eError != OMX_ErrorNone) {
-                    OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..\n",__LINE__);
+            case USN_ERR_PAUSE:
+            case USN_ERR_STOP:
+            case USN_ERR_ALGCTRL:
+            case USN_ERR_STRMCTRL:
+            case USN_ERR_UNKNOWN_MSG:
+                {
+                    pComponentPrivate->bIsInvalidState=OMX_TRUE;
                     pComponentPrivate->curState = OMX_StateInvalid;
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventError,
-                                                           eError,
-                                                           OMX_TI_ErrorSevere,
-                                                           NULL);
-                    goto EXIT;
+                    pHandle = pComponentPrivate->pHandle;
+                    pComponentPrivate->cbInfo.EventHandler(pHandle,
+                            pHandle->pApplicationPrivate,
+                            OMX_EventError,
+                            OMX_ErrorInvalidState,
+                            OMX_TI_ErrorSevere,
+                            NULL);
                 }
-
-
+                break;
 #endif
 
-            }else{
-		AACDEC_DPRINT("%d %s-SBR reconfiguration not needed\n",__LINE__,__func__);
-	    }
-        }
-        if ( ( (int)args[4] == USN_ERR_WARNING ) && ( (int)args[5] == AACDEC_PS_CONTENT )){
-            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: PS content detected \n" ,__LINE__);
-            if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
-
-#ifndef ANDROID
-                pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
-                pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
-                pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
-
-                pValues[0] = IUALG_CMD_SETSTATUS;
-                pValues[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
-                pValues[2] = sizeof(MPEG4AACDEC_UALGParams);
-
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                                           EMMCodecControlAlgCtrl,(void *)pValues);
-                if(eError != OMX_ErrorNone) {
-                    OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..\n",__LINE__);
-                    pComponentPrivate->curState = OMX_StateInvalid;
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                           pComponentPrivate->pHandle->pApplicationPrivate,
-                                                           OMX_EventError,
-                                                           OMX_ErrorInvalidState,
-                                                           0,
-                                                           NULL);
-                    goto EXIT;
-                }
-#endif
-            }
-        }
-        if( (int)args[5] == IUALG_WARN_OVERFLOW ){
-            OMX_PRBUFFER2(pComponentPrivate->dbg,  "Algorithm error. Overflow" );
-        }
-        if( (int)args[5] == IUALG_WARN_UNDERFLOW ){
-            OMX_PRBUFFER2(pComponentPrivate->dbg,  "Algorithm error. Underflow" );
-        }
-        if( (int)args[4] == USN_ERR_PROCESS ){
-            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error Process" );
-            pHandle = pComponentPrivate->pHandle;
-
-            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                   OMX_EventError,
-                                                   OMX_ErrorStreamCorrupt,
-                                                   OMX_TI_ErrorMajor,
-                                                   NULL);
+            case USN_ERR_WARNING:
+            case USN_ERR_PROCESS:
+                AACDEC_HandleUSNError (pComponentPrivate, (OMX_U32)args[5]);
+                break;
+            default:
+                break;
         }
     } else if (event == EMMCodecStrmCtrlAck) {
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
@@ -4002,6 +3878,128 @@ void SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
         }
         return;
+    }
+}
+
+void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
+{
+    OMX_COMPONENTTYPE *pHandle = NULL;
+    OMX_U8 pending_buffers = OMX_FALSE;
+    OMX_U32 i;
+    switch (arg)
+    {
+        case AACDEC_SBR_CONTENT:
+#ifndef ANDROID
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: SBR content detected \n" ,__LINE__);
+            if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE &&
+               pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
+                pComponentPrivate->aacParams->eAACProfile = OMX_AUDIO_AACObjectHE;
+                pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
+
+                pValues[0] = IUALG_CMD_SETSTATUS;
+                pValues[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
+                pValues[2] = sizeof(MPEG4AACDEC_UALGParams);
+
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                           EMMCodecControlAlgCtrl,(void *)pValues);
+                if(eError != OMX_ErrorNone) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..\n",__LINE__);
+                    pComponentPrivate->curState = OMX_StateInvalid;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           eError,
+                                                           OMX_TI_ErrorSevere,
+                                                           NULL);
+                }
+#endif
+                break;
+        case AACDEC_PS_CONTENT:
+#ifndef ANDROID
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: PS content detected \n" ,__LINE__);
+            if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
+                pComponentPrivate->AACDEC_UALGParam->lOutputFormat = EAUDIO_INTERLEAVED;
+                pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
+                pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
+
+                pValues[0] = IUALG_CMD_SETSTATUS;
+                pValues[1] = (OMX_U32)pComponentPrivate->AACDEC_UALGParam;
+                pValues[2] = sizeof(MPEG4AACDEC_UALGParams);
+
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                           EMMCodecControlAlgCtrl,(void *)pValues);
+                if(eError != OMX_ErrorNone) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..\n",__LINE__);
+                    pComponentPrivate->curState = OMX_StateInvalid;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           OMX_ErrorInvalidState,
+                                                           0,
+                                                           NULL);
+                }
+            }
+#endif
+            break;
+        case IUALG_WARN_CONCEALED:
+        case IUALG_WARN_UNDERFLOW:
+        case IUALG_WARN_OVERFLOW:
+        case IUALG_WARN_ENDOFDATA:
+            OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
+            /* all of these are informative messages, Algo can recover, no need to notify the
+             * IL Client at this stage of the implementation */
+            break;
+        case IUALG_WARN_PLAYCOMPLETED:
+
+            {
+                OMX_PRINT2(pComponentPrivate->dbg, "%d :: UTIL: IUALG_WARN_PLAYCOMPLETED/USN_ERR_WARNING event received\n", __LINE__);
+#ifndef UNDER_CE
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+                pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;
+#else
+                /* add callback to application to indicate SN/USN has completed playing of current set of date */
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+#endif
+            }
+            break;
+
+#ifdef _ERROR_PROPAGATION__
+        case IUALG_ERR_BAD_HANDLE:
+        case IUALG_ERR_DATA_CORRUPT:
+        case IUALG_ERR_NOT_SUPPORTED:
+        case IUALG_ERR_ARGUMENT:
+        case IUALG_ERR_NOT_READY:
+        case IUALG_ERR_GENERAL:
+
+            {
+                /* all of these are fatal messages, Algo can not recover
+                 * hence return an error */
+                OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error, cannot recover" );
+                pComponentPrivate->bIsInvalidState=OMX_TRUE;
+                pComponentPrivate->curState = OMX_StateInvalid;
+                pHandle = pComponentPrivate->pHandle;
+                pComponentPrivate->cbInfo.EventHandler(pHandle,
+                        pHandle->pApplicationPrivate,
+                        OMX_EventError,
+                        OMX_ErrorInvalidState,
+                        OMX_TI_ErrorSevere,
+                        NULL);
+            }
+            break;
+#endif
+        default:
+            break;
     }
 }
 

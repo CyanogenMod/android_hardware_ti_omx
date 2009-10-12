@@ -1124,4 +1124,14 @@ OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 /*=======================================================================*/
 void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
+/*  =========================================================================*/
+/*  func    MP3DEC_HandleUSNError
+/*
+/*  desc    Handles error messages returned by the dsp
+/*
+/*@return n/a
+/*
+/*  =========================================================================*/
+void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
 #endif
