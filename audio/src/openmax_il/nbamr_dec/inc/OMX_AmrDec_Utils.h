@@ -216,6 +216,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+void NBAMRDEC_HandleUSNError (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 #ifdef UNDER_CE
 	#ifndef _OMX_EVENT_
 		#define _OMX_EVENT_
