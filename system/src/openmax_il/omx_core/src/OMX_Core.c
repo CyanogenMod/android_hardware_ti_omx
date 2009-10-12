@@ -64,17 +64,20 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.Camera", "camera.yuv"},
     
     /* Speech components */
-/*  {"OMX.TI.G729.encode", NULL},
+    {"OMX.TI.G729.encode", NULL},
     {"OMX.TI.G729.decode", NULL},	
     {"OMX.TI.G722.encode", NULL},
     {"OMX.TI.G722.decode", NULL},
     {"OMX.TI.G711.encode", NULL},
     {"OMX.TI.G711.decode", NULL},
-    {"OMX.TI.G723.encode", NULL},
+/*  {"OMX.TI.G723.encode", NULL},
     {"OMX.TI.G723.decode", NULL},
+*/
     {"OMX.TI.G726.encode", NULL},
     {"OMX.TI.G726.decode", NULL},
-    {"OMX.TI.GSMFR.encode", NULL},
+    {"OMX.TI.ILBC.decode", NULL},
+    {"OMX.TI.ILBC.encode", NULL},
+/*  {"OMX.TI.GSMFR.encode", NULL},
     {"OMX.TI.GSMFR.decode", NULL},
 */
     {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},
