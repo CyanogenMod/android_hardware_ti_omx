@@ -1450,7 +1450,15 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         NULL);
                goto EXIT;
            }
-
+#ifdef RESOURCE_MANAGER_ENABLED
+/* notify RM of pause so resources can be redistributed if needed */
+           rm_error = RMProxy_NewSendCommand(pHandle,
+                                             RMProxy_StateSet,
+                                             OMX_NBAMR_Decoder_COMPONENT,
+                                             OMX_StatePause,
+                                             3456,
+                                             NULL);
+#endif
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Comp: OMX_AmrDecUtils.c\n",__LINE__);
            break;
 

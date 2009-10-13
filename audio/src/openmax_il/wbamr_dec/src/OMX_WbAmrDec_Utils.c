@@ -1429,6 +1429,14 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                        NULL);
                 goto EXIT;
             }
+#ifdef RESOURCE_MANAGER_ENABLED
+            rm_error = RMProxy_NewSendCommand(pHandle,
+                                              RMProxy_StateSet,
+                                              OMX_WBAMR_Decoder_COMPONENT,
+                                              OMX_StatePause,
+                                              3456,
+                                              NULL);
+#endif
 
             OMX_PRINT2(pComponentPrivate->dbg, "Comp: OMX_AmrDecUtils.c\n");
             break;

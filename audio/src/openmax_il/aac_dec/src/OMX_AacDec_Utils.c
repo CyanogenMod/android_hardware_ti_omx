@@ -1300,6 +1300,14 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error pausing codec\n",__LINE__);
                     goto EXIT;
                 }
+#ifdef RESOURCE_MANAGER_ENABLED
+                    rm_error = RMProxy_NewSendCommand(pHandle, 
+                                                      RMProxy_StateSet, 
+                                                      OMX_AAC_Decoder_COMPONENT, 
+                                                      OMX_StateWaitForResources, 
+                                                      3456,
+                                                      NULL);
+#endif
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: Component: Codec Is Paused\n",__LINE__);
                 break;
 

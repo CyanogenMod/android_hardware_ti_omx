@@ -44,7 +44,7 @@
  *!
  *!
  *! 10-Sept-2005 mf:
- *! This is newest file
+ *! This is newest file 
  * =========================================================================== */
 
 
@@ -3428,7 +3428,17 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         goto EXIT;
     }
 
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
+#ifdef RESOURCE_MANAGER_ENABLED
+/* notify RM that codec is paused, resources can be redistributed if needed */
+    eError = RMProxy_NewSendCommand(pHandle,
+                                      RMProxy_StateSet,
+                                      OMX_WMA_Decoder_COMPONENT,
+                                      OMX_StatePause,
+                                      1234,
+                                      NULL);
+#endif
+
+    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c\n",__LINE__);
  EXIT:
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,

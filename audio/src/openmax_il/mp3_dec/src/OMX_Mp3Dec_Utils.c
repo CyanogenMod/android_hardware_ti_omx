@@ -1250,6 +1250,15 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     goto EXIT;
                 }
                 OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Pause\n\n");
+#ifdef RESOURCE_MANAGER_ENABLED         
+                rm_error = RMProxy_NewSendCommand(pHandle,
+                                                  RMProxy_StateSet,
+                                                  OMX_MP3_Decoder_COMPONENT,
+                                                  OMX_StatePause,
+                                                  3456,
+                                                  NULL);
+#endif  
+
                 break;
 
             case OMX_StateWaitForResources:
