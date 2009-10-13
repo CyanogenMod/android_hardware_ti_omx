@@ -2083,8 +2083,8 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 
                 
 #ifdef ANDROID
-                if (pComponentPrivate->bConfigData){
-
+                if (pBufHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG ){
+                    pComponentPrivate->bConfigData = 1;
                     AACDEC_ParseHeader(pBufHeader,pComponentPrivate);
 
                     // if port config is needed send the event to the client
