@@ -89,6 +89,7 @@ include $(TI_OMX_AUDIO)/aac_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/aac_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/aac_enc/tests/Android.mk
 include $(TI_OMX_AUDIO)/mp3_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/mp3_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/wma_dec/src/Android.mk
 include $(TI_OMX_AUDIO)/wma_dec/tests/Android.mk
 
