@@ -95,6 +95,7 @@ include $(TI_OMX_AUDIO)/wma_dec/tests/Android.mk
 
 #call to VoIP/speech
 include $(TI_OMX_AUDIO)/nbamr_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/nbamr_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/nbamr_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/nbamr_enc/tests/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_dec/src/Android.mk
