@@ -4331,3 +4331,13 @@ void printH264UAlgInParam(H264VE_GPP_SN_UALGInputParams* pUalgInpParams, int pri
         OMX_PRDSP2(*dbg, "ulFrameIndex = %lu\n", pUalgInpParams->ulFrameIndex);
     }
 }
+
+OMX_ERRORTYPE IsResolutionPlayable (OMX_U32 width, OMX_U32 height)
+{
+    if (width  > WVGA_MAX_WIDTH || height > WVGA_MAX_HEIGHT) 
+    {
+        return OMX_ErrorBadParameter;
+    }
+    return OMX_ErrorNone;
+
+}
