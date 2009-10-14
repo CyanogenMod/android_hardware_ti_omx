@@ -809,7 +809,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     if (hComponent == NULL )
     {
         eError = OMX_ErrorInsufficientResources;
-        return eError;
+        goto EXIT;
     }
 
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
@@ -828,7 +828,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     if (tmp2 == NULL)
     {
             eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
+            goto MUTEX_UNLOCK;
     }
     phandle->commStruct = (TArmDspCommunicationStruct *)(tmp2 + 128);
     phandle->commStruct->iBufferPtr = (OMX_U32) buffer;
@@ -906,14 +906,14 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
             free(tmp2);
             phandle->commStruct = NULL;
         }
-        goto EXIT;
+        goto MUTEX_UNLOCK;
     }
     commandId = USN_GPPMSG_SET_BUFF|streamId;
     LCML_DPRINT("Sending command ID 0x%x",commandId);
     if( pDmmBuf == NULL)
     {
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        goto MUTEX_UNLOCK;
     }
     LCML_DPRINT("buffer = 0x%p bufferlen = %ld auxInfo = 0x%p auxInfoLen %ld\n",
         buffer, bufferLen, auxInfo, auxInfoLen );
@@ -941,7 +941,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                         status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferSizeUsed, (bufferSizeUsed > 512*1024) ? 3: 0);
                         if(DSP_FAILED(status))
                         {
-                            goto EXIT;
+                            goto MUTEX_UNLOCK;
                         }
                     }
 
@@ -953,7 +953,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                             status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen, 3);
                             if(DSP_FAILED(status))
                             {
-                                goto EXIT;
+                                goto MUTEX_UNLOCK;
                             }
                         }
                         else
@@ -961,7 +961,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                             status = DSPProcessor_InvalidateMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen);
                             if(DSP_FAILED(status))
                             {
-                                goto EXIT;
+                                goto MUTEX_UNLOCK;
                             }
                         }
                     }
@@ -982,7 +982,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 }
                 if (eError != OMX_ErrorNone)
                 {
-                    goto EXIT;
+                    goto MUTEX_UNLOCK;
                 }
 
                 /*720p implementation */
@@ -1020,7 +1020,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
             }
             if (eError != OMX_ErrorNone)
             {
-                goto EXIT;
+                goto MUTEX_UNLOCK;
             }
             phandle->commStruct->iBufferPtr = (OMX_U32) pDmmBuf->pMapped;
             pDmmBuf->bufReserved = pDmmBuf->pReserved;
@@ -1034,7 +1034,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         eError = DmmMap(phandle->dspCodec->hProc, phandle->commStruct->iParamSize, phandle->commStruct->iParamSize, (void*)phandle->commStruct->iParamPtr, (pDmmBuf), 0);
         if (eError != OMX_ErrorNone)
         {
-            goto EXIT;
+            goto MUTEX_UNLOCK;
         }
 
         phandle->commStruct->iParamPtr = (OMX_U32 )pDmmBuf->pMapped ;
@@ -1045,7 +1045,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     eError = DmmMap(phandle->dspCodec->hProc, sizeof(TArmDspCommunicationStruct),sizeof(TArmDspCommunicationStruct), (void *)phandle->commStruct, (pDmmBuf), 0);
     if (eError != OMX_ErrorNone)
     {
-        goto EXIT;
+        goto MUTEX_UNLOCK;
     }
 
     /* storing mapped address of struct */
@@ -1058,10 +1058,10 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
     status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
     LCML_DPRINT("after SETBUFF \n");
-    DSP_ERROR_EXIT (status, "Send message to node", EXIT);
-
-EXIT:
+    DSP_ERROR_EXIT (status, "Send message to node", MUTEX_UNLOCK);
+MUTEX_UNLOCK:
     pthread_mutex_unlock(&phandle->mutex);
+EXIT:
     return eError;
 }
 
@@ -1091,7 +1091,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
     if (hComponent == NULL )
     {
         eError= OMX_ErrorInsufficientResources;
-        return eError;
+        goto EXIT;
     }
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
 
