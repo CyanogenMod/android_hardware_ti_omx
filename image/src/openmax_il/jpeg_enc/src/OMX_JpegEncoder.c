@@ -524,7 +524,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->bSetHuffmanTable = OMX_FALSE;
     pComponentPrivate->bSetLumaQuantizationTable = OMX_FALSE;
     pComponentPrivate->bSetChromaQuantizationTable = OMX_FALSE;    
-    
+    pComponentPrivate->bConvert420pTo422i = OMX_FALSE;
+
     pComponentPrivate->InParams.pInParams = NULL;
     pComponentPrivate->InParams.size = 0;   
     pComponentPrivate->bPreempted = OMX_FALSE;
@@ -1521,6 +1522,13 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
     case OMX_IndexCustomDebug:
         OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
 	break;
+
+	case OMX_IndexCustomColorFormatConvertion_420pTo422i :
+	{		
+		pComponentPrivate->bConvert420pTo422i = *((OMX_BOOL*)ComponentConfigStructure);			
+		break;
+	}
+
     default:
         eError = OMX_ErrorUnsupportedIndex;
         break;
@@ -2294,6 +2302,7 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.encoder.Config.QFactor", OMX_IndexCustomQFactor},
     {"OMX.TI.JPEG.encoder.Config.DRI", OMX_IndexCustomDRI},
     {"OMX.TI.JPEG.encoder.Config.Debug", OMX_IndexCustomDebug},
+    {"OMX.TI.JPEG.encoder.Config.ColorFormatConvertion_420pTo422i", OMX_IndexCustomColorFormatConvertion_420pTo422i},
     {"",0x0}
     };
 

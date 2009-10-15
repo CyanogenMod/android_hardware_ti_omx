@@ -664,6 +664,19 @@ this option supportsonly up to 3 mega pixels
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888){
     	ptCreateString[17] = 1; //Convert flag
     }
+	
+	/*Do an internal conversion from YUV420P to YUV422I and encode so that
+	this JPEG would be viewable using the TI JPEG decoder*/
+	else if (pComponentPrivate->bConvert420pTo422i ){
+		if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar ){
+			ptCreateString[17] = 10;
+		}
+		else{
+			OMX_PRMGR4(pComponentPrivate->dbg, "Error invalid ColorFormat for YUVConvertion\n");
+			eError=-1;
+			goto EXIT;
+		}
+	}
 
     ptCreateString[18] = 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
     ptCreateString[19] = 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */
