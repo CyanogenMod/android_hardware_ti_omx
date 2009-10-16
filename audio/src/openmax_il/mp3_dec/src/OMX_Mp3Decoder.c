@@ -347,7 +347,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     //bConfigData flag is used to indicate if we need to parse the frame header 
     pComponentPrivate->bConfigData = 1;
     pComponentPrivate->reconfigInputPort = 0;
-    pComponentPrivate->reconfigOutputPort = 1; //set the initial value to true if you expect to do port config...
+    pComponentPrivate->reconfigOutputPort = 0; //set the initial value to true if you expect to do port config...
 
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
