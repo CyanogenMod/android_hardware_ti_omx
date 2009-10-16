@@ -457,7 +457,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleError(VIDENC_COMPONENT_PRIVATE* pComponentPrivate
                              NULL);
 
 OMX_CONF_CMD_BAIL:
-    pComponentPrivate->bHandlingFatalError = OMX_FALSE;
+    if (pComponentPrivate)
+        pComponentPrivate->bHandlingFatalError = OMX_FALSE;
     return eError;
 }
 

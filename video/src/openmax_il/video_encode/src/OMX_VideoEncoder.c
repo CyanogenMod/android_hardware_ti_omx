@@ -3369,6 +3369,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                                pComponentPrivate->dbg, OMX_PRBUFFER4,
                                "Freeing buffer in invalid state or on a disabled port.\n");
     }
+    OMX_CONF_CHECK_CMD(pBufferPrivate, 1, 1);
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_SendingBuffer(pComponentPrivate->pPERF,

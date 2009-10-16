@@ -2488,7 +2488,8 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
 EXIT:
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting 0x%x\n",eError);
+    if (pComponentPrivate)
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting 0x%x\n", eError);
     return eError;
 }
 
@@ -2570,7 +2571,8 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
 EXIT:
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting 0x%x\n",eError);
+    if (pComponentPrivate)
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting 0x%x\n", eError);
     return eError;
 }
 
@@ -3071,7 +3073,9 @@ static OMX_ERRORTYPE VIDDEC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 #endif
     }
 EXIT:
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", eError);
+    if (pComponentPrivate)
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", \
+                                                         eError);
     return eError;  
 }
 
@@ -3384,7 +3388,9 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", eError);
+    if (pComponentPrivate)
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", \
+                                                        eError);
     return eError;
 }
 
@@ -3568,7 +3574,9 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", eError);
+    if (pComponentPrivate)
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "---Exiting eError 0x%x\n", \
+                                                         eError);
     return eError;
 }
 

@@ -335,9 +335,10 @@ void* OMX_VIDENC_Thread (void* pThreadData)
 OMX_CONF_CMD_BAIL:
 
 #ifdef __PERF_INSTRUMENTATION__
-    PERF_Done(pComponentPrivate->pPERFcomp);
+    if (pComponentPrivate)
+        PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-
-    OMX_PRINT2(pComponentPrivate->dbg, "Component Thread Exits\n");
+    if (pComponentPrivate)
+        OMX_PRINT2(pComponentPrivate->dbg, "Component Thread Exits\n");
     return (void*)eError;
 }
