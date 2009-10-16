@@ -318,6 +318,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_PADDING_FULL                           256
 #define VIDDEC_PADDING_HALF                           VIDDEC_PADDING_FULL / 2
 
+#define VIDDEC_ALIGNMENT                              4
+
 #define VIDDEC_CLEARFLAGS                             0
 #define H264VDEC_SN_MAX_NALUNITS                      1200
 
@@ -376,7 +378,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_WMV_PROFILE_ID8                          8
 
 #define VIDDEC_MAX_QUEUE_SIZE                           256
-#define VIDDEC_WMV_BUFFER_OFFSET                        255 - 4
+#define VIDDEC_WMV_BUFFER_OFFSET                        (255 - 4)
 #define VIDDEC_WMV_ELEMSTREAM                           0
 #define VIDDEC_WMV_RCVSTREAM                            1
 
@@ -552,6 +554,7 @@ typedef struct VIDDEC_BUFFER_PRIVATE
     VIDDEC_BUFFER_OWNER eBufferOwner;
     VIDDEC_TYPE_ALLOCATE bAllocByComponent;
     OMX_U32 nNumber;
+    OMX_U8* pOriginalBuffer;
 #ifdef VIDDEC_WMVPOINTERFIXED
      OMX_U8* pTempBuffer;
 #endif
@@ -1010,6 +1013,22 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/
+/*----------------------------------------------------------------------------*/
+/**
+  * OMX_GET_DATABUFF_SIZE() Get the needed buffer data size base in the request.
+  *
+  * This method will give the needed data buffer size acording with
+  * specific requirements from the codec and component.
+  *
+  * @param _nSizeBytes_     Requested size from client
+  *
+  **/
+/*----------------------------------------------------------------------------*/
+
+#define OMX_GET_DATABUFF_SIZE(_nSizeBytes_)                         \
+         (_nSizeBytes_ + VIDDEC_PADDING_FULL + VIDDEC_WMV_BUFFER_OFFSET + VIDDEC_ALIGNMENT)
+
+
 #define OMX_MALLOC_STRUCT(_pStruct_, _sName_, _memusage_)           \
     _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
     if(_pStruct_ == NULL){                                          \
@@ -1035,6 +1054,89 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel2] + \
     pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel3] + \
     pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]*/
+
+
+/*----------------------------------------------------------------------------*/
+/**
+  * OMX_ALIGN_BUFFER() Align the buffer to the desire number of bytes.
+  *
+  * This method will update the component function pointer to the handle
+  *
+  * @param _pBuffer_     Pointer to align
+  * @param _nBytes_      # of byte to alignment desire
+  *
+  **/
+/*----------------------------------------------------------------------------*/
+
+#define OMX_ALIGN_BUFFER(_pBuffer_, _nBytes_)                  \
+    while((OMX_U8)_pBuffer_ & (_nBytes_-1)){                   \
+       _pBuffer_++;                                            \
+    }
+
+
+
+
+
+/*----------------------------------------------------------------------------*/
+/**
+  * OMX_FREE() Free memory
+  *
+  * This method will free memory and set pointer to NULL
+  *
+  * @param _pBuffer_     Pointer to free
+  *
+  **/
+/*----------------------------------------------------------------------------*/
+
+#define OMX_FREE(_pBuffer_)                                                 \
+    if(_pBuffer_ != NULL){                                                  \
+        free(_pBuffer_);                                                    \
+        _pBuffer_ = NULL;                                                   \
+    }
+
+
+
+
+/*----------------------------------------------------------------------------*/
+/**
+  * OMX_WMV_INSERT_CODEC_DATA()
+  *
+  * This method will insert the codec data to the first frame to be sent to
+  * queue in LCML
+  *
+  * @param _pBuffHead_    Pointer to free
+  * @param _pComponentPrivate_  Component private structure to provide needed
+  *                             references
+  *
+  **/
+/*----------------------------------------------------------------------------*/
+
+#define OMX_WMV_INSERT_CODEC_DATA(_pBuffHead_, _pComponentPrivate_)                     \
+    {                                                                                   \
+        OMX_U8* _pTempBuffer_ = NULL;                                                   \
+        /* Copy frame data in a temporary buffer*/                                      \
+        OMX_MALLOC_STRUCT_SIZED(_pTempBuffer_, OMX_U8, _pBuffHead_->nFilledLen, NULL);  \
+        memcpy (_pTempBuffer_, _pBuffHead_->pBuffer, _pBuffHead_->nFilledLen);          \
+                                                                                        \
+        /*Copy configuration data at the begining of the buffer*/                       \
+        memcpy (_pBuffHead_->pBuffer, _pComponentPrivate_->pCodecData, _pComponentPrivate_->nCodecDataSize);   \
+        _pBuffHead_->pBuffer += _pComponentPrivate_->nCodecDataSize;                                           \
+        /* Add frame start code */     \
+        (*(_pBuffHead_->pBuffer++)) = 0x00;  \
+        (*(_pBuffHead_->pBuffer++)) = 0x00;  \
+        (*(_pBuffHead_->pBuffer++)) = 0x01;  \
+        (*(_pBuffHead_->pBuffer++)) = 0x0d;  \
+                                             \
+        /* Insert again the frame buffer */  \
+        memcpy (_pBuffHead_->pBuffer, _pTempBuffer_, _pBuffHead_->nFilledLen); \
+        /* pTempBuffer no longer need*/                                        \
+        OMX_FREE(_pTempBuffer_);                                               \
+                             \
+        _pBuffHead_->pBuffer -= (pComponentPrivate->nCodecDataSize + 4);       \
+        _pBuffHead_->nFilledLen += pComponentPrivate->nCodecDataSize + 4;      \
+    }
+
+
 
 
 #define OMX_CONF_INIT_STRUCT(_s_, _name_, dbg)       \
