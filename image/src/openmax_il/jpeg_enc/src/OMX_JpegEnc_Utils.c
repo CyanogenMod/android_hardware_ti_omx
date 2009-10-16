@@ -129,7 +129,9 @@ OMX_ERRORTYPE GetJpegEncLCMLHandle(OMX_HANDLETYPE pComponent)
 
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if ( !handle ) {
-        fputs(dlerror(), stderr);
+        if ( (error = (char *)dlerror()) != NULL ) {
+            fputs(error, stderr);
+        }
         eError = OMX_ErrorComponentNotFound;
         goto EXIT;
     }
@@ -142,7 +144,13 @@ OMX_ERRORTYPE GetJpegEncLCMLHandle(OMX_HANDLETYPE pComponent)
     }
 
     /*  calling gethandle and passing phandle to b filled   */
-    eError = (*fpGetHandle)(&LCML_pHandle);
+    if ( fpGetHandle != NULL ) {
+        eError = (*fpGetHandle)(&LCML_pHandle);
+    }
+    else  {
+        eError = OMX_ErrorInvalidComponent;
+        goto EXIT;
+    }
 
     if ( eError != OMX_ErrorNone ) {
         eError = OMX_ErrorUndefined;
@@ -230,8 +238,8 @@ OMX_ERRORTYPE JpegEncDisablePort (JPEGENC_COMPONENT_PRIVATE* pComponentPrivate, 
        }
    }
 
-EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exit form JPEGEnc Disable Port eError is = %x\n",eError);
+EXIT:
     return eError;
 }
 
@@ -422,13 +430,13 @@ OMX_ERRORTYPE JPEGEnc_Free_ComponentResources(JPEGENC_COMPONENT_PRIVATE *pCompon
     OMX_U32 nParam = 0;
     struct OMX_TI_Debug dbg;
 
+    OMX_DBG_INIT_BASE(dbg);
+    OMX_CHECK_PARAM(pComponentPrivate);
+
 #ifdef __PERF_INSTRUMENTATION__
         PERF_Boundary(pComponentPrivate->pPERF,
                       PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif
-
-    OMX_DBG_INIT_BASE(dbg);
-    OMX_CHECK_PARAM(pComponentPrivate);
 
     if ( pComponentPrivate->pLCML != NULL && pComponentPrivate->isLCMLActive) {
     	LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,EMMCodecControlDestroy,NULL);
@@ -758,7 +766,7 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto EXIT;
+            goto PRINT_EXIT;
         }
 
         pthread_mutex_lock(&pComponentPrivate->jpege_mutex);
@@ -780,7 +788,7 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto EXIT;
+            goto PRINT_EXIT;
         }
 
         pthread_mutex_lock(&pComponentPrivate->jpege_mutex);
@@ -794,8 +802,9 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pComponentPrivate->bFlushComplete = OMX_FALSE;
     }
 
+    PRINT_EXIT:
+        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     return eError;
 
 }
@@ -820,7 +829,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto EXIT;
+            goto PRINT_EXIT;
         }
        OMX_PRDSP2(pComponentPrivate->dbg, "sent EMMCodecControlStrmCtrl command\n");
 
@@ -902,7 +911,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto EXIT;
+            goto PRINT_EXIT;
         }
         OMX_PRDSP2(pComponentPrivate->dbg, "(1) sent EMMCodecControlStrmCtrl command\n");
 
@@ -951,7 +960,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
             ret = read(pComponentPrivate->free_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
             if ( ret == -1 ) {
                 OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
-                goto EXIT;
+                goto PRINT_EXIT;
             }
             OMX_PRCOMM1(pComponentPrivate->dbg, "after read\n");
             if (pBuffHead != NULL) {
@@ -986,8 +995,9 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
                                                NULL);
     }
 
+    PRINT_EXIT:
+        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     EXIT:
-   OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     return eError;
 
 }
@@ -2811,10 +2821,12 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
     int i;
 
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
-    OMX_COMPONENTTYPE *pHandle;
+    OMX_COMPONENTTYPE *pHandle = NULL;
 
     if ( ((LCML_DSP_INTERFACE*)argsCb[6] ) != NULL ) {
         pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)argsCb[6])->pComponentPrivate;
+        OMX_CHECK_PARAM(pComponentPrivate);
+
         pHandle = (OMX_COMPONENTTYPE *)pComponentPrivate->pHandle; 
     }
     else {
@@ -2906,7 +2918,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             eError = HandleJpegEncFreeDataBuf(pComponentPrivate, pBuffHead);
         }
     }
-    goto EXIT;
+    goto PRINT_EXIT;
     } /* end     if ( event == EMMCodecBufferProcessed ) */
 
     if ( event == EMMCodecProcessingStoped ) {
@@ -2932,7 +2944,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
 
         OMX_TRACE1(pComponentPrivate->dbg, "after stop signal\n");
 
-        goto EXIT;
+        goto PRINT_EXIT;
     }
 
     if ( event == EMMCodecDspError ) {
@@ -2954,7 +2966,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                    OMX_ErrorInvalidState,
                                                    OMX_TI_ErrorCritical,
                                                    "DSP Hardware Error");
-           goto EXIT;
+           goto PRINT_EXIT;
        }
 #ifdef DSP_MMU_FAULT_HANDLING
         /* Cheking for MMU_fault */
@@ -2979,7 +2991,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                OMX_ErrorHardware, 
                                                OMX_TI_ErrorCritical,
                                                NULL);
-        goto EXIT;
+        goto PRINT_EXIT;
     }
     if ( event == EMMCodecProcessingPaused ) {
         OMX_PRDSP2(pComponentPrivate->dbg, "ENTERING TO EMMCodecProcessingPaused JPEG Encoder\n");
@@ -3009,9 +3021,9 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         pthread_mutex_unlock(&pComponentPrivate->jpege_mutex);
         */
     }
-
-EXIT:
+PRINT_EXIT:
     OMX_PRDSP1(pComponentPrivate->dbg, "Exiting the LCML_Callback function\n");
+EXIT:
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -3157,21 +3169,26 @@ void LinkedList_Create(LinkedList *LinkedList) {
 void LinkedList_AddElement(LinkedList *LinkedList, void *pValue) {
     /* create new node and fill the value */
     Node *pNewNode = (Node *)malloc(sizeof(Node));
-    pNewNode->pValue = (void *)pValue;
-    /*printf("LinkedList:::: Pointer=%p has been added.\n", pNewNode->pValue); */
-    /* add new node on the root to implement quick FIFO */
-    /* modify new node pointers */
+    if ( pNewNode != NULL ) {
+        pNewNode->pValue = (void *)pValue;
+        /*printf("LinkedList:::: Pointer=%p has been added.\n", pNewNode->pValue); */
+        /* add new node on the root to implement quick FIFO */
+        /* modify new node pointers */
 
-    pthread_mutex_lock(&LinkedList->lock);
-    if(LinkedList->pRoot == NULL) {
-        pNewNode->pNextNode = NULL;
+        pthread_mutex_lock(&LinkedList->lock);
+        if(LinkedList->pRoot == NULL) {
+            pNewNode->pNextNode = NULL;
+        }
+        else {
+             pNewNode->pNextNode = LinkedList->pRoot;
+        }
+        /*modify root */
+        LinkedList->pRoot = pNewNode;
+        pthread_mutex_unlock(&LinkedList->lock);
     }
     else {
-         pNewNode->pNextNode = LinkedList->pRoot;
+         printf ("Linked list memory allocation failed.\n" );
     }
-    /*modify root */
-    LinkedList->pRoot = pNewNode;
-    pthread_mutex_unlock(&LinkedList->lock);
 }
 
 void LinkedList_FreeElement(LinkedList *LinkedList, void *pValue) {
