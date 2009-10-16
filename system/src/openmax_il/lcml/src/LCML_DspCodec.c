@@ -797,7 +797,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     int streamId = 0;
     DSP_STATUS status;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    char * tmp2;
+    char * tmp2=NULL;
     DMM_BUFFER_OBJ* pDmmBuf=NULL;
     int commandId;
     struct DSP_MSG msg;
@@ -809,7 +809,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     if (hComponent == NULL )
     {
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return eError;
     }
 
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
@@ -901,6 +901,12 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     {
         LCML_DPRINT("Unrecognized buffer type..");
         eError = OMX_ErrorBadParameter;
+        if(tmp2)
+        {
+            free(tmp2);
+            phandle->commStruct = NULL;
+        }
+        goto EXIT;
     }
     commandId = USN_GPPMSG_SET_BUFF|streamId;
     LCML_DPRINT("Sending command ID 0x%x",commandId);
@@ -1044,7 +1050,6 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
     /* storing mapped address of struct */
     phandle->commStruct->iArmArg = (OMX_U32)pDmmBuf->pMapped;
-    pthread_mutex_unlock(&phandle->mutex);
 
     LCML_DPRINT("sending SETBUFF \n");
     msg.dwCmd = commandId;
@@ -1056,9 +1061,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     DSP_ERROR_EXIT (status, "Send message to node", EXIT);
 
 EXIT:
-    if(eError != OMX_ErrorNone){
-        pthread_mutex_unlock(&phandle->mutex);
-    }
+    pthread_mutex_unlock(&phandle->mutex);
     return eError;
 }
 
@@ -1088,7 +1091,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
     if (hComponent == NULL )
     {
         eError= OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return eError;
     }
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
 
@@ -1229,21 +1232,31 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
         {
             struct DSP_MSG msg;
             int i;
+            pthread_mutex_lock(&phandle->mutex);
             for (i = 0; i < QUEUE_SIZE; i++)
             {
                 /* searching for empty slot */
                 if (phandle->pAlgcntlDmmBuf[i] == NULL)
                     break;
             }
+            if(i >= QUEUE_SIZE)
+            {
+                pthread_mutex_unlock(&phandle->mutex);
+                eError = OMX_ErrorUndefined;
+                goto EXIT;
+            }
+
             phandle->pAlgcntlDmmBuf[i] = (DMM_BUFFER_OBJ *)malloc(sizeof(DMM_BUFFER_OBJ));
             if(phandle->pAlgcntlDmmBuf[i] == NULL)
             {
                 eError = OMX_ErrorInsufficientResources;
+                pthread_mutex_unlock(&phandle->mutex);
                 goto EXIT;
             }
             eError = DmmMap(phandle->dspCodec->hProc,(int)args[2],(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), 0);
             if (eError != OMX_ErrorNone)
             {
+                pthread_mutex_unlock(&phandle->mutex);
                 goto EXIT;
             }
             phandle->algcntlmapped[i] = 1;
@@ -1257,6 +1270,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
+            pthread_mutex_unlock(&phandle->mutex);
             DSP_ERROR_EXIT (status, "Send message to node", EXIT);
             break;
         }
@@ -1273,16 +1287,25 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
             else
             {
                 int i;
+                pthread_mutex_lock(&phandle->mutex);
                 for (i = 0; i < QUEUE_SIZE; i++)
                 {
                     /* searching for empty slot */
                     if (phandle->pStrmcntlDmmBuf[i] == NULL)
                         break;
                 }
+                if(i >= QUEUE_SIZE)
+                {
+                    eError=OMX_ErrorUndefined;
+                    pthread_mutex_unlock(&phandle->mutex);
+                    goto EXIT;
+                }
+
                 phandle->pStrmcntlDmmBuf[i] = (DMM_BUFFER_OBJ *)malloc(sizeof(DMM_BUFFER_OBJ));
                 if(phandle->pStrmcntlDmmBuf[i] == NULL)
                 {
                     eError = OMX_ErrorInsufficientResources;
+                    pthread_mutex_unlock(&phandle->mutex);
                     goto EXIT;
                 }
 
@@ -1290,6 +1313,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                 eError = DmmMap(phandle->dspCodec->hProc, (int)args[2],(int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), 0);
                 if (eError != OMX_ErrorNone)
                 {
+                    pthread_mutex_unlock(&phandle->mutex);
                     goto EXIT;
                 }
                 phandle->strmcntlmapped[i] = 1;
@@ -1315,6 +1339,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
+            pthread_mutex_unlock(&phandle->mutex);
             DSP_ERROR_EXIT (status, "Send message to node", EXIT);
 
             LCML_DPRINT("STRMControl: arg[0]: message = %x\n",(int)args[0]);
@@ -1487,8 +1512,7 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
         pthread_mutex_destroy(&codec->m_isStopped_mutex);
         pthread_mutex_lock(&codec->mutex);
 
-
-    LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
+        LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
         if(codec->g_aNotificationObjects[0]!= NULL)
         {
             free(codec->g_aNotificationObjects[0]);
@@ -1505,13 +1529,13 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
                 codec->g_aNotificationObjects[2] = NULL;
             }
  #endif
-            pthread_mutex_unlock(&codec->mutex);
-            pthread_mutex_destroy (&codec->mutex);
             free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
             hInterface->pCodecinterfacehandle = NULL;
-            free(codec);
-            codec = NULL;
         }
+        pthread_mutex_unlock(&codec->mutex);
+        pthread_mutex_destroy (&codec->mutex);
+        free(codec);
+        codec = NULL;
     }
     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
     return eError;
@@ -1980,6 +2004,7 @@ void* MessagingThread(void* arg)
 
                         int i;
                         event = EMMCodecAlgCtrlAck;
+                        pthread_mutex_lock(&hDSPInterface->mutex);
                         for (i = 0; i < QUEUE_SIZE; i++)
                         {
                             pDmmBuf = ((LCML_DSP_INTERFACE *)arg)->pAlgcntlDmmBuf[i];
@@ -1998,6 +2023,7 @@ void* MessagingThread(void* arg)
                         args[0] = (void *) msg.dwArg1;
                         args[6] = (void *) arg;  /* handle */
                         LCML_DPRINT("GOT MESSAGE USN_DSPACK_ALGCTRL \n");
+                        pthread_mutex_unlock(&hDSPInterface->mutex);
                     }
                     else if (commandId == USN_DSPACK_STRMCTRL)
                     {
