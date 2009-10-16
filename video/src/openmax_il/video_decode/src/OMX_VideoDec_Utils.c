@@ -4033,7 +4033,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BU
 
     /*OMX_U32 nTotalInBytes = pBuffHead->nFilledLen;*/
     VIDDEC_MPEG4_ParserParam MPEG4_Param;
-    VIDDEC_MPEG4UncompressedVideoFormat iOutputFormat;
+    VIDDEC_MPEG4UncompressedVideoFormat iOutputFormat = {0};
     VIDDEC_MPEG4_ParserParam* sMPEG4_Param = &MPEG4_Param;
     VIDDEC_VideoPictureHeader sPictHeaderDummy;
     VIDDEC_MPEG4VisualVOLHeader sVolHeaderDummy;
@@ -4480,7 +4480,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
 {
     OMX_ERRORTYPE eError = OMX_ErrorBadParameter;
     OMX_S32 i = 0;
-    VIDDEC_AVC_ParserParam* sParserParam;
+    VIDDEC_AVC_ParserParam* sParserParam = NULL;
     /*OMX_S32 nRetVal = 0;*/
     OMX_BOOL nStartFlag = OMX_FALSE;
     OMX_U32 nBitPosition = 0;
