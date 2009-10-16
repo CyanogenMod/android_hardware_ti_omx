@@ -269,25 +269,31 @@ void HandleRequestPolicy(POLICYMANAGER_COMMANDDATATYPE cmd)
         }
     }
 
-    /* If not, determine whether there is a policy combination which will allow the new request to run at all */
+    /* If not, determine whether there is a policy combination
+       which will allow the new request to run at all */
     returnValue = CheckAllCombinations(cmd.param1,&combination, &priority);
 
     if (returnValue == OMX_TRUE) {
-        for (i=0; i < registeredComponents  ; i++) {  /* The -1 is temporary until logic fixed */
-            PreemptComponent(pComponentList[i].componentHandle,pComponentList[i].nPid);
-        }
-    
-    
-        /* Then grant policy to the requested component */
-        priority = GetPriority(cmd.param1, combination);
+        if (combination < activePolicyCombination)
+        {
+            /* assumes the policy table file is sorted with highest
+               prio use case at the top of the file, in 720p case the
+               720p component should be at the top to prevent it from
+               being preempted by lower prio dsp audio codec */
+            /* preempt others and grant request */
+            for (i=0; i < registeredComponents  ; i++) {
+                PreemptComponent(pComponentList[i].componentHandle,pComponentList[i].nPid);
+            }
+            /* Check priority of existing combo against activeCombo */
+            priority = GetPriority(cmd.param1, combination);
+            if (priority != -1) {
+                /* If so grant policy to the component requesting */
+                GrantPolicy(cmd.hComponent,cmd.param1,priority,cmd.nPid);
 
-        if (priority != -1) {
-            /* If so grant policy to the component requesting */
-            GrantPolicy(cmd.hComponent,cmd.param1,priority,cmd.nPid);
-        
-            /* and make the new policy combination the active one */
-            activePolicyCombination = combination;
-            return;
+                /* and make the new policy combination the active one */
+                activePolicyCombination = combination;
+                return;
+            }
         }
     }
     /* otherwise deny policy */
@@ -615,7 +621,6 @@ OMX_BOOL CanAllComponentsCoexist(OMX_COMPONENTINDEXTYPE componentRequestingPolic
     return returnValue;
 }
 
-  
 int GetPriority(OMX_COMPONENTINDEXTYPE component, int combination)
 {
     int i;
