@@ -33,9 +33,16 @@ void omap_pm_set_constraint(int ID, int MHz)
     /* initialize both vdd1 & vdd2 at 2
        idea is to prohobit vdd1=1 during MM use cases */
     unsigned int vdd1_opp = OPERATING_POINT_2;
-    unsigned int vdd2_opp = OPERATING_POINT_3;
+    unsigned int vdd2_opp = OPERATING_POINT_2;
 
-    if (MHz < OPERATING_POINT_2_MHZ) {
+    if(MHz == 0)
+    {
+        /* clear constraints for idle MM case */
+        vdd1_opp = 1;
+        vdd2_opp = 1;
+    }
+    else if (MHz < OPERATING_POINT_2_MHZ) {
+        /* MM should never use opp1, so skip to opp2 */
         vdd1_opp = OPERATING_POINT_2;
     }
     else if (MHz < OPERATING_POINT_3_MHZ) {
@@ -48,21 +55,10 @@ void omap_pm_set_constraint(int ID, int MHz)
         vdd1_opp = OPERATING_POINT_5;
     }
 
-/* temp until more tuning is done
-    seems some usecases need opp higher than
-    what is requested */
-    if (vdd1_opp < OPERATING_POINT_5)
-        vdd1_opp++;
-
-    if(MHz == 0)
-    {
-        vdd1_opp = 0;  //clear locks for idle MM case
-        vdd2_opp = 0;
-    }
     RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
-    strcpy(command,"echo -n ");
+    strcpy(command,"echo ");
     strcat(command,ram_itoa(vdd1_opp));
-    strcat(command," > /sys/power/vdd1_lock");
+    strcat(command," > /sys/power/vdd1_opp");
     system(command);
 
     if(vdd1_opp > OPERATING_POINT_2)
@@ -70,9 +66,9 @@ void omap_pm_set_constraint(int ID, int MHz)
         vdd2_opp = OPERATING_POINT_3;
     }
     RAM_DPRINT("[setting operating point] MHz = %d vdd2 = %d\n",MHz,vdd2_opp);
-    strcpy(command,"echo -n ");
+    strcpy(command,"echo ");
     strcat(command,ram_itoa(vdd2_opp));
-    strcat(command," > /sys/power/vdd2_lock");
+    strcat(command," > /sys/power/vdd2_opp");
     system(command);
 
 
@@ -81,7 +77,7 @@ void omap_pm_set_constraint(int ID, int MHz)
 
 int omap_pm_get_constraint(int ID)
 {
-    printf("[omap_pm_get_constraint] id = %d \n",ID);
+    RAM_DPRINT("[omap_pm_get_constraint] id = %d \n",ID);
     return 0;
 }
 
