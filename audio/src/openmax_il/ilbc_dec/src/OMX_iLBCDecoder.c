@@ -444,11 +444,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 EXIT:
     if(OMX_ErrorNone != eError) {
         iLBCDEC_EPRINT(":: ********* ERROR: Freeing Other Malloced Resources\n");
-        iLBCD_OMX_FREE(pHandle->pComponentPrivate);
         iLBCD_OMX_FREE(iLBC_ip);
         iLBCD_OMX_FREE(iLBC_op);
+    if (pComponentPrivate != NULL) {
         iLBCD_OMX_FREE(pComponentPrivate->pInputBufferList);
         iLBCD_OMX_FREE(pComponentPrivate->pOutputBufferList);
+        iLBCD_OMX_FREE(pHandle->pComponentPrivate);
+        }
         iLBCD_OMX_FREE(pPortDef_ip);
         iLBCD_OMX_FREE(pPortDef_op);
     }
@@ -481,8 +483,7 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
-    iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (iLBCDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 
     if (!pHandle || !pCallBacks) {
         return (OMX_ErrorBadParameter);
@@ -492,6 +493,7 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
         !pCallBacks->EmptyBufferDone) {
         return (OMX_ErrorBadParameter);
     }
+    pComponentPrivate = (iLBCDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     /*Copy the callbacks of the application to the component private */
     memcpy (&(pComponentPrivate->cbInfo), pCallBacks, sizeof(OMX_CALLBACKTYPE));
@@ -1093,8 +1095,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (iLBCDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_S16 *customFlag = NULL;
     TI_OMX_DSP_DEFINITION *configData = NULL;
     int flagValue=0;
@@ -1107,6 +1108,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     if (!pHandle) {
         return (OMX_ErrorBadParameter);
     }
+
+    pComponentPrivate = (iLBCDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){

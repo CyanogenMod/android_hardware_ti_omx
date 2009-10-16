@@ -474,8 +474,14 @@ int PopulatePolicyTable()
                 }
                 result = NULL;
                 result = strtok( line, "," );
+                if (NULL == result) {
+                    goto EXIT;
+                }
                 policyCombinationTable[combinationIndex].component[0].component = PolicyStringToIndex(result);
                 result = strtok( NULL, " ,\n" );
+                if (NULL == result) {
+                    goto EXIT;
+                }
                 policyCombinationTable[combinationIndex].component[0].priority = atoi(result);
                 policyIndex = 1;
                 while (result != NULL) {
@@ -580,7 +586,7 @@ OMX_POLICY_COMBINATION_LIST GetSupportingCombinations(OMX_COMPONENTINDEXTYPE com
 {
     int i,j;
     OMX_BOOL bThisCombinationSupports = OMX_FALSE;
-    OMX_POLICY_COMBINATION_LIST returnValue;
+    OMX_POLICY_COMBINATION_LIST returnValue = {0};
 
     returnValue.numCombinations = 0;
     for (i=0; i < numCombinations; i++) {
