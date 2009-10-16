@@ -328,7 +328,9 @@ OMX_ERRORTYPE G711DECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->strmAttr);
         OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_INPUT_PORT]);
         OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_OUTPUT_PORT]);
-        OMX_G711DECMEMFREE_STRUCT(pTemp_lcml->pIpParam);
+	if (pTemp_lcml != NULL) {
+	    OMX_G711DECMEMFREE_STRUCT(pTemp_lcml->pIpParam);
+	}
     }
         
     return eError;
@@ -2667,7 +2669,9 @@ OMX_ERRORTYPE  G711DECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
     {
         OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_INPUT_PORT]);
         OMX_G711DECMEMFREE_STRUCT(strmAttr);
-        OMX_G711DECMEMFREE_STRUCT(pTemp_lcml->pIpParam);
+	if (pTemp_lcml != NULL) {
+	    OMX_G711DECMEMFREE_STRUCT(pTemp_lcml->pIpParam);
+	}
         OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_OUTPUT_PORT]);
     }
     return eError;

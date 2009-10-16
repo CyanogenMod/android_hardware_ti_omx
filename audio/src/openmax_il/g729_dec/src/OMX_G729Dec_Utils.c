@@ -276,7 +276,6 @@ OMX_ERRORTYPE G729DECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
             free(strmAttr);
             strmAttr = NULL;
         }
-        memset(pTemp_lcml, 0x0, size_lcml);     
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -1457,6 +1456,11 @@ OMX_ERRORTYPE G729DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
              bufParamsArray += 128;
              memset(bufParamsArray, 0, 9 * sizeof(unsigned long int)); */
         pInBufStruct = (G729DEC_BufParamStruct*)pBufHeader->pInputPortPrivate;
+
+	 if (pInBufStruct == NULL) {
+	     G729DEC_EPRINT("%d :: Error: input port NULL ...\n", __LINE__);
+	     goto EXIT;
+	 }
         /* fill array for SN params */
         if(pInBufStruct->bNoUseDefaults == OMX_TRUE){ /*indicates that khronos conformance tests are NOT running */
             pComponentPrivate->bufParamsArray[0] = 0;
@@ -1496,11 +1500,9 @@ OMX_ERRORTYPE G729DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pLcmlHdr->pIpParam->usLastFrame = 0;
             pComponentPrivate->bufParamsArray[0] = 0;
         }
-        if(pInBufStruct!=NULL){  
-            pLcmlHdr->pIpParam->usFrameLost = pInBufStruct->frameLost;
-            if(pInBufStruct->frameLost==1){
-                G729DEC_PRINT_INFO("Frame LOST event\n");
-            }
+	 pLcmlHdr->pIpParam->usFrameLost = pInBufStruct->frameLost;
+	 if (pInBufStruct->frameLost == 1) {
+	     G729DEC_PRINT_INFO("Frame LOST event\n");
         }
         /* Store time stamp information */
         pComponentPrivate->arrTimestamp[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;

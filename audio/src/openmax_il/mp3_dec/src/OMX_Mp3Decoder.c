@@ -717,7 +717,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_PTR ComponentParameterStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
     /*    OMX_PARAM_BUFFERSUPPLIERTYPE *pBufferSupplier;*/
 
@@ -875,8 +875,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, " :: Exiting GetParameter\n");
-    OMX_PRINT1(pComponentPrivate->dbg, " :: Returning = 0x%x\n",eError);
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, " :: Exiting GetParameter\n");
+	 OMX_PRINT1(pComponentPrivate->dbg, " :: Returning = 0x%x\n", eError);
+    }
     return eError;
 }
 
@@ -907,7 +909,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                                    OMX_PTR pCompParam)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
     OMX_AUDIO_PARAM_PORTFORMATTYPE* pComponentParam = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pComponentParamPort = NULL;
     OMX_AUDIO_PARAM_MP3TYPE *pCompMp3Param = NULL;
@@ -1069,8 +1071,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetParameter\n");
-    OMX_PRINT1(pComponentPrivate->dbg, ":: Returning = 0x%x\n",eError);
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetParameter\n");
+	 OMX_PRINT1(pComponentPrivate->dbg, ":: Returning = 0x%x\n", eError);
+    }
     return eError;
 }
 
@@ -1093,7 +1097,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 #ifdef DSP_RENDERING_ON
     OMX_AUDIO_CONFIG_MUTETYPE *pMuteStructure = NULL;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pVolumeStructure = NULL;
@@ -1259,8 +1263,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetConfig\n");
-    OMX_PRINT1(pComponentPrivate->dbg, " :: Returning = 0x%x\n",eError);
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetConfig\n");
+	 OMX_PRINT1(pComponentPrivate->dbg, " :: Returning = 0x%x\n", eError);
+    }
     return eError;
 }
 
@@ -1291,7 +1297,7 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
 
-    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 
 
     MP3D_OMX_CONF_CHECK_CMD(pHandle,1,1);
@@ -1310,7 +1316,9 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
     pComponentPrivate->curState = OMX_StateLoaded;
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetCallbacks\n");
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting SetCallbacks\n");
+    }
     return eError;
 }
 
@@ -1496,7 +1504,7 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
     int ret=0;
     
@@ -1568,7 +1576,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->nEmptyThisBufferCount++;
     
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, " :: Exiting EmptyThisBuffer\n");
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, " :: Exiting EmptyThisBuffer\n");
+    }
     return eError;
 }
 
@@ -1597,7 +1607,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     int nRet=0;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
 
@@ -1692,7 +1702,9 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->nFillThisBufferCount++;
 
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, ": Exiting FillThisBuffer\n");
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, ": Exiting FillThisBuffer\n");
+    }
     return eError;
 }
 
@@ -1720,7 +1732,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     int k=0, k2 = 0;
-    struct OMX_TI_Debug dbg;
+    struct OMX_TI_Debug dbg = {0};
 
     MP3D_OMX_CONF_CHECK_CMD(pComponent,1,1)
         pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
@@ -1852,7 +1864,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                    OMX_IN OMX_U32 nSizeBytes)
 {
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
-    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_BUFFERHEADERTYPE *pBufferHeader = NULL;
 
@@ -1861,6 +1873,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     MP3D_OMX_CONF_CHECK_CMD(hComponent,1,1);
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     
+    MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1868,7 +1881,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }   
 #endif
 
-    MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     pPortDef = ((MP3DEC_COMPONENT_PRIVATE*)pComponentPrivate)->pPortDef[nPortIndex];
 
     MP3D_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
@@ -1990,9 +2002,13 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
  EXIT:
     if(OMX_ErrorNone != eError) {
-        OMX_ERROR4(pComponentPrivate->dbg, "%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
-        MP3D_OMX_FREE(pBufferHeader->pBuffer);
-        MP3D_OMX_FREE(pBufferHeader);
+	 if (pComponentPrivate != NULL) {
+	     OMX_ERROR4(pComponentPrivate->dbg, "%d :: ************* ERROR: Freeing Other Malloced Resources\n", __LINE__);
+	}
+	if (pBufferHeader != NULL) {
+	     MP3D_OMX_FREE(pBufferHeader->pBuffer);
+	     MP3D_OMX_FREE(pBufferHeader);
+	}
     }
     return eError;
 }

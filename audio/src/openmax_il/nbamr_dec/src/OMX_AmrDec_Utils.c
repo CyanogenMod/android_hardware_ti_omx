@@ -1955,6 +1955,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             nFrames++;                                                
                         }
                         free(TOCframetype);
+			 TOCframetype = NULL;
                     }
                     frameType = 0;
                     nFrames = 0;
@@ -2530,6 +2531,9 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
     }
 
 EXIT:
+    if (TOCframetype != NULL) {
+	 free(TOCframetype);
+    }
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Returning error %d\n",__LINE__,eError);
     if (eError != OMX_ErrorNone ) {

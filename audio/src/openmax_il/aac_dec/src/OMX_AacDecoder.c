@@ -668,7 +668,10 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
 
     /* add for acoustic control */
  EXIT:
-    OMX_PRINT1(pCompPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pCompPrivate != NULL) {
+	OMX_PRINT1(pCompPrivate->dbg, "%d :: Returning = 0x%x\n",
+				       __LINE__, eError);
+    }
     return eError;
 }
 
@@ -852,7 +855,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",
+				       __LINE__, eError);
+    }
     return eError;
 }
 
@@ -1045,7 +1051,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",
+							__LINE__, eError);
+    }
     return eError;
 }
 
@@ -1192,7 +1201,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",
+							__LINE__, eError);
+    }
     return eError;
 }
 
@@ -1890,8 +1902,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
  EXIT:
     if(OMX_ErrorNone != eError) {
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
-        AACDEC_OMX_FREE(pBufferHeader->pBuffer);
-        AACDEC_OMX_FREE(pBufferHeader);
+	if (pBufferHeader != NULL) {
+	    AACDEC_OMX_FREE(pBufferHeader->pBuffer);
+	    AACDEC_OMX_FREE(pBufferHeader);
+	}
     }
     return eError;
 }

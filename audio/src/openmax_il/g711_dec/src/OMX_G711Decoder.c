@@ -450,16 +450,18 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
  EXIT:
     if(eError == OMX_ErrorInsufficientResources)
     {
-        OMX_G711DECMEMFREE_STRUCT(pHandle->pComponentPrivate);
         OMX_G711DECMEMFREE_STRUCT(g711_ip);
         OMX_G711DECMEMFREE_STRUCT(g711_op);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat);        
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]);
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+	 if (pComponentPrivate != NULL) {
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]);
+	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+	 }
+	 OMX_G711DECMEMFREE_STRUCT(pHandle->pComponentPrivate);
         OMX_G711DECMEMFREE_STRUCT(pPortDef_ip);
         OMX_G711DECMEMFREE_STRUCT(pPortDef_op);
 
@@ -1076,8 +1078,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     OMX_S16* deviceString = NULL;
     TI_OMX_DATAPATH dataPath;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    G711DEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (G711DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    G711DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     
     int *customFlag = NULL;
     TI_OMX_DSP_DEFINITION *configData = NULL; 
@@ -1093,6 +1094,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         goto EXIT;
     }
 
+    pComponentPrivate = (G711DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     switch (nConfigIndex) {
     case  OMX_IndexCustomG711DecHeaderInfoConfig:
         {

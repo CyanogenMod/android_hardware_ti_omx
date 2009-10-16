@@ -1785,8 +1785,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
  EXIT:
     if(OMX_ErrorNone != eError) {
         G726DEC_DPRINT("%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
-        G726D_OMX_FREE(pBufferHeader->pBuffer);
-        G726D_OMX_FREE(pBufferHeader);
+	 if (pBufferHeader != NULL) {
+	     G726D_OMX_FREE(pBufferHeader->pBuffer);
+	     G726D_OMX_FREE(pBufferHeader);
+	 }
     }
 
     return eError;

@@ -1944,6 +1944,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             nFrames++;
                         }
                         free(TOCframetype);
+			 TOCframetype = NULL;
                     }
                     frameType = 0;
                     nFrames = 0;
@@ -2476,6 +2477,9 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
 
  EXIT:
+    if (TOCframetype != NULL) {
+	 free(TOCframetype);
+    }
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting from  WBAMR_DEC_HandleDataBuf_FromApp \n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning error %d\n",eError);
     if (eError != OMX_ErrorNone ) {

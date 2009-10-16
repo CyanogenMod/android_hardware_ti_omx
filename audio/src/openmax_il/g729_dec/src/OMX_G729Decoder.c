@@ -275,7 +275,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     G729DEC_DPRINT("%d Malloced pcmParams = 0x%p\n",__LINE__,((G729DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pcmParams);
 
  
-    pComponentPrivate = pHandle->pComponentPrivate;
     OMX_G729MALLOC_STRUCT(pComponentPrivate->pInputBufferList, G729DEC_BUFFERLIST);
 
     pComponentPrivate->pInputBufferList->numBuffers = 0; /* initialize number of buffers */
@@ -323,6 +322,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
     pComponentPrivate->pParams = NULL;
     pComponentPrivate->sDeviceString = malloc(100*sizeof(OMX_STRING));
+    if (pComponentPrivate->sDeviceString == NULL) {
+	 G729DEC_DPRINT("%d ::malloc failed\n", __LINE__);
+	 goto EXIT;
+    }
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
@@ -1096,8 +1099,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    G729DEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (G729DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    G729DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_S16 *customFlag = NULL;
     TI_OMX_DSP_DEFINITION *configData = NULL;
     
@@ -1114,6 +1116,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         goto EXIT;
     }
 
+    pComponentPrivate =
+	 (G729DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     switch (nConfigIndex) {
     case  OMX_IndexCustomG729DecHeaderInfoConfig:
         {

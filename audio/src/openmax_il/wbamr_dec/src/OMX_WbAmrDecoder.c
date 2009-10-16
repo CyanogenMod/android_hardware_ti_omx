@@ -210,7 +210,7 @@ AM_COMMANDDATATYPE cmd_data;
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip, *pPortDef_op;
-    WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate;
+    WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_AUDIO_PARAM_AMRTYPE *amr_ip;
     OMX_AUDIO_PARAM_PCMMODETYPE *amr_op;
     OMX_ERRORTYPE error = OMX_ErrorNone;
@@ -499,7 +499,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                        PERF_FOURCC('W','B','D','T'));
 #endif
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exiting - returning %d\n",error);
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, "Exiting - returning %d\n", error);
+    }
     return error;
 }
 
@@ -1169,8 +1171,8 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
         OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
     }
 
-    OMX_WBDECMEMFREE_STRUCT(streamInfo);
  EXIT:
+    OMX_WBDECMEMFREE_STRUCT(streamInfo);
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting GetConfig. Returning = 0x%x\n",eError);
     return eError;
 }
@@ -1193,8 +1195,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (WBAMR_DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_S16 *customFlag = NULL;
     TI_OMX_DSP_DEFINITION *configData;
     TI_OMX_DATAPATH dataPath;
@@ -1209,6 +1210,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         goto EXIT;
     }
 
+    pComponentPrivate = (WBAMR_DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;

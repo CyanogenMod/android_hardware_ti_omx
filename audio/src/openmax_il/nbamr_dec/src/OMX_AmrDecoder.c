@@ -216,7 +216,7 @@ AM_COMMANDDATATYPE cmd_data;
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip, *pPortDef_op;
-    AMRDEC_COMPONENT_PRIVATE *pComponentPrivate;
+    AMRDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_AUDIO_PARAM_AMRTYPE *amr_ip;
     OMX_AUDIO_PARAM_PCMMODETYPE *amr_op;
     OMX_ERRORTYPE error = OMX_ErrorNone;
@@ -541,8 +541,10 @@ error = NBAMRDEC_StartComponentThread(pHandle);
 #endif
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::OMX_ComponentInit - returning %d\n", __LINE__,error);
-    OMX_PRINT2(pComponentPrivate->dbg, "%s: OUT", __FUNCTION__);
+    if (pComponentPrivate != NULL) {
+	 OMX_PRINT1(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::OMX_ComponentInit - returning %d\n", __LINE__, error);
+	 OMX_PRINT2(pComponentPrivate->dbg, "%s: OUT", __FUNCTION__);
+    }
     return error;
 }
 
@@ -1225,11 +1227,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 
     // if(streamInfo)
     // {
-        OMX_NBDECMEMFREE_STRUCT(streamInfo);
         //streamInfo = NULL;
     //}
 
 EXIT:
+    OMX_NBDECMEMFREE_STRUCT(streamInfo);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1251,6 +1253,11 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
 OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
+    if (pHandle == NULL) {
+	 OMXDBG_PRINT(stderr, ERROR, 2, 0, "%d ::OMX_AmrDecoder.c :: About to return OMX_ErrorBadParameter\n", __LINE__);
+	 eError = OMX_ErrorBadParameter;
+	 goto EXIT;
+    }
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate =
                          (AMRDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_S16 *customFlag = NULL;
@@ -1262,11 +1269,6 @@ OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pVolumeStructure = NULL;
 #endif
     OMX_PRINT1(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c :: Entering SetConfig\n", __LINE__);
-    if (pHandle == NULL) {
-        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c :: Invalid HANDLE OMX_ErrorBadParameter \n",__LINE__);
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
 
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){

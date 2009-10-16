@@ -342,7 +342,6 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
  EXIT:
     if(eError == OMX_ErrorInsufficientResources || eError == OMX_ErrorBadParameter){
         G726D_OMX_FREE(strmAttr);
-        G726D_OMX_FREE(arr);
         G726D_OMX_FREE(pTemp_lcml);
     }
     G726DEC_DPRINT("Exiting G726DEC_Fill_LCMLInitParams\n");
