@@ -4502,8 +4502,16 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     nTotalInBytes = pBuffHead->nFilledLen;
     nBitStream = (OMX_U8*)pBuffHead->pBuffer;/* + (OMX_U8*)pBuffHead->nOffset;*/
     nRbspByte = (OMX_U8*)malloc(nTotalInBytes);
+    if (!nRbspByte) {
+        eError =  OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
     memset(nRbspByte, 0x0, nTotalInBytes);
     sParserParam = (VIDDEC_AVC_ParserParam *)malloc(sizeof(VIDDEC_AVC_ParserParam));
+    if (!sParserParam) {
+        eError =  OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
 
     if (nType == 0) {
         /* Start of Handle fragmentation of Config Buffer  Code*/
@@ -4799,8 +4807,10 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     eError = OMX_ErrorNone;
 
 EXIT:
-    free( nRbspByte);
-    free( sParserParam);
+    if (nRbspByte)
+        free( nRbspByte);
+    if (sParserParam)
+        free( sParserParam);
     return eError;
 }
 #endif
@@ -4911,10 +4921,10 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     OMX_BOOL bOutPortSettingsChanged = OMX_FALSE;
     OMX_U32 nOutPortActualAllocLen = 0;
 
-    OMX_PRINT1(pComponentPrivate->dbg, "IN\n");
     if(!pComponentPrivate) {
         goto EXIT;
     }
+    OMX_PRINT1(pComponentPrivate->dbg, "IN\n");
 
     bInPortSettingsChanged = pComponentPrivate->bInPortSettingsChanged;
     bOutPortSettingsChanged = pComponentPrivate->bOutPortSettingsChanged;
@@ -5130,7 +5140,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             eError = OMX_ErrorNone;
         }
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "OUT\n");
+    if (pComponentPrivate)
+        OMX_PRINT1(pComponentPrivate->dbg, "OUT\n");
     return eError;
 }
 #endif
@@ -8674,6 +8685,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                                            EMMCodecControlAlgCtrl,
                                            (void*)p);
                 if (eError != OMX_ErrorNone) {
+                    VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                     eError = OMX_ErrorHardware;
                     pTmp = (char *)pDynParams;
                     pTmp -= VIDDEC_PADDING_HALF;
