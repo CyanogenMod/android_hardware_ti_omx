@@ -60,7 +60,20 @@
 
 #define CEXEC_DONE 1
 /*DSP_HNODE hDasfNode;*/
+#define ABS_DLL_NAME_LENGTH 128
 
+
+#define LCML_MALLOC(p,s,t) \
+    p = (t*)malloc(s);                  \
+    if (NULL == p){             \
+        LCML_DPRINT("LCML:::::::: ERROR(#%d F:%s)!!! Ran out of memory while trying to allocate %d bytes!!!\n",__LINE__,__FUNCTION__,s);    \
+    }else { \
+        LCML_DPRINT("LCML:::::::: (#%d F:%s)Success to allocate %d bytes ... pointer %p\n",__LINE__,__FUNCTION__,s,p); \
+    }
+
+#define LCML_FREE(p)    \
+        LCML_DPRINT("LCML:::::::: (#%d F:%s)Freeing pointer %p done",__LINE__,__FUNCTION__,p); \
+        free(p);    
 
 /*Prototyping*/
 static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
@@ -103,7 +116,7 @@ static OMX_ERRORTYPE FreeResources(LCML_DSP_INTERFACE *hInterface);
 
 void* MessagingThread(void *arg);
 
-static char *append_dsp_path(char * dll64p_name);
+static int append_dsp_path(char * dll64p_name, char *absDLLname);
 
 
 /** ========================================================================
@@ -120,7 +133,8 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     struct LCML_CODEC_INTERFACE *dspcodecinterface ;
 
     LCML_DPRINT("%d :: GetHandle application\n",__LINE__);
-    *hInterface = (LCML_DSP_INTERFACE *)malloc(sizeof(LCML_DSP_INTERFACE));
+    LCML_MALLOC(*hInterface,sizeof(LCML_DSP_INTERFACE),LCML_DSP_INTERFACE);
+
     if (hInterface == NULL)
     {
         err = OMX_ErrorInsufficientResources;
@@ -130,7 +144,7 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
 
     pHandle = (LCML_DSP_INTERFACE*)*hInterface;
 
-    dspcodecinterface = (LCML_CODEC_INTERFACE *)malloc(sizeof(LCML_CODEC_INTERFACE));
+    LCML_MALLOC(dspcodecinterface,sizeof(LCML_CODEC_INTERFACE),LCML_CODEC_INTERFACE);
     if (dspcodecinterface == NULL)
     {
         err = OMX_ErrorInsufficientResources;
@@ -145,7 +159,7 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     dspcodecinterface->QueueBuffer = QueueBuffer;
     dspcodecinterface->ControlCodec = ControlCodec;
 
-    pHandle->dspCodec = (LCML_DSP *)malloc(sizeof(LCML_DSP));
+    LCML_MALLOC(pHandle->dspCodec,sizeof(LCML_DSP),LCML_DSP);
     if(pHandle->dspCodec == NULL)
     {
         err = OMX_ErrorInsufficientResources;
@@ -206,13 +220,21 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         LCML_DSP_INTERFACE * phandle;
         LCML_CREATEPHASEARGS crData;
         DSP_STATUS status;
-        int i = 0;
+        int i = 0, k = 0;
         struct DSP_NODEATTRIN NodeAttrIn;
         struct DSP_CBDATA     *pArgs;
         BYTE  argsBuf[32 + sizeof(ULONG)];
+        char abs_dsp_path[ABS_DLL_NAME_LENGTH];
 #ifndef CEXEC_DONE
         UINT argc = 1;
-        char* argv[] = {append_dsp_path(DSP_DOF_IMAGE)};
+        char argv[ABS_DLL_NAME_LENGTH];
+        k = append_dsp_path(DSP_DOF_IMAGE, argv);
+        if (k < 0)
+        {
+            LCML_DPRINT("%d :: append_dsp_path returned an error!\n", __LINE__);
+            eError = OMX_ErrorBadParameter;
+            goto ERROR;
+        }
 #endif
         int tmperr;
 
@@ -256,10 +278,19 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         for (dllinfo=0; dllinfo < phandle->dspCodec->NodeInfo.nNumOfDLLs; dllinfo++)
         {
             LCML_DPRINT("%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
+
+            k = append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName, abs_dsp_path);
+            if (k < 0)
+            {
+                LCML_DPRINT("%d :: append_dsp_path returned an error!\n", __LINE__);
+                eError = OMX_ErrorBadParameter;
+                goto ERROR;
+            }
+
             status = DSPManager_RegisterObject((struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
-                                                phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
-                                                append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName));
-            DSP_ERROR_EXIT (status, "Register Component Library", ERROR)
+                                                phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType, abs_dsp_path);
+
+            DSP_ERROR_EXIT (status, "Register Component Library", ERROR);
         }
 
         /* NODE specific data */
@@ -271,9 +302,10 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
         /* Prepare Create Phase Argument */
         LCML_DPRINT("%d :: Prepare Create Phase Argument \n", __LINE__);
         /* TO DO check is application setting it properly */
+        i = 0;
         if(phandle->dspCodec->pCrPhArgs !=NULL)
         {
-            while(phandle->dspCodec->pCrPhArgs[i] != END_OF_CR_PHASE_ARGS)
+            while((phandle->dspCodec->pCrPhArgs[i] != END_OF_CR_PHASE_ARGS) && (i < LCML_DATA_SIZE))
             {
                 LCML_DPRINT("%d :: copying Create Phase Argument \n", i);
                 crData.cData[i] = phandle->dspCodec->pCrPhArgs[i];
@@ -289,6 +321,13 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
             goto ERROR;
         }
 
+        if (i >= LCML_DATA_SIZE)
+        {
+            LCML_DPRINT("%d :: Reached end of Create Phase Args Array. Did not find END_OF_CR_PHASE_ARGS marker. \n", __LINE__);
+            eError = OMX_ErrorBadParameter;
+            goto ERROR;            
+        }
+        
         /* LCML_DPRINT("Create Phase args  strlen = %d\n",strlen(crData.cData)); */
         /* crData.cbData = sizeof (ULONG) + strlen(crData.cData); */
         crData.cbData = i*2;
@@ -371,7 +410,7 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
             struct DSP_NOTIFICATION* notification;
             LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-            notification = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+	        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION)
             if(notification == NULL)
             {
                 LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -387,7 +426,7 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
 
             LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-            notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+            LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
             if(notification_mmufault == NULL)
             {
                 LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -403,7 +442,7 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
 
             LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-            notification_syserror = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+            LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
             if(notification_syserror == NULL)
             {
                 LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -458,7 +497,7 @@ NodeAttrIn.uTimeout = 1000; /* WORKAROUND */
 
 ERROR:
 #ifndef CEXEC_DONE
-    free(argv);
+    LCML_FREE(argv);
 #endif
     LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n error = %x\n", __LINE__, eError);
     return eError;
@@ -489,13 +528,21 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     LCML_DSP_INTERFACE * phandle;
 #ifndef CEXEC_DONE
     UINT argc = 1;
-    char* argv[] = {append_dsp_path(DSP_DOF_IMAGE)};
+    char argv[ABS_DLL_NAME_LENGTH];
+    k = append_dsp_path(DSP_DOF_IMAGE, argv);
+    if (k < 0)
+    {
+        LCML_DPRINT("%d :: append_dsp_path returned an error!\n", __LINE__);
+        eError = OMX_ErrorBadParameter;
+        goto ERROR;
+    }
 #endif
     LCML_CREATEPHASEARGS crData;
     DSP_STATUS status;
-    int i = 0;
+    int i = 0, k =0;
     struct DSP_NODEATTRIN NodeAttrIn;
     int tmperr;
+    char abs_dsp_path[ABS_DLL_NAME_LENGTH];
 
     LCML_DPRINT("%d :: InitMMCodec application\n",__LINE__);
 
@@ -548,9 +595,19 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     for(dllinfo=0; dllinfo < phandle->dspCodec->NodeInfo.nNumOfDLLs; dllinfo++)
     {
         LCML_DPRINT("%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
+
+        k = append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName, abs_dsp_path);
+        if (k < 0)
+        {
+            LCML_DPRINT("%d :: append_dsp_path returned an error!\n", __LINE__);
+            eError = OMX_ErrorBadParameter;
+            goto ERROR;
+        }
+
         status = DSPManager_RegisterObject((struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
-                                           phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
-                                           append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName));
+                                               phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
+                                               abs_dsp_path);
+
         DSP_ERROR_EXIT (status, "Register Component Library", ERROR)
     }
 
@@ -567,7 +624,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     /* TO DO check is application setting it properly */
     if(phandle->dspCodec->pCrPhArgs !=NULL)
     {
-        while(phandle->dspCodec->pCrPhArgs[i] != END_OF_CR_PHASE_ARGS)
+        while((phandle->dspCodec->pCrPhArgs[i] != END_OF_CR_PHASE_ARGS) && (i < LCML_DATA_SIZE))
         {
             LCML_DPRINT("%d :: copying Create Phase Argument \n",i);
             crData.cData[i] =phandle->dspCodec->pCrPhArgs[i];
@@ -582,6 +639,14 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         eError = OMX_ErrorBadParameter;
         goto ERROR;
     }
+
+    if (i >= LCML_DATA_SIZE)
+    {
+       LCML_DPRINT("%d :: Reached end of Create Phase Args Array. Did not find END_OF_CR_PHASE_ARGS marker. \n", __LINE__);
+       eError = OMX_ErrorBadParameter;
+       goto ERROR;
+    }
+
 
     /* LCML_DPRINT("Create Phase args  strlen = %d\n",strlen(crData.cData)); */
     /* crData.cbData = sizeof (ULONG) + strlen(crData.cData); */
@@ -654,7 +719,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         struct DSP_NOTIFICATION* notification;
         LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-        notification = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
         if(notification == NULL)
         {
             LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -670,7 +735,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
 
         LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-        notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+        LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
         if(notification_mmufault == NULL)
         {
             LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -686,7 +751,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
 
         LCML_DPRINT("%d :: Registering the Node for Messaging\n",__LINE__);
 
-        notification_syserror = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+        LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
         if(notification_syserror == NULL)
         {
             LCML_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -741,7 +806,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
 
 ERROR:
 #ifndef CEXEC_DONE
-    free(argv);
+    LCML_FREE(argv);
 #endif
     LCML_DPRINT("%d :: Exiting Init_DSPSubSystem\n", __LINE__);
     return eError;
@@ -824,12 +889,13 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                        PERF_ModuleSocketNode);
 #endif
     pthread_mutex_lock(&phandle->mutex);
-    tmp2 = (char *) malloc(sizeof(TArmDspCommunicationStruct) + 256);
+    LCML_MALLOC(tmp2,sizeof(TArmDspCommunicationStruct) + 256,char);
     if (tmp2 == NULL)
     {
             eError = OMX_ErrorInsufficientResources;
             goto MUTEX_UNLOCK;
     }
+    memset(tmp2,0,sizeof(TArmDspCommunicationStruct)+256);
     phandle->commStruct = (TArmDspCommunicationStruct *)(tmp2 + 128);
     phandle->commStruct->iBufferPtr = (OMX_U32) buffer;
     phandle->commStruct->iBufferSize = bufferLen;
@@ -1246,13 +1312,14 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                 goto EXIT;
             }
 
-            phandle->pAlgcntlDmmBuf[i] = (DMM_BUFFER_OBJ *)malloc(sizeof(DMM_BUFFER_OBJ));
+            LCML_MALLOC(phandle->pAlgcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
             if(phandle->pAlgcntlDmmBuf[i] == NULL)
             {
                 eError = OMX_ErrorInsufficientResources;
                 pthread_mutex_unlock(&phandle->mutex);
                 goto EXIT;
             }
+            memset(phandle->pAlgcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ));
             eError = DmmMap(phandle->dspCodec->hProc,(int)args[2],(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), 0);
             if (eError != OMX_ErrorNone)
             {
@@ -1301,15 +1368,16 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                     goto EXIT;
                 }
 
-                phandle->pStrmcntlDmmBuf[i] = (DMM_BUFFER_OBJ *)malloc(sizeof(DMM_BUFFER_OBJ));
+                LCML_MALLOC(phandle->pStrmcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
                 if(phandle->pStrmcntlDmmBuf[i] == NULL)
                 {
                     eError = OMX_ErrorInsufficientResources;
                     pthread_mutex_unlock(&phandle->mutex);
                     goto EXIT;
                 }
-
-
+                
+                memset(phandle->pStrmcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ)); //ATC
+                
                 eError = DmmMap(phandle->dspCodec->hProc, (int)args[2],(int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), 0);
                 if (eError != OMX_ErrorNone)
                 {
@@ -1503,7 +1571,7 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
     if(hInterface->dspCodec != NULL)
     {
-        free(hInterface->dspCodec);
+        LCML_FREE(hInterface->dspCodec);
         hInterface->dspCodec = NULL;
     }
     codec = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle)->pCodec);
@@ -1515,26 +1583,26 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
         LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
         if(codec->g_aNotificationObjects[0]!= NULL)
         {
-            free(codec->g_aNotificationObjects[0]);
+            LCML_FREE(codec->g_aNotificationObjects[0]);
             codec->g_aNotificationObjects[0] = NULL;
 #ifdef __ERROR_PROPAGATION__
             if(codec->g_aNotificationObjects[1]!= NULL)
             {
-                free(codec->g_aNotificationObjects[1]);
+                LCML_FREE(codec->g_aNotificationObjects[1]);
                 codec->g_aNotificationObjects[1] = NULL;
             }
             if(codec->g_aNotificationObjects[2]!= NULL)
             {
-                free(codec->g_aNotificationObjects[2]);
+                LCML_FREE(codec->g_aNotificationObjects[2]);
                 codec->g_aNotificationObjects[2] = NULL;
             }
  #endif
-            free(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
+            LCML_FREE(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle));
             hInterface->pCodecinterfacehandle = NULL;
         }
         pthread_mutex_unlock(&codec->mutex);
         pthread_mutex_destroy (&codec->mutex);
-        free(codec);
+        LCML_FREE(codec);
         codec = NULL;
     }
     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
@@ -1813,7 +1881,7 @@ void* MessagingThread(void* arg)
                             tmp2 = (tmp2 - 128);
                             if (tmp2)
                             {
-                                free(tmp2);
+                                LCML_FREE(tmp2);
                                 tmp2 = NULL;
                             }
 
@@ -1892,7 +1960,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if (tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     hDSPInterface->Arminputstorage[i] = NULL;
@@ -1953,7 +2021,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if(tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     tmpDspStructAddress->iBufSizeUsed = 0;
@@ -2013,7 +2081,7 @@ void* MessagingThread(void* arg)
                                 (pDmmBuf->pMapped == (void *)msg.dwArg2))
                             {
                                 DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
-                                free(pDmmBuf);
+                                LCML_FREE(pDmmBuf);
                                 pDmmBuf = NULL;
                                 ((LCML_DSP_INTERFACE *)arg)->algcntlmapped[i] = 0;
                                 ((LCML_DSP_INTERFACE *)arg)->pAlgcntlDmmBuf[i] = NULL;
@@ -2092,7 +2160,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if (tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     hDSPInterface->Arminputstorage[i] = NULL;
@@ -2117,7 +2185,7 @@ void* MessagingThread(void* arg)
                                     (pDmmBuf->pMapped == (void *)msg.dwArg2))
                                 {
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
-                                    free(pDmmBuf);
+                                    LCML_FREE(pDmmBuf);
                                     pDmmBuf = NULL;
                                     ((LCML_DSP_INTERFACE *)arg)->strmcntlmapped[i] = 0;
                                     ((LCML_DSP_INTERFACE *)arg)->pStrmcntlDmmBuf[i] = NULL;
@@ -2184,7 +2252,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if(tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     tmpDspStructAddress->iBufSizeUsed = 0;
@@ -2212,7 +2280,7 @@ void* MessagingThread(void* arg)
                                     (pDmmBuf->pMapped == (void *)msg.dwArg2))
                                 {
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
-                                    free(pDmmBuf);
+                                    LCML_FREE(pDmmBuf);
                                     pDmmBuf = NULL;
                                     ((LCML_DSP_INTERFACE *)arg)->strmcntlmapped[i] = 0;
                                     ((LCML_DSP_INTERFACE *)arg)->pStrmcntlDmmBuf[i] = NULL;
@@ -2279,7 +2347,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if (tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     hDSPInterface->Arminputstorage[i] = NULL;
@@ -2356,7 +2424,7 @@ void* MessagingThread(void* arg)
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if(tmp2)
                                     {
-                                        free(tmp2);
+                                        LCML_FREE(tmp2);
                                         tmp2 = NULL;
                                     }
                                     tmpDspStructAddress->iBufSizeUsed = 0;
@@ -2387,7 +2455,7 @@ void* MessagingThread(void* arg)
                                     (pDmmBuf->pMapped == (void *)msg.dwArg2))
                                 {
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
-                                    free(pDmmBuf);
+                                    LCML_FREE(pDmmBuf);
                                     pDmmBuf = NULL;
                                     ((LCML_DSP_INTERFACE *)arg)->strmcntlmapped[i] = 0;
                                     ((LCML_DSP_INTERFACE *)arg)->pStrmcntlDmmBuf[i] = NULL;
@@ -2501,18 +2569,21 @@ void* MessagingThread(void* arg)
     return (void*)OMX_ErrorNone;
 }
 
-static char *append_dsp_path(char * dll64p_name)
+
+static int append_dsp_path(char * dll64p_name, char *absDLLname)
 {
+    int len = 0;
     char *dsp_path = NULL;
-    char *appended_dll = NULL;
     if (!(dsp_path = getenv("DSP_PATH")))
     {
-        printf("DSP_PATH Environment variable not set using /lib/dsp default");
-        dsp_path = "/lib/dsp";
+        printf("DSP_PATH Environment variable not set using /system/lib/dsp default");
+        dsp_path = "/system/lib/dsp";
     }
-    appended_dll = (char *)calloc(strlen(dsp_path) + strlen("/") + strlen(dll64p_name),sizeof(char));
-    strcpy(appended_dll,dsp_path);
-    strcat(appended_dll,"/");
-    strcat(appended_dll,dll64p_name);
-    return appended_dll;
+    len = strlen(dsp_path) + strlen("/") + strlen(dll64p_name) + 1 /* null terminator */;
+    if (len >= ABS_DLL_NAME_LENGTH) return -1;
+
+    strcpy(absDLLname,dsp_path);
+    strcat(absDLLname,"/");
+    strcat(absDLLname,dll64p_name);
+    return 0;
 }
