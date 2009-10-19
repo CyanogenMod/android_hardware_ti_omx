@@ -1268,10 +1268,6 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 
     TI_OMX_STREAM_INFO *streamInfo;
     NBAMRENC_OMX_MALLOC(streamInfo, TI_OMX_STREAM_INFO);
-    if(streamInfo == NULL){
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1286,8 +1282,8 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
     }
 
-    OMX_NBMEMFREE_STRUCT(streamInfo);
 EXIT:
+    OMX_NBMEMFREE_STRUCT(streamInfo);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting GetConfig. Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
@@ -1309,10 +1305,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AMRENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     TI_OMX_DSP_DEFINITION *pTiDspDefinition;
-    AMRENC_COMPONENT_PRIVATE *pComponentPrivate =
-                         (AMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_S16 *customFlag = NULL;      
     
     TI_OMX_DATAPATH dataPath;                   
@@ -1321,12 +1316,14 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     AM_COMMANDDATATYPE cmd_data;
 #endif    
                          
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering SetConfig\n", __LINE__);
+    AMRENC_DPRINT("%d :: Entering SetConfig\n", __LINE__);
     if (pHandle == NULL) {
-        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Invalid HANDLE OMX_ErrorBadParameter \n",__LINE__);
+	AMRENC_DPRINT("%d :: Invalid HANDLE OMX_ErrorBadParameter \n", __LINE__);
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
+
+    pComponentPrivate = (AMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1406,8 +1403,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         break;
     }
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting SetConfig\n", __LINE__);
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting SetConfig\n", __LINE__);
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n", __LINE__, eError);
+    }
     return eError;
 }
 

@@ -480,18 +480,6 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
             arr = NULL;
         }
     
-        if (pTemp_lcml) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml);
-            free(pTemp_lcml);
-            pTemp_lcml = NULL;
-        }
-
-        if (pTemp_lcml->pIpParam) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml->pIpParam);
-            free(pTemp_lcml->pIpParam);
-            pTemp_lcml->pIpParam = NULL;
-        }
-
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -2681,18 +2669,6 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
             free(strmAttr);
             strmAttr = NULL;
-        }
-
-        if (pTemp_lcml) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml);
-            free(pTemp_lcml);
-            pTemp_lcml = NULL;
-        }
-
-        if (pTemp_lcml->pIpParam) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml->pIpParam);
-            free(pTemp_lcml->pIpParam);
-            pTemp_lcml->pIpParam = NULL;
         }
 
         eError = OMX_ErrorInsufficientResources;
