@@ -1907,7 +1907,7 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 {
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDa\
 taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
-
+                    frameLength=INPUT_NBAMRDEC_BUFFER_SIZE_MIME;
                     if(pComponentPrivate->using_rtsp==1){ /* formating data */
                         nFilledLenLocal=pBufHeader->nFilledLen; 
                         while(TRUE)
@@ -1990,6 +1990,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 else if (pComponentPrivate->mimemode == NBAMRDEC_IF2)
                 {
                     OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDataBuf_FromApp - reading NBAMRDEC_IF2MODE\n", __LINE__);
+                    frameLength=INPUT_NBAMRDEC_BUFFER_SIZE_IF2;
                     nFrames = 0;
                     i = 0;
                     while (pBufHeader->nFilledLen > 0)
@@ -2307,6 +2308,8 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     if(!pBufHeader->nFilledLen)
                     {
                         pComponentPrivate->pOutputBufferList->pBufHdr[0]->nFlags |= OMX_BUFFERFLAG_EOS;
+                        /* FIX ME OMAPS00207839 */
+                        pBufHeader->nFilledLen=frameLength; /* faking nFilledLen on last frame to avoid DSP error*/
                     }
                     pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle,
                                                             pComponentPrivate->pHandle->pApplicationPrivate,
