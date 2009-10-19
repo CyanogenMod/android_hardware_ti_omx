@@ -234,6 +234,7 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
 void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONENT_PRIVATE* pCompPrivate);
+OMX_ERRORTYPE IsResolutionPlayable (OMX_U32 width, OMX_U32 height);
 
 static const int iQ16_Const = 1 << 16;
 static const float fQ16_Const = (float)(1 << 16);
@@ -1830,6 +1831,13 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case OMX_IndexParamPortDefinition:
         {
             OMX_PARAM_PORTDEFINITIONTYPE* pComponentParam = (OMX_PARAM_PORTDEFINITIONTYPE*)pCompParam;
+            eError = IsResolutionPlayable(pCompPortIn->pPortDef->format.video.nFrameWidth, pCompPortIn->pPortDef->format.video.nFrameHeight);
+            if (eError != OMX_ErrorNone)
+            {
+                /* OMX components co-existance, if resolution is 720p or higher let the 720p OMX
+                 * component to take care of them */
+                return OMX_ErrorBadParameter;
+            }
             if (pComponentParam->nPortIndex == pCompPortIn->pPortDef->nPortIndex)
             {
                 pTmp = memcpy(pCompPortIn->pPortDef,
