@@ -1960,8 +1960,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     }
                 }
 
-                if(pBufHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG ){
-                    pComponentPrivate->bConfigData=1;
+                if(pBufHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG || pComponentPrivate->bConfigData){
 		    OMX_PRBUFFER2(pComponentPrivate->dbg, "Detected OMX_BUFFERFLAG_CODECCONFIG\n, \tproceed with parsing config data\n"); 
                     // parse the frame header
                     pComponentPrivate->pStreamData.nSyncWord = MP3DEC_GetBits(&nBitPosition, 11, pHeaderStream, OMX_TRUE);
