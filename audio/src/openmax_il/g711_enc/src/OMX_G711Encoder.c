@@ -978,10 +978,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    G711ENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     TI_OMX_DSP_DEFINITION *pTiDspDefinition = NULL;
     G711ENC_FTYPES *confFrameParams = NULL;
-    G711ENC_COMPONENT_PRIVATE *pComponentPrivate =(G711ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     TI_OMX_DATAPATH dataPath;
     OMX_S16 *customFlag = NULL;
     
@@ -992,6 +992,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         goto EXIT;
     }
 
+    pComponentPrivate = (G711ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     G711ENC_DPRINT("Index: %x \n",nConfigIndex);
     switch (nConfigIndex) {
 
@@ -1085,8 +1086,7 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
         *pState = OMX_StateLoaded;
     }
     eError = OMX_ErrorNone;
-    G711ENC_DPRINT("State = %d \n",((G711ENC_COMPONENT_PRIVATE*)
-                                    pHandle->pComponentPrivate)->curState );
+    G711ENC_DPRINT("State = %d \n", (*pState));
 
  EXIT:
     G711ENC_DPRINT("%d :: Exiting GetState\n", __LINE__);

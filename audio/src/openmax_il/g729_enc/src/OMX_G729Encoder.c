@@ -383,6 +383,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bPreempted = OMX_FALSE;
 
     pComponentPrivate->sDeviceString = malloc(100*sizeof(OMX_STRING));
+    if (pComponentPrivate->sDeviceString == NULL) {
+	G729ENC_EPRINT("OMX_ErrorInsufficientResources.\n");
+	eError = OMX_ErrorInsufficientResources;
+	goto EXIT;
+    }
+
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
         
     
@@ -1095,10 +1101,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    G729ENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     TI_OMX_DSP_DEFINITION *pTiDspDefinition = NULL;
-    G729ENC_COMPONENT_PRIVATE *pComponentPrivate =
-        (G729ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     TI_OMX_DSP_DEFINITION *configData = NULL;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
     TI_OMX_DATAPATH dataPath;
@@ -1110,6 +1115,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         G729ENC_EPRINT("Invalid HANDLE OMX_ErrorBadParameter.\n");
         goto EXIT;
     }
+
+    pComponentPrivate = (G729ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {

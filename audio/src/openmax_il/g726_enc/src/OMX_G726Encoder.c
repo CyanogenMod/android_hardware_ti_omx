@@ -361,6 +361,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     strcpy((char*)pComponentPrivate->componentRole.cRole, "audio_encoder.g726"); 
     pComponentPrivate->sDeviceString = SafeMalloc(100*sizeof(OMX_STRING));
+    if (pComponentPrivate->sDeviceString == NULL) {
+	G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources", __LINE__);
+	eError = OMX_ErrorInsufficientResources;
+	goto EXIT;
+    }
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,":srcul/codec\0");
      
@@ -894,11 +899,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    G726ENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
 	OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
 	TI_OMX_DSP_DEFINITION *pTiDspDefinition = NULL;
     TI_OMX_DATAPATH dataPath; 
-    G726ENC_COMPONENT_PRIVATE *pComponentPrivate =
-                         (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_S16 *customFlag = NULL;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
     OMX_U32 fdwrite = 0;
@@ -913,6 +917,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 		goto EXIT;
 	}
 
+	pComponentPrivate = (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 	switch (nConfigIndex) {
 
 		case OMX_IndexCustomG726ENCModeConfig: 

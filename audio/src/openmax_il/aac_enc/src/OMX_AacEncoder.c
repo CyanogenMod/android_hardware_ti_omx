@@ -162,12 +162,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CONF_CHECK_CMD(hComp,1,1);                              /* checking for NULL pointers */
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_op = NULL;
     AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_AUDIO_PARAM_AACPROFILETYPE *aac_ip = NULL;
     OMX_AUDIO_PARAM_AACPROFILETYPE *aac_op = NULL;
+    OMX_CONF_CHECK_CMD(hComp, 1, 1);                              /* checking for NULL pointers */
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     OMX_AUDIO_PARAM_PCMMODETYPE *aac_pcm_ip = NULL;
     OMX_AUDIO_PARAM_PCMMODETYPE *aac_pcm_op = NULL;
@@ -466,7 +466,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting OMX_ComponentInit\n", __LINE__);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting OMX_ComponentInit\n", __LINE__);
+    }
     return eError;
 }
 
@@ -493,10 +495,11 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
                                    OMX_PTR pAppData)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_CONF_CHECK_CMD(pComponent,1,1);                 /* Checking for NULL pointers:  pAppData is NULL for Khronos */
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
     
-    AACENC_COMPONENT_PRIVATE *pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Entering SetCallbacks\n", __LINE__);
     if (pCallBacks == NULL) 
     {
@@ -513,7 +516,9 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     pComponentPrivate->curState = OMX_StateLoaded;
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetCallbacks\n", __LINE__);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetCallbacks\n", __LINE__);
+    }
     return eError;
 }
 
@@ -591,10 +596,12 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                   OMX_U32 nParam,OMX_PTR pCmdData)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AACENC_COMPONENT_PRIVATE *pCompPrivate = NULL;
     OMX_CONF_CHECK_CMD(phandle,1,1);        /*NOTE: Cmd,  pCmdData, nParam  are  NULL  for khronos*/
     int nRet = 0;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)phandle;
-    AACENC_COMPONENT_PRIVATE *pCompPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    pCompPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
 #ifdef _ERROR_PROPAGATION__
     if (pCompPrivate->curState == OMX_StateInvalid)
@@ -729,7 +736,9 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
     }
     
 EXIT:
-    OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Exiting SendCommand()\n", __LINE__);
+    if (pCompPrivate != NULL) {
+	OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Exiting SendCommand()\n", __LINE__);
+    }
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -748,8 +757,8 @@ EXIT:
 static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamIndex, OMX_PTR ComponentParameterStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CONF_CHECK_CMD(hComp,1,1);
     AACENC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
+    OMX_CONF_CHECK_CMD(hComp, 1, 1);
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure = NULL;
 
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
@@ -948,7 +957,9 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
             break;
     }
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting GetParameter:: %x  error :: %x \n",__LINE__,nParamIndex,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting GetParameter:: %x  error :: %x \n", __LINE__, nParamIndex, eError);
+    }
     return eError;
 }
 
@@ -968,8 +979,8 @@ EXIT:
 static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamIndex, OMX_PTR pCompParam)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CONF_CHECK_CMD(hComp,1,1);
     AACENC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
+    OMX_CONF_CHECK_CMD(hComp, 1, 1);
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
     OMX_PARAM_COMPONENTROLETYPE  *pRole = NULL;
     OMX_PARAM_BUFFERSUPPLIERTYPE sBufferSupplier;
@@ -1151,8 +1162,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
             break;
     }
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetParameter:: %x\n",__LINE__,nParamIndex);
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting the SetParameter() returned eError = %d\n",__LINE__, eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetParameter:: %x\n", __LINE__, nParamIndex);
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting the SetParameter() returned eError = %d\n", __LINE__, eError);
+    }
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1200,13 +1213,9 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
 	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
     }
 
-    if(streamInfo)
-    {
-        OMX_MEMFREE_STRUCT(streamInfo);
-        streamInfo = NULL;
-    }
-
-EXIT:    return eError;
+EXIT:
+    OMX_MEMFREE_STRUCT(streamInfo);
+    return eError;
 }
 /*-------------------------------------------------------------------*/
 /**
@@ -1281,7 +1290,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             {
                 eError = OMX_ErrorBadParameter;
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: OMX_ErrorBadParameter from SetConfig\n",__LINE__);
-                
+		goto EXIT;
             }
             FramesPerOutBuf = *ptrFramesPerOutBuf;
             pComponentPrivate->FramesPer_OutputBuffer= FramesPerOutBuf;
@@ -1347,8 +1356,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
         break;
     }
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetConfig\n", __LINE__);
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetConfig\n", __LINE__);
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Returning = 0x%x\n", __LINE__, eError);
+    }
     return eError;
 
 
@@ -1413,12 +1424,13 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
                                       OMX_BUFFERHEADERTYPE* pBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_CONF_CHECK_CMD(pComponent,pBuffer,1);
     int ret = 0;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    AACENC_COMPONENT_PRIVATE *pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = NULL;
 
+    pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Entering EmptyThisBuffer\n", __LINE__);
 
     pPortDef = ((AACENC_COMPONENT_PRIVATE*) 
@@ -1491,7 +1503,9 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->EmptythisbufferCount++;
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting EmptyThisBuffer\n", __LINE__);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting EmptyThisBuffer\n", __LINE__);
+    }
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1512,13 +1526,13 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
                                      OMX_BUFFERHEADERTYPE* pBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_CONF_CHECK_CMD(pComponent,pBuffer,1);
     int ret = 0;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    AACENC_COMPONENT_PRIVATE *pComponentPrivate =
-                         (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = NULL;
 
+    pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Entering FillThisBuffer\n", __LINE__);
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "\n------------------------------------------\n\n");
@@ -1601,7 +1615,9 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->FillthisbufferCount++;
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting FillThisBuffer error= %d \n", __LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting FillThisBuffer error= %d \n", __LINE__, eError);
+    }
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1618,10 +1634,11 @@ EXIT:
 static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    struct OMX_TI_Debug dbg = {0};
+    AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_CONF_CHECK_CMD(pHandle,1,1);
     OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
-    AACENC_COMPONENT_PRIVATE *pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
-    struct OMX_TI_Debug dbg;
+    pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
     dbg = pComponentPrivate->dbg;
 
     OMX_PRINT1(dbg, "%d :: AACENC: ComponentDeInit\n",__LINE__);
@@ -1879,10 +1896,14 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
 EXIT:
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: AACENC:  AllocateBuffer returning eError =  %d\n",__LINE__,eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: AACENC:  AllocateBuffer returning eError =  %d\n", __LINE__, eError);
 
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader = %p\n",pBufferHeader);
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader->pBuffer = %p\n",pBufferHeader->pBuffer);
+	OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader = %p\n", pBufferHeader);
+	if (pBufferHeader != NULL) {
+	    OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader->pBuffer = %p\n", pBufferHeader->pBuffer);
+	}
+    }
     return eError;
 }
 
@@ -2202,8 +2223,12 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "AACENC: [UseBuffer] pBufferHeader = %p\n",pBufferHeader);
-    OMX_PRINT1(pComponentPrivate->dbg, "AACENC: [UseBuffer] pBufferHeader->pBuffer = %p\n",pBufferHeader->pBuffer);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "AACENC: [UseBuffer] pBufferHeader = %p\n", pBufferHeader);
+	if (pBufferHeader != NULL) {
+	    OMX_PRINT1(pComponentPrivate->dbg, "AACENC: [UseBuffer] pBufferHeader->pBuffer = %p\n", pBufferHeader->pBuffer);
+	}
+    }
 
     return eError;
 }

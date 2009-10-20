@@ -1292,9 +1292,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
                                 OMX_PTR ComponentConfigStructure)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
-    WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate =
-        (WBAMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_S16 *customFlag = NULL;
     TI_OMX_DSP_DEFINITION *configData;
 
@@ -1304,13 +1303,15 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     AM_COMMANDDATATYPE cmd_data;
 #endif
 
-    OMX_PRINT1(pComponentPrivate->dbg, "Entering");
+    /* OMX_PRINT1(pComponentPrivate->dbg, "Entering"); */
     if (pHandle == NULL) {
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "Invalid HANDLE OMX_ErrorBadParameter");
+	/* OMX_ERROR4(pComponentPrivate->dbg, "Invalid HANDLE OMX_ErrorBadParameter"); */
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
+
+    pComponentPrivate = (WBAMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering");
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1444,7 +1445,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         break;
     }
  EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exiting SetConfig Returning = 0x%x",eError);
+    if (pComponentPrivate != NULL) {
+	OMX_PRINT1(pComponentPrivate->dbg, "Exiting SetConfig Returning = 0x%x", eError);
+    }
     return eError;
 }
 

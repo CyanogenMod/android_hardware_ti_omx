@@ -2761,8 +2761,10 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
     }
 #endif
 EXIT:
-    OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Exiting the NBAMRENC_LCMLCallback Function\n",__LINE__);
-    OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
+    if (pComponentPrivate_CC != NULL) {
+	OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Exiting the NBAMRENC_LCMLCallback Function\n", __LINE__);
+	OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Returning = 0x%x\n", __LINE__, eError);
+    }
 
     return eError;
 }

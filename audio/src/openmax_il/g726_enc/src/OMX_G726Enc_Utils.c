@@ -318,6 +318,11 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
         
         pBufferParamTemp = (OMX_U8*)SafeMalloc( sizeof(G726ENC_ParamStruct) + 256);
+	if (pBufferParamTemp == NULL) {
+	    G726ENC_DPRINT("%d :: Memory Allocation Failed\n", __LINE__);
+	    eError = OMX_ErrorInsufficientResources;
+	    goto EXIT;
+	}
         memset(pBufferParamTemp, 0x0, sizeof(G726ENC_ParamStruct) + 256);
         pTemp_lcml->pIpParam =  (G726ENC_ParamStruct*)(pBufferParamTemp + 128);
         

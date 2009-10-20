@@ -2193,7 +2193,9 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                     {
                         AACENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                         pComponentPrivate->LastOutputBufferHdrQueued = pBufHeader;
-                        pLcmlHdr->pOpParam->unNumFramesEncoded=0; /* Resetting the value  for each time*/
+			if (pLcmlHdr != NULL) {
+			    pLcmlHdr->pOpParam->unNumFramesEncoded = 0; /* Resetting the value  for each time*/
+			}
                         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                   EMMCodecOuputBuffer, 
                                                   (OMX_U8 *)pBufHeader->pBuffer, 
