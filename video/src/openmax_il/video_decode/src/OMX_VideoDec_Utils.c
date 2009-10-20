@@ -6728,6 +6728,11 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[3].DllName,(char*)RINGIO_NODE_DLL);
     lcml_dsp->NodeInfo.AllUUIDs[3].eDllType = DLL_DEPENDENT;
 
+    lcml_dsp->NodeInfo.AllUUIDs[4].uuid = (struct DSP_UUID *)&CONVERSIONS_UUID;
+    strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[4].DllName,(char*)CONVERSIONS_DLL);
+    lcml_dsp->NodeInfo.AllUUIDs[4].eDllType = DLL_DEPENDENT;
+
+
     lcml_dsp->SegID     = 0;
     lcml_dsp->Timeout   = -1;
     lcml_dsp->Alignment = 0;
@@ -6859,6 +6864,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pCreatePhaseArgs->ulMaxLevel                = -1;
     pCreatePhaseArgs->ulProcessMode             = pComponentPrivate->ProcessMode;
     pCreatePhaseArgs->lPreRollBufConfig         = 0;
+    pCreatePhaseArgs->bCopiedCCDBuffer          = 0;
 
     if (pComponentPrivate->nWMVFileType == VIDDEC_WMV_ELEMSTREAM) {
         pCreatePhaseArgs->usIsElementaryStream = VIDDEC_SN_WMV_ELEMSTREAM;
