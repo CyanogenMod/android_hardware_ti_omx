@@ -415,7 +415,7 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle, OMX_STATETYPE Desired
 OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVENTTYPE eEvent,
                            OMX_U32 nData1, OMX_U32 nData2, OMX_PTR pEventData) {
     OMX_U8 writeValue = 0;
-
+    int error = 0;
     switch (eEvent) {
 
         case OMX_EventCmdComplete:
@@ -475,9 +475,13 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
         case OMX_EventMark:
 
         case OMX_EventPortSettingsChanged:
+            error = OMX_SendCommand(hComponent, OMX_CommandPortEnable, 1,NULL);
+            if (error){
+                printf("There was an error on port enable \n");
+            }
+            break;
 
         case OMX_EventBufferFlag:
-
             if ((nData1 == 0x01) && (nData2 == (OMX_U32)OMX_BUFFERFLAG_EOS)) {
                 playcompleted = 1;
             }
