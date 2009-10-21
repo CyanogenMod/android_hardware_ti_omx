@@ -362,6 +362,12 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 
 #define VIDDEC_D1MAX_WIDTH                            720
 #define VIDDEC_D1MAX_HEIGHT                           576
+
+/* In the current release the suport for : VIDDEC_MAX_FRAMERATE  & VIDDEC_MAX_BITRATE
+ * is not provided by the algorithm. But is require to set this field to a non-zero value */
+#define VIDDEC_MAX_FRAMERATE                        30000  /* Max frame rate to be suported * 1000 */
+#define VIDDEC_MAX_BITRATE                        8000000  /* Max bit rate (in bits per second) to be suported */
+
 #define VIDDEC_WMV_PROFILE_ID0                          0
 #define VIDDEC_WMV_PROFILE_ID1                          1
 #define VIDDEC_WMV_PROFILE_ID2                          2

@@ -5631,6 +5631,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
                 if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
             }
@@ -5809,7 +5811,9 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     pComponentPrivate->pUalgParams = (OMX_PTR*)pTemp;
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
-                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = -1;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = ++pComponentPrivate->frameCounter;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount);
             }
@@ -6177,7 +6181,10 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                      pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
+                ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->uRingIOBlocksize = 0;
+                ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 0;
+
+               if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
@@ -7175,6 +7182,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[3].DllName,(char*)USN_DLL);
     lcml_dsp->NodeInfo.AllUUIDs[3].eDllType = DLL_DEPENDENT;
 
+    lcml_dsp->NodeInfo.AllUUIDs[4].uuid = (struct DSP_UUID *)&CONVERSIONS_UUID;
+    strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[4].DllName,(char*)CONVERSIONS_DLL);
+    lcml_dsp->NodeInfo.AllUUIDs[4].eDllType = DLL_DEPENDENT;
+
     lcml_dsp->SegID     = 0;
     lcml_dsp->Timeout   = -1;
     lcml_dsp->Alignment = 0;
@@ -7237,8 +7248,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pCreatePhaseArgs->ulMaxWidth %lu  pCreatePhaseArgs->ulMaxHeight %lu\n",
         pCreatePhaseArgs->ulMaxWidth,pCreatePhaseArgs->ulMaxHeight);
-    pCreatePhaseArgs->ulMaxFrameRate            = 0;
-    pCreatePhaseArgs->ulMaxBitRate              = -1;
+
+    pCreatePhaseArgs->ulMaxFrameRate            = VIDDEC_MAX_FRAMERATE;
+    pCreatePhaseArgs->ulMaxBitRate              = VIDDEC_MAX_BITRATE;
     pCreatePhaseArgs->ulDataEndianness          = 1;
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4){
         pCreatePhaseArgs->ulProfile                 = 0;
@@ -8979,6 +8991,7 @@ OMX_ERRORTYPE VIDDEC_Set_Debocking(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pDynParams->ulDecodeHeader = 0;
     pDynParams->ulDisplayWidth = 0;
     pDynParams->ulFrameSkipMode = 0;
+    pDynParams->useHighPrecIdctQp1 = 0;
 
 
     if(mDisableDeblockingIfD1){

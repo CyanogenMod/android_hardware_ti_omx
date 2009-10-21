@@ -43,7 +43,7 @@
 #define OMX_VIDDEC_DSP__H
 
 #define OMX_H264DEC_NUM_DLLS 5
-#define OMX_MP4DEC_NUM_DLLS  4 
+#define OMX_MP4DEC_NUM_DLLS  5
 #define OMX_MP2DEC_NUM_DLLS  4 
 #define OMX_WMVDEC_NUM_DLLS  5
  #ifdef VIDDEC_SPARK_CODE
@@ -292,7 +292,9 @@ typedef struct MP4VD_GPP_SN_Obj_CreatePhase {
 
 typedef struct
 {
-    long int nBuffCount;
+    OMX_S32 nBuffCount;
+    OMX_U32 uRingIOBlocksize;
+    OMX_S32 nPerformMode;
 } MP4VD_GPP_SN_UALGInputParams;
 
 typedef struct
@@ -603,7 +605,8 @@ typedef struct MP4VDEC_UALGDynamicParams
   OMX_U32         ulDecodeHeader;    
   OMX_U32         ulDisplayWidth;  
   OMX_U32         ulFrameSkipMode; 
-  OMX_U32        ulPPType;
+  OMX_U32         ulPPType;
+  OMX_BOOL        useHighPrecIdctQp1;
 }MP4VDEC_UALGDynamicParams;
 
 #ifdef VIDDEC_SPARK_CODE 
