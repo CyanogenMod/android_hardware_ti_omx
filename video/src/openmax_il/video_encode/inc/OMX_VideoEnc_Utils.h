@@ -96,7 +96,7 @@
     #define GPP_PRIVATE_NODE_HEAP
 #endif
 
-#define VIDENC_NUM_CUSTOM_INDEXES 24
+#define VIDENC_NUM_CUSTOM_INDEXES 25
 
 #if 1
     #define __KHRONOS_CONF__
@@ -456,6 +456,7 @@ typedef enum VIDENC_CUSTOM_INDEX
     VideoEncodeCustomConfigIndexTargetFrameRate,
     VideoEncodeCustomConfigIndexQPI,
     VideoEncodeCustomConfigIndexAIRRate,
+    VideoEncodeCustomConfigIndexUnrestrictedMV,
     /*Segment mode Metadata*/
     VideoEncodeCustomConfigIndexMVDataEnable,
     VideoEncodeCustomConfigIndexResyncDataEnable,
@@ -611,6 +612,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     unsigned int nQPI;              /* same as OMX_VIDEO_PARAM_QUANTIZATIONTYPE */
     unsigned int nAIRRate;          /* same as OMX_VIDEO_PARAM_INTRAREFRESHTYPE */
     OMX_U32 nMIRRate;
+    OMX_U8  ucUnrestrictedMV;
 
     OMX_U32 nInBufferSize;
     OMX_U32 nOutBufferSize;

@@ -370,6 +370,7 @@ typedef struct MYDATATYPE {
     OMX_U32 nMIRRate;
     OMX_U32 nResynchMarkerSpacing;
     unsigned int nEncodingPreset;
+    OMX_U8 nUnrestrictedMV;
     OMX_U8 NalFormat;
     OMX_U8 bLastOutBuffer;
     OMX_U32  nQPIoF;
@@ -942,7 +943,7 @@ OMX_ERRORTYPE VIDENCTEST_SetH264Parameter(MYDATATYPE* pAppData)
     eError = OMX_SetParameter(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->bDeblockFilter));
     VIDENCTEST_CHECK_EXIT(eError, "Error at SetParameter");
 
-    if(pAppData->nEncodingPreset!=VIDENCTEST_USE_DEFAULT_VALUE_UI && pAppData->nEncodingPreset<4){
+    if(pAppData->nEncodingPreset!=VIDENCTEST_USE_DEFAULT_VALUE_UI && pAppData->nEncodingPreset<=4){
         printf("EncodingPreset %d selected\n", pAppData->nEncodingPreset);
         eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.EncodingPreset", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
         VIDENCTEST_CHECK_EXIT(eError, "OMX_GetExtensionIndex function");
@@ -950,10 +951,18 @@ OMX_ERRORTYPE VIDENCTEST_SetH264Parameter(MYDATATYPE* pAppData)
         VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for nEncodingPreset");
     }
 
-        eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.NALFormat", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+    if(pAppData->nUnrestrictedMV != (OMX_U8)VIDENCTEST_USE_DEFAULT_VALUE_UI){
+        printf("nUnrestrictedMV %d selected\n", pAppData->nUnrestrictedMV);
+        eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.UnrestrictedMV", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
         VIDENCTEST_CHECK_EXIT(eError, "OMX_GetExtensionIndex function");
-        eError = OMX_SetParameter(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->NalFormat));
-        VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for NalFormat");
+        eError = OMX_SetParameter(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->nUnrestrictedMV));
+        VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for nUnrestrictedMV");
+    }
+
+    eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.NALFormat", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+    VIDENCTEST_CHECK_EXIT(eError, "OMX_GetExtensionIndex function");
+    eError = OMX_SetParameter(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->NalFormat));
+    VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for NalFormat");
 
 EXIT:
     return eError;
@@ -1126,6 +1135,13 @@ OMX_ERRORTYPE VIDENCTEST_SetMpeg4Parameter(MYDATATYPE* pAppData)
 
         eError = OMX_SetConfig(pHandle, OMX_IndexParamVideoErrorCorrection, &ErrorCorrectionType);
         VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for ErrorCorrection");
+    }
+    if(pAppData->nUnrestrictedMV != (OMX_U8)VIDENCTEST_USE_DEFAULT_VALUE_UI){
+        printf("nUnrestrictedMV %d selected\n", pAppData->nUnrestrictedMV);
+        eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoEncode.Config.UnrestrictedMV", (OMX_INDEXTYPE*)(&(pAppData->nVideoEncodeCustomParamIndex)));
+        VIDENCTEST_CHECK_EXIT(eError, "OMX_GetExtensionIndex function");
+        eError = OMX_SetParameter(pHandle, pAppData->nVideoEncodeCustomParamIndex, &(pAppData->nUnrestrictedMV));
+        VIDENCTEST_CHECK_EXIT(eError, "Error at SetConfig for nUnrestrictedMV");
     }
 EXIT:
     return eError;
@@ -2144,6 +2160,7 @@ OMX_ERRORTYPE VIDENCTEST_CheckOptionalArgs(MYDATATYPE* pAppData, int argc, char*
         {"nRrker",   1, NULL, 'e'},
         {"NALFormat",   1, NULL, 'n'},
         {"nQPIoF", 1, NULL, 'q'},
+        {"nUnrestrictedMV", 1, NULL, 'u'},
         {NULL,          0, NULL,   0}
     };
 
@@ -2180,6 +2197,10 @@ OMX_ERRORTYPE VIDENCTEST_CheckOptionalArgs(MYDATATYPE* pAppData, int argc, char*
             case 'q':
                 printf("%d QPI value changed each %d frames\n",next_option,atoi(optarg));
                 pAppData->nQPIoF=atoi(optarg);
+            case 'u':
+                printf("%d nUnrestrictedMV found, Value= %s\n",next_option,optarg);
+                pAppData->nUnrestrictedMV=atoi(optarg);
+                break;
             case -1:
                 break;
             default:
@@ -2227,6 +2248,7 @@ OMX_ERRORTYPE VIDENCTEST_CheckArgs(int argc, char** argv, MYDATATYPE** pAppDataT
     pAppData->nResynchMarkerSpacing=VIDENCTEST_USE_DEFAULT_VALUE;
     pAppData->nIntraFrameInterval=VIDENCTEST_USE_DEFAULT_VALUE;
     pAppData->nEncodingPreset=VIDENCTEST_USE_DEFAULT_VALUE_UI;
+    pAppData->nUnrestrictedMV=(OMX_U8)VIDENCTEST_USE_DEFAULT_VALUE_UI;
     pAppData->NalFormat = 0;
     pAppData->nQPIoF = 0;
     pAppData->bForceIFrame = 0;

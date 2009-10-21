@@ -375,9 +375,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->bDeblockFilter       = OMX_TRUE;
     pComponentPrivate->nVBVSize             = 120;
     pComponentPrivate->bForceIFrame         = OMX_FALSE;
-    pComponentPrivate->nIntraFrameInterval  = 15;
+    pComponentPrivate->nIntraFrameInterval  = 30;
     pComponentPrivate->nQPI                 = 12;
     pComponentPrivate->nAIRRate             = 0;
+    pComponentPrivate->ucUnrestrictedMV     = 0;
     pComponentPrivate->bHideEvents          = OMX_FALSE;
     pComponentPrivate->bHandlingFatalError  = OMX_FALSE;
     pComponentPrivate->bUnresponsiveDsp     = OMX_FALSE;
@@ -658,6 +659,7 @@ sDynamicFormat = getenv("FORMAT");
     pPortDef->bEnabled                           = OMX_TRUE;
     pPortDef->bPopulated                         = OMX_FALSE;
     pPortDef->eDomain                            = OMX_PortDomainVideo;
+    pPortDef->format.video.cMIMEType             = "264";
     pPortDef->format.video.pNativeRender         = NULL;
     pPortDef->format.video.nFrameWidth           = 176;
     pPortDef->format.video.nFrameHeight          = 144;
@@ -1732,6 +1734,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomParamIndexEncodingPreset:
             (*((unsigned int*)ComponentParameterStructure)) = (unsigned int)pComponentPrivate->nEncodingPreset;
             break;
+        case VideoEncodeCustomConfigIndexUnrestrictedMV:
+            (*((OMX_U8*)ComponentParameterStructure)) = (OMX_U8)pComponentPrivate->ucUnrestrictedMV;
+            break;
        case VideoEncodeCustomParamIndexNALFormat:
            (*((unsigned int*)ComponentParameterStructure)) = (unsigned int)pComponentPrivate->AVCNALFormat;
            break;
@@ -2157,6 +2162,9 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomParamIndexEncodingPreset:
                 pComponentPrivate->nEncodingPreset = (unsigned int)(*((unsigned int*)pCompParam));
             break;
+        case VideoEncodeCustomConfigIndexUnrestrictedMV:
+            pComponentPrivate->ucUnrestrictedMV = (OMX_U8)(*((OMX_U8*)pCompParam));
+            break;
        case VideoEncodeCustomParamIndexNALFormat:
               pComponentPrivate->AVCNALFormat = (VIDENC_AVC_NAL_FORMAT)(*((unsigned int*)pCompParam));
        break;
@@ -2581,6 +2589,7 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
         {"OMX.TI.VideoEncode.Config.TargetFrameRate", VideoEncodeCustomConfigIndexTargetFrameRate},
         {"OMX.TI.VideoEncode.Config.QPI", VideoEncodeCustomConfigIndexQPI},
         {"OMX.TI.VideoEncode.Config.AIRRate", VideoEncodeCustomConfigIndexAIRRate},
+        {"OMX.TI.VideoEncode.Config.UnrestrictedMV", VideoEncodeCustomConfigIndexUnrestrictedMV},
 
         /*Segment mode Metadata*/
         {"OMX.TI.VideoEncode.Config.MVDataEnable", VideoEncodeCustomConfigIndexMVDataEnable},

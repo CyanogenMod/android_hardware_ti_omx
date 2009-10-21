@@ -2496,9 +2496,9 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         /*< Adaptive Intra Refesh MB Period: Period at which intra macro blocks should be insterted in a frame*/
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.airMbPeriod = pComponentPrivate->nAIRRate;
         /*< Maximum number of macro block in a slice <minimum value is 8>*/
-        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.maxMBsPerSlice = 3620;
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.maxMBsPerSlice = 0;
         /*< Maximum number of bytes in a slice */
-        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.maxBytesPerSlice = 327680;
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.maxBytesPerSlice = 0;
         /*< Row number from which slice needs to be intra coded*/
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowStartNumber = 0;
         /*< Number of rows to be coded as intra slice*/
@@ -3227,7 +3227,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
 
-    pCreatePhaseArgs->ucUnrestrictedMV        = 0;
+    pCreatePhaseArgs->ucUnrestrictedMV        = pComponentPrivate->ucUnrestrictedMV;
     pCreatePhaseArgs->ucNumRefFrames          = 1;
 
     if (pVidParamBitrate->eControlRate == OMX_Video_ControlRateVariable)
@@ -3320,29 +3320,25 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
 
     /* override parameters for VGA & D1 encoding */
     if ((pPortDefIn->format.video.nFrameWidth >= 640 ||
-        pPortDefIn->format.video.nFrameHeight > 480) &&
+        pPortDefIn->format.video.nFrameHeight >= 480) &&
         pCreatePhaseArgs->ulFrameRate > 15000)
     {
         pComponentPrivate->maxMVperMB = 1;
         pComponentPrivate->intra4x4EnableIdc = INTRA4x4_NONE;
-        pComponentPrivate->nIntraFrameInterval = 0;
+        pComponentPrivate->nIntraFrameInterval = 30;
         pComponentPrivate->nAIRRate = 0;
+        /* Encoding preset = 4 enables DSP side optimizations for high resolutions */
+        pComponentPrivate->nEncodingPreset = 4;
         pCreatePhaseArgs->ulIntraFramePeriod = 0;
-        pCreatePhaseArgs->ucRateControlAlgorithm = 3;
-        pCreatePhaseArgs->ucDeblockingEnable  = 1;
+        /* Constant bit rate control enabled */
+        pCreatePhaseArgs->ucRateControlAlgorithm = 1;
+        /* Disable deblocking */
+        pCreatePhaseArgs->ucDeblockingEnable  = 0;
         pCreatePhaseArgs->ucLevel = 30;
     }
 
     pCreatePhaseArgs->usNalCallback = pComponentPrivate->AVCNALFormat;
-    if((pPortDefIn->format.video.nFrameWidth >= 640 &&
-        pPortDefIn->format.video.nFrameHeight >= 480))
-    {/*TODO: remove magic numbers, create an enum on dsp.h*/
-        pCreatePhaseArgs->ulEncodingPreset = 4;/*optimized for VGA and D1 resolutions*/
-    }
-    else
-    {
-        pCreatePhaseArgs->ulEncodingPreset = pComponentPrivate->nEncodingPreset;
-    }
+    pCreatePhaseArgs->ulEncodingPreset = pComponentPrivate->nEncodingPreset;
     pCreatePhaseArgs->ulRcAlgo = 0;
     pCreatePhaseArgs->endArgs = END_OF_CR_PHASE_ARGS;
     printH264CreateParams(pCreatePhaseArgs, &pComponentPrivate->dbg);
@@ -3488,7 +3484,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
                   pMemoryListHead,
                   pComponentPrivate->dbg);
 
-    pCreatePhaseArgs->ucUnrestrictedMV        = 0;/**/
+    pCreatePhaseArgs->ucUnrestrictedMV        = pComponentPrivate->ucUnrestrictedMV;
     pCreatePhaseArgs->ucProfile               = 1;
 
     pCreatePhaseArgs->usNumStreams            = 2;
