@@ -7518,6 +7518,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[3].DllName,(char*)USN_DLL);
     lcml_dsp->NodeInfo.AllUUIDs[3].eDllType = DLL_DEPENDENT;
 
+    lcml_dsp->NodeInfo.AllUUIDs[4].uuid = (struct DSP_UUID *)&CONVERSIONS_UUID;
+    strcpy ((char*)lcml_dsp->NodeInfo.AllUUIDs[4].DllName,(char*)CONVERSIONS_DLL);
+    lcml_dsp->NodeInfo.AllUUIDs[4].eDllType = DLL_DEPENDENT;
+
     lcml_dsp->SegID     = 0;
     lcml_dsp->Timeout   = -1;
     lcml_dsp->Alignment = 0;

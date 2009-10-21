@@ -47,7 +47,7 @@
 #define OMX_MP2DEC_NUM_DLLS  4 
 #define OMX_WMVDEC_NUM_DLLS  5
  #ifdef VIDDEC_SPARK_CODE
-    #define OMX_SPARKDEC_NUM_DLLS  4
+    #define OMX_SPARKDEC_NUM_DLLS  5
  #endif
 
 #ifndef VIDDEC_SN_R8_14
