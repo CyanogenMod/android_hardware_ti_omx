@@ -399,7 +399,7 @@ typedef struct JPEGDEC_COMPONENT_PRIVATE
     OMX_PORT_PARAM_TYPE* pOtherPortType;
     /* Handle for use with async callbacks */
     OMX_CALLBACKTYPE cbInfo;
-    /*Component name OMX.TI.JPEG.decode*/
+    /*Component name OMX.TI.JPEG.decoder*/
     OMX_STRING      cComponentName;
     OMX_VERSIONTYPE ComponentVersion;
     OMX_VERSIONTYPE SpecVersion;

@@ -50,8 +50,8 @@ char compName[60][200];
 
 char *tComponentName[MAXCOMP][2] = {
     /*video and image components */
-    {"OMX.TI.JPEG.Decoder", "image_decoder.jpeg" },
-    {"OMX.TI.JPEG.Encoder", "image_encoder.jpeg"},
+    {"OMX.TI.JPEG.decoder", "image_decoder.jpeg" },
+    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"},
     {"OMX.TI.Video.Decoder", "video_decoder.h263"},
     {"OMX.TI.Video.Decoder", "video_decoder.avc"},
     {"OMX.TI.Video.Decoder", "video_decoder.mpeg2"},
