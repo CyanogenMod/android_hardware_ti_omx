@@ -123,7 +123,7 @@ int main()
     
     int size = 0;
     int ret;
-    char rmsideNamedPipeName[100];
+    char rmsideNamedPipeName[120];
     char rmsideHandleString[100];
     OMX_S16 fdmax;
     DSP_STATUS status = DSP_SOK;
@@ -191,7 +191,7 @@ int main()
                  
         if(FD_ISSET(fdread, &watchset)) {
             ret = read(fdread, &cmd_data, size);
-            if((size>0)&&(ret>0)) {
+            if((size>0)&&(ret>0)&&(-1 != ret)) {
             
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_ReceivedCommand(pPERF, cmd_data.RM_Cmd, cmd_data.param1,
@@ -238,10 +238,10 @@ int main()
                         strcat(rmsideNamedPipeName,rmsideHandleString);
 
 #if 1 
-                       // try to create the pipe, don't fail it already exists (reuse the pipe instead)
+                        // try to create the pipe, don't fail it already exists (reuse the pipe instead)
                         RM_DPRINT("[Resource Manager] - Create and open the write (out) pipe\n");
                         if((mknod(rmsideNamedPipeName,S_IFIFO|PERMS,0)<0) && (errno!=EEXIST))
-                            RM_DPRINT("[Resource Manager] - mknod failure to create the write pipe, error=%d\n", errno);
+                        RM_DPRINT("[Resource Manager] - mknod failure to create the write pipe, error=%d\n", errno);
                         //wait for the pipe to be established before opening it.??
 
                         RM_DPRINT("[Resource Manager] - Try opening the write out pipe for PID %d\n", (int)cmd_data.nPid);
@@ -525,6 +525,11 @@ void HandleWaitForResource(RESOURCEMANAGER_COMMANDDATATYPE cmd)
     int index;
     RM_DPRINT ("[Resource Manager] - HandleWaitForResource() function call\n");
     index = RM_GetListIndex(cmd.hComponent,cmd.nPid);
+    if (-1 == index)
+    {
+        RM_DPRINT ("[Resource Manager] - Failure index became negative\n");
+        goto EXIT;
+    }
 
     if (componentList.component[index].reason == RM_ReasonPolicy) {
         RM_SetStatus(cmd.hComponent,cmd.nPid,RM_WaitingForPolicy);
@@ -541,7 +546,8 @@ void HandleWaitForResource(RESOURCEMANAGER_COMMANDDATATYPE cmd)
         RM_DPRINT ("[Resource Manager] - failure write data back to component\n");
     else
         RM_DPRINT ("[Resource Manager] -sending wait for resources\n");
-
+EXIT:
+    return;
 }
 
 
@@ -935,8 +941,13 @@ int Install_Bridge()
     system("mdev -s");
 
     fd = creat(filename, mode);
+    if (-1 == fd)
+    {
+        RM_DPRINT("Failed to create file descriptor\n");
+        return -1;
+    }
 
-    printf("Bridge Installed\n");
+    RM_DPRINT("Bridge Installed\n");
     return 0;
 }
 
@@ -1010,9 +1021,13 @@ int LoadBaseimage()
     else {
     }
     fd = creat(filename, mode);
-    
-    printf("Baseimage Loaded\n");
-    return 0;		
+    if (-1 == fd)
+    {
+        RM_DPRINT("Failed to create file descriptor\n");
+        return -1;
+    }
+    RM_DPRINT("Baseimage Loaded\n");
+    return 0;
 }
 
 void ReloadBaseimage()
@@ -1176,7 +1191,10 @@ void *RM_FatalErrorWatchThread()
     if(notification_mmufault == NULL) {
         RM_DPRINT("%d :: malloc failed....\n",__LINE__);
     }
-    memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
+    else
+    {
+        memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
+    }
 
     status = DSPProcessor_RegisterNotify(hProc, DSP_MMUFAULT, DSP_SIGNALEVENT, notification_mmufault);
     DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", EXIT);
@@ -1186,7 +1204,10 @@ void *RM_FatalErrorWatchThread()
     if(notification_syserror == NULL) {
         RM_DPRINT("%d :: malloc failed....\n",__LINE__);
     }
-    memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
+    else
+    {
+        memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
+    }
             
     status = DSPProcessor_RegisterNotify(hProc, DSP_SYSERROR, DSP_SIGNALEVENT, notification_syserror);
     DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", EXIT);

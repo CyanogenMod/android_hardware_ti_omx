@@ -89,6 +89,7 @@ PERF_OBJHANDLE pPERFproxy = NULL;
 #define MAX_CAMERA_INSTANCES 1
 #define MAX_DISPLAY1_INSTANCES 1
 #define MAX_DISPLAY2_INSTANCES 1
+#define PIPE_SIZE 120
 
 /*
 
@@ -468,8 +469,9 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
         sem = malloc(sizeof(sem_t)) ; 
         sem_init(sem, 0x00, 0x00);   
         RM_Error = malloc(sizeof(OMX_ERRORTYPE)) ; 
-        RMProxy_CommandData.sem       = sem; 
-        RMProxy_CommandData.RM_Error  = RM_Error ; 
+        if (NULL != RM_Error)
+            RMProxy_CommandData.RM_Error  = RM_Error ;
+        RMProxy_CommandData.sem       = sem;
     }
 
 
@@ -495,7 +497,8 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
         if (sem) { 
             sem_wait(sem) ; 
         }
-        ReturnValue = *RM_Error; 
+        if (NULL != RM_Error)
+            ReturnValue = *RM_Error;
 
         free(sem) ; 
         sem=NULL;
@@ -527,7 +530,7 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
 
     int fdmax;
     int status;
-    char namedPipeName[100];
+    char namedPipeName[PIPE_SIZE];
     char handleString[100];
     int numClients=0;
     int i;
@@ -640,7 +643,7 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
 #endif
 
 
-                  /*  RMProxy_itoa((int)cmd_data.hComponent,handleString);*/
+                    /*  RMProxy_itoa((int)cmd_data.hComponent,handleString);*/
                     RMProxy_itoa((int)rm_data.nPid,handleString);
 
                     strcpy(namedPipeName,RM_SERVER_OUT);
@@ -732,14 +735,18 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
             else if (rm_data.rm_status == RM_PREEMPT) {
                 if (!RM_Error) {
                     RM_Error = malloc(sizeof(OMX_ERRORTYPE));
+                    if (NULL != RM_Error)
+                        *RM_Error = OMX_RmProxyCallback_ResourcesPreempted;
                 }
-                *RM_Error = OMX_RmProxyCallback_ResourcesPreempted;
                 cmd_data->hComponent = rm_data.hComponent;
-                RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
-                free (core);
-                core = NULL;
-                free (RM_Error);
-                RM_Error = NULL;
+                if (NULL != core)
+                {
+                    RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
+                    free (core);
+                    core = NULL;
+                    free (RM_Error);
+                    RM_Error = NULL;
+                }
             }
             else if (rm_data.rm_status == RM_GRANT) {
 #ifndef __ENABLE_RMPM_STUB__
@@ -760,13 +767,17 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 RMPROXY_DPRINT("Got RM_RESOURCEACQUIRED\n");
                 if (!RM_Error) {
                     RM_Error = malloc(sizeof(OMX_ERRORTYPE));
+                    if ( NULL != RM_Error)
+                        *RM_Error = OMX_RmProxyCallback_ResourcesAcquired;
                 }
-                *RM_Error = OMX_RmProxyCallback_ResourcesAcquired;
-                RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
-                free (core);
-                core = NULL;
-                free (RM_Error);
-                RM_Error = NULL;
+                if (NULL != core)
+                {
+                    RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
+                    free (core);
+                    core = NULL;
+                    free (RM_Error);
+                    RM_Error = NULL;
+                }
                     
             }
         }

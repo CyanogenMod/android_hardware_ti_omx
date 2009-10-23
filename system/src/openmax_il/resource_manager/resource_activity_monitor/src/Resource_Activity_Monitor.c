@@ -89,7 +89,7 @@ char * ram_itoa(int a)
         do {
             str[--i] = '0' + a % 10;
         }
-        while ((a = a / 10) && i >= 0);
+        while ((a = a / 10) && i > 0);
     }
     return &str[i];
 }

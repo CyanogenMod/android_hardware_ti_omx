@@ -713,27 +713,29 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
         if (tComponentName[i][0] == NULL) {
             break;
         }
-        for (j = 0; j < numFiles; j ++) {
-            if (!strcmp(componentTable[j].name, tComponentName[i][0])) {
-                /* insert the role */
-                if (tComponentName[i][1] != NULL)
-                {
-                    componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
-                    componentTable[j].pHandle[componentTable[j].nRoles] = NULL; //initilize the pHandle element
-                    componentTable[j].nRoles ++;
+        if (numFiles <= MAX_TABLE_SIZE){
+            for (j = 0; j < numFiles; j ++) {
+                if (!strcmp(componentTable[j].name, tComponentName[i][0])) {
+                    /* insert the role */
+                    if (tComponentName[i][1] != NULL)
+                    {
+                        componentTable[j].pRoleArray[componentTable[j].nRoles] = tComponentName[i][1];
+                        componentTable[j].pHandle[componentTable[j].nRoles] = NULL; //initilize the pHandle element
+                        componentTable[j].nRoles ++;
+                    }
+                    break;
                 }
-                break;
             }
-        }
-        if (j == numFiles) { /* new component */
-            if (tComponentName[i][1] != NULL){
-                componentTable[numFiles].pRoleArray[0] = tComponentName[i][1];
-                componentTable[numFiles].nRoles = 1;
+            if (j == numFiles) { /* new component */
+                if (tComponentName[i][1] != NULL){
+                    componentTable[numFiles].pRoleArray[0] = tComponentName[i][1];
+                    componentTable[numFiles].nRoles = 1;
+                }
+                strcpy(compName[numFiles], tComponentName[i][0]);
+                componentTable[numFiles].name = compName[numFiles];
+                componentTable[numFiles].refCount = 0; //initialize reference counter.
+                numFiles ++;
             }
-            strcpy(compName[numFiles], tComponentName[i][0]);
-            componentTable[numFiles].name = compName[numFiles];
-            componentTable[numFiles].refCount = 0; //initialize reference counter.
-            numFiles ++;
         }
     }
     tableCount = numFiles;
