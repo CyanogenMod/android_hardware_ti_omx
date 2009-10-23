@@ -1303,42 +1303,46 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
             {
                 /* searching for empty slot */
                 if (phandle->pAlgcntlDmmBuf[i] == NULL)
-                    break;
-            }
-            if(i >= QUEUE_SIZE)
-            {
-                pthread_mutex_unlock(&phandle->mutex);
-                eError = OMX_ErrorUndefined;
-                goto EXIT;
-            }
+                {
+                    if(i >= QUEUE_SIZE)
+                    {
+                        pthread_mutex_unlock(&phandle->mutex);
+                        eError = OMX_ErrorUndefined;
+                        goto EXIT;
+                    }
 
-            LCML_MALLOC(phandle->pAlgcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
-            if(phandle->pAlgcntlDmmBuf[i] == NULL)
-            {
-                eError = OMX_ErrorInsufficientResources;
-                pthread_mutex_unlock(&phandle->mutex);
-                goto EXIT;
-            }
-            memset(phandle->pAlgcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ));
-            eError = DmmMap(phandle->dspCodec->hProc,(int)args[2],(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), 0);
-            if (eError != OMX_ErrorNone)
-            {
-                pthread_mutex_unlock(&phandle->mutex);
-                goto EXIT;
-            }
-            phandle->algcntlmapped[i] = 1;
-            msg.dwCmd = USN_GPPMSG_ALGCTRL;
-            msg.dwArg1 = (int)args[0];
-            msg.dwArg2 = (int)phandle->pAlgcntlDmmBuf[i]->pMapped;
+                    LCML_MALLOC(phandle->pAlgcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
+                    if(phandle->pAlgcntlDmmBuf[i] == NULL)
+                    {
+                        eError = OMX_ErrorInsufficientResources;
+                        pthread_mutex_unlock(&phandle->mutex);
+                        goto EXIT;
+                    }
+
+                    memset(phandle->pAlgcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ));
+
+                    eError = DmmMap(phandle->dspCodec->hProc,(int)args[2],(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), 0);
+                    if (eError != OMX_ErrorNone)
+                    {
+                        pthread_mutex_unlock(&phandle->mutex);
+                        goto EXIT;
+                    }
+                    phandle->algcntlmapped[i] = 1;
+                    msg.dwCmd = USN_GPPMSG_ALGCTRL;
+                    msg.dwArg1 = (int)args[0];
+                    msg.dwArg2 = (int)phandle->pAlgcntlDmmBuf[i]->pMapped;
 #ifdef __PERF_INSTRUMENTATION__
-            PERF_SendingCommand(phandle->pPERF,
-                                msg.dwCmd,
-                                msg.dwArg1,
-                                PERF_ModuleSocketNode);
+                    PERF_SendingCommand(phandle->pPERF,
+                                        msg.dwCmd,
+                                        msg.dwArg1,
+                                        PERF_ModuleSocketNode);
 #endif
-            status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
-            pthread_mutex_unlock(&phandle->mutex);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+                    status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
+                    pthread_mutex_unlock(&phandle->mutex);
+                    DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+                    break;
+                }
+            }
             break;
         }
         case EMMCodecControlStrmCtrl:
@@ -1350,6 +1354,12 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                 msg.dwArg1  = USN_STRMCMD_FLUSH;
                 msg.dwArg2  = 0;
                 phandle->flush_pending[(int)args[1]]= 1;
+#ifdef __PERF_INSTRUMENTATION__
+                PERF_SendingCommand(phandle->pPERF,
+                                 msg.dwCmd,
+                                 msg.dwArg1,
+                                 PERF_ModuleSocketNode);
+#endif
             }
             else
             {
@@ -1359,53 +1369,55 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                 {
                     /* searching for empty slot */
                     if (phandle->pStrmcntlDmmBuf[i] == NULL)
-                        break;
-                }
-                if(i >= QUEUE_SIZE)
-                {
-                    eError=OMX_ErrorUndefined;
-                    pthread_mutex_unlock(&phandle->mutex);
-                    goto EXIT;
-                }
+                    {
+                        if(i >= QUEUE_SIZE)
+                        {
+                            eError=OMX_ErrorUndefined;
+                            pthread_mutex_unlock(&phandle->mutex);
+                            goto EXIT;
+                        }
 
-                LCML_MALLOC(phandle->pStrmcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
-                if(phandle->pStrmcntlDmmBuf[i] == NULL)
-                {
-                    eError = OMX_ErrorInsufficientResources;
-                    pthread_mutex_unlock(&phandle->mutex);
-                    goto EXIT;
-                }
-                
-                memset(phandle->pStrmcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ)); //ATC
-                
-                eError = DmmMap(phandle->dspCodec->hProc, (int)args[2],(int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), 0);
-                if (eError != OMX_ErrorNone)
-                {
-                    pthread_mutex_unlock(&phandle->mutex);
-                    goto EXIT;
-                }
-                phandle->strmcntlmapped[i] = 1;
-                if(phandle->dspCodec->DeviceInfo.TypeofRender == 0)
-                {
-                    /* playback mode */
-                    msg.dwCmd = USN_GPPMSG_STRMCTRL | 0x01;
-                    msg.dwArg1 = (int)args[0];
-                    msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
-                }
-                else if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
-                {
-                    /* record mode */
-                    msg.dwCmd = USN_GPPMSG_STRMCTRL;
-                    msg.dwArg1 = (int)args[0];
-                    msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
+                        LCML_MALLOC(phandle->pStrmcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
+                        if(phandle->pStrmcntlDmmBuf[i] == NULL)
+                        {
+                            eError = OMX_ErrorInsufficientResources;
+                            pthread_mutex_unlock(&phandle->mutex);
+                            goto EXIT;
+                        }
+
+                        memset(phandle->pStrmcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ)); //ATC
+
+                        eError = DmmMap(phandle->dspCodec->hProc, (int)args[2],(int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), 0);
+                        if (eError != OMX_ErrorNone)
+                        {
+                            pthread_mutex_unlock(&phandle->mutex);
+                            goto EXIT;
+                        }
+                        phandle->strmcntlmapped[i] = 1;
+                        if(phandle->dspCodec->DeviceInfo.TypeofRender == 0)
+                        {
+                            /* playback mode */
+                            msg.dwCmd = USN_GPPMSG_STRMCTRL | 0x01;
+                            msg.dwArg1 = (int)args[0];
+                            msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
+                        }
+                        else if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
+                        {
+                            /* record mode */
+                            msg.dwCmd = USN_GPPMSG_STRMCTRL;
+                            msg.dwArg1 = (int)args[0];
+                            msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
+                        }
+#ifdef __PERF_INSTRUMENTATION__$
+                        PERF_SendingCommand(phandle->pPERF,
+                                            msg.dwCmd,
+                                            msg.dwArg1,
+                                            PERF_ModuleSocketNode);
+#endif
+                        break;
+                    }
                 }
             }
-#ifdef __PERF_INSTRUMENTATION__
-            PERF_SendingCommand(phandle->pPERF,
-                                msg.dwCmd,
-                                msg.dwArg1,
-                                PERF_ModuleSocketNode);
-#endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
             pthread_mutex_unlock(&phandle->mutex);
             DSP_ERROR_EXIT (status, "Send message to node", EXIT);
@@ -1749,7 +1761,7 @@ void* MessagingThread(void* arg)
                     int commandId = msg.dwCmd & 0xffffff00;
                     TMMCodecBufferType bufType ;/* = EMMCodecScratchBuffer; */
                     TUsnCodecEvent  event = EMMCodecInternalError;
-                    void * args[10];
+                    void * args[10] = {};
                     TArmDspCommunicationStruct  *tmpDspStructAddress = NULL;
                     LCML_DSP_INTERFACE *hDSPInterface = ((LCML_DSP_INTERFACE *)arg) ;
                     DMM_BUFFER_OBJ* pDmmBuf = NULL;
@@ -1955,8 +1967,11 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
 
-                                    tmp2 = (char*)tmpDspStructAddress;
-                                    tmp2 = ( tmp2 - 128);
+                                    if (NULL != tmpDspStructAddress)
+                                    {
+                                        tmp2 = (char*)tmpDspStructAddress;
+                                        tmp2 = ( tmp2 - 128);
+                                    }
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if (tmp2)
                                     {
@@ -2155,8 +2170,11 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved);
 
-                                    tmp2 = (char*)tmpDspStructAddress;
-                                    tmp2 = ( tmp2 - 128);
+                                    if (NULL != tmpDspStructAddress)
+                                    {
+                                        tmp2 = (char*)tmpDspStructAddress;
+                                        tmp2 = ( tmp2 - 128);
+                                    }
                                     LCML_DPRINT("%d :: LCML:: FreeResources\n",__LINE__);
                                     if (tmp2)
                                     {
