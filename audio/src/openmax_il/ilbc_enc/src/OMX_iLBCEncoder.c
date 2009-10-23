@@ -1085,8 +1085,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     TI_OMX_DSP_DEFINITION *pTiDspDefinition = NULL;
-    ILBCENC_COMPONENT_PRIVATE *pComponentPrivate =
-        (ILBCENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    ILBCENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_S16 *customFlag = NULL;      
     
     TI_OMX_DATAPATH dataPath;                   
@@ -1100,6 +1099,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
+    pComponentPrivate = (ILBCENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
