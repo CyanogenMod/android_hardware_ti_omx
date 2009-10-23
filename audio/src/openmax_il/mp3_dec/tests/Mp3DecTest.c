@@ -1927,7 +1927,7 @@ int main(int argc, char* argv[]) {
                                 for (k = 0; k < nIpBuffs; k++) {
                                     /* memset(pInputBufferHeader[k],0,nIpBufSize); */
                                     pInputBufferHeader[k]->nFlags = 0;
-                                    error = send_input_buffer (*pHandle, pInputBufferHeader[k], fIn);
+                                    //error = send_input_buffer (*pHandle, pInputBufferHeader[k], fIn);
                                 }
                             }
 
