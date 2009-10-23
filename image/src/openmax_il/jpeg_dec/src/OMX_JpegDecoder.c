@@ -71,7 +71,7 @@
 #endif
 
 /*----------------------Global-----------------------------------*/
-OMX_STRING cJPEGdecName = "OMX.TI.JPEG.decode"; 
+OMX_STRING cJPEGdecName = "OMX.TI.JPEG.decoder";
 
 
 /* ---------------------------- Fucntion prototypes -----------------*/
@@ -2332,13 +2332,13 @@ OMX_ERRORTYPE GetExtensionIndex_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     OMX_U16 nIndex;
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     JPEGDEC_CUSTOM_PARAM_DEFINITION sJpegDecCustomParams[] = {
-    {"OMX.TI.JPEG.decode.Config.ProgressiveFactor", OMX_IndexCustomProgressiveFactor},
-    {"OMX.TI.JPEG.decode.Config.InputFrameWidth", OMX_IndexCustomInputFrameWidth},
-    {"OMX.TI.JPEG.decode.Config.OutputColorFormat", OMX_IndexCustomOutputColorFormat},
-    {"OMX.TI.JPEG.decode.Param.SectionDecode", OMX_IndexCustomSectionDecode},
-    {"OMX.TI.JPEG.decode.Param.SubRegionDecode", OMX_IndexCustomSubRegionDecode},
-    {"OMX.TI.JPEG.decode.Param.SetMaxResolution", OMX_IndexCustomSetMaxResolution},
-    {"OMX.TI.JPEG.decode.Debug", OMX_IndexCustomDebug},
+    {"OMX.TI.JPEG.decoder.Config.ProgressiveFactor", OMX_IndexCustomProgressiveFactor},
+    {"OMX.TI.JPEG.decoder.Config.InputFrameWidth", OMX_IndexCustomInputFrameWidth},
+    {"OMX.TI.JPEG.decoder.Config.OutputColorFormat", OMX_IndexCustomOutputColorFormat},
+    {"OMX.TI.JPEG.decoder.Param.SectionDecode", OMX_IndexCustomSectionDecode},
+    {"OMX.TI.JPEG.decoder.Param.SubRegionDecode", OMX_IndexCustomSubRegionDecode},
+    {"OMX.TI.JPEG.decoder.Param.SetMaxResolution", OMX_IndexCustomSetMaxResolution},
+    {"OMX.TI.JPEG.decoder.Debug", OMX_IndexCustomDebug},
     {"",0x0}
     };
 
