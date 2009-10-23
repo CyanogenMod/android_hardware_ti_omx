@@ -2916,6 +2916,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                                             3456, 
                                             NULL);
 #endif
+            /*
             if((pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount) || (pComponentPrivate->nFillThisBufferCount != pComponentPrivate->nFillBufferDoneCount)) {
                 if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
                 {
@@ -2933,7 +2934,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             {
                 OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
             }
-
+            */
             if(pComponentPrivate->bPreempted == 0){
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                    pHandle->pApplicationPrivate,

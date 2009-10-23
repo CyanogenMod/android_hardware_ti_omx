@@ -3612,6 +3612,32 @@ void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 
             {
             OMX_ERROR4(pComponentPrivate->dbg, "IUALG_WARN_PLAYCOMPLETED!\n");
+            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+                if (MP3DEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
+                    pComponentPrivate->lastout = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+                }
+            }
+            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
+                if (MP3DEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput)) {
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i], pBuffer),
+                                      0,
+                                      PERF_ModuleHLMM);
+#endif
+                    pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
+                    if(pComponentPrivate->lastout == pComponentPrivate->pOutputBufferList->pBufHdr[i]){
+                        OMX_ERROR4(pComponentPrivate->dbg, "Mark EOS on OUT buffer!\n");
+                        pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
+                    }
+                    OMX_ERROR2(pComponentPrivate->dbg, "FillBufferDone!\n");
+                    pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                              pComponentPrivate->pHandle->pApplicationPrivate,
+                                                              pComponentPrivate->pOutputBufferList->pBufHdr[i]);
+                    pComponentPrivate->nFillBufferDoneCount++;
+                }
+            }
+
 #ifndef UNDER_CE
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
