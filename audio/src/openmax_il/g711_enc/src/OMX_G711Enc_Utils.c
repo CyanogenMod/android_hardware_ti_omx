@@ -482,6 +482,7 @@ OMX_ERRORTYPE G711ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_U8* pParmsTemp = NULL;
     G711ENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_U8 *pBufParmsTemp = NULL;
+    OMX_U8 *pFrameParmsTemp = NULL;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G711ENC_COMPONENT_PRIVATE *pComponentPrivate = (G711ENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
@@ -501,11 +502,13 @@ OMX_ERRORTYPE G711ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
     for(i=0; i<nIpBuf; i++) {
         OMX_G711ENC_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
-        OMX_G711ENC_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);
-        OMX_G711ENC_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
-        pBufParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam; 
+        pBufParmsTemp = (OMX_U8*)pTemp_lcml->pBufferParam; 
         pBufParmsTemp -=EXTRA_BYTES;
         OMX_G711ENC_MEMFREE_STRUCT(pBufParmsTemp);
+        OMX_G711ENC_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
+        pFrameParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam; 
+        pFrameParmsTemp -=EXTRA_BYTES;
+        OMX_G711ENC_MEMFREE_STRUCT(pFrameParmsTemp); 
         pTemp_lcml++;
     }
 
