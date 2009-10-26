@@ -1,3 +1,4 @@
+
 ifdef HARDWARE_OMX
 
 LOCAL_PATH := $(call my-dir)
@@ -99,6 +100,7 @@ include $(TI_OMX_AUDIO)/nbamr_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/nbamr_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/nbamr_enc/tests/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_dec/src/Android.mk
+include $(TI_OMX_AUDIO)/wbamr_dec/tests/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_enc/src/Android.mk
 include $(TI_OMX_AUDIO)/wbamr_enc/tests/Android.mk
 include $(TI_OMX_AUDIO)/g711_dec/src/Android.mk
