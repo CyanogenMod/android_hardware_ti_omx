@@ -826,7 +826,7 @@ int main(int argc, char* argv[]) {
 
     for (j = 0; j < testcnt1; j++) {
         printf("TC-6 counter = %d\n", j);
-
+        lastinputbuffersent=0;
         if (j == 1) {
             fIn = fopen(argv[1], "rb");
 
@@ -1318,7 +1318,7 @@ int main(int argc, char* argv[]) {
         for (i = 0; i < testcnt; i++) {
 
             printf("TC-5 counter = %d\n", i);
-
+            lastinputbuffersent=0;
             close(IpBuf_Pipe[0]);
             close(IpBuf_Pipe[1]);
             close(OpBuf_Pipe[0]);
