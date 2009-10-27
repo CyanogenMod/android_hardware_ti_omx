@@ -606,7 +606,7 @@
 #define OMX_MMMIXER_ITOA(_alpha_,_integer_) \
 {\
     static char OMX_MMMIXER_ITOA_str[50];\
-    int i = sizeof(OMX_MMMIXER_ITOA_str);\
+    int i = sizeof(OMX_MMMIXER_ITOA_str) - 1;\
     do {\
         OMX_MMMIXER_ITOA_str[--i] = '0' + _integer_ % 10;\
     } while ((_integer_ = _integer_ / 10) && i > 0);\
