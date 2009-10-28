@@ -139,7 +139,7 @@ void* iLBCDEC_ComponentThread (void* pThreadData)
                                                    OMX_ErrorInsufficientResources,
                                                    0,
                                                    "Error from COmponent Thread in select");
-            goto EXIT;
+            eError = OMX_ErrorInsufficientResources;
 
         } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))
                  && (pComponentPrivate->curState != OMX_StatePause)) {
@@ -178,7 +178,7 @@ void* iLBCDEC_ComponentThread (void* pThreadData)
     }
 EXIT:
     iLBCDEC_DPRINT("%d :: %s :: Exiting ComponentThread\n",__LINE__,  __FUNCTION__);
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }
 
 /* ========================================================================== */

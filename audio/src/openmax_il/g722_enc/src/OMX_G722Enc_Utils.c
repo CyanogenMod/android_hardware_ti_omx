@@ -164,7 +164,7 @@ void* ComponentThread (void* pThreadData)
                                                     pHandle,pHandle->pApplicationPrivate,
                                                     OMX_EventError,OMX_ErrorInsufficientResources, 0,
                                                     "Error from COmponent Thread in select");
-            exit(1);
+            eError = OMX_ErrorInsufficientResources;
 
         } else if (FD_ISSET (pComponentPrivate->cmdPipe[0], &rfds)) {
             G722ENC_DPRINT ("%d :: CMD pipe is set in Component Thread\n",__LINE__);
@@ -218,7 +218,7 @@ void* ComponentThread (void* pThreadData)
     }
  EXIT:
     G722ENC_DPRINT ("%d :: Exiting ComponentThread \n",__LINE__);
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }
 
 /* ================================================================================= */
