@@ -166,7 +166,7 @@ void* NBAMRENC_CompThread(void* pThreadData)
                                                      OMX_TI_ErrorSevere,
                                                      "Error from Component Thread in select");
             eError = OMX_ErrorInsufficientResources;
-            break;
+
         } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))
                    && (pComponentPrivate->curState != OMX_StatePause)) {
             OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: DATA pipe is set in Component Thread\n",__LINE__);

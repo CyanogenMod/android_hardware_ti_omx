@@ -157,9 +157,8 @@ void* WBAMRENC_CompThread(void* pThreadData)
                                                      OMX_ErrorInsufficientResources,
                                                      OMX_TI_ErrorSevere,
                                                      "Error from Component Thread in select");
-            eError = OMX_ErrorInsufficientResources; 
-            break;
-        } 
+            eError = OMX_ErrorInsufficientResources;
+        }
         else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))) {
             OMX_PRCOMM2(pComponentPrivate->dbg, "DATA pipe is set in Component Thread\n");
 

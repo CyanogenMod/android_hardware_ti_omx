@@ -146,7 +146,7 @@ void* ILBCENC_CompThread(void* pThreadData)
                                                      OMX_ErrorInsufficientResources,
                                                      0,
                                                      "Error from CompThread in select");
-            exit(1);
+            eError = OMX_ErrorInsufficientResources;
 
         } else if ((FD_ISSET (pComponentPrivate->dataPipe[0], &rfds))
                    && (pComponentPrivate->curState != OMX_StatePause)) {
@@ -203,5 +203,5 @@ void* ILBCENC_CompThread(void* pThreadData)
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    return (void*)OMX_ErrorNone;
+    return (void*)eError;
 }
