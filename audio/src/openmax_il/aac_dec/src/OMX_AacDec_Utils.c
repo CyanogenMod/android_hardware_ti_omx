@@ -2013,12 +2013,16 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
 			pComponentPrivate->pHandle->pApplicationPrivate,
 			pBufHeader);
+                pComponentPrivate->nEmptyBufferDoneCount++;
+                SignalIfAllBuffersAreReturned(pComponentPrivate);
 		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
 		}
 	else if (eDir == OMX_DirOutput) {
 		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
 			pComponentPrivate->pHandle->pApplicationPrivate,
 			pBufHeader);
+                pComponentPrivate->nFillBufferDoneCount++;
+                SignalIfAllBuffersAreReturned(pComponentPrivate);
 		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
 		}
 	goto EXIT;
