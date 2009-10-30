@@ -5634,7 +5634,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
                     ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
-                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 2;
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
             }
@@ -5815,7 +5815,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = ++pComponentPrivate->frameCounter;
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
-                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 2;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount);
             }
@@ -6184,7 +6184,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                      pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
                 ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->uRingIOBlocksize = 0;
-                ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 0;
+                ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 2;
 
                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
