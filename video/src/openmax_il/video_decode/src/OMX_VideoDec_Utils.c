@@ -4996,6 +4996,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 
         /*TODO: Get minimum INPUT buffer size & verify if the actual size is enough*/
         /*Verify correct values in the initial setup*/
+        /* Work around force reconfiguration */
+        bOutPortSettingsChanged = OMX_TRUE;
 
         /*Verify if actual width & height parameters are correct*/
         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth != nWidth ||
