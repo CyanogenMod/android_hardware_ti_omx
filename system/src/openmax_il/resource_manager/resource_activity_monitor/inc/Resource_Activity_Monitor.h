@@ -24,26 +24,40 @@
 #ifdef RAM_DEBUG
   #include <utils/Log.h>
   #undef LOG_TAG
-  #define LOG_TAG "OMX VDD MONITOR"
+  #define LOG_TAG "OMXRM DVFS MONITOR"
   #define RAM_DPRINT LOGD
 #else
   #define RAM_DPRINT(...)
 #endif
 
-#define OPERATING_POINT_1 1
-#define OPERATING_POINT_1_MHZ 90
+/* define these for array indexing */
+#define OPERATING_POINT_1 0
+#define OPERATING_POINT_2 1
+#define OPERATING_POINT_3 2
+#define OPERATING_POINT_4 3
+#define OPERATING_POINT_5 4
 
-#define OPERATING_POINT_2 2
-#define OPERATING_POINT_2_MHZ 180
+/* for 3440 */
+#define OPERATING_POINT_6 5
 
-#define OPERATING_POINT_3 3
-#define OPERATING_POINT_3_MHZ 360
+typedef enum _OMAP_CPU
+{
+    OMAP3420_CPU = 0,
+    OMAP3430_CPU,
+    OMAP3440_CPU
+} OMAP_CPU;
 
-#define OPERATING_POINT_4 4
-#define OPERATING_POINT_4_MHZ 400
+/* for 3420 family */
+static const int vdd1_dsp_mhz_3420[5] = {90, 180, 360, 360, 360};
+static const int vdd1_mpu_mhz_3420[5] = {125, 250, 500, 550, 600};
 
-#define OPERATING_POINT_5 5
-#define OPERATING_POINT_5_MHZ 430
+/* for 3430 family */
+static const int vdd1_dsp_mhz_3430[5] = {90, 180, 360, 430, 430};
+static const int vdd1_mpu_mhz_3430[5] = {125, 250, 500, 550, 600};
+
+/* for 3440 family */
+static const int vdd1_dsp_mhz_3440[6] = {90, 180, 360, 430, 430, 520};
+static const int vdd1_mpu_mhz_3440[6] = {125, 250, 500, 550, 600, 720};
 
 
 void omap_pm_set_constraint(int ID, int MHz);
