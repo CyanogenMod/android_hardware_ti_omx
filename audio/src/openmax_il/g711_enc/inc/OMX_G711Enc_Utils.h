@@ -167,8 +167,8 @@
     (_s_)->nVersion.s.nStep = 0x0
 
 #define OMX_G711ENC_MEMFREE_STRUCT(_pStruct_)                   \
-    G711ENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);   \
     if(_pStruct_ != NULL){                                      \
+    G711ENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);   \
         free(_pStruct_);                                        \
         _pStruct_ = NULL;                                       \
     }
