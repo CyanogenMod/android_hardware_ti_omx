@@ -6932,6 +6932,8 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     OMX_U32 nOutBuffSize = 0;
     H264VDEC_SNCreatePhArg* pCreatePhaseArgs = NULL;
     LCML_CALLBACKTYPE cb;
+    OMX_U32 nFrameWidth = 0;
+    OMX_U32 nFrameHeight = 0;
 
     OMX_PRDSP1(pComponentPrivate->dbg, "+++ENTERING\n");
 
@@ -7040,6 +7042,14 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
+
+    nFrameWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
+    nFrameHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
+    LOGV("Before Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+    if (nFrameWidth & 0xF) nFrameWidth = (nFrameWidth & 0xFFF0) + 0x10;
+    if (nFrameHeight & 0xF) nFrameHeight = (nFrameHeight & 0xFFF0) + 0x10;
+    LOGV("After Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+
     pCreatePhaseArgs->unNumOfStreams            = 2;
     pCreatePhaseArgs->unInputStreamID           = 0;
     pCreatePhaseArgs->unInputBufferType         = 0;
@@ -7047,8 +7057,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     pCreatePhaseArgs->unOutputStreamID          = 1;
     pCreatePhaseArgs->unOutputBufferType        = 0;
     pCreatePhaseArgs->unOutputNumBufsPerStream  = (OMX_U16)nOutBuff;
-    pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth);
-    pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight);
+    pCreatePhaseArgs->ulMaxWidth                = nFrameWidth;
+    pCreatePhaseArgs->ulMaxHeight               = nFrameHeight;
+
 
     if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
         pCreatePhaseArgs->ulYUVFormat           = H264VIDDEC_YUVFORMAT_INTERLEAVED422;
