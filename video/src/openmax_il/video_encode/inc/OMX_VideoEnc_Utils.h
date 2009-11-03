@@ -674,9 +674,9 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_BOOL bResyncDataEnable;
     IH264VENC_Intra4x4Params intra4x4EnableIdc;
     OMX_U32 maxMVperMB;
-    #ifdef RESOURCE_MANAGER_ENABLED
+#ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE cRMCallBack;
-    #endif
+#endif
     OMX_BOOL bPreempted;
     OMX_VIDEO_CODINGTYPE compressionFormats[3];
     OMX_COLOR_FORMATTYPE colorFormats[3];
@@ -687,6 +687,12 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_BOOL bRequestVOLHeader;
     OMX_BOOL bWaitingForVOLHeaderBuffer;
     OMX_BOOL bWaitingVOLHeaderCallback;
+
+    /* Reference count for pending state change requests */
+    OMX_U32 nPendingStateChangeRequests;
+    pthread_mutex_t mutexStateChangeRequest;
+    pthread_cond_t StateChangeCondition;
+
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
@@ -761,5 +767,8 @@ void printH264CreateParams(H264VE_GPP_SN_Obj_CreatePhase* pCreatePhaseArgs, stru
 void printMpeg4UAlgInParam(MP4VE_GPP_SN_UALGInputParams* pUalgInpParams, int printAlways, struct OMX_TI_Debug *dbg);
 
 void printH264UAlgInParam(H264VE_GPP_SN_UALGInputParams* pUalgInpParams, int printAlways, struct OMX_TI_Debug *dbg);
+
+OMX_ERRORTYPE AddStateTransition(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
+OMX_ERRORTYPE RemoveStateTransition(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BOOL bEnableSignal);
 
 #endif
