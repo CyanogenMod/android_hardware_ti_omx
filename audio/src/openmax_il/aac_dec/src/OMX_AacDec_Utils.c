@@ -2008,27 +2008,17 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: The pBufHeader is not found in the list\n",__LINE__);
         goto EXIT;
     }
-    if (pComponentPrivate->curState == OMX_StateIdle){
-	if (eDir == OMX_DirInput) {
-		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-                pComponentPrivate->nEmptyBufferDoneCount++;
-                SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
-		}
-	else if (eDir == OMX_DirOutput) {
-		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-                pComponentPrivate->nFillBufferDoneCount++;
-                SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
-		}
-	goto EXIT;
-  }
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       pBufHeader);
+            pComponentPrivate->nEmptyBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
         AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
@@ -2364,6 +2354,15 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         }
     }else if (eDir == OMX_DirOutput) {
         pComponentPrivate->nUnhandledFillThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                                      pBufHeader);
+            pComponentPrivate->nFillBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
         AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d : pComponentPrivate->lcml_nOpBuf = %ld\n",__LINE__,pComponentPrivate->lcml_nOpBuf);
@@ -2969,8 +2968,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             }
         }
     }else if (event == EMMCodecProcessingPaused) {
-        pComponentPrivate->nUnhandledFillThisBuffers = 0;
-        pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
         pComponentPrivate->curState = OMX_StatePause;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventCmdComplete, OMX_CommandStateSet,
