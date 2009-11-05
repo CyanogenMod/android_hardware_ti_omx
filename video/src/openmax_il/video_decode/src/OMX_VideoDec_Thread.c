@@ -191,7 +191,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
                                                    OMX_TI_ErrorSevere,
                                                    "Error from Component Thread in select");
 	     eError = OMX_ErrorInsufficientResources;
-	     break;
         }
         else {
             if (FD_ISSET(pComponentPrivate->cmdPipe[VIDDEC_PIPE_READ], &rfds)) {
