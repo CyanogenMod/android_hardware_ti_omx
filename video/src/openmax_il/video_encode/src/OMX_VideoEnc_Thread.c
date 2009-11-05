@@ -179,7 +179,10 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                 OMX_TRACE3(pComponentPrivate->dbg, "select() error.\n");
                 OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, OMX_EventError, OMX_ErrorHardware, 0, NULL);
             }
-            OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorHardware, pComponentPrivate);
+            /*OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorHardware, pComponentPrivate);*/
+            eError = OMX_ErrorHardware;
+            OMX_ERROR5(pComponentPrivate->dbg, "*Fatal Error : %x\n", eError);
+            OMX_VIDENC_HandleError(pComponentPrivate, eError);
         }
         else
         {
