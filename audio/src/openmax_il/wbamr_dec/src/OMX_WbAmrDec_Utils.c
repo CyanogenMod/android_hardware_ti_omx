@@ -2900,8 +2900,6 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }
     }
     else if (event == EMMCodecProcessingPaused) {
-        pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
-        pComponentPrivate->nUnhandledFillThisBuffers = 0;
         pComponentPrivate->curState = OMX_StatePause;
         /* Send StateChangeNotification to application */
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,

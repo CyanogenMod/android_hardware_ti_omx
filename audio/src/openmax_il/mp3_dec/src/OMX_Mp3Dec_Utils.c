@@ -2793,8 +2793,6 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     }
     else if (event == EMMCodecProcessingPaused) { 
 
-        pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
-        pComponentPrivate->nUnhandledFillThisBuffers = 0;
         pComponentPrivate->curState = OMX_StatePause;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                pComponentPrivate->pHandle->pApplicationPrivate,

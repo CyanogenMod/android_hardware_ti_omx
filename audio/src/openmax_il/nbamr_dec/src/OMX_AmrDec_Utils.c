@@ -2955,8 +2955,6 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
         }
     }
     else if (event == EMMCodecProcessingPaused) {
-        pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
-        pComponentPrivate->nUnhandledFillThisBuffers = 0;
         pComponentPrivate->curState = OMX_StatePause;
         /* Send StateChangeNotification to application */
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
