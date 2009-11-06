@@ -4960,6 +4960,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4  ||
                 pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
             VIDDEC_ParseVideo_MPEG4( &nWidth, &nHeight, pBuffHead);
+            /* Work around force reconfiguration */
+            bOutPortSettingsChanged = OMX_TRUE;
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
             VIDDEC_ParseVideo_MPEG2( &nWidth, &nHeight, pBuffHead);
@@ -4996,8 +4998,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 
         /*TODO: Get minimum INPUT buffer size & verify if the actual size is enough*/
         /*Verify correct values in the initial setup*/
-        /* Work around force reconfiguration */
-        bOutPortSettingsChanged = OMX_TRUE;
 
         /*Verify if actual width & height parameters are correct*/
         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth != nWidth ||
