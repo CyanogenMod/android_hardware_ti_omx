@@ -2302,6 +2302,8 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                           0,
                                           PERF_ModuleHLMM);
 #endif
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s DSP is stopping, returning input buffer \n",
+                                      __LINE__, __FUNCTION__);
                         pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    pBufHeader
@@ -2422,6 +2424,14 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
                             OMX_PRDSP2(pComponentPrivate->dbg, "Reconfig:: byPassDSP!!\n");
                         }
+                    }else{
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s DSP is stopping, returning output buffer \n",
+                                      __LINE__, __FUNCTION__);
+                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                  pBufHeader);
+                        pComponentPrivate->nFillBufferDoneCount++;
+                        SignalIfAllBuffersAreReturned(pComponentPrivate);
                     }
                 }
             }
