@@ -75,9 +75,6 @@ PERF_OBJHANDLE pPERF = NULL;
 #include <pthread.h>
 #include <signal.h>
 
-#undef LOG_TAG
-#define LOG_TAG "OMXRM"
-
 RM_ComponentList componentList;
 RM_ComponentList pendingComponentList;
 int fdread, fdwrite;
@@ -1054,9 +1051,6 @@ void *RM_CPULoadThread(int pipeToWatch)
     int maxMhz=0;
     int cur_freq=0;
     int op=0;
-    int mpu_max_freq = 0;
-    int dsp_max_freq = 0;
-    int cpu_variant = 0;
 
     /* initialize array */
     for (i=0; i < RM_CPUAVGDEPTH; i++) {
@@ -1070,137 +1064,49 @@ void *RM_CPULoadThread(int pipeToWatch)
         results = NULL;
         NumFound = 0;
 
-#ifdef DVFS_ENABLED
-        FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
-        if (fp == NULL) RM_DPRINT("open file max_dsp_frequency failed\n");
-        fscanf(fp, "%d",&dsp_max_freq);
-        fclose(fp);
-        dsp_max_freq /= 1000000;
-        if (dsp_max_freq == vdd1_dsp_mhz_3420[RM_OPERATING_POINT_5]){
-            cpu_variant = OMAP3420_CPU;
-        }
-        else if (mpu_max_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_5]){
-            cpu_variant = OMAP3430_CPU;
-        }
-        else if (mpu_max_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_6]){
-        /* 3440 has 6 OPPs */
-            cpu_variant = OMAP3440_CPU;
-        }
-
-        fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
-        if (fp == NULL) RM_DPRINT("open file cpuinfo_cur_freq failed\n");
+#ifdef RAM_ENABLED
+        /* get the ARM maximum operating point */
+        FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
+        if (fp == NULL) RM_DPRINT("open file failed\n");
         fscanf(fp, "%d",&cur_freq);
         fclose(fp);
         cur_freq /= 1000;
 
-        if (cpu_variant == OMAP3420_CPU){
-            if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_1])
-            {
+        switch (cur_freq)
+        {
+            case RM_ARM_OPERATING_POINT_1_MHZ:
                 op = RM_OPERATING_POINT_1;
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_1];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_2])
-            {
+                maxMhz = RM_DSP_OPERATING_POINT_1_MHZ;
+                break;
+
+            case RM_ARM_OPERATING_POINT_2_MHZ:
                 op = RM_OPERATING_POINT_2;
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_2];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_3])
-            {
+                maxMhz = RM_DSP_OPERATING_POINT_2_MHZ;
+                break;
+
+            case RM_ARM_OPERATING_POINT_3_MHZ:
                 op = RM_OPERATING_POINT_3;
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_3];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_4])
-            {
+                maxMhz = RM_DSP_OPERATING_POINT_3_MHZ;
+                break;
+
+            case RM_ARM_OPERATING_POINT_4_MHZ:
                 op = RM_OPERATING_POINT_4;
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_4];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_5])
-            {
+                maxMhz = RM_DSP_OPERATING_POINT_4_MHZ;
+                break;
+
+            case RM_ARM_OPERATING_POINT_5_MHZ:
                 op = RM_OPERATING_POINT_5;
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_5];
-            }
-            else
-            {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
-                    return NULL;
-            }
-        }
-        else if (cpu_variant == OMAP3440_CPU){
-            if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_1])
-            {
-                op = RM_OPERATING_POINT_1;
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_1];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_2])
-            {
-                op = RM_OPERATING_POINT_2;
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_2];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_3])
-            {
-                op = RM_OPERATING_POINT_3;
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_3];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_4])
-            {
-                op = RM_OPERATING_POINT_4;
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_4];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_5])
-            {
-                op = RM_OPERATING_POINT_5;
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_5];
-            }
-            else
-            {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
-                    return NULL;
-            }
-        }
-        else if (cpu_variant == OMAP3440_CPU){
-            if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_1])
-            {
-                op = RM_OPERATING_POINT_1;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_1];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_2])
-            {
-                op = RM_OPERATING_POINT_2;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_2];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_3])
-            {
-                op = RM_OPERATING_POINT_3;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_3];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_4])
-            {
-                op = RM_OPERATING_POINT_4;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_4];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_5])
-            {
-                op = RM_OPERATING_POINT_5;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_5];
-            }
-            else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_6])
-            {
-                op = RM_OPERATING_POINT_6;
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_6];
-            }
-            else
-            {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
-                    return NULL;
-            }
+                maxMhz = RM_DSP_OPERATING_POINT_5_MHZ;
+                break;
+
+            default:
+                RM_DPRINT("Read incorrect frequency from sysfs\n");
+                return NULL;
         }
 
 #else
-        // if DVFS is not available, use opp4 constraints
-        if (cpu_is_3430)
-            maxMHz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_4];
-        else
-            maxHHz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_4];
+        // if sysfs is not available, use opp4 constraints
+        maxMHz = RM_DSP_OPERATING_POINT_4_MHZ;
 #endif
 
 
@@ -1208,7 +1114,7 @@ void *RM_CPULoadThread(int pipeToWatch)
         if (DSP_SUCCEEDED(status)) 
         {
             /* get the dsp load from the Qos call without a DSP wake up*/
-            currentOverallUtilization = dsp_currload * maxMhz / dsp_max_freq;
+            currentOverallUtilization = dsp_currload * maxMhz / RM_DSP_OPERATING_POINT_5_MHZ;
         } 
         else 
         {
@@ -1231,7 +1137,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 NumFound = 0;
             }
             p = (struct  QOSRESOURCE_PROCESSOR *) results[0];
-            currentOverallUtilization = p->currentLoad * maxMhz / dsp_max_freq;
+            currentOverallUtilization = p->currentLoad * maxMhz / RM_DSP_OPERATING_POINT_5_MHZ;
         }
 
         /* If we have not yet captured RM_CPUAVGDEPTH samples add this to the next slot in the array */
@@ -1253,8 +1159,8 @@ void *RM_CPULoadThread(int pipeToWatch)
             sum += cpuStruct.cpuLoadSnapshots[i];
         }
         cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
-        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * dsp_max_freq) / 100);
-        cpuStruct.cyclesAvailable = dsp_max_freq - cpuStruct.cyclesInUse;
+        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * RM_DSP_OPERATING_POINT_5_MHZ) / 100);
+        cpuStruct.cyclesAvailable = RM_DSP_OPERATING_POINT_5_MHZ - cpuStruct.cyclesInUse;
 
         /* wait for RM_CPUAVERAGEDELAY seconds */
         nanosleep(&tv, NULL);
