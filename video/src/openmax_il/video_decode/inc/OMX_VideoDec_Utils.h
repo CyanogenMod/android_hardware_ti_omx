@@ -360,8 +360,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_VGA_WIDTH                              640
 #define VIDDEC_VGA_HEIGHT                             480
 
-#define VIDDEC_D1MAX_WIDTH                            720
-#define VIDDEC_D1MAX_HEIGHT                           576
+#define VIDDEC_D1MAX_WIDTH                            864
+#define VIDDEC_D1MAX_HEIGHT                           VIDDEC_D1MAX_WIDTH
 
 /* In the current release the suport for : VIDDEC_MAX_FRAMERATE  & VIDDEC_MAX_BITRATE
  * is not provided by the algorithm. But is require to set this field to a non-zero value */
