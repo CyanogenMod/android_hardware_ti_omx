@@ -2211,7 +2211,7 @@ OMX_ERRORTYPE G711DECLCML_Callback (TUsnCodecEvent event,void * args [10])
             }
         }
     } else if (event == EMMCodecStrmCtrlAck) {
-        LCML_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
+        G711DEC_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
     }
     else if(event == EMMCodecProcessingStoped) {
         G711DEC_DPRINT("pComponentPrivate_CC->bNoIdleOnStop = %d\n",(int)pComponentPrivate_CC->bNoIdleOnStop);

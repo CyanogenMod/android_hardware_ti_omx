@@ -1628,7 +1628,7 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         pComponentPrivate_CC->bNoIdleOnStop= OMX_FALSE;
     }
     else if(event == EMMCodecAlgCtrlAck) {
-        LCML_DPRINT ("GOT MESSAGE USN_DSPACK_ALGCTRL \n");
+        G722ENC_DPRINT ("GOT MESSAGE USN_DSPACK_ALGCTRL \n");
     }
     else if (event == EMMCodecDspError) {
         if(((int)args[4] == 1) && ((int)args[5] == 0x500)) {

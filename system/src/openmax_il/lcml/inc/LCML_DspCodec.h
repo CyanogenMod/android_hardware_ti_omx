@@ -60,10 +60,6 @@
 #ifndef UNDER_CE
 #ifdef ANDROID
     #include <utils/Log.h>
-    #undef LOG_TAG
-    #define LOG_TAG "LCML"
-    #define LCML_ERROR_PRINT LOGE
-    #define LCML_DPRINT LOGD
 #else
     #define LCML_ERROR_PRINT printf
     #define LCML_DPRINT printf

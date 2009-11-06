@@ -35,7 +35,7 @@
 #define __LCML_CODECINTERFACE_H__
 
 #include <OMX_Core.h>
-
+#include <OMX_TI_Debug.h>
 /** 
  * Commands to send messages to codec 
  */
@@ -128,6 +128,7 @@ typedef struct LCML_CODEC_INTERFACE
 
     OMX_PTR pCodecPrivate;
     OMX_HANDLETYPE pCodec;
+    struct OMX_TI_Debug dbg;
 
 }LCML_CODEC_INTERFACE;
 

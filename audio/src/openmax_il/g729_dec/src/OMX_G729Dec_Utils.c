@@ -1869,7 +1869,7 @@ OMX_ERRORTYPE G729DECLCML_Callback (TUsnCodecEvent event,void * args [10])
     } 
     else if (event == EMMCodecStrmCtrlAck) 
     {
-        LCML_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
+        G729DEC_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
         if (args[1] == (void *)USN_STRMCMD_FLUSH)
         {
             G729DEC_DPRINT("revceived USN_STRMCMD_FLUSH\n");
