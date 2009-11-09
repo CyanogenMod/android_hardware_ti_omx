@@ -48,12 +48,6 @@
 
 #include <ResourceManagerAPI.h>
 
-/* add for Qos API
-#include <dbapi.h>
-#include "dasf_ti.h"
-*/
-
-
 #define DSP_ERROR_EXIT(err, msg, label)                \
     if (DSP_FAILED (err)) {                        \
         printf("\n****************RM ERROR : DSP ************************\n");\
@@ -137,25 +131,14 @@ struct QOSDATA **results = NULL;
 RM_CPULoadStruct cpuStruct;
 
 /* defining the DSP opp points for vdd1 */
-#define RM_OPERATING_POINT_1 1
-#define RM_ARM_OPERATING_POINT_1_MHZ 125
-#define RM_DSP_OPERATING_POINT_1_MHZ 90
+#define RM_OPERATING_POINT_1 0
+#define RM_OPERATING_POINT_2 1
+#define RM_OPERATING_POINT_3 2
+#define RM_OPERATING_POINT_4 3
+#define RM_OPERATING_POINT_5 4
 
-#define RM_OPERATING_POINT_2 2
-#define RM_ARM_OPERATING_POINT_2_MHZ 250
-#define RM_DSP_OPERATING_POINT_2_MHZ 180
-
-#define RM_OPERATING_POINT_3 3
-#define RM_ARM_OPERATING_POINT_3_MHZ 500
-#define RM_DSP_OPERATING_POINT_3_MHZ 360
-
-#define RM_OPERATING_POINT_4 4
-#define RM_ARM_OPERATING_POINT_4_MHZ 550
-#define RM_DSP_OPERATING_POINT_4_MHZ 400
-
-#define RM_OPERATING_POINT_5 5
-#define RM_ARM_OPERATING_POINT_5_MHZ 600
-#define RM_DSP_OPERATING_POINT_5_MHZ 430
+/* for 3440 only */
+#define RM_OPERATING_POINT_6 5
 
 // internal functions
 void FreeQos();
