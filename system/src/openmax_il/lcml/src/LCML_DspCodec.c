@@ -1348,6 +1348,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
         {
             struct DSP_MSG msg;
 
+            pthread_mutex_lock(&phandle->mutex);
             if ((int)args[0] == USN_STRMCMD_FLUSH) {
                 msg.dwCmd = USN_GPPMSG_STRMCTRL | (int)args[1];
                 msg.dwArg1  = USN_STRMCMD_FLUSH;
@@ -1363,7 +1364,6 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
             else
             {
                 int i;
-                pthread_mutex_lock(&phandle->mutex);
                 for (i = 0; i < QUEUE_SIZE; i++)
                 {
                     /* searching for empty slot */
