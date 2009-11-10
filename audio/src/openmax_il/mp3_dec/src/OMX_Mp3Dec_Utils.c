@@ -2533,6 +2533,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                            pLcmlHdr->pBufHdr->nOutputPortIndex,
                                                            pLcmlHdr->pBufHdr->nFlags, NULL);
                     pComponentPrivate->bIsEOFSent = 0;
+                    pLcmlHdr->pOpParam->ulIsLastBuffer=0;
                 }
 
                 if(pComponentPrivate->frameMode){
