@@ -1660,7 +1660,7 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }
     }
     else if (event == EMMCodecStrmCtrlAck) {
-        LCML_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
+        G722ENC_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
         pComponentPrivate_CC->bStreamCtrlCalled = 1;
     
     }
