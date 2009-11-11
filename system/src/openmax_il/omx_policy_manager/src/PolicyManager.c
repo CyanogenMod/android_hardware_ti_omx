@@ -332,7 +332,7 @@ void HandleCancelWaitForPolicy(POLICYMANAGER_COMMANDDATATYPE cmd)
 
 void HandleFreePolicy(POLICYMANAGER_COMMANDDATATYPE cmd)
 {
-    RemoveComponentFromList( cmd.hComponent,cmd.nPid);
+    RemoveComponentFromList( cmd.hComponent,cmd.nPid, cmd.param1);
 
     /* If there are pending components one of them can now execute */
     if (pendingComponents) {
@@ -391,20 +391,61 @@ void DenyPolicy(OMX_HANDLETYPE hComponent,OMX_U32 aPid)
 
 void GrantPolicy(OMX_HANDLETYPE hComponent, OMX_U8 aComponentIndex, OMX_U8 aPriority, OMX_U32 aPid)
 {
+    int i, match =-1;
     response_data.hComponent = hComponent;
     response_data.nPid = aPid;
     response_data.PM_Cmd = PM_GRANTPOLICY;
     write(fdwrite, &response_data, sizeof(response_data));
-    activeComponentList[registeredComponents].component = aComponentIndex;
-    activeComponentList[registeredComponents].priority = aPriority;
-    pComponentList[registeredComponents].componentHandle = hComponent;
-    pComponentList[registeredComponents++].nPid = aPid;
+    for(i=0; i < registeredComponents; i++) {
+        if (activeComponentList[i].component == aComponentIndex) {
+            match = i;
+            break;
+        }
+    }
+    if (match == -1) {
+        /*just add the component to the active list once */
+        activeComponentList[registeredComponents].component = aComponentIndex;
+        activeComponentList[registeredComponents].priority = aPriority;
+    }
+
+    match = -1;
+
+    for (i=0; i < registeredComponents; i++) {
+        if (pComponentList[i].componentHandle == hComponent && pComponentList[i].nPid == aPid)
+        {
+            match = i;
+            break;
+        }
+    }
+    if (match == -1) {
+        /* do not add the same component twice */
+
+        pComponentList[registeredComponents].componentHandle = hComponent;
+        pComponentList[registeredComponents++].nPid = aPid;
+    }
 }
 
-void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid) 
+void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid, OMX_U32 cComponentIndex) 
 {
     int i;
     int match = -1;
+
+    for (i=0; i < registeredComponents; i++) {
+        if (activeComponentList[i].component == cComponentIndex) {
+            match = i;
+            break;
+        }
+    }
+    if (match != -1)
+    {
+        for (i=match; i< registeredComponents-1; i++) {
+
+            activeComponentList[i].component = activeComponentList[i+1].component;
+            activeComponentList[i].priority = activeComponentList[i+1].priority;
+        }
+
+        match = -1;
+    }
     for(i=0; i < registeredComponents; i++) {
         if (pComponentList[i].componentHandle == hComponent && pComponentList[i].nPid == aPid) {
             match = i;

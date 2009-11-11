@@ -182,7 +182,7 @@ int RM_GetPipe(POLICYMANAGER_COMMANDDATATYPE cmd);
 void RM_itoa(int n, char s[]);
 void RM_reverse(char s[]);
 void GrantPolicy(OMX_HANDLETYPE hComponent, OMX_U8 aComponentIndex, OMX_U8 aPriority, OMX_U32 aPid);
-void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid) ;
+void RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid, OMX_U32 cComponentIndex);
 int PopulatePolicyTable();
 OMX_COMPONENTINDEXTYPE PolicyStringToIndex(char* aString) ;
 OMX_BOOL CheckActiveCombination(OMX_COMPONENTINDEXTYPE componentRequestingPolicy, int *priority);
