@@ -104,10 +104,9 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                   void *args[10]);
 static OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
                      OMX_U32 size,
-                     OMX_U32 sizeUsed,
                      void* pArmPtr,
                      DMM_BUFFER_OBJ* pDmmBuf,
-                     OMX_U32 MapBufLen, struct OMX_TI_Debug dbg);
+                     struct OMX_TI_Debug dbg);
 
 static OMX_ERRORTYPE DmmUnMap(DSP_HPROCESSOR ProcHandle,
                               void *pMapPtr,
@@ -857,7 +856,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                                   OMX_S32 auxInfoLen ,OMX_U8 * usrArg )
 {
     LCML_DSP_INTERFACE * phandle;
-    int streamId = 0;
+    OMX_U32 streamId = 0;
     DSP_STATUS status;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     char * tmp2=NULL;
@@ -877,7 +876,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
 
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "LCML QueueBuffer: phandle->iBufinputcount is %d (%p) \n", phandle->iBufinputcount, phandle);
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "LCML QueueBuffer: phandle->iBufinputcount is %lu (%p) \n", phandle->iBufinputcount, phandle);
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_XferingBuffer(phandle->pPERF,
@@ -934,6 +933,8 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
             bufType = EMMCodecOuputBuffer;
             phandle->ReUseMap = 1;
             break;
+        default:
+            break;
     }
 
     if ((bufType >= EMMCodecStream0) && (bufType <= (EMMCodecStream0 + 20)))
@@ -950,7 +951,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         pDmmBuf = pDmmBuf + phandle->iBufinputcount;
         phandle->iBufinputcount++;
         phandle->iBufinputcount = phandle->iBufinputcount % QUEUE_SIZE;
-        OMX_PRBUFFER1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "VPP port %d use InDmmBuffer (%d) %p\n", streamId, phandle->iBufinputcount, pDmmBuf);
+        OMX_PRBUFFER1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "VPP port %lu use InDmmBuffer (%lu) %p\n", streamId, phandle->iBufinputcount, pDmmBuf);
 
     }
     else if (bufType == EMMCodecOuputBuffer || streamId % 2)
@@ -985,7 +986,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     phandle->commStruct->iArmbufferArg = (OMX_U32)buffer;
     if ((buffer != NULL) && (bufferLen != 0))
     {
-        int i;
+        OMX_U32 i;
         DSP_STATUS status;
 
         if (phandle->ReUseMap)
@@ -1039,10 +1040,10 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 if (bufType == EMMCodecInputBuffer || !(streamId % 2))
                 {
                         phandle->commStruct->iBufferSize = bufferSizeUsed ? bufferSizeUsed : bufferLen;
-                        eError = DmmMap(phandle->dspCodec->hProc, bufferLen,bufferSizeUsed,buffer, (pDmmBuf), MapBufLen, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                        eError = DmmMap(phandle->dspCodec->hProc, bufferLen,buffer, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                 }
                 else if (bufType == EMMCodecOuputBuffer || streamId % 2) {
-                    eError = DmmMap(phandle->dspCodec->hProc, bufferLen, 0,buffer, (pDmmBuf), MapBufLen, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                    eError = DmmMap(phandle->dspCodec->hProc, bufferLen, buffer, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                 }
                 if (eError != OMX_ErrorNone)
                 {
@@ -1070,17 +1071,17 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 {
                     /*using this option only when not mapping the entire memory region
                      * can cause a DSP MMU FAULT or DSP SYS ERROR */
-                    eError = DmmMap(phandle->dspCodec->hProc, bufferLen, bufferSizeUsed,buffer, (pDmmBuf), MapBufLen, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                    eError = DmmMap(phandle->dspCodec->hProc, bufferLen, buffer, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                 }
                 else
                 {
                     phandle->commStruct->iBufferSize = bufferSizeUsed ? bufferSizeUsed : bufferLen;
-                    OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "Mapping Size %d out of %d", bufferSizeUsed, bufferLen);
-                    eError = DmmMap(phandle->dspCodec->hProc, bufferSizeUsed ? bufferSizeUsed : bufferLen,bufferSizeUsed,buffer, (pDmmBuf), MapBufLen, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                    OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "Mapping Size %ld out of %ld", bufferSizeUsed, bufferLen);
+                    eError = DmmMap(phandle->dspCodec->hProc, bufferSizeUsed ? bufferSizeUsed : bufferLen,buffer, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                 }
             }
             else if (bufType == EMMCodecOuputBuffer || streamId % 2) {
-                eError = DmmMap(phandle->dspCodec->hProc, bufferLen, 0,buffer, (pDmmBuf), MapBufLen, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                eError = DmmMap(phandle->dspCodec->hProc, bufferLen, buffer, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
             }
             if (eError != OMX_ErrorNone)
             {
@@ -1095,7 +1096,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     if (auxInfoLen != 0 && auxInfo != NULL )
     {
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "mapping parameter \n");
-        eError = DmmMap(phandle->dspCodec->hProc, phandle->commStruct->iParamSize, phandle->commStruct->iParamSize, (void*)phandle->commStruct->iParamPtr, (pDmmBuf), 0, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+        eError = DmmMap(phandle->dspCodec->hProc, phandle->commStruct->iParamSize, (void*)phandle->commStruct->iParamPtr, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
         if (eError != OMX_ErrorNone)
         {
             goto MUTEX_UNLOCK;
@@ -1106,7 +1107,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         pDmmBuf->paramReserved = pDmmBuf->pReserved;
     }
 
-    eError = DmmMap(phandle->dspCodec->hProc, sizeof(TArmDspCommunicationStruct),sizeof(TArmDspCommunicationStruct), (void *)phandle->commStruct, (pDmmBuf), 0, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+    eError = DmmMap(phandle->dspCodec->hProc, sizeof(TArmDspCommunicationStruct),(void *)phandle->commStruct, (pDmmBuf), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
     if (eError != OMX_ErrorNone)
     {
         goto MUTEX_UNLOCK;
@@ -1238,7 +1239,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
 
             if (phandle->ReUseMap)
             {
-                int i;
+                OMX_U32 i;
 
                 /* Unmap buffers */
                 for(i=0; i< phandle->mapped_buffer_count; i++)
@@ -1319,7 +1320,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
 
                     memset(phandle->pAlgcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ));
 
-                    eError = DmmMap(phandle->dspCodec->hProc,(int)args[2],(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), 0, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                    eError = DmmMap(phandle->dspCodec->hProc,(int)args[2], args[1],(phandle->pAlgcntlDmmBuf[i]), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                     if (eError != OMX_ErrorNone)
                     {
                         pthread_mutex_unlock(&phandle->mutex);
@@ -1347,6 +1348,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
         {
             struct DSP_MSG msg;
 
+            pthread_mutex_lock(&phandle->mutex);
             if ((int)args[0] == USN_STRMCMD_FLUSH) {
                 msg.dwCmd = USN_GPPMSG_STRMCTRL | (int)args[1];
                 msg.dwArg1  = USN_STRMCMD_FLUSH;
@@ -1362,7 +1364,6 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
             else
             {
                 int i;
-                pthread_mutex_lock(&phandle->mutex);
                 for (i = 0; i < QUEUE_SIZE; i++)
                 {
                     /* searching for empty slot */
@@ -1385,7 +1386,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
 
                         memset(phandle->pStrmcntlDmmBuf[i],0,sizeof(DMM_BUFFER_OBJ)); //ATC
 
-                        eError = DmmMap(phandle->dspCodec->hProc, (int)args[2],(int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), 0, ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
+                        eError = DmmMap(phandle->dspCodec->hProc, (int)args[2], args[1],(phandle->pStrmcntlDmmBuf[i]), ((LCML_CODEC_INTERFACE *)hComponent)->dbg);
                         if (eError != OMX_ErrorNone)
                         {
                             pthread_mutex_unlock(&phandle->mutex);
@@ -1406,7 +1407,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                             msg.dwArg1 = (int)args[0];
                             msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
                         }
-#ifdef __PERF_INSTRUMENTATION__$
+#ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingCommand(phandle->pPERF,
                                             msg.dwCmd,
                                             msg.dwArg1,
@@ -1451,10 +1452,8 @@ EXIT:
 ** ==========================================================================*/
 OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
                      OMX_U32 size,
-                     OMX_U32 sizeUsed,
                      void* pArmPtr,
                      DMM_BUFFER_OBJ* pDmmBuf,
-                     OMX_U32 MapBufLen, 
                      struct OMX_TI_Debug dbg)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
@@ -1505,7 +1504,7 @@ OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-    OMX_PRBUFFER1 (dbg, "DMM Mapped: %p, size 0x%x (%d)",pDmmBuf->pMapped, size,size);
+    OMX_PRBUFFER1 (dbg, "DMM Mapped: %p, size 0x%lx (%ld)",pDmmBuf->pMapped, size,size);
 
     /* Previously we used to Flush or Invalidate the mapped buffer.  This was
      * removed due to bridge is now handling the flush/invalidate operation */
@@ -1750,7 +1749,7 @@ void* MessagingThread(void* arg)
                 status = DSPNode_GetMessage(((LCML_DSP_INTERFACE *)arg)->dspCodec->hNode, &msg, getMessageTimeout);
                 if (DSP_SUCCEEDED(status))
                 {
-                    int streamId = (msg.dwCmd & 0x000000ff);
+                    OMX_U32 streamId = (msg.dwCmd & 0x000000ff);
                     int commandId = msg.dwCmd & 0xffffff00;
                     TMMCodecBufferType bufType ;/* = EMMCodecScratchBuffer; */
                     TUsnCodecEvent  event = EMMCodecInternalError;
@@ -1958,9 +1957,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "LCMLSTOP: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
                                         DmmUnMap(hDSPInterface->dspCodec->hProc,
@@ -2023,9 +2022,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
                                             "LCMLSTOP: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
                                     if (tmpDspStructAddress ->iBufferPtr != (OMX_U32)NULL)
                                     {
                                         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
@@ -2168,9 +2167,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "LCMLFLUSH: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
 
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
@@ -2269,9 +2268,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "LCMLFLUSH: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
                                     if (tmpDspStructAddress ->iBufferPtr != (OMX_U32)NULL)
                                     {
                                         /* 720p implementation */
@@ -2351,7 +2350,7 @@ void* MessagingThread(void* arg)
                             while(j++ < QUEUE_SIZE)
                             {
                                 OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
-                                        "LCMLFLUSH (port 2): %d hDSPInterface->Arminputstorage[i] = %p (stream ID %d)\n", i, hDSPInterface->Arminputstorage[i], streamId);
+                                        "LCMLFLUSH (port 2): %d hDSPInterface->Arminputstorage[i] = %p (stream ID %lu)\n", i, hDSPInterface->Arminputstorage[i], streamId);
                                 if ((hDSPInterface->Arminputstorage[i] != NULL) && (hDSPInterface->Arminputstorage[i]->iStreamID == streamId))
                                 {
                                     char *tmp2 = NULL;
@@ -2376,9 +2375,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "LCMLFLUSH: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
                                         /* 720p implementation */
@@ -2433,7 +2432,7 @@ void* MessagingThread(void* arg)
                             while(j++ < QUEUE_SIZE)
                             {
                                 OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
-                                        "LCMLFLUSH: %d hDSPInterface->Armoutputstorage[i] = %p (stream id %d)\n", i, hDSPInterface->Armoutputstorage[i], streamId);
+                                        "LCMLFLUSH: %d hDSPInterface->Armoutputstorage[i] = %p (stream id %lu)\n", i, hDSPInterface->Armoutputstorage[i], streamId);
                                 if ((hDSPInterface->Armoutputstorage[i] != NULL) && (hDSPInterface->Armoutputstorage[i]->iStreamID == streamId))
                                 {
                                     char * tmp2 = NULL;
@@ -2455,9 +2454,9 @@ void* MessagingThread(void* arg)
 
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "LCMLFLUSH: tmpDspStructAddress->iBufferPtr %p, tmpDspStructAddress->iParamPtr %p, msg.dwArg1 %p\n",
-                                            tmpDspStructAddress->iBufferPtr,
-                                            tmpDspStructAddress->iParamPtr,
-                                            msg.dwArg1);
+                                            (void *)tmpDspStructAddress->iBufferPtr,
+                                            (void *)tmpDspStructAddress->iParamPtr,
+                                            (void *)msg.dwArg1);
                                     if (tmpDspStructAddress ->iBufferPtr != (OMX_U32)NULL)
                                     {
                                         /* 720p implementation */
