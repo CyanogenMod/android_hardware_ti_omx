@@ -2950,6 +2950,17 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
     if ( event == EMMCodecDspError ) {
     
        OMX_PRDSP4(pComponentPrivate->dbg, "in EMMCodecDspError EMMCodec Args -> %x, %x\n", (int)argsCb[4] , (int)argsCb[5]);
+        if ((int)argsCb[4] == USN_ERR_PROCESS && (int)argsCb[5] == IUALG_ERR_INSUFF_BUFFER) {
+            OMX_PRDSP4(pComponentPrivate->dbg,
+                    "DSP Error. The allocated output buffer length is insufficient");
+           pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                     pComponentPrivate->pHandle->pApplicationPrivate,
+                                     OMX_EventError,
+                                     OMX_ErrorInsufficientResources,
+                                     OMX_TI_ErrorCritical,
+                                     "The allocated output buffer length is insufficient");
+           goto PRINT_EXIT;
+       }
        if ((int)argsCb[4] != 0x1 || (int)argsCb[5] != 0x500) {
 	   OMX_PRDSP4(pComponentPrivate->dbg, "DSP Error %x %x\n", (int)(argsCb[4]), (int)(argsCb[5]));
            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
