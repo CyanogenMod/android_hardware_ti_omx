@@ -225,14 +225,6 @@
     (_s_)->nVersion.s.nRevision = 0x0;      \
     (_s_)->nVersion.s.nStep = 0x0
 
-#define OMX_NBMEMFREE_STRUCT(_pStruct_)\
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: [FREE] %p\n",__LINE__,_pStruct_);\
-    if(_pStruct_ != NULL){\
-        newfree(_pStruct_);\
-        _pStruct_ = NULL;\
-    }
-
-
 #define OMX_NBCLOSE_PIPE(_pStruct_,err)\
     OMXDBG_PRINT(stderr, COMM, 2, OMX_DBG_BASEMASK, "%d :: CLOSING PIPE \n",__LINE__); \
     err = close (_pStruct_);\
@@ -242,32 +234,6 @@
         goto EXIT;\
     }
 
-#define NBAMRENC_OMX_MALLOC(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
-    if(_pStruct_ == NULL){      \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_pStruct_,0,sizeof(_sName_));\
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-
-#define NBAMRENC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
-    _ptr_ = (_name_ *)newmalloc(_size_);      \
-    if(_ptr_ == NULL){      \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_ptr_,0,_size_); \
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: Malloced = %p\n",__LINE__,_ptr_);
-
 #define NBAMRENC_OMX_ERROR_EXIT(_e_, _c_, _s_)\
     _e_ = _c_;\
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
@@ -275,24 +241,6 @@
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
     goto EXIT;
 
-#define NBAMRENC_OMX_FREE(ptr) \
-    if(NULL != ptr) { \
-        OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: Freeing Address = %p\n",__LINE__,ptr); \
-        newfree(ptr); \
-        ptr = NULL; \
-    }
-    
-
-/* ======================================================================= */
-/**
- * @def EXTRA_BYTES      Extra bytes For Cache alignment
- *      DSP_CACHE_ALIGNMENT    Cache alignment value
- */
-/* ======================================================================= */
-
-#define EXTRA_BYTES 128 
-#define DSP_CACHE_ALIGNMENT 256 
-    
 /* ======================================================================= */
 /**
  * @def NBAMRENC_NUM_INPUT_BUFFERS   Default number of input buffers

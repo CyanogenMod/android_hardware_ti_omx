@@ -118,7 +118,7 @@
 
 /* ======================================================================= */
 /**
- *  M A C R O S FOR MALLOC and MEMORY FREE and CLOSING PIPES
+ *  M A C R O S FOR MEMORY and CLOSING PIPES
  */
 /* ======================================================================= */
 
@@ -143,13 +143,6 @@
     _e_ = _c_;\
     OMXDBG_PRINT(stderr, ERROR, 4, OMX_DBG_BASEMASK, "Error Name: %s : Error Num = %x", _s_, _e_);\
     goto EXIT;
-
-#define WBAMRENC_OMX_FREE(ptr) \
-    if(NULL != ptr) { \
-        OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "Freeing Address = %p\n",ptr); \
-        newfree(ptr); \
-        ptr = NULL; \
-    }
 
 /* ======================================================================= */
 /**

@@ -90,17 +90,6 @@
 #include "OMX_WbAmrEncoder.h"
 #include "OMX_WbAmrEnc_Utils.h"
 
-#ifdef WBAMRENC_DEBUGMEM
-extern void * mymalloc(int line, char *s, int size);
-extern int myfree(void *dp, int line, char *s);
-
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
 /****************************************************************
  *  EXTERNAL REFERENCES NOTE : only use if not found in header file
  ****************************************************************/

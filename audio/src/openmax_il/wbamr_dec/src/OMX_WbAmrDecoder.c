@@ -86,22 +86,6 @@
 #include "OMX_WbAmrDecoder.h"
 #include "OMX_WbAmrDec_Utils.h"
 
-#ifdef WBAMRDEC_DEBUGMEM
-
-void *arr[500];
-int lines[500];
-int bytes[500];
-char file[500][50];
-
-void * mymalloc(int line, char *s, int size);
-int myfree(void *dp, int line, char *s);
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
 #define AMRWB_DEC_ROLE "audio_decoder.amrwb"
 
 
@@ -240,7 +224,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pHandle->ComponentRoleEnum = ComponentRoleEnum;
 
     /*Allocate the memory for Component private data area */
-    WBAMR_DEC_OMX_MALLOC(pHandle->pComponentPrivate, WBAMR_DEC_COMPONENT_PRIVATE);
+    OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, WBAMR_DEC_COMPONENT_PRIVATE);
 
 
     ((WBAMR_DEC_COMPONENT_PRIVATE *)
@@ -252,8 +236,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     ((WBAMR_DEC_COMPONENT_PRIVATE *)
      pHandle->pComponentPrivate)->sPortParam.nStartPortNumber = 0x0;
 
-    WBAMR_DEC_OMX_MALLOC(amr_ip , OMX_AUDIO_PARAM_AMRTYPE);
-    WBAMR_DEC_OMX_MALLOC(amr_op , OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(amr_ip , OMX_AUDIO_PARAM_AMRTYPE);
+    OMX_MALLOC_GENERIC(amr_op , OMX_AUDIO_PARAM_PCMMODETYPE);
 
     ((WBAMR_DEC_COMPONENT_PRIVATE *)
      pHandle->pComponentPrivate)->wbamrParams[WBAMR_DEC_INPUT_PORT] = amr_ip;
@@ -281,10 +265,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->iPVCapabilityFlags.iOMXComponentCanHandleIncompleteFrames = OMX_FALSE; /* experiment with this */
 #endif
 
-    WBAMR_DEC_OMX_MALLOC(pComponentPrivate->pInputBufferList, WBAMR_DEC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, WBAMR_DEC_BUFFERLIST);
     pComponentPrivate->pInputBufferList->numBuffers = 0; /* initialize number of buffers */
-    WBAMR_DEC_OMX_MALLOC(pComponentPrivate->pOutputBufferList, WBAMR_DEC_BUFFERLIST);
-    WBAMR_DEC_OMX_MALLOC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, WBAMR_DEC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
     pComponentPrivate->pOutputBufferList->numBuffers = 0; /* initialize number of buffers */
     for (i=0; i < WBAMR_DEC_MAX_NUM_OF_BUFS; i++) {
         pComponentPrivate->pOutputBufferList->pBufHdr[i] = NULL;
@@ -395,7 +379,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     amr_op->nBitPerSample = 16;
     amr_op->ePCMMode = OMX_AUDIO_PCMModeLinear;
 
-    WBAMR_DEC_OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(OMX_STRING)),OMX_STRING);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(OMX_STRING)),OMX_STRING);
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
     pComponentPrivate->ptrLibLCML = NULL;
@@ -427,10 +411,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
     pComponentPrivate->InIdle_goingtoloaded = 0;
 #endif
-    WBAMR_DEC_OMX_MALLOC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
 
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pPortDef_ip);
-    WBAMR_DEC_OMX_MALLOC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "[ALLOC] %p\n",pPortDef_op);
     OMX_PRINT1(pComponentPrivate->dbg, "pPortDef_ip = %p\n",pPortDef_ip);
@@ -445,7 +428,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->nPortIndex = 0x0;
     pPortDef_ip->nBufferCountActual = NUM_WBAMRDEC_INPUT_BUFFERS;
     pPortDef_ip->nBufferCountMin = NUM_WBAMRDEC_INPUT_BUFFERS;
-    pPortDef_ip->nBufferAlignment = EXTRA_BYTES;
+    pPortDef_ip->nBufferAlignment = DSP_CACHE_ALIGNMENT;
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
     /* Use bigger IN buffer size for PV-Android */
@@ -457,7 +440,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->nPortIndex = 0x1;
     pPortDef_op->nBufferCountActual = NUM_WBAMRDEC_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountMin = NUM_WBAMRDEC_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferAlignment = EXTRA_BYTES;
+    pPortDef_op->nBufferAlignment = DSP_CACHE_ALIGNMENT;
     pPortDef_op->eDir = OMX_DirOutput;
     pPortDef_op->bEnabled = OMX_TRUE;
     pPortDef_op->nBufferSize = OUTPUT_WBAMRDEC_BUFFER_SIZE;
@@ -1164,7 +1147,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
         (WBAMR_DEC_COMPONENT_PRIVATE *) pHandle->pComponentPrivate;
     TI_OMX_STREAM_INFO *streamInfo;
 
-    WBAMR_DEC_OMX_MALLOC(streamInfo, TI_OMX_STREAM_INFO);
+    OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1180,7 +1163,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     }
 
  EXIT:
-    OMX_WBDECMEMFREE_STRUCT(streamInfo);
+    OMX_MEMFREE_STRUCT(streamInfo);
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting GetConfig. Returning = 0x%x\n",eError);
     return eError;
 }
@@ -1660,17 +1643,9 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     eError = WBAMR_DEC_StopComponentThread(pHandle);
     /* Wait for thread to exit so we can get the status into "error" */
 
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
 
-    if(pComponentPrivate->pInputBufferList!=NULL){
-        OMX_PRBUFFER2(dbg, "[FREE] %p\n",pComponentPrivate->pInputBufferList);
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-    }
-
-    if(pComponentPrivate->pOutputBufferList!=NULL){
-        OMX_PRBUFFER2(dbg, "[FREE] %p\n",pComponentPrivate->pOutputBufferList);
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-    }
-
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
 
     /* close the pipe handles */
     WBAMR_DEC_FreeCompResources(pHandle);
@@ -1680,13 +1655,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
                   PERF_BoundaryComplete | PERF_BoundaryCleanup);
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-    if (pComponentPrivate->sDeviceString != NULL) {
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-    }
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
     OMX_PRINT2(dbg, "After WBAMR_DEC_FreeCompResources\n");
 
-    OMX_WBDECMEMFREE_STRUCT(pComponentPrivate);
-    OMX_PRINT1(dbg, "After newfree(pComponentPrivate)\n");
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
     OMX_DBG_CLOSE(dbg);
     return eError;
 }
@@ -1769,9 +1741,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
     }
 
-    WBAMR_DEC_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
-    WBAMR_DEC_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, (nSizeBytes + DSP_CACHE_ALIGNMENT),OMX_U8);
-    pBufferHeader->pBuffer += EXTRA_BYTES;
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes,OMX_U8);
 
     if (nPortIndex == WBAMR_DEC_INPUT_PORT) {
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1791,8 +1762,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     else if (nPortIndex == WBAMR_DEC_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;
         pBufferHeader->nOutputPortIndex = nPortIndex;
-        //pBufferHeader->pOutputPortPrivate = (WBAMRDEC_BUFDATA*) malloc(sizeof(WBAMRDEC_BUFDATA));
-        WBAMR_DEC_OMX_MALLOC(pBufferHeader->pOutputPortPrivate, WBAMRDEC_BUFDATA);
+        OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, WBAMRDEC_BUFDATA);
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pOutputBufferList->pBufHdr[%d] = %p\n",pComponentPrivate->pOutputBufferList->numBuffers,pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers]);
@@ -1862,7 +1832,6 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     WBAMR_DEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_BUFFERHEADERTYPE* buff;
-    OMX_U8* tempBuff;
     int i;
     int inputIndex = -1;
     int outputIndex = -1;
@@ -1913,17 +1882,9 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                            PERF_ModuleMemory);
 #endif
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
-            tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-            if (tempBuff != 0){
-                tempBuff -= EXTRA_BYTES;
-            }
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "[FREE] %p\n",tempBuff);
-            OMX_WBDECMEMFREE_STRUCT(tempBuff);
-            tempBuff = NULL;
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
         }
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "[FREE] %p\n",pComponentPrivate->pBufHeader[WBAMR_DEC_INPUT_PORT]);
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
-        pComponentPrivate->pInputBufferList->pBufHdr[inputIndex] = NULL;
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
         pComponentPrivate->pInputBufferList->numBuffers--;
         if (pComponentPrivate->pInputBufferList->numBuffers <
             pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->nBufferCountMin) {
@@ -1948,17 +1909,10 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                            PERF_ModuleMemory);
 #endif
         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
-            tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-            if (tempBuff != 0){
-                tempBuff -= EXTRA_BYTES;
-            }
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "[FREE] %p\n",tempBuff);
-            OMX_WBDECMEMFREE_STRUCT(tempBuff);
-            tempBuff = NULL;
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
         }
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pOutputPortPrivate);
-        OMX_WBDECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
-        pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex] = NULL;
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pOutputPortPrivate);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
         pComponentPrivate->pOutputBufferList->numBuffers--;
 
         if (pComponentPrivate->pOutputBufferList->numBuffers <
@@ -2047,11 +2001,11 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
       goto EXIT;
       }*/
 
-    WBAMR_DEC_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     if (nPortIndex == WBAMR_DEC_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;
         pBufferHeader->nOutputPortIndex = nPortIndex;
-        WBAMR_DEC_OMX_MALLOC(pBufferHeader->pOutputPortPrivate, WBAMRDEC_BUFDATA);
+        OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, WBAMRDEC_BUFDATA);
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 0;
