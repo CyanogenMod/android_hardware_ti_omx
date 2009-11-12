@@ -107,6 +107,9 @@
 
 #define DSP_MMU_FAULT_HANDLING
 
+//JPEG Encoder Specific DSP Err Codes
+#define IUALG_ERR_INSUFF_BUFFER 0x8401
+
 /*Linked List */
 
 typedef struct Node {
