@@ -1177,6 +1177,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
             else if (pComponentPrivate->curState == OMX_StateIdle) {
                 OMX_PRINT2(pComponentPrivate->dbg, "Comp: OMX_AmrDecUtils.c\n");
 
+                pComponentPrivate->nFillThisBufferCount = 0;
                 pComponentPrivate->nFillBufferDoneCount = 0;
                 pComponentPrivate->bStopSent=0;
 
