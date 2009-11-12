@@ -1064,6 +1064,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_PRDSP2(pComponentPrivate->dbg, ": Comp: Resume Command Came from App\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec  START %d\n", __LINE__);
+                    pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStart,(void *)pArgs);
 
@@ -2059,6 +2060,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     }
                     pComponentPrivate->bConfigData = 0;
                 }
+                pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlStart,
                                            (void *)pArgs);
