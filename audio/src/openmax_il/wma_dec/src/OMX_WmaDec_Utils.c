@@ -1362,25 +1362,17 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: The PBufHeader is not found in the list", __LINE__);
         goto EXIT;
     }
-    if (pComponentPrivate->curState == OMX_StateIdle){
-	if (eDir == OMX_DirInput) {
-		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers", __LINE__, __FUNCTION__);
-		}
-	else if (eDir == OMX_DirOutput) {
-		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers", __LINE__, __FUNCTION__);
-		}
-	goto EXIT;
-  }
 
     if (eDir == OMX_DirInput)
     {
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;    
+        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       pBufHeader);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ( (pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags & OMX_BUFFERFLAG_EOS))
         {
@@ -1674,6 +1666,13 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     else if (eDir == OMX_DirOutput) 
     {
         pComponentPrivate->nUnhandledFillThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                                      pBufHeader);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending output buffer to LCML ");
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d Comp:: Sending Emptied Output buffer=%p to LCML",
                        __LINE__,pBufHeader);

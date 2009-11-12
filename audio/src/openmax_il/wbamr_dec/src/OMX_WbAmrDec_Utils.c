@@ -1869,25 +1869,18 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         OMX_ERROR4(pComponentPrivate->dbg, "The PBufHeader is not found in the list\n");
         goto EXIT;
     }
-    if (pComponentPrivate->curState == OMX_StateIdle){
-	if (eDir == OMX_DirInput) {
-		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-        SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
-		}
-	else if (eDir == OMX_DirOutput) {
-		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-        SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
-		}
-	goto EXIT;
-  }
+
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       pBufHeader);
+            pComponentPrivate->nEmptyBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ( pBufHeader->nFilledLen > 0)
         {
@@ -2379,6 +2372,15 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
         /*******/
         pComponentPrivate->nUnhandledFillThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                                      pBufHeader);
+            pComponentPrivate->nFillBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         eError = WBAMR_DEC_GetCorresponding_LCMLHeader(pComponentPrivate, pBufHeader->pBuffer, OMX_DirOutput, &pLcmlHdr);
 
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);

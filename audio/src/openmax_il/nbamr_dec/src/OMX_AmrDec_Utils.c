@@ -1876,28 +1876,18 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                                      __LINE__);
         goto EXIT;
     }    
-    if (pComponentPrivate->curState == OMX_StateIdle){
-	if (eDir == OMX_DirInput) {
-		pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-        pComponentPrivate->nEmptyBufferDoneCount++;
-        SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
-		}
-	else if (eDir == OMX_DirOutput) {
-		pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-			pComponentPrivate->pHandle->pApplicationPrivate,
-			pBufHeader);
-        pComponentPrivate->nFillBufferDoneCount++;
-        SignalIfAllBuffersAreReturned(pComponentPrivate);
-		OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
-		}
-	goto EXIT;
-  }
-    
+
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       pBufHeader);
+            pComponentPrivate->nEmptyBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ( pBufHeader->nFilledLen > 0) {
             pComponentPrivate->bBypassDSP = 0;
@@ -2434,6 +2424,15 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
          * there is an outstanding input buffer already issued on input stream
          */
         pComponentPrivate->nUnhandledFillThisBuffers--;
+        if (pComponentPrivate->curState == OMX_StateIdle){
+            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                      pComponentPrivate->pHandle->pApplicationPrivate,
+                                                      pBufHeader);
+            pComponentPrivate->nFillBufferDoneCount++;
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
+            goto EXIT;
+        }
         eError = NBAMRDECGetCorresponding_LCMLHeader(pComponentPrivate, pBufHeader->pBuffer, OMX_DirOutput, &pLcmlHdr);     
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
