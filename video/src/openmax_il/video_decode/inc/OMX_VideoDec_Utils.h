@@ -575,7 +575,7 @@ typedef struct VIDDEC_QUEUE_TYPE {
     OMX_PTR Elements;
     OMX_U32 CounterElements[VIDDEC_MAX_QUEUE_SIZE];
     OMX_U32 nHead;
-    OMX_U32 nTail;
+    OMX_S32 nTail;
     OMX_U32 nElements;
     OMX_U32 nErrorCount;
     pthread_mutex_t mMutex;

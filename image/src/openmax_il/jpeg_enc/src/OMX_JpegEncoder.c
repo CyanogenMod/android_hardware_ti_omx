@@ -298,7 +298,7 @@ OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_CHECK_PARAM(ppBufferHdr);
     OMX_CHECK_PARAM(pBuffer);
     
-    if (nPortIndex < 0 || nPortIndex > 1) {
+    if (nPortIndex != 0 && nPortIndex != 1) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -1382,10 +1382,6 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 	case OMX_IndexCustomAPP0:
 		{
 			JPEG_APPTHUMB_MARKER *pMarkerInfo = (JPEG_APPTHUMB_MARKER *) ComponentConfigStructure;
-			if (pMarkerInfo->nThumbnailHeight < 0 || pMarkerInfo->nThumbnailWidth < 0) {
-				eError = OMX_ErrorBadParameter;
-				goto EXIT;
-			}
 
 			if (pComponentPrivate->sAPP0.pMarkerBuffer != NULL) {
 					OMX_FREE(pComponentPrivate->sAPP0.pMarkerBuffer);
@@ -1406,10 +1402,6 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 	case OMX_IndexCustomAPP1:
 		{
 			JPEG_APPTHUMB_MARKER *pMarkerInfo = (JPEG_APPTHUMB_MARKER *) ComponentConfigStructure;
-			if (pMarkerInfo->nThumbnailHeight < 0 || pMarkerInfo->nThumbnailWidth < 0) {
-				eError = OMX_ErrorBadParameter;
-				goto EXIT;
-			}
 
 			if (pComponentPrivate->sAPP1.pMarkerBuffer != NULL) {
 				OMX_FREE(pComponentPrivate->sAPP1.pMarkerBuffer);
@@ -1430,10 +1422,6 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 	case OMX_IndexCustomAPP5:
 		{
 			JPEG_APPTHUMB_MARKER *pMarkerInfo = (JPEG_APPTHUMB_MARKER *) ComponentConfigStructure;
-			if (pMarkerInfo->nThumbnailHeight < 0 || pMarkerInfo->nThumbnailWidth < 0) {
-				eError = OMX_ErrorBadParameter;
-				goto EXIT;
-			}
 
 			if (pComponentPrivate->sAPP5.pMarkerBuffer != NULL) {
 				OMX_FREE(pComponentPrivate->sAPP5.pMarkerBuffer);
