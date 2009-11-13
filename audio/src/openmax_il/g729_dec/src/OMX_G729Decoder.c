@@ -867,6 +867,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamPriorityMgmt:
+        if (pComponentPrivate->sPriorityMgmt == NULL) {
+            eError = OMX_ErrorBadParameter;
+            goto EXIT;
+        }
         memcpy(ComponentParameterStructure, pComponentPrivate->sPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
@@ -957,14 +961,17 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         {
             OMX_AUDIO_PARAM_G729TYPE *pCompG729Param =
                 (OMX_AUDIO_PARAM_G729TYPE *)pCompParam;
-
-                                      
-            /* 0 means Input port */
-            if(pCompG729Param->nPortIndex == 0) {
-                memcpy(((G729DEC_COMPONENT_PRIVATE*)
-                        pHandle->pComponentPrivate)->g729Params,
-                       pCompG729Param, sizeof(OMX_AUDIO_PARAM_G729TYPE));
+	    if (((G729DEC_COMPONENT_PRIVATE*)
+	        pHandle->pComponentPrivate)->g729Params == NULL) {
+                eError = OMX_ErrorBadParameter;
+                goto EXIT;
             }
+            /* 0 means Input port */
+	    if(pCompG729Param->nPortIndex == 0) {
+		memcpy(((G729DEC_COMPONENT_PRIVATE*)
+	            pHandle->pComponentPrivate)->g729Params,
+		    pCompG729Param, sizeof(OMX_AUDIO_PARAM_G729TYPE));
+	    }
             else {
                 eError = OMX_ErrorBadPortIndex;
             }
@@ -999,6 +1006,11 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
             goto EXIT;
         }
         else{
+	    if (pComponentPrivate->sPriorityMgmt == NULL) {
+                eError = OMX_ErrorBadParameter;
+                goto EXIT;
+            }
+
             memcpy(pComponentPrivate->sPriorityMgmt, (OMX_PRIORITYMGMTTYPE*)pCompParam, sizeof(OMX_PRIORITYMGMTTYPE)); 
                         
         }
@@ -1015,6 +1027,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamAudioPcm:
+        if (pComponentPrivate->pcmParams == NULL) {
+            eError = OMX_ErrorBadParameter;
+            goto EXIT;
+        }
         if(pCompParam){
             pPcmPort= (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
             memcpy(pComponentPrivate->pcmParams, pPcmPort, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
@@ -1075,8 +1091,11 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 
     pComponentPrivate = (G729DEC_COMPONENT_PRIVATE *)
         (((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
-
-    memcpy(ComponentConfigStructure,pComponentPrivate,sizeof(G729DEC_COMPONENT_PRIVATE));
+  
+    if (pComponentPrivate == NULL) 
+        eError = OMX_ErrorBadParameter;
+    else
+        memcpy(ComponentConfigStructure,pComponentPrivate,sizeof(G729DEC_COMPONENT_PRIVATE));
 
     return eError;
 }

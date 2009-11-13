@@ -2661,6 +2661,10 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event, void * args[10]) {
                        "pComponentPrivate->iHoldLen = %ld \n",
                        pComponentPrivate->iHoldLen);
             /* Copy the data from iHoldBuffer to dataPtr */
+	    if (pComponentPrivate->iHoldBuffer == NULL) {
+	        eError = OMX_ErrorBadParameter;
+		goto EXIT;
+	    }
             memcpy(pComponentPrivate->iMMFDataLastBuffer,
                    pComponentPrivate->iHoldBuffer,
                    pComponentPrivate->iHoldLen);

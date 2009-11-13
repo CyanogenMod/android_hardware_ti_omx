@@ -748,6 +748,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     {
     case OMX_IndexParamAudioInit:
         G729ENC_DPRINT("case OMX_IndexParamAudioInit\n");
+	if (pComponentPrivate->sPortParam == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         memcpy(ComponentParameterStructure, pComponentPrivate->sPortParam, 
                sizeof(OMX_PORT_PARAM_TYPE));
         break;
@@ -840,6 +844,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         }
         break;            
     case OMX_IndexParamPriorityMgmt:
+	if (pComponentPrivate->sPriorityMgmt == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         G729ENC_DPRINT("Case OMX_IndexParamPriorityMgmt\n");
         memcpy(ComponentParameterStructure,
                pComponentPrivate->sPriorityMgmt,
@@ -987,12 +995,20 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         }
         break;
     case OMX_IndexParamPriorityMgmt:
+        if (pComponentPrivate->sPriorityMgmt == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         G729ENC_DPRINT("Case OMX_IndexParamPriorityMgmt\n");
         memcpy(pComponentPrivate->sPriorityMgmt,
                (OMX_PRIORITYMGMTTYPE*)pCompParam,
                sizeof(OMX_PRIORITYMGMTTYPE));
         break;
     case OMX_IndexParamAudioInit:
+        if (pComponentPrivate->sPortParam == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         G729ENC_DPRINT("SetParameter OMX_IndexParamAudioInit\n");
         memcpy(pComponentPrivate->sPortParam,
                (OMX_PORT_PARAM_TYPE*)pCompParam,
@@ -1011,6 +1027,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 
     case OMX_IndexParamAudioPcm:
         if(pCompParam){
+        if (pComponentPrivate->pcmParams == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
             pPcmPort= (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
             memcpy(pComponentPrivate->pcmParams, pPcmPort, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         }

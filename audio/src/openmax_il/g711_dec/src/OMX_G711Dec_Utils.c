@@ -1601,8 +1601,11 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     
                     /* Shift the remaining bytes to the beginning of the pHoldBuffer */
                     pExtraData = pComponentPrivate->pHoldBuffer + frameLength;
+                    if (frameLength >= pComponentPrivate->nHoldLength)
+                        memcpy(pComponentPrivate->pHoldBuffer,pExtraData, pComponentPrivate->nHoldLength);
+                    else
+                        memmove(pComponentPrivate->pHoldBuffer,pExtraData, pComponentPrivate->nHoldLength);
 
-                    memcpy(pComponentPrivate->pHoldBuffer,pExtraData, pComponentPrivate->nHoldLength);
 
                     /* Clear the rest of the data from the pHoldBuffer */
                     pExtraData = pComponentPrivate->pHoldBuffer + pComponentPrivate->nHoldLength;
@@ -1969,6 +1972,12 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromLCML(G711DEC_COMPONENT_PRIVATE* pComponen
 
                     if ( pComponentPrivate->nHoldLength >= frameLength ) {
                         /* Copy the data from iHoldBuffer to dataPtr */
+                        if ((msgBuffer->buffer->pBuffer == NULL) ||
+                           (pComponentPrivate->pHoldBuffer == NULL)) {
+                           eError = OMX_ErrorBadParameter;
+			   goto EXIT;
+			}
+
                         memcpy(msgBuffer->buffer->pBuffer,
                                pComponentPrivate->pHoldBuffer,
                                frameLength);

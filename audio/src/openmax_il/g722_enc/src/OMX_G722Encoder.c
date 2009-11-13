@@ -868,6 +868,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     case OMX_IndexParamAudioAdpcm:
         if(((OMX_AUDIO_PARAM_ADPCMTYPE *)(ComponentParameterStructure))->nPortIndex ==
            G722ENC_INPUT_PORT) {
+	    if (pComponentPrivate->pcmParams == NULL) {
+                eError = OMX_ErrorBadParameter;
+		break;
+	    }
             memcpy(ComponentParameterStructure,
                    pComponentPrivate->pcmParams,
                    sizeof(OMX_AUDIO_PARAM_ADPCMTYPE)
@@ -875,7 +879,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         } 
         else if(((OMX_AUDIO_PARAM_ADPCMTYPE *)(ComponentParameterStructure))->nPortIndex ==
                 G722ENC_OUTPUT_PORT) {
-
+	    if (pComponentPrivate->g722Params == NULL) {
+                eError = OMX_ErrorBadParameter;
+		break;
+	    }
             memcpy(ComponentParameterStructure,
                    pComponentPrivate->g722Params,
                    sizeof(OMX_AUDIO_PARAM_ADPCMTYPE)
@@ -888,6 +895,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
         
     case OMX_IndexParamPriorityMgmt:
+	if (pComponentPrivate->sPriorityMgmt == NULL) {
+             eError = OMX_ErrorBadParameter;
+	     break;
+	}
         memcpy(ComponentParameterStructure,
                pComponentPrivate->sPriorityMgmt,
                sizeof(OMX_PRIORITYMGMTTYPE));
@@ -1022,6 +1033,10 @@ static OMX_ERRORTYPE SetParameter (
         break;
     case OMX_IndexParamPriorityMgmt:
         if (pComponentPrivate->curState == OMX_StateLoaded){
+	    if (pComponentPrivate->sPriorityMgmt == NULL) {
+                eError = OMX_ErrorBadParameter;
+	        break;
+	    }
             memcpy(pComponentPrivate->sPriorityMgmt,
                    (OMX_PRIORITYMGMTTYPE*)ComponentParameterStructure,
                    sizeof(OMX_PRIORITYMGMTTYPE));

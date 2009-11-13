@@ -1056,6 +1056,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
             if(((OMX_AUDIO_PARAM_AACPROFILETYPE *)(pCompParam))->nPortIndex ==
                                      pComponentPrivate->pPortDef[OUTPUT_PORT]->nPortIndex) 
             {
+                OMX_CONF_CHECK_CMD(pComponentPrivate->aacParams[OUTPUT_PORT], 1, 1);
                 memcpy(pComponentPrivate->aacParams[OUTPUT_PORT], pCompParam,
                                                sizeof(OMX_AUDIO_PARAM_AACPROFILETYPE));
                 OMX_PRDSP2(pComponentPrivate->dbg, "AACENC: nSampleRate %ld\n",pComponentPrivate->aacParams[OUTPUT_PORT]->nSampleRate);
@@ -1081,7 +1082,8 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
             else if(((OMX_AUDIO_PARAM_AACPROFILETYPE *)(pCompParam))->nPortIndex ==
                                      pComponentPrivate->pPortDef[INPUT_PORT]->nPortIndex) 
             {
-                                        memcpy(pComponentPrivate->aacParams[INPUT_PORT], pCompParam,
+                OMX_CONF_CHECK_CMD(pComponentPrivate->aacParams[INPUT_PORT], 1, 1);
+                memcpy(pComponentPrivate->aacParams[INPUT_PORT], pCompParam,
                                                sizeof(OMX_AUDIO_PARAM_AACPROFILETYPE));
             }
             else 
@@ -2361,6 +2363,7 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     if(nIndex == 0)
     {
+      OMX_CONF_CHECK_CMD(cRole, 1, 1);
       memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
     }
     else 

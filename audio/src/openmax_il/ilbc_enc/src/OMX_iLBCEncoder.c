@@ -753,7 +753,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 #endif
     switch(nParamIndex){
     case OMX_IndexParamAudioInit:
-
+	if (pComponentPrivate->sPortParam == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         ILBCENC_DPRINT("%d GetParameter OMX_IndexParamAudioInit \n",__LINE__);
         memcpy(ComponentParameterStructure, pComponentPrivate->sPortParam, sizeof(OMX_PORT_PARAM_TYPE));
         break;
@@ -821,11 +824,19 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         break;
 
     case OMX_IndexParamPriorityMgmt:
+	if (pComponentPrivate->sPriorityMgmt == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         ILBCENC_DPRINT("%d GetParameter OMX_IndexParamPriorityMgmt \n",__LINE__);
         memcpy(ComponentParameterStructure, pComponentPrivate->sPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
     case OMX_IndexParamAudioPcm:
+	if (pComponentPrivate->pcmParams == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         memcpy(ComponentParameterStructure, pComponentPrivate->pcmParams, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         break;
 
@@ -931,6 +942,11 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
     case OMX_IndexParamAudioILBC:
         ILBCENC_DPRINT("%d SetParameter OMX_IndexParamAudioILBC \n",__LINE__);
         pCompiLBCParam = (OMX_AUDIO_PARAM_GSMEFRTYPE *)pCompParam;
+	if (((ILBCENC_COMPONENT_PRIVATE *)
+	    pHandle->pComponentPrivate)->ilbcParams == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         if (pCompiLBCParam->nPortIndex == 1) { /* 1 means Output port */
             memcpy(((ILBCENC_COMPONENT_PRIVATE *)
                     pHandle->pComponentPrivate)->ilbcParams, 
@@ -963,11 +979,19 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
             
     case OMX_IndexParamPriorityMgmt:
+	if (pComponentPrivate->sPriorityMgmt == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         ILBCENC_DPRINT("%d SetParameter OMX_IndexParamPriorityMgmt \n",__LINE__);
         memcpy(pComponentPrivate->sPriorityMgmt, (OMX_PRIORITYMGMTTYPE*)pCompParam, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
     case OMX_IndexParamAudioInit:
+	if (pComponentPrivate->sPortParam == NULL) {
+            eError = OMX_ErrorBadParameter;
+	    break;
+	}
         ILBCENC_DPRINT("%d SetParameter OMX_IndexParamAudioInit \n",__LINE__);
         memcpy(pComponentPrivate->sPortParam, (OMX_PORT_PARAM_TYPE*)pCompParam, sizeof(OMX_PORT_PARAM_TYPE));
         break;
@@ -983,6 +1007,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 
     case OMX_IndexParamAudioPcm:
         if(pCompParam){
+	    if (pComponentPrivate->pcmParams == NULL) {
+                eError = OMX_ErrorBadParameter;
+	        break;
+	    }
             ilbc_ip = (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
             memcpy(pComponentPrivate->pcmParams, ilbc_ip, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         }
@@ -2063,8 +2091,13 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     pComponentPrivate = (ILBCENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
 
     if(nIndex == 0){
-        memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
-        ILBCENC_DPRINT("::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+        if (cRole == NULL) {
+            eError = OMX_ErrorBadParameter;
+	}
+	else {
+            memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
+            ILBCENC_DPRINT("::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+	}
     }
     else {
         eError = OMX_ErrorNoMore;

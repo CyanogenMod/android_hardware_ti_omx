@@ -901,6 +901,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         }
         break;
     case OMX_IndexParamPriorityMgmt:
+        if (pComponentPrivate->pPriorityMgmt == NULL) {
+	    eError = OMX_ErrorBadPortIndex;
+	    break;
+	}
         memcpy(ComponentParameterStructure, pComponentPrivate->pPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
@@ -1084,6 +1088,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         if (pComponentPrivate->curState != OMX_StateLoaded) {
             eError = OMX_ErrorIncorrectStateOperation;
         }
+	if (pComponentPrivate->pPriorityMgmt == NULL) {
+	    eError = OMX_ErrorBadParameter;
+	    break;
+	}
         memcpy(pComponentPrivate->pPriorityMgmt, (OMX_PRIORITYMGMTTYPE*)pCompParam, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
@@ -2152,8 +2160,13 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     pComponentPrivate = (WBAMR_DEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     if(nIndex == 0){
-        memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE);
-        OMX_PRINT1(pComponentPrivate->dbg, "In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+        if (cRole == NULL) {
+            eError = OMX_ErrorBadParameter;
+	}
+	else {
+            memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE);
+            OMX_PRINT1(pComponentPrivate->dbg, "In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+	}
     }
     else {
         eError = OMX_ErrorNoMore;

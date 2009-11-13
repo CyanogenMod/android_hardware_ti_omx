@@ -886,7 +886,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 #endif
     switch(nParamIndex){
         case OMX_IndexParamAudioInit:
-
+            if (pComponentPrivate->sPortParam == NULL) {
+                eError = OMX_ErrorBadParameter;
+		break;
+	    }
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GetParameter OMX_IndexParamAudioInit \n",__LINE__);
             memcpy(ComponentParameterStructure, pComponentPrivate->sPortParam, sizeof(OMX_PORT_PARAM_TYPE));
             break;
@@ -938,6 +941,10 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             break;
 
         case OMX_IndexParamAudioAmr:
+            if (pComponentPrivate->amrParams == NULL) {
+                eError = OMX_ErrorBadParameter;
+	        break;
+	    }
             memcpy(ComponentParameterStructure, pComponentPrivate->amrParams, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
             switch (((OMX_AUDIO_PARAM_AMRTYPE *)(ComponentParameterStructure))->eAMRBandMode)
             {
@@ -972,11 +979,19 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             break;
 
       case OMX_IndexParamPriorityMgmt:
+            if (pComponentPrivate->sPriorityMgmt == NULL) {
+                eError = OMX_ErrorBadParameter;
+	        break;
+	    }
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GetParameter OMX_IndexParamPriorityMgmt \n",__LINE__);
             memcpy(ComponentParameterStructure, pComponentPrivate->sPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
             break;
 
       case OMX_IndexParamAudioPcm:
+          if (pComponentPrivate->pcmParams == NULL) {
+              eError = OMX_ErrorBadParameter;
+	      break;
+	  }
           memcpy(ComponentParameterStructure, pComponentPrivate->pcmParams, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
           break;
 
@@ -1140,6 +1155,10 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                                   OMX_PRDSP2(pComponentPrivate->dbg, "%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRBandMode =DEFAULT!! SN_AUDIO_BR122 \n",__LINE__);
                                   break;
                     }
+		    if (((AMRENC_COMPONENT_PRIVATE *) pHandle->pComponentPrivate)->amrParams == NULL) {
+                        eError = OMX_ErrorBadParameter;
+			goto EXIT;
+		    }
                     memcpy(((AMRENC_COMPONENT_PRIVATE *)
                             pHandle->pComponentPrivate)->amrParams, pCompAmrParam, sizeof(OMX_AUDIO_PARAM_AMRTYPE));
                     if (pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatConformance) {
@@ -1185,11 +1204,19 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
             break;
             
         case OMX_IndexParamPriorityMgmt:
+	        if (pComponentPrivate->sPriorityMgmt == NULL) {
+                    eError = OMX_ErrorBadParameter;
+		    break;
+		}
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: SetParameter OMX_IndexParamPriorityMgmt \n",__LINE__);
                 memcpy(pComponentPrivate->sPriorityMgmt, (OMX_PRIORITYMGMTTYPE*)pCompParam, sizeof(OMX_PRIORITYMGMTTYPE));
             break;
 
         case OMX_IndexParamAudioInit:
+	        if (pComponentPrivate->sPortParam == NULL) {
+                    eError = OMX_ErrorBadParameter;
+		    break;
+		}
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: SetParameter OMX_IndexParamAudioInit \n",__LINE__);
                 memcpy(pComponentPrivate->sPortParam, (OMX_PORT_PARAM_TYPE*)pCompParam, sizeof(OMX_PORT_PARAM_TYPE));
             break;
@@ -1204,7 +1231,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
 
         case OMX_IndexParamAudioPcm:
-            if(pCompParam){
+            if(pCompParam && (pComponentPrivate->pcmParams)){
                  amr_ip = (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
                  memcpy(pComponentPrivate->pcmParams, amr_ip, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
             }
@@ -2328,8 +2355,13 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     pComponentPrivate = (AMRENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
 
     if(nIndex == 0){
-      memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
-      OMX_PRINT1(pComponentPrivate->dbg, "::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+      if (cRole == NULL) {
+          eError = OMX_ErrorBadParameter;
+      }
+      else {
+          memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
+          OMX_PRINT1(pComponentPrivate->dbg, "::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+      }
     }
     else {
       eError = OMX_ErrorNoMore;

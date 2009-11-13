@@ -1871,6 +1871,10 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         goto EXIT;
     }
 
+    if( pBufHeader->pBuffer == NULL) {
+        eError = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
         if (pComponentPrivate->curState == OMX_StateIdle){
@@ -1949,9 +1953,22 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         index = (frameType >> 3) & 0x0F;
                         if(nFrames)
                         { /*The first frame has no need to be moved*/
+                            if (((nFrames*INPUT_WBAMRDEC_BUFFER_SIZE_MIME) + pBufHeader->nFilledLen) 
+			       > pBufHeader->nAllocLen) {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+                           }
                             memmove(pBufHeader->pBuffer + (nFrames*INPUT_WBAMRDEC_BUFFER_SIZE_MIME),
                                     pBufHeader->pBuffer + i,
                                     pBufHeader->nFilledLen);
+                        }
+			if ((index >= NUM_MIME_BYTES_ARRAY) || 
+			   ((index < NUM_MIME_BYTES_ARRAY) && 
+			   (pComponentPrivate->wbamrMimeBytes[index] == 0))) {
+                           OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: no more frames index=%d", __LINE__, (int)index);
+                           if (index < NUM_MIME_BYTES_ARRAY)
+                               OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: no more frames mimebytes=%d", __LINE__, (int) pComponentPrivate->wbamrMimeBytes[index]);
+                               break;
                         }
                         pBufHeader->nFilledLen -= pComponentPrivate->wbamrMimeBytes[index];
                         i = (nFrames*INPUT_WBAMRDEC_BUFFER_SIZE_MIME) + (OMX_U16)pComponentPrivate->wbamrMimeBytes[index];
@@ -1971,9 +1988,22 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         index = (frameType >> 4) & 0x0F;
                         if (nFrames)
                         {
+                            if (((nFrames*INPUT_WBAMRDEC_BUFFER_SIZE_IF2) + pBufHeader->nFilledLen) 
+			       > pBufHeader->nAllocLen) {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+                            }
                             memmove(pBufHeader->pBuffer + (nFrames *INPUT_WBAMRDEC_BUFFER_SIZE_IF2),
                                     pBufHeader->pBuffer + i,
                                     pBufHeader->nFilledLen);
+                        }
+                        if ((index >= NUM_IF2_BYTES_ARRAY) || 
+			   ((index < NUM_IF2_BYTES_ARRAY) && 
+			   (pComponentPrivate->wbamrIf2Bytes[index] == 0))) {
+                           OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: no more frames index=%d", __LINE__, (int)index);
+                           if (index < NUM_IF2_BYTES_ARRAY)
+                               OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: no more frames mimebytes=%d", __LINE__, (int)pComponentPrivate->wbamrIf2Bytes[index]);
+                               break;
                         }
                         pBufHeader->nFilledLen -= pComponentPrivate->wbamrIf2Bytes[index];
                         i = (nFrames *INPUT_WBAMRDEC_BUFFER_SIZE_IF2) + (OMX_U16)pComponentPrivate->wbamrIf2Bytes[index];
@@ -1999,6 +2029,13 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         }
                         /* Copy the extra data into pHoldBuffer. Size will be nHoldLength. */
                         pExtraData = pBufHeader->pBuffer + INPUT_WBAMRDEC_BUFFER_SIZE*nFrames;
+			/* check the pHoldBuffer boundary before copying */
+			if (pComponentPrivate->nHoldLength >
+			   (INPUT_WBAMRDEC_BUFFER_SIZE * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
+			   {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+			   }
                         memcpy (pComponentPrivate->pHoldBuffer, pExtraData, pComponentPrivate->nHoldLength);
                     }
                 }
@@ -2068,13 +2105,22 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 nFrames = (OMX_U8)(pComponentPrivate->nHoldLength / frameLength);
                 if ( nFrames >= 1 )  {
                     /* Copy the data from pComponentPrivate->pHoldBuffer to pBufHeader->pBuffer*/
+		    /* check the pBufHeader boundery before copying */
+		    if ((nFrames*frameLength) > pBufHeader->nAllocLen)
+		    {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+			goto EXIT;
+		    }
                     memcpy(pBufHeader->pBuffer,pComponentPrivate->pHoldBuffer,nFrames*frameLength);
                     pBufHeader->nFilledLen = nFrames*frameLength;
                     /* Now the pHoldBuffer has pBufHeader->nFilledLen fewer bytes, update nHoldLength*/
                     pComponentPrivate->nHoldLength = pComponentPrivate->nHoldLength - pBufHeader->nFilledLen;
                     /* Shift the remaining bytes to the beginning of the pHoldBuffer */
                     pExtraData = pComponentPrivate->pHoldBuffer + pBufHeader->nFilledLen;
-                    memcpy(pComponentPrivate->pHoldBuffer,pExtraData,pComponentPrivate->nHoldLength);
+		    if (pComponentPrivate->nHoldLength < pBufHeader->nFilledLen)
+                        memcpy(pComponentPrivate->pHoldBuffer,pExtraData,pComponentPrivate->nHoldLength);
+		    else
+                        memmove(pComponentPrivate->pHoldBuffer,pExtraData,pComponentPrivate->nHoldLength);
                     /* Clear the rest of the data from the pHoldBuffer */
                     /*pExtraData = pComponentPrivate->pHoldBuffer + pComponentPrivate->nHoldLength;*/
                     /*mset(pExtraData,0,holdBufferSize - pComponentPrivate->nHoldLength);*/

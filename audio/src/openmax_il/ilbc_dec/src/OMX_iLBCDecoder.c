@@ -941,7 +941,12 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
     case OMX_IndexParamAudioILBC: /* <<<< 0j0 Gsm_FR: */
         iLBC_ip = (OMX_AUDIO_PARAM_ILBCTYPE *)pCompParam;
-
+	if (((iLBCDEC_COMPONENT_PRIVATE*)
+                    pHandle->pComponentPrivate)->iLBCParams == NULL)
+	{
+	    eError = OMX_ErrorBadParameter;
+	    break;
+	}
         /* 0 means Input port */
         if(iLBC_ip->nPortIndex == iLBCD_INPUT_PORT) {
             memcpy(((iLBCDEC_COMPONENT_PRIVATE*)
@@ -975,6 +980,12 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
             eError = OMX_ErrorIncorrectStateOperation;
             break;
         }
+	if (pComponentPrivate->pPriorityMgmt == NULL)
+	{
+	    eError = OMX_ErrorBadParameter;
+	    break;
+	}
+
         memcpy(pComponentPrivate->pPriorityMgmt, 
                (OMX_PRIORITYMGMTTYPE*)pCompParam, 
                sizeof(OMX_PRIORITYMGMTTYPE));
@@ -992,6 +1003,11 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 
     case OMX_IndexParamAudioPcm:
         iLBC_op = (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
+	if (pComponentPrivate->pcmParams == NULL)
+	{
+	    eError = OMX_ErrorBadParameter;
+	    break;
+	}
         /* 1 means Output port */
         if (iLBC_op->nPortIndex == 1) {
             memcpy(pComponentPrivate->pcmParams, iLBC_op, 
@@ -1068,7 +1084,10 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     if(nConfigIndex == OMX_IndexCustomiLBCDecStreamIDConfig){
         /* copy component info */
         streamInfo->streamId = pComponentPrivate->streamID;
-        memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
+	if (ComponentConfigStructure == NULL)
+	    eError = OMX_ErrorBadParameter;
+	else
+            memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
     }
 
     iLBCD_OMX_FREE(streamInfo);
@@ -2032,10 +2051,12 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     pComponentPrivate = (iLBCDEC_COMPONENT_PRIVATE *)
         (((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    if(nIndex == 0){
-        memcpy(cRole, &pComponentPrivate->componentRole.cRole, 
-               sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
-        iLBCDEC_DPRINT("::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
+    if (cRole == NULL)
+    	eError = OMX_ErrorBadParameter;
+    else if(nIndex == 0){
+            memcpy(cRole, &pComponentPrivate->componentRole.cRole, 
+                   sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
+            iLBCDEC_DPRINT("::::In ComponenetRoleEnum: cRole is set to %s\n",cRole);
     }
     else {
         eError = OMX_ErrorNoMore;

@@ -1876,6 +1876,10 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                                      __LINE__);
         goto EXIT;
     }    
+    if (pBufHeader->pBuffer == NULL) {
+        eError = OMX_ErrorBadParameter;
+	goto EXIT;
+    }
 
     if (eDir == OMX_DirInput) {
         pComponentPrivate->nUnhandledEmptyThisBuffers--;
@@ -1956,9 +1960,23 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         index = (frameType >> 3) & 0x0F;
                         if(nFrames)
                         {
+                            if (((nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME) + pBufHeader->nFilledLen) 
+			       > pBufHeader->nAllocLen) {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+                           }
+
                             memmove(pBufHeader->pBuffer + (nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME),
                                     pBufHeader->pBuffer + i,
                                     pBufHeader->nFilledLen);                                                    
+                        }
+			if ((index >= NUM_MIME_BYTES_ARRAY) || 
+			   ((index < NUM_MIME_BYTES_ARRAY) && 
+			   (pComponentPrivate->amrMimeBytes[index] == 0))) {
+                           OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: no more frames index=%d", __LINE__, (int)index);
+                           if (index < NUM_MIME_BYTES_ARRAY)
+                               OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: no more frames mimebytes=%d", __LINE__, (int)pComponentPrivate->amrMimeBytes[index]);
+                               break;
                         }
                         if (pComponentPrivate->amrMimeBytes[index] > pBufHeader->nFilledLen){
                             pBufHeader->nFilledLen = 0;
@@ -1991,9 +2009,22 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         index = frameType&0x0F;
                         if (nFrames)
                         {
+                            if (((nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_IF2) + pBufHeader->nFilledLen) 
+			       > pBufHeader->nAllocLen) {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+                            }
                             memmove(pBufHeader->pBuffer + (nFrames *INPUT_NBAMRDEC_BUFFER_SIZE_IF2), 
                                     pBufHeader->pBuffer + i, 
                                     pBufHeader->nFilledLen);
+                        }
+                        if ((index >= NUM_IF2_BYTES_ARRAY) || 
+			   ((index < NUM_IF2_BYTES_ARRAY) && 
+			   (pComponentPrivate->amrIF2Bytes[index] == 0))) {
+                           OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: no more frames index=%d", __LINE__, (int)index);
+                           if (index < NUM_IF2_BYTES_ARRAY)
+                               OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: no more frames mimebytes=%d", __LINE__, (int)pComponentPrivate->amrIF2Bytes[index]);
+                               break;
                         }
                         if(pComponentPrivate->amrIF2Bytes[index] > pBufHeader->nFilledLen){
                             pBufHeader->nFilledLen=0;
@@ -2023,6 +2054,13 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         }
                         /* Copy the extra data into pHoldBuffer. Size will be nHoldLength. */
                         pExtraData = pBufHeader->pBuffer + bufSize*nFrames;
+			/* check the pHoldBuffer boundary before copying */
+			if (pComponentPrivate->nHoldLength >
+			   (bufSize * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
+			   {
+                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                               goto EXIT;
+			   }
                         memcpy (pComponentPrivate->pHoldBuffer, pExtraData, pComponentPrivate->nHoldLength);
                     }
                 }
@@ -2094,6 +2132,12 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 nFrames = (OMX_U8)(pComponentPrivate->nHoldLength / frameLength);
                 if ( nFrames >= 1 )  {
                     /* Copy the data from pComponentPrivate->pHoldBuffer to pBufHeader->pBuffer*/
+		    /* check the pBufHeader boundery before copying */
+		    if ((nFrames*frameLength) > pBufHeader->nAllocLen)
+		    {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+			goto EXIT;
+		    }
                     memcpy(pBufHeader->pBuffer,pComponentPrivate->pHoldBuffer,nFrames*frameLength);
                     pBufHeader->nFilledLen = nFrames*frameLength;
     

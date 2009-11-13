@@ -749,6 +749,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     switch(nParamIndex){
     case OMX_IndexParamAudioInit:
         OMX_PRDSP2(pComponentPrivate->dbg, ":: GetParameter OMX_IndexParamAudioInit\n");
+        MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->sPortParam, 1, 1);
         memcpy(ComponentParameterStructure, pComponentPrivate->sPortParam, sizeof(OMX_PORT_PARAM_TYPE));
         break;
     case OMX_IndexParamPortDefinition:
@@ -811,6 +812,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 
     case OMX_IndexParamPriorityMgmt:
         OMX_PRDSP2(pComponentPrivate->dbg, " :: GetParameter OMX_IndexParamPriorityMgmt \n");
+        MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->pPriorityMgmt, 1, 1);
         memcpy(ComponentParameterStructure, pComponentPrivate->pPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
 
         break;
@@ -956,6 +958,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         OMX_PRDSP2(pComponentPrivate->dbg, " :: SetParameter OMX_IndexParamAudioMp3 \n");
         pCompMp3Param = (OMX_AUDIO_PARAM_MP3TYPE *)pCompParam;
         if(pCompMp3Param->nPortIndex == MP3D_INPUT_PORT) {
+            MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->mp3Params, 1, 1);
             memcpy(pComponentPrivate->mp3Params,pCompMp3Param,sizeof(OMX_AUDIO_PARAM_MP3TYPE));
         } 
         else {
@@ -1009,11 +1012,13 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         break;
     case OMX_IndexParamPriorityMgmt:
         OMX_PRDSP2(pComponentPrivate->dbg, ":: SetParameter OMX_IndexParamPriorityMgmt \n");
+        MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->pPriorityMgmt, 1, 1);
         memcpy(pComponentPrivate->pPriorityMgmt, (OMX_PRIORITYMGMTTYPE*)pCompParam, sizeof(OMX_PRIORITYMGMTTYPE));
         break;
 
     case OMX_IndexParamAudioInit:
         OMX_PRDSP2(pComponentPrivate->dbg, ":: SetParameter OMX_IndexParamAudioInit \n");
+        MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->sPortParam, 1, 1);
         memcpy(pComponentPrivate->sPortParam, (OMX_PORT_PARAM_TYPE*)pCompParam, sizeof(OMX_PORT_PARAM_TYPE));
         break;
 
@@ -1031,6 +1036,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         OMX_PRDSP2(pComponentPrivate->dbg, " :: SetParameter OMX_IndexParamAudioPcm \n");
         pPcmPort= (OMX_AUDIO_PARAM_PCMMODETYPE *)pCompParam;
         if(pPcmPort->nPortIndex == MP3D_OUTPUT_PORT){
+            MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate->pcmParams, 1, 1);
             memcpy(pComponentPrivate->pcmParams, pPcmPort, sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
         }else{
             OMX_ERROR4(pComponentPrivate->dbg, ":: OMX_ErrorBadPortIndex from SetParameter");
@@ -1422,6 +1428,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     
     if(nConfigIndex == OMX_IndexCustomMp3DecStreamInfoConfig) {
         streamInfo->streamId = pComponentPrivate->streamID;
+        MP3D_OMX_CONF_CHECK_CMD(ComponentConfigStructure, 1, 1);
         memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
     } else if(nConfigIndex == OMX_IndexCustomDebug) {
 	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
@@ -2439,7 +2446,10 @@ static OMX_ERRORTYPE ComponentRoleEnum(
    
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    if(nIndex == 0){
+    if (cRole == NULL){
+        eError = OMX_ErrorBadParameter;
+    }
+    else if(nIndex == 0){
         memcpy(cRole, &pComponentPrivate->componentRole.cRole, sizeof(OMX_U8) * OMX_MAX_STRINGNAME_SIZE); 
         OMX_PRINT1(pComponentPrivate->dbg, "[ComponenetRoleEnum] cRole = %s\n",cRole);
     }

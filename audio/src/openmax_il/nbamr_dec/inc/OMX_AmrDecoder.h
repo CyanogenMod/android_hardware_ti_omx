@@ -205,6 +205,18 @@
  */
 /* ======================================================================= */
 #define IP_BUFFERSIZE 4096
+/* ======================================================================= */
+/**
+ * @def    NUM_MIME_BYTES_ARRAY               amrMimeBytes array size
+ */
+/* ======================================================================= */
+#define NUM_MIME_BYTES_ARRAY 16
+/* ======================================================================= */
+/**
+ * @def    NUM_IF2_BYTES_ARRAY                amrIF2Bytes array size
+ */
+/* ======================================================================= */
+#define NUM_IF2_BYTES_ARRAY 16
 
 /* ======================================================================= */
 /**
@@ -682,10 +694,10 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
    OMX_U32 bPlayCompleteFlag;
 
    /** NBAMR Mime Bytes */
-   OMX_U32 amrMimeBytes[16];
+   OMX_U32 amrMimeBytes[NUM_MIME_BYTES_ARRAY];
    
    /**NBAMR IF2 Bytes**/
-   OMX_U32 amrIF2Bytes[16];
+   OMX_U32 amrIF2Bytes[NUM_IF2_BYTES_ARRAY];
 
    /** Number of Bytes holding to be sent*/
    OMX_U32 nHoldLength;

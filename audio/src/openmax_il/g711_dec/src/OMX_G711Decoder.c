@@ -1052,8 +1052,8 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 
     pComponentPrivate = (G711DEC_COMPONENT_PRIVATE *)
         (((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
-
-    memcpy(ComponentConfigStructure,pComponentPrivate,sizeof(G711DEC_COMPONENT_PRIVATE));
+    if ((pComponentPrivate != NULL) && (ComponentConfigStructure != NULL))
+        memcpy(ComponentConfigStructure,pComponentPrivate,sizeof(G711DEC_COMPONENT_PRIVATE));
 
     return eError;
 }

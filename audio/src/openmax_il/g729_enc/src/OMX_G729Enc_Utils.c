@@ -2002,9 +2002,17 @@ OMX_ERRORTYPE G729ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                         /* Remove the copied data from pHoldBuffer. */
 
                         /*OMAPS00101094*/
-                        memcpy(pComponentPrivate->pHoldBuffer, 
-                               pComponentPrivate->pHoldBuffer + frameLength,
-                               pComponentPrivate->nHoldLength - frameLength);
+			if (pComponentPrivate->nHoldLength - frameLength < frameLength) {
+                            memcpy(pComponentPrivate->pHoldBuffer, 
+                                   pComponentPrivate->pHoldBuffer + frameLength,
+                                   pComponentPrivate->nHoldLength - frameLength);
+			}
+			else {
+                            memmove(pComponentPrivate->pHoldBuffer, 
+                                   pComponentPrivate->pHoldBuffer + frameLength,
+                                   pComponentPrivate->nHoldLength - frameLength);
+			}
+			
                         /*OMAPS00101094*/
                         pComponentPrivate->nHoldLength = pComponentPrivate->nHoldLength - frameLength;
                         G729ENC_DPRINT("pComponentPrivate->nHoldLength = %d\n",
