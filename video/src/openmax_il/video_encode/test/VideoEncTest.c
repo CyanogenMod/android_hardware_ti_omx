@@ -2905,9 +2905,15 @@ int main(int argc, char** argv)
                     pAppData->nInBufferCount--;
                 }
 
-                if( pAppData->eTypeOfTest != VIDENCTEST_FullRecord){
+                if(pAppData->eTypeOfTest != VIDENCTEST_FullRecord){
                     if(pAppData->nCurrentFrameIn == pAppData->nReferenceFrame){
-                            pAppData->eCurrentState = VIDENCTEST_StateStopping;
+                        pAppData->eCurrentState = VIDENCTEST_StateStopping;
+                        if(pAppData->eTypeOfTest == VIDENCTEST_PauseResume) {
+                            eError = pAppData->pComponent->EmptyThisBuffer(pHandle, pBuffer);
+                            VIDENCTEST_CHECK_ERROR(eError, "Error at EmptyThisBuffer function");
+                            pAppData->nInBufferCount--;
+                            pAppData->nCurrentFrameIn++;
+                        }
                     }
                 }
 
