@@ -545,7 +545,7 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
     OMX_TICKS nVOPTimeStamp = 0;
     OMX_S32 nVOPType = 0;
     OMX_S32 nRead = 0;
-    OMX_U32 nSizeToRead = 0;
+    OMX_S32 nSizeToRead = 0;
     struct stat filestat;
     static OMX_U32 nbccount = 0;
 #ifdef VIDDECTEST_USEFORMATSIZE_RANDOMIZED

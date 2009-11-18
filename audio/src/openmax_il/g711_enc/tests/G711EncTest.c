@@ -572,7 +572,7 @@ VAU NUM] [NMU Mode] [LP Order]\n");
         audioinfo->nIpBufSize = atoi(argv[8]);
         APP_DPRINT("%d [TEST APP] input buffer size = %ld \n",__LINE__,audioinfo->nIpBufSize);
         audioinfo->nOpBufs = atoi(argv[9]);
-        if(audioinfo->nOpBufs > 4 && audioinfo->nOpBufs < 0){
+        if(audioinfo->nOpBufs > 4){
             APP_DPRINT( "Cannot support %ld Output buffers\n", audioinfo->nOpBufs);
             goto EXIT;          
         }        
