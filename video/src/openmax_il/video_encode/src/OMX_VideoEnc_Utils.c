@@ -2345,7 +2345,7 @@ goto EXIT;
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p \n", (void*)pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                      EMMCodecOuputBuffer,
+                                      EMMCodecOutputBufferMapReuse,
                                       pBufHead->pBuffer,
                                       pBufHead->nAllocLen,
                                       0,
@@ -2366,7 +2366,7 @@ goto EXIT;
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                  EMMCodecOuputBuffer,
+                                  EMMCodecOutputBufferMapReuse,
                                   pBufHead->pBuffer,
                                   pBufHead->nAllocLen,
                                   0,
@@ -2642,7 +2642,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                  EMMCodecInputBuffer,
+                                  EMMCodecInputBufferMapReuse,
                                   pBufHead->pBuffer,
                                   pBufHead->nAllocLen,
                                   pBufHead->nFilledLen,
@@ -2789,7 +2789,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                  EMMCodecInputBuffer,
+                                  EMMCodecInputBufferMapReuse,
                                   pBufHead->pBuffer,
                                   pBufHead->nAllocLen,
                                   pBufHead->nFilledLen,
