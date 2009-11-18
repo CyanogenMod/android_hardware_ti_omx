@@ -2343,8 +2343,6 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     if(!pBufHeader->nFilledLen)
                     {
                         pComponentPrivate->pOutputBufferList->pBufHdr[0]->nFlags |= OMX_BUFFERFLAG_EOS;
-                        /* FIX ME OMAPS00207839 */
-                        pBufHeader->nFilledLen=frameLength; /* faking nFilledLen on last frame to avoid DSP error*/
                     }
                     pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle,
                                                             pComponentPrivate->pHandle->pApplicationPrivate,
