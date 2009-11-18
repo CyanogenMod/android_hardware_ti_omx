@@ -1962,9 +1962,12 @@ void* MessagingThread(void* arg)
                                             (void *)msg.dwArg1);
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
-                                        DmmUnMap(hDSPInterface->dspCodec->hProc,
-                                                 (void*)tmpDspStructAddress->iBufferPtr,
-                                                 pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        if (!hDSPInterface->ReUseMap)
+                                        {
+                                            DmmUnMap(hDSPInterface->dspCodec->hProc,
+                                                    (void*)tmpDspStructAddress->iBufferPtr,
+                                                    pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        }
                                     }
 
                                     if (tmpDspStructAddress->iParamPtr != (OMX_U32)NULL)
@@ -2029,9 +2032,12 @@ void* MessagingThread(void* arg)
                                     {
                                         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                                 "tmpDspStructAddress ->iBufferPtr is not NULL\n");
-                                        DmmUnMap(hDSPInterface->dspCodec->hProc,
-                                                 (void*)tmpDspStructAddress->iBufferPtr,
-                                                 pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        if (!hDSPInterface->ReUseMap)
+                                        {
+                                            DmmUnMap(hDSPInterface->dspCodec->hProc,
+                                                    (void*)tmpDspStructAddress->iBufferPtr,
+                                                    pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        }
                                     }
 
                                     if (tmpDspStructAddress->iParamPtr != (OMX_U32)NULL)
