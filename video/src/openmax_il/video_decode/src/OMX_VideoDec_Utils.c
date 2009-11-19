@@ -5687,8 +5687,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
                 if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
-                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
-                    ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 2;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->uRingIOBlocksize = 0;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 2;
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
             }
