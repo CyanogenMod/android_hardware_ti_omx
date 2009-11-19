@@ -81,6 +81,11 @@
 
 #define DSP_MMU_FAULT_HANDLING
 
+// We cannot request the same MHz for all resolutions.
+// we have to change this implementation once we modify
+// opencore to request the correct level based on resolution/bitrate/etc
+#define VIDEO_ENCODER_MHZ (400 - 45 + 2) 
+
 #ifdef UNDER_CE
     HINSTANCE g_hLcmlDllHandle = NULL;
 #endif
@@ -1410,7 +1415,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_H264_Encode_COMPONENT,
-                                                         90,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
 
@@ -1420,7 +1425,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_H264_Encode_COMPONENT,
-                                                         140,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                             break;
@@ -1433,9 +1438,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                             RMProxy_RequestResource,
                                                             OMX_H264_Encode_COMPONENT,
-                                                            ((pPortDefOut->format.video.nFrameHeight >= 640 ||
-                                                              pPortDefOut->format.video.nFrameWidth >= 480) &&
-                                                            Q16Tof(pPortDefIn->format.video.xFramerate) > 15.) ? 370 : 245,
+                                                            VIDEO_ENCODER_MHZ,
                                                             3456,
                                                             &(pComponentPrivate->cRMCallBack));
                     }
@@ -1449,7 +1452,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_MPEG4_Encode_COMPONENT,
-                                                         30,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                             break;
@@ -1458,7 +1461,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_MPEG4_Encode_COMPONENT,
-                                                         110,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                             break;
@@ -1467,7 +1470,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_MPEG4_Encode_COMPONENT,
-                                                         300,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                     }
@@ -1480,7 +1483,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_H263_Encode_COMPONENT,
-                                                         30,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                             break;
@@ -1490,7 +1493,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                          RMProxy_RequestResource,
                                                          OMX_H263_Encode_COMPONENT,
-                                                         90,
+                                                         VIDEO_ENCODER_MHZ,
                                                          3456,
                                                          &(pComponentPrivate->cRMCallBack));
                     }
