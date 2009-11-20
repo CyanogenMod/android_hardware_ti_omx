@@ -161,6 +161,7 @@ int errno;
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 {
 
+    OMX_ERRORTYPE rm_error = OMX_ErrorNone;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_ip = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef_op = NULL;
@@ -474,6 +475,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     }
 
     pComponentPrivate->nPendingStateChangeRequests = 0;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
+    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
+#endif
 
 EXIT:
     if (pComponentPrivate != NULL) {

@@ -925,8 +925,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         OMX_PRINT2(pComponentPrivate->dbg, "%d :: AACENC: About to call RMProxy_SendCommand\n", __LINE__);
 #ifdef RESOURCE_MANAGER_ENABLED
 
-                        pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
-                        rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
 
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENC: Returned from RMProxy_SendCommand\n", __LINE__);
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENC: RMProxy_SendCommand returned %d\n", __LINE__,rm_error);
