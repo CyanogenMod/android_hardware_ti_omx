@@ -58,6 +58,7 @@
 #include <linux/soundcard.h>
 #include <signal.h>
 
+#include <Resource_Activity_Monitor.h>
 #include <ResourceManagerProxy.h>
 
 int nInstances = 0;
@@ -74,6 +75,9 @@ OMX_ERRORTYPE *RM_Error = NULL;
 int closeThreadFlag=0;
 RMProxy_ComponentList componentList;
 sem_t                    *sem = NULL;
+
+int boost_count = 0;
+static pthread_mutex_t boost_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef __PERF_INSTRUMENTATION__
 #include "perf.h"
@@ -939,7 +943,48 @@ void RMProxy_reverse(char s[])
     }
 }
 
+int RMProxy_RequestBoost(int level)
+{
+    if(pthread_mutex_lock(&boost_mutex) != 0)
+    {
+        RMPROXY_DPRINT("%d:: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
+    boost_count++;
+    RMPROXY_DPRINT("init count = %d\n", boost_count);
+    if (boost_count == 1)
+    {
+        rm_request_boost(level);
+    }
+    if(pthread_mutex_unlock(&boost_mutex) != 0)
+    {
+        RMPROXY_DPRINT("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
+    return OMX_ErrorNone;
+}
 
+
+int RMProxy_ReleaseBoost()
+{
+    if(pthread_mutex_lock(&boost_mutex) != 0)
+    {
+        RMPROXY_DPRINT("%d:: Error in Mutex lock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
+    boost_count--;
+    RMPROXY_DPRINT("init count = %d\n", boost_count);
+    if (boost_count == 0)
+    {
+        rm_release_boost();
+    }
+    if(pthread_mutex_unlock(&boost_mutex) != 0)
+    {
+        RMPROXY_DPRINT("%d :: Core: Error in Mutex unlock\n",__LINE__);
+        return OMX_ErrorUndefined;
+    }
+    return OMX_ErrorNone;
+}
 
 void RMProxy_CallbackClient(OMX_HANDLETYPE hComponent, OMX_ERRORTYPE *error , RMPROXY_CORE *core)
 {

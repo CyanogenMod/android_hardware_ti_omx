@@ -48,10 +48,6 @@
 
 #include <ResourceManagerProxyAPI.h>
 
-/* add for Qos API
-
-*/
-
 #undef RMPROXY_DEBUG 
 
 #ifdef  RMPROXY_DEBUG

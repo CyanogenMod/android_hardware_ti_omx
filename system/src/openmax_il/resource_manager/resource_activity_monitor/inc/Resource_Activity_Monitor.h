@@ -19,6 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/*  this file defines an interface to the kernel PM framework
+ *  MultiMedia components can request opp based on requirements/constraints
+ *  that the corresponding driver may be unaware of. This ensures there will be 
+ *  enough throughput, etc for all multimedia use cases.
+ * 
+ *  In general, the very existence if this interface serves only to provide a lower
+ *  latency mechanism than the Bridge Load Predictor (which itself is is actually just
+ *  a passive monitor that takes ~400ms to respond to the requirered constraints from DSP
+ *  nodes.
+*/
+
 #undef RAM_DEBUG
 
 #ifdef RAM_DEBUG
@@ -36,6 +47,12 @@
 #define OPERATING_POINT_3 2
 #define OPERATING_POINT_4 3
 #define OPERATING_POINT_5 4
+
+typedef enum _BOOST_LEVEL
+{
+        MAX_BOOST = 0,
+        NOMINAL_BOOST,
+} BOOST_LEVEL;
 
 /* for 3440 */
 #define OPERATING_POINT_6 5
@@ -59,9 +76,15 @@ static const int vdd1_mpu_mhz_3430[5] = {125, 250, 500, 550, 600};
 static const int vdd1_dsp_mhz_3440[6] = {90, 180, 360, 430, 430, 520};
 static const int vdd1_mpu_mhz_3440[6] = {125, 250, 500, 550, 600, 720};
 
+int rm_set_vdd1_constraint(int MHz);
+int rm_get_vdd1_constraint();
 
-void omap_pm_set_constraint(int ID, int MHz);
+int dsp_mhz_to_vdd1_opp(int MHz);
 
-int omap_pm_get_constraint(int ID);
+int get_omap_version();
+
+void rm_request_boost(int level);
+void rm_release_boost();
+
 char * ram_itoa(int a);
 

@@ -181,6 +181,8 @@ OMX_ERRORTYPE RMProxy_NewInitalizeEx(OMX_LINUX_COMPONENTTYPE componetType);
 OMX_ERRORTYPE RMProxy_Deinitalize();
 OMX_ERRORTYPE RMProxy_DeinitalizeEx(OMX_LINUX_COMPONENTTYPE componentType);
 OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDTYPE cmd, OMX_U32 para1, OMX_U32 para2, OMX_U32 para3, OMX_PTR para4);
+OMX_ERRORTYPE RMProxy_RequestBoost(int level);
+OMX_ERRORTYPE RMProxy_ReleaseBoost();
 
 #endif
 

@@ -743,7 +743,7 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
                        cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
             /* Inform the Resource Activity Monitor of the new CPU usage */
             RM_DPRINT("total CPU to set constraint = %d\n", totalCpu);
-            omap_pm_set_constraint(componentType,totalCpu);        
+            rm_set_vdd1_constraint(totalCpu);        
         }
         else if (previousState == OMX_StateExecuting && (newState == OMX_StateIdle || newState == OMX_StatePause)) {
 
@@ -778,7 +778,7 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
                            cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
             }
             
-            omap_pm_set_constraint(componentType,totalCpu);
+            rm_set_vdd1_constraint(totalCpu);
         }
         RM_DPRINT("newState = %d\n",newState);
         if (newState == OMX_StateWaitForResources) {
