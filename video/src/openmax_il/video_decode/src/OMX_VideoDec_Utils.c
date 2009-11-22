@@ -3862,7 +3862,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
 
             OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                      EMMCodecOuputBuffer,
+                                      EMMCodecOutputBufferMapReuse,
                                       pBuffHead->pBuffer,
                                       pBuffHead->nAllocLen,
                                       pBuffHead->nFilledLen,
