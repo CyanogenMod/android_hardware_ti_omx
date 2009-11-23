@@ -125,7 +125,7 @@ OMX_ERRORTYPE RMProxy_NewInitalize()
         RMPROXY_DPRINT("[Resource_Manager_Proxy] - RMProxy_Init - more than 8 instances\n");
         eError = OMX_ErrorInsufficientResources;
         nInstances--;
-        goto EXIT;
+        return eError;
     }
 
     /* create the pipe used to send messages to the thread */
@@ -140,7 +140,6 @@ OMX_ERRORTYPE RMProxy_NewInitalize()
         create_PERF_object();
 #endif
         ret = pipe(RMProxy_Handle.tothread);
-        
         if (ret)
         {
             RMPROXY_DPRINT("[Resource_Manager_Proxy] - failure to create the pipe\n");
@@ -148,6 +147,11 @@ OMX_ERRORTYPE RMProxy_NewInitalize()
         }
 
         proxy_core = calloc (1, sizeof (RMPROXY_CORE));
+        if (proxy_core == NULL)
+        {
+            RMPROXY_DPRINT("[Resource_Manager_Proxy] - failure to calloc proxy_core\n");
+            return OMX_ErrorInsufficientResources;
+        }
         /* Create the proxy thread */
         ret = pthread_create(&RMProxy_Handle.threadId, NULL, (void*)RMProxy_Thread, proxy_core);
         if (ret||!RMProxy_Handle.threadId)
@@ -289,6 +293,11 @@ OMX_ERRORTYPE RMProxy_NewInitalizeEx(OMX_LINUX_COMPONENTTYPE componetType)
         }
 
         proxy_core = calloc (1, sizeof (RMPROXY_CORE));
+        if (proxy_core == NULL)
+        {
+            RMPROXY_DPRINT("[Resource_Manager_Proxy] - failure to calloc proxy_core\n");
+            return OMX_ErrorInsufficientResources;
+        }
         /* Create the proxy thread */
         ret = pthread_create(&RMProxy_Handle.threadId, NULL, (void*)RMProxy_Thread, proxy_core);
         if (ret||!RMProxy_Handle.threadId)
@@ -699,7 +708,12 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 close(RMProxyfdread);
                 readPipeOpened = 0;
                 close(RMProxyfdwrite);
-                
+
+                if (core != NULL)
+                {
+                    free(core);
+                    core = NULL;
+                }
                 if(unlink(namedPipeName)<0) {
                     /*RMPROXY_DPRINT("[Resource Manager] - unlink RM_SERVER_OUT = %s error\n", namedPipeName);*/
                 }
