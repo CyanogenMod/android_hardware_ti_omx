@@ -48,8 +48,11 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <errno.h>
-#include "OMX_TI_Common.h"
-#include "OMX_TI_Debug.h"
+#include <OMX_TI_Common.h>
+#include <OMX_TI_Debug.h>
+
+#include <utils/Log.h>
+#define LOG_TAG "OMX_JPGDEC"
 
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
