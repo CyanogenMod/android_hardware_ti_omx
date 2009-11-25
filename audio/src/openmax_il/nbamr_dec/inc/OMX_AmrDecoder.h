@@ -821,6 +821,14 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     /** Flag to flush SN after EOS in order to process more buffers after EOS**/
     OMX_U8 SendAfterEOS;    
 
+    /** Flag to mark the first sent buffer**/
+    OMX_U8 first_buff;
+    /** First Time Stamp sent **/
+    OMX_TICKS first_TS;
+
+    /** Temporal time stamp **/
+    OMX_TICKS temp_TS;
+
     OMX_BOOL bLoadedCommandPending;
     
     OMX_PARAM_COMPONENTROLETYPE componentRole;

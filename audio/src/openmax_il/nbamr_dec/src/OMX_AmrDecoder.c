@@ -346,7 +346,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
-    
+
+    pComponentPrivate->first_buff = 0;
+    pComponentPrivate->first_TS = 0;
+    pComponentPrivate->temp_TS = 0;
+
     for (i=0; i < MAX_NUM_OF_BUFS; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
         pComponentPrivate->pOutputBufHdrPending[i] = NULL;

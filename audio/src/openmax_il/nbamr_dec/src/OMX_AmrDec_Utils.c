@@ -1624,6 +1624,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
         if(commandData == 0x0 || commandData == -1) {
             if(pComponentPrivate->nUnhandledEmptyThisBuffers == 0) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
+                pComponentPrivate->first_buff = 0;
 
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x0; 
@@ -1644,6 +1645,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing out port %d\n",pComponentPrivate->nUnhandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
+                pComponentPrivate->first_buff = 0;
 
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x1; 
@@ -2223,6 +2225,11 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
             pComponentPrivate->IpBufindex++;
             pComponentPrivate->IpBufindex %= pPortDefIn->nBufferCountActual;
 
+            if(pComponentPrivate->first_buff == 0){
+                pComponentPrivate->first_TS = pBufHeader->nTimeStamp;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "in ts-%ld\n",pBufHeader->nTimeStamp);
+                pComponentPrivate->first_buff = 1;
+            }
             
             for (i=0; i < INPUT_NBAMRDEC_BUFFER_SIZE_MIME; i++) {
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Queueing pBufHeader->pBuffer[%d] = %x\n",__LINE__,i,pBufHeader->pBuffer[i]);
@@ -2514,7 +2521,6 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10])
     
     AMRDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     pComponentPrivate = (AMRDEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)args[6])->pComponentPrivate;
-    static OMX_U32 TS = 0;
     static double time_stmp = 0;
     pHandle = pComponentPrivate->pHandle;
     
@@ -2664,10 +2670,16 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                 }
             }
             /* Copying time stamp information to output buffer */
-            time_stmp = pLcmlHdr->buffer->nFilledLen / (1 * (((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nBitPerSample / 8));
-            time_stmp = (time_stmp / ((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nSamplingRate) * 1000;
-            TS += (OMX_U32)time_stmp;
-            pLcmlHdr->buffer->nTimeStamp = TS;
+            if(pComponentPrivate->first_buff == 1){
+                pComponentPrivate->first_buff = 2;
+                pLcmlHdr->buffer->nTimeStamp = pComponentPrivate->first_TS;
+                pComponentPrivate->temp_TS = pLcmlHdr->buffer->nTimeStamp;
+            }else{
+                time_stmp = pLcmlHdr->buffer->nFilledLen / (1 * (((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nBitPerSample / 8));
+                time_stmp = (time_stmp / ((OMX_AUDIO_PARAM_PCMMODETYPE*)pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT])->nSamplingRate) * 1000;
+                pComponentPrivate->temp_TS += (OMX_U32)time_stmp;
+                pLcmlHdr->buffer->nTimeStamp = pComponentPrivate->temp_TS;
+            }
             /* Copying nTickCount information to output buffer */
             pLcmlHdr->buffer->nTickCount = pComponentPrivate->arrTickCount[pComponentPrivate->OpBufindex];
             pComponentPrivate->OpBufindex++;
