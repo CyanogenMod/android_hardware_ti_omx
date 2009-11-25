@@ -1286,7 +1286,7 @@ OMX_ERRORTYPE VidDec_WaitForState(OMX_HANDLETYPE* pHandle, OMX_PTR pAppData, OMX
 
     eError = pComponent->GetState(pHandle, &eState);
 
-     while ((eError == OMX_ErrorNone) && (eState != DesiredState)) {
+     while ((eState != DesiredState)) {
         eError = pComponent->GetState(pHandle, &eState);
         if (eState == OMX_StateInvalid) {
             eError = OMX_ErrorInvalidState;
