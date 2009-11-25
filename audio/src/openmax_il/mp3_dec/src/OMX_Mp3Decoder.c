@@ -321,7 +321,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->nNumOutputBufPause = 0;
     pComponentPrivate->SendAfterEOS = 0;    
     pComponentPrivate->nUnhandledFillThisBuffers=0;
+    pComponentPrivate->nHandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
+    pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
 
@@ -1557,13 +1559,14 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->pMarkData = pBuffer->pMarkData;
     pComponentPrivate->hMarkTargetComponent = pBuffer->hMarkTargetComponent;
 
-    pComponentPrivate->nUnhandledEmptyThisBuffers++;
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer,
                  sizeof(OMX_BUFFERHEADERTYPE*));
     if (ret == -1) {
         MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
+    }else{
+        pComponentPrivate->nUnhandledEmptyThisBuffers++;
+        pComponentPrivate->nEmptyThisBufferCount++;
     }
-    pComponentPrivate->nEmptyThisBufferCount++;
     
  EXIT:
     if (pComponentPrivate != NULL) {
@@ -1683,13 +1686,14 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     OMX_PRCOMM2(pComponentPrivate->dbg, "Sending Emptied OUT buff %p\n",pBuffer);
     OMX_PRCOMM2(pComponentPrivate->dbg, "------------------------------------------\n");
 
-    pComponentPrivate->nUnhandledFillThisBuffers++;
     nRet = write (pComponentPrivate->dataPipe[1], &pBuffer,
                   sizeof (OMX_BUFFERHEADERTYPE*));
     if (nRet == -1) {
         MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
+    }else{
+        pComponentPrivate->nUnhandledFillThisBuffers++;
+        pComponentPrivate->nFillThisBufferCount++;
     }
-    pComponentPrivate->nFillThisBufferCount++;
 
  EXIT:
     if (pComponentPrivate != NULL) {

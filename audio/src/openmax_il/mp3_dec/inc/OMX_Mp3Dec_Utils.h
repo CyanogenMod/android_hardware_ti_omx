@@ -709,8 +709,10 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
 
     /** Number of FillBufferDones acomplished, used to transition to idle */
     OMX_S32 nOutStandingFillDones;
-    OMX_S8 nUnhandledFillThisBuffers;
-    OMX_S8 nUnhandledEmptyThisBuffers;
+    OMX_U32 nUnhandledFillThisBuffers;
+    OMX_U32 nHandledFillThisBuffers;
+    OMX_U32 nUnhandledEmptyThisBuffers;
+    OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
 
