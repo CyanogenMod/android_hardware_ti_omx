@@ -44,10 +44,8 @@
 #define OMX_WMADECODER_H
 #include <pthread.h>
 
-#include <OMX_Component.h>
-#include <TIDspOmx.h>
 #include <OMX_TI_Common.h>
-#include <OMX_TI_Debug.h>
+#include <TIDspOmx.h>
 #include "LCML_DspCodec.h"
 #define _ERROR_PROPAGATION__ 
 
@@ -340,18 +338,6 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  */
 /* ======================================================================= */
 #define WMADEC_DEFAULT_SAMPLEPERBLOCK 8704
-/* ======================================================================= */
-
-/**
- * @def    WMA_CACHE_ALIGN   Number of bytes for cache alignment
- */
-/* ======================================================================= */
-#define WMA_CACHE_ALIGN 128
-/**
- * @def    WMA_CACHE_ALIGN   Number of bytes for cache alignment
- */
-/* ======================================================================= */
-#define WMA_EXTRA_BYTES 256
 /**
  * @def    WMADEC_DEBUG   Turns debug messaging on and off
  */
@@ -363,12 +349,6 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  */
 /* ======================================================================= */
 #undef WMADEC_MEMCHECK
-/* ======================================================================= */
-/**
- * @def    WMADEC_MEMDEBUG   Enable memory leaks debuf info
- */
-/* ======================================================================= */
-#undef WMADEC_MEMDEBUG 
 /* ======================================================================= */
 /**
  * @def    WMADEC_USN_DLL_NAME   USN DLL name
@@ -448,50 +428,6 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  */
 /* ======================================================================= */
 #define WMADEC_NUM_OF_PORTS 2
-/* ======================================================================= */
-/**
- *  M A C R O FOR ALLOCATE MEMORY 
- */
-/* ======================================================================= */
-#define WMAD_OMX_MALLOC(_pStruct_, _sName_)                             \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));                   \
-    if(_pStruct_ == NULL){                                              \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");                \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);                       \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");                \
-        eError = OMX_ErrorInsufficientResources;                        \
-        goto EXIT;                                                      \
-    }                                                                   \
-    memset(_pStruct_,0,sizeof(_sName_));                                \
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-#define WMAD_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)              \
-    _ptr_ = (_name_ *)newmalloc(_size_);                        \
-    if(_ptr_ == NULL){                                          \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__);               \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");        \
-        eError = OMX_ErrorInsufficientResources;                \
-        goto EXIT;                                              \
-    }                                                           \
-    memset(_ptr_,0,_size_);                                     \
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: Malloced = %p\n",__LINE__,_ptr_);
-
-
-/* ======================================================================= */
-/**
- *  M A C R O FOR MEMORY FREE 
- */
-/* ======================================================================= */
-
-#define OMX_WMADECMEMFREE_STRUCT(_pStruct_)                     \
-    OMXDBG_PRINT(stderr, BUFFER, 2, OMX_DBG_BASEMASK, "%d :: [FREE] %p\n",__LINE__,_pStruct_);    \
-    if(_pStruct_ != NULL){                                      \
-    	newfree(_pStruct_);                                     \
-        _pStruct_ = NULL;                                       \
-    }
-
 /* ======================================================================= */
 /**
  *  W M A       T Y P E S

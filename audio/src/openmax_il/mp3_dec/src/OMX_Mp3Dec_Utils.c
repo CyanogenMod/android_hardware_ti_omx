@@ -96,15 +96,6 @@ void sleep(DWORD Duration)
 }
 #endif
 
-#ifdef MP3DEC_MEMDEBUG
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
-
 /* ================================================================================= * */
 /**
  * @fn MP3DEC_Fill_LCMLInitParams() fills the LCML initialization structure.
@@ -132,7 +123,6 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate =(MP3DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     MP3D_LCML_BUFHEADERTYPE *pTemp_lcml;
-    char *char_temp = NULL;
     OMX_U32 size_lcml;
     OMX_U8 *ptr;
 
@@ -203,7 +193,7 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
                             "Flag DSP_RENDERING_ON Must Be Defined To Use Rendering");
 #else
         LCML_STRMATTR *strmAttr;
-        MP3D_OMX_MALLOC(strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);
         OMX_PRBUFFER2(pComponentPrivate->dbg, ": Malloc strmAttr = %p\n",strmAttr);
         pComponentPrivate->strmAttr = strmAttr;
         OMX_PRDSP2(pComponentPrivate->dbg, ":: MP3 DECODER IS RUNNING UNDER DASF MODE \n");
@@ -281,7 +271,7 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, ":: bufAlloced = %d\n",pComponentPrivate->bufAlloced);
     size_lcml = nIpBuf * sizeof(MP3D_LCML_BUFHEADERTYPE);
-    MP3D_OMX_MALLOC_SIZE(ptr,size_lcml,OMX_U8);
+    OMX_MALLOC_SIZE(ptr,size_lcml,OMX_U8);
     pTemp_lcml = (MP3D_LCML_BUFHEADERTYPE *)ptr;
 
     pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT] = pTemp_lcml;
@@ -301,12 +291,9 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
-        MP3D_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam,
-                             (sizeof(MP3DEC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
+                             sizeof(MP3DEC_UAlgInBufParamStruct),
                              MP3DEC_UAlgInBufParamStruct);
-        char_temp = (char*)pTemp_lcml->pIpParam;
-        char_temp += EXTRA_BYTES;
-        pTemp_lcml->pIpParam = (MP3DEC_UAlgInBufParamStruct*)char_temp;
         pTemp_lcml->pIpParam->bLastBuffer = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
@@ -320,7 +307,7 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
     }
 
     size_lcml = nOpBuf * sizeof(MP3D_LCML_BUFHEADERTYPE);
-    MP3D_OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,MP3D_LCML_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,MP3D_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nOpBuf; i++) {
@@ -339,12 +326,9 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
         pTemp_lcml->pOtherParams[i] = NULL;
-        MP3D_OMX_MALLOC_SIZE(pTemp_lcml->pOpParam,
-                             (sizeof(MP3DEC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
+                             sizeof(MP3DEC_UAlgOutBufParamStruct),
                              MP3DEC_UAlgOutBufParamStruct);
-        char_temp = (char*)pTemp_lcml->pOpParam;
-        char_temp += EXTRA_BYTES;
-        pTemp_lcml->pOpParam = (MP3DEC_UAlgOutBufParamStruct*)char_temp;
         pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
         pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
 
@@ -356,16 +340,10 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
         pTemp_lcml++;
     }
     pComponentPrivate->bPortDefsAllocated = 1;
-    MP3D_OMX_MALLOC_SIZE(pComponentPrivate->pParams,(sizeof(USN_AudioCodecParams) + DSP_CACHE_ALIGNMENT),
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,sizeof(USN_AudioCodecParams),
                          USN_AudioCodecParams);
-    char_temp = (char*) pComponentPrivate->pParams;
-    char_temp +=EXTRA_BYTES;
-    pComponentPrivate->pParams = (USN_AudioCodecParams *)char_temp;
-    MP3D_OMX_MALLOC_SIZE(pComponentPrivate->ptAlgDynParams,(sizeof(MP3DEC_UALGParams) + DSP_CACHE_ALIGNMENT),
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->ptAlgDynParams,sizeof(MP3DEC_UALGParams),
                          MP3DEC_UALGParams);
-    char_temp = (char*) pComponentPrivate->ptAlgDynParams;
-    char_temp += EXTRA_BYTES;
-    pComponentPrivate->ptAlgDynParams = (MP3DEC_UALGParams *) char_temp;
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->nLcml_nCntIp = 0;
@@ -532,18 +510,18 @@ OMX_ERRORTYPE MP3DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     if (pComponentPrivate->bPortDefsAllocated) {
 
-        MP3D_OMX_FREE(pComponentPrivate->pPortDef[MP3D_INPUT_PORT]);
-        MP3D_OMX_FREE(pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]);
-        MP3D_OMX_FREE(pComponentPrivate->mp3Params);
-        MP3D_OMX_FREE (pComponentPrivate->pcmParams);
-        MP3D_OMX_FREE(pComponentPrivate->pCompPort[MP3D_INPUT_PORT]->pPortFormat);
-        MP3D_OMX_FREE (pComponentPrivate->pCompPort[MP3D_OUTPUT_PORT]->pPortFormat);
-        MP3D_OMX_FREE (pComponentPrivate->pCompPort[MP3D_INPUT_PORT]);
-        MP3D_OMX_FREE (pComponentPrivate->pCompPort[MP3D_OUTPUT_PORT]);
-        MP3D_OMX_FREE (pComponentPrivate->sPortParam);
-        MP3D_OMX_FREE (pComponentPrivate->pPriorityMgmt);
-        MP3D_OMX_FREE(pComponentPrivate->pInputBufferList);
-        MP3D_OMX_FREE(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[MP3D_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->mp3Params);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->pcmParams);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[MP3D_INPUT_PORT]->pPortFormat);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->pCompPort[MP3D_OUTPUT_PORT]->pPortFormat);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->pCompPort[MP3D_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->pCompPort[MP3D_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->sPortParam);
+        OMX_MEMFREE_STRUCT (pComponentPrivate->pPriorityMgmt);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
     }
 
     pComponentPrivate->bPortDefsAllocated = 0;
@@ -3092,23 +3070,17 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_U32 nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
 
     OMX_U32 i=0;
-    char *tempt = NULL;
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: MP3DEC_CleanupInitParams()\n");
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing:  pComponentPrivate->strmAttr = %p\n", pComponentPrivate->strmAttr);
-    MP3D_OMX_FREE(pComponentPrivate->strmAttr); 
+    OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr); 
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT];
 	
     for(i=0; i<nIpBuf; i++) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing: pTemp_lcml->pIpParam = %p\n",pTemp_lcml->pIpParam);
-        tempt = (char*)pTemp_lcml->pIpParam;
-        if(tempt != NULL){
-            tempt -= EXTRA_BYTES;
-        }
-        pTemp_lcml->pIpParam = (MP3DEC_UAlgInBufParamStruct*)tempt;
-        MP3D_OMX_FREE(pTemp_lcml->pIpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, MP3DEC_UAlgInBufParamStruct);
 
         pTemp_lcml++;
     }
@@ -3117,38 +3089,22 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     
     OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT] = %p\n",
                     pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
-    MP3D_OMX_FREE(pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT];
     for(i=0; i<nOpBuf; i++) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing: pTemp_lcml->pOpParam = %p\n",pTemp_lcml->pOpParam);
-
-        tempt = (char*)pTemp_lcml->pOpParam;
-        if(tempt != NULL){
-            tempt -= EXTRA_BYTES;
-        }
-        pTemp_lcml->pOpParam = (MP3DEC_UAlgOutBufParamStruct*)tempt;
-        MP3D_OMX_FREE(pTemp_lcml->pOpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, MP3DEC_UAlgOutBufParamStruct);
         pTemp_lcml++;
     }
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing: pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT] = %p\n",
                     pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
-    MP3D_OMX_FREE(pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
     
-    tempt = (char*)pComponentPrivate->pParams;
-    if(tempt != NULL){
-        tempt -= EXTRA_BYTES;
-    }
-    pComponentPrivate->pParams = (USN_AudioCodecParams *) tempt;
-    MP3D_OMX_FREE(pComponentPrivate->pParams);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, USN_AudioCodecParams);
     
-    tempt = (char *) pComponentPrivate->ptAlgDynParams;
-    if(tempt != NULL) {
-        tempt -= EXTRA_BYTES;
-    }
-    pComponentPrivate->ptAlgDynParams = (MP3DEC_UALGParams*) tempt;
-    MP3D_OMX_FREE(pComponentPrivate->ptAlgDynParams);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->ptAlgDynParams, MP3DEC_UALGParams);
     
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting Successfully MP3DEC_CleanupInitParams()\n");
 
@@ -3175,7 +3131,6 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate =
         (MP3DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     MP3D_LCML_BUFHEADERTYPE *pTemp_lcml;
-    char *pTemp = NULL;
     OMX_U32 nIpBuf = 0;
     OMX_U32 nOpBuf = 0;
     OMX_U32 i=0;
@@ -3186,18 +3141,13 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
         for(i=0; i<nIpBuf; i++) {
             OMX_PRBUFFER2(pComponentPrivate->dbg, "Freeing: pIpParam = %p\n",
                           pTemp_lcml->pIpParam);
-            pTemp = (char*)pTemp_lcml->pIpParam;
-            if (pTemp != NULL) {
-                pTemp -= EXTRA_BYTES;
-            }
-            pTemp_lcml->pIpParam = (MP3DEC_UAlgInBufParamStruct*)pTemp;
-            MP3D_OMX_FREE(pTemp_lcml->pIpParam);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, MP3DEC_UAlgInBufParamStruct);
             pTemp_lcml++;
         }
 
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Freeing pLcmlBufHeader[MP3D_INPUT_PORT] = %p\n",
                       pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
-        MP3D_OMX_FREE(pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT]);
 
     }else if(indexport == 1 || indexport == -1){
         nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
@@ -3205,18 +3155,13 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
         for(i=0; i<nOpBuf; i++) {
             OMX_PRBUFFER2(pComponentPrivate->dbg, "Freeing: pOpParam = %p\n",
                           pTemp_lcml->pOpParam);
-            pTemp = (char*)pTemp_lcml->pOpParam;
-            if (pTemp != NULL) {
-                pTemp -= EXTRA_BYTES;
-            }
-            pTemp_lcml->pOpParam = (MP3DEC_UAlgOutBufParamStruct*)pTemp;
-            MP3D_OMX_FREE(pTemp_lcml->pOpParam);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, MP3DEC_UAlgOutBufParamStruct);
             pTemp_lcml++;
         }
 
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Freeing: pLcmlBufHeader[MP3D_OUTPUT_PORT] = %p\n",
                       pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
-        MP3D_OMX_FREE(pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT]);
 
     }else{
         OMX_ERROR4(pComponentPrivate->dbg, "Bad indexport!\n");
@@ -3414,7 +3359,6 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
     MP3D_LCML_BUFHEADERTYPE *pTemp_lcml;
     OMX_U32 size_lcml;
     OMX_U8 *ptr;
-    char *char_temp = NULL;
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: Entered Fill_LCMLInitParams");
 
@@ -3433,7 +3377,7 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
         OMX_PRBUFFER2(pComponentPrivate->dbg, ":: bufAlloced = %d\n",pComponentPrivate->bufAlloced);
         size_lcml = nIpBuf * sizeof(MP3D_LCML_BUFHEADERTYPE);
 
-        MP3D_OMX_MALLOC_SIZE(ptr,size_lcml,OMX_U8);
+        OMX_MALLOC_SIZE(ptr,size_lcml,OMX_U8);
         pTemp_lcml = (MP3D_LCML_BUFHEADERTYPE *)ptr;
 
         pComponentPrivate->pLcmlBufHeader[MP3D_INPUT_PORT] = pTemp_lcml;
@@ -3454,13 +3398,9 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
             pTemp_lcml->eDir = OMX_DirInput;
             pTemp_lcml->pOtherParams[i] = NULL;
 
-            MP3D_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam,
-                                 (sizeof(MP3DEC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
+            OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
+                                 sizeof(MP3DEC_UAlgInBufParamStruct),
                                  MP3DEC_UAlgInBufParamStruct);
-            char_temp = (char*)pTemp_lcml->pIpParam;
-            char_temp += EXTRA_BYTES;
-            pTemp_lcml->pIpParam = (MP3DEC_UAlgInBufParamStruct*)char_temp;
-
             pTemp_lcml->pIpParam->bLastBuffer = 0;
 
             pTemp->nFlags = NORMAL_BUFFER;
@@ -3476,7 +3416,7 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
 
     if(indexport == 1 || indexport == -1){
         size_lcml = nOpBuf * sizeof(MP3D_LCML_BUFHEADERTYPE);
-        MP3D_OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,MP3D_LCML_BUFHEADERTYPE);
+        OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,MP3D_LCML_BUFHEADERTYPE);
         pComponentPrivate->pLcmlBufHeader[MP3D_OUTPUT_PORT] = pTemp_lcml;
 
         for (i=0; i<nOpBuf; i++) {
@@ -3494,12 +3434,9 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
             pTemp_lcml->eDir = OMX_DirOutput;
             pTemp_lcml->pOtherParams[i] = NULL;
 
-            MP3D_OMX_MALLOC_SIZE(pTemp_lcml->pOpParam,
-                                 (sizeof(MP3DEC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
+            OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
+                                 sizeof(MP3DEC_UAlgOutBufParamStruct),
                                  MP3DEC_UAlgOutBufParamStruct);
-            char_temp = (char*)pTemp_lcml->pOpParam;
-            char_temp += EXTRA_BYTES;
-            pTemp_lcml->pOpParam = (MP3DEC_UAlgOutBufParamStruct*)char_temp;
             pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
             pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
 

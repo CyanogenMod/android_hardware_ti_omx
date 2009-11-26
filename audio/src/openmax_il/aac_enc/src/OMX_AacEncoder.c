@@ -82,7 +82,6 @@
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
-#include <OMX_Component.h>
 #include "OMX_AacEncoder.h"
 #define  AAC_ENC_ROLE "audio_encoder.aac"
 #include "OMX_AacEnc_Utils.h"
@@ -195,7 +194,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pHandle->UseBuffer              = UseBuffer;
     pHandle->ComponentRoleEnum      = ComponentRoleEnum;
     
-    OMX_MALLOC_STRUCT(pHandle->pComponentPrivate, AACENC_COMPONENT_PRIVATE);
+    OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, AACENC_COMPONENT_PRIVATE);
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     
     /* Initialize component data structures to default values */
@@ -205,8 +204,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* ---------start of OMX_AUDIO_PARAM_AACPROFILETYPE --------- */
 
-    OMX_MALLOC_STRUCT(aac_ip, OMX_AUDIO_PARAM_AACPROFILETYPE);
-    OMX_MALLOC_STRUCT(aac_op, OMX_AUDIO_PARAM_AACPROFILETYPE);
+    OMX_MALLOC_GENERIC(aac_ip, OMX_AUDIO_PARAM_AACPROFILETYPE);
+    OMX_MALLOC_GENERIC(aac_op, OMX_AUDIO_PARAM_AACPROFILETYPE);
 
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->aacParams[INPUT_PORT] = aac_ip;
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->aacParams[OUTPUT_PORT] = aac_op;
@@ -227,8 +226,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* ---------start of OMX_AUDIO_PARAM_PCMMODETYPE --------- */
 
-    OMX_MALLOC_STRUCT(aac_pcm_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
-    OMX_MALLOC_STRUCT(aac_pcm_op, OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(aac_pcm_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(aac_pcm_op, OMX_AUDIO_PARAM_PCMMODETYPE);
 
     aac_pcm_ip->nSize               = sizeof(OMX_AUDIO_PARAM_PCMMODETYPE);
     aac_pcm_ip->nBitPerSample       = 16;        /*Will be remapped for SN. 16:2,  24:3*/
@@ -264,12 +263,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                                PERF_ModuleAudioDecode);
 #endif
 
-    OMX_MALLOC_STRUCT(pComponentPrivate->pInputBufferList, BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, BUFFERLIST);
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pInputBufferList %p\n ", pComponentPrivate->pInputBufferList);
     pComponentPrivate->pInputBufferList->numBuffers = 0; /* initialize number of buffers */
 
-    OMX_MALLOC_STRUCT(pComponentPrivate->pOutputBufferList, BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, BUFFERLIST);
     pComponentPrivate->pOutputBufferList->numBuffers = 0; /* initialize number of buffers */
     OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pOutputBufferList %p\n ", pComponentPrivate->pOutputBufferList);
 
@@ -284,7 +283,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
 
-    OMX_MALLOC_STRUCT_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), void);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), void);
     
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/rtmdn:i2:o1/codec\0");
@@ -387,12 +386,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
         
     /* port definition, input port */
-    OMX_MALLOC_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_PRCOMM2(pComponentPrivate->dbg, "AACENC: pPortDef_ip %p \n",pPortDef_ip );
 
 
     /* port definition, output port */
-    OMX_MALLOC_STRUCT(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_PRCOMM2(pComponentPrivate->dbg, "AACENC: pPortDef_op %p,  size: %x \n",pPortDef_op, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
 
     
@@ -407,7 +406,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->eDir                   = OMX_DirInput;
     pPortDef_ip->bEnabled               = OMX_TRUE;
     pPortDef_ip->nBufferSize            = INPUT_AACENC_BUFFER_SIZE;
-    pPortDef_ip->nBufferAlignment       = EXTRA_BYTES;
+    pPortDef_ip->nBufferAlignment       = DSP_CACHE_ALIGNMENT;
     pPortDef_ip->bPopulated             = 0;
     pPortDef_ip->format.audio.eEncoding =OMX_AUDIO_CodingPCM;  
     pPortDef_ip->eDomain                = OMX_PortDomainAudio;
@@ -419,7 +418,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->eDir                   = OMX_DirOutput;
     pPortDef_op->bEnabled               = OMX_TRUE;
     pPortDef_op->nBufferSize            = OUTPUT_AACENC_BUFFER_SIZE;
-    pPortDef_op->nBufferAlignment       = EXTRA_BYTES;
+    pPortDef_op->nBufferAlignment       = DSP_CACHE_ALIGNMENT;
     pPortDef_op->bPopulated             = 0;
     pPortDef_op->format.audio.eEncoding = OMX_AUDIO_CodingAAC;   
     pPortDef_op->eDomain                = OMX_PortDomainAudio;
@@ -1217,7 +1216,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     AACENC_COMPONENT_PRIVATE *pComponentPrivate =  NULL;
     TI_OMX_STREAM_INFO *streamInfo = NULL;
 
-    OMX_MALLOC_STRUCT_SIZE(streamInfo, sizeof(TI_OMX_STREAM_INFO), void);
+    OMX_MALLOC_SIZE(streamInfo, sizeof(TI_OMX_STREAM_INFO), void);
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "AACENC: streamInfo %p \n",streamInfo);
     
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)
@@ -1887,12 +1886,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     }
 
-    OMX_MALLOC_STRUCT(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader %p\n",pBufferHeader);
 
-    OMX_MALLOC_STRUCT_SIZE(pBufferHeader->pBuffer, nSizeBytes + 256, OMX_U8);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
 
-    pBufferHeader->pBuffer += 128;
     OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader->pbuffer %p to %p \n",pBufferHeader->pBuffer,(pBufferHeader->pBuffer + sizeof(pBufferHeader->pBuffer)) );
 
     if (nPortIndex == INPUT_PORT) 
@@ -1996,7 +1994,6 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_CONF_CHECK_CMD(hComponent,1,pBuffer);
     AACENC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_BUFFERHEADERTYPE* buff = NULL;
-    OMX_U8* tempBuff = NULL;
     int i =0;
     int inputIndex = -1;
     int outputIndex = -1;
@@ -2050,12 +2047,7 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     {
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) 
         {
-            tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-            if (tempBuff != 0)
-            {
-                tempBuff -= 128;
-            }
-            OMX_MEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
         }
 #ifdef __PERF_INSTRUMENTATION__
             PERF_SendingBuffer(pComponentPrivate->pPERF,
@@ -2096,12 +2088,7 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     {
         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) 
         {
-            tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-            if (tempBuff != 0)
-            {
-               tempBuff -= 128;
-            }
-            OMX_MEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
         }
 #ifdef __PERF_INSTRUMENTATION__
             PERF_SendingBuffer(pComponentPrivate->pPERF,
@@ -2232,7 +2219,7 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
 
-    OMX_MALLOC_STRUCT(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: AACENC: [ALLOC] %p\n",__LINE__,pBufferHeader);
 

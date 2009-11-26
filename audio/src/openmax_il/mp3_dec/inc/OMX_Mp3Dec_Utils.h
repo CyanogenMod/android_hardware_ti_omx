@@ -118,9 +118,6 @@
 #define MP3D_STEREO_INTERLEAVED_STREAM  2 /* Stereo Interleaved stream index */
 #define MP3D_STEREO_NONINTERLEAVED_STREAM  3 /* Stereo Non-Interleaved stream index */
 
-#define EXTRA_BYTES 128 /* For Cache alignment*/
-#define DSP_CACHE_ALIGNMENT 256 /* For Cache alignment*/
-
 #define MP3D_STEREO_STREAM  2
 
 #define NUM_OF_PORTS 0x2 /* Number of ports of component */
@@ -236,32 +233,6 @@
 
 #endif
 
-#define MP3D_OMX_MALLOC(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
-    if(_pStruct_ == NULL){      \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n");	\
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_pStruct_,0,sizeof(_sName_));\
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-
-#define MP3D_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
-    _ptr_ = (_name_ *)newmalloc(_size_);      \
-    if(_ptr_ == NULL){      \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Malloc Failed\n",__LINE__); \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_ptr_,0,_size_); \
-    OMXDBG_PRINT(stderr, BUFFER, 2, 0, "%d :: Malloced = %p\n",__LINE__,_ptr_);
-
 #define MP3D_OMX_ERROR_EXIT(_e_, _c_, _s_)\
     _e_ = _c_;\
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
@@ -277,14 +248,6 @@
         goto EXIT;                 \
     }                                           \
 }
-
-#define MP3D_OMX_FREE(ptr) \
-    if(NULL != ptr) { \
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Freeing Address = %p\n",__LINE__,ptr); \
-        newfree(ptr); \
-        ptr = NULL; \
-    }
-
 
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
     memset((_s_), 0x0, sizeof(_name_)); \

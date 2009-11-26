@@ -88,15 +88,6 @@
 #define HASHINGENABLE 1
 #endif
 
-#ifdef AACENC_DEBUGMEM
- void *arr[500]; 
- int lines[500]; 
- int bytes[500]; 
- char file[500][50];
-
-void * mymalloc(int line, char *s, int size);
-void myfree(void *dp, int line, char *s);
-#endif
 
 
 /* ========================================================================== */
@@ -124,7 +115,6 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     OMX_U32 i                               = 0;
     OMX_BUFFERHEADERTYPE *pTemp             = NULL;
     OMX_S32 size_lcml                       = 0;
-    char *pTemp_char                        = NULL;
     char *ptr;
     LCML_AACENC_BUFHEADERTYPE *pTemp_lcml   = NULL;
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
@@ -187,7 +177,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_AacEncUtils.c\n",__LINE__);
     if(pComponentPrivate->dasfmode == 1) {
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: Codec is configuring to DASF mode\n",__LINE__);
-        OMX_MALLOC_STRUCT(strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);
         OMX_PRINT1(pComponentPrivate->dbg, "strmAttr %p \n",strmAttr);
         
         pComponentPrivate->strmAttr = strmAttr;
@@ -317,7 +307,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_AacEncUtils.c\n",__LINE__);
     size_lcml = nIpBuf * sizeof(LCML_AACENC_BUFHEADERTYPE);
-    OMX_MALLOC_STRUCT_SIZE(ptr, size_lcml,char);
+    OMX_MALLOC_SIZE(ptr, size_lcml,char);
     pTemp_lcml = (LCML_AACENC_BUFHEADERTYPE *)ptr;
     pComponentPrivate->pLcmlBufHeader[INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++) 
@@ -333,12 +323,9 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_STRUCT_SIZE(pTemp_lcml->pIpParam,
-                               (sizeof(AACENC_UAlgInBufParamStruct) + DSP_CACHE_ALIGNMENT),
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
+                               sizeof(AACENC_UAlgInBufParamStruct),
                                AACENC_UAlgInBufParamStruct);
-        pTemp_char = (char*)pTemp_lcml->pIpParam;
-        pTemp_char += EXTRA_BYTES;
-        pTemp_lcml->pIpParam = (AACENC_UAlgInBufParamStruct*)pTemp_char;
         OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml->pIpParam %p \n",pTemp_lcml->pIpParam);
         
         pTemp_lcml->pIpParam->bLastBuffer = 0;
@@ -351,7 +338,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     /* Allocate memory for all output buffer headers,  This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(LCML_AACENC_BUFHEADERTYPE);
 
-    OMX_MALLOC_STRUCT_SIZE(ptr, size_lcml,char);
+    OMX_MALLOC_SIZE(ptr, size_lcml,char);
     pTemp_lcml = (LCML_AACENC_BUFHEADERTYPE *)ptr;
 
     pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = pTemp_lcml;
@@ -372,12 +359,9 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         pTemp_lcml->eDir = OMX_DirOutput;
         /* SN : Each output buffer may be accompanied by an output buffer parameters structure*/ 
 
-        OMX_MALLOC_STRUCT_SIZE(pTemp_lcml->pOpParam, 
-                               (sizeof(AACENC_UAlgOutBufParamStruct) + DSP_CACHE_ALIGNMENT),
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam, 
+                               sizeof(AACENC_UAlgOutBufParamStruct),
                                AACENC_UAlgOutBufParamStruct);
-        pTemp_char = (char*)pTemp_lcml->pOpParam;
-        pTemp_char += EXTRA_BYTES;
-        pTemp_lcml->pOpParam = (AACENC_UAlgOutBufParamStruct*)pTemp_char;
 
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: size of pOpParam: %d \n",__LINE__,sizeof(pTemp_lcml->pOpParam->unFrameSizes));
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: numframes of pOpParam: %d \n\n",__LINE__,sizeof(pTemp_lcml->pOpParam->unNumFramesEncoded)) ;
@@ -392,14 +376,10 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
 
 
-        OMX_MALLOC_STRUCT_SIZE(pComponentPrivate->ptAlgDynParams,
-                                (sizeof(MPEG4AACENC_UALGParams)+DSP_CACHE_ALIGNMENT),
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->ptAlgDynParams,
+                                sizeof(MPEG4AACENC_UALGParams),
                                 MPEG4AACENC_UALGParams); 
 
-        pTemp_char = (char*)pComponentPrivate->ptAlgDynParams;
-        pTemp_char += EXTRA_BYTES;
-        pComponentPrivate->ptAlgDynParams = (MPEG4AACENC_UALGParams*)pTemp_char;
-        
     OMX_PRINT2(pComponentPrivate->dbg, "UTIL: pComponentPrivate->ptAlgDynParams %p \n",pComponentPrivate->ptAlgDynParams);
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -598,7 +578,6 @@ OMX_ERRORTYPE AACENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf = 0;
     OMX_U32 nOpBuf = 0;
-    char *pTemp    = NULL;
     OMX_U32 i      = 0;
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering AACENC_CleanupInitParams()\n", __LINE__);
@@ -608,13 +587,7 @@ OMX_ERRORTYPE AACENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
     for(i=0; i<nIpBuf; i++) 
     {
-        pTemp = (char*)pTemp_lcml->pIpParam;
-        if (pTemp != NULL) 
-        {
-            pTemp -= 128;
-        }
-        pTemp_lcml->pIpParam = (AACENC_UAlgInBufParamStruct*)pTemp;
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
         pTemp_lcml++;
     }
 
@@ -623,33 +596,16 @@ OMX_ERRORTYPE AACENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
     for (i=0; i<nOpBuf; i++)
     {
-        pTemp = (char*)pTemp_lcml->pOpParam;
-        if (pTemp != NULL) 
-        {
-            pTemp -= 128;
-        }
-        pTemp_lcml->pOpParam = (AACENC_UAlgOutBufParamStruct*)pTemp;
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pOpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
         pTemp_lcml++;
     }
 
     OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
-    pTemp = (char*)pComponentPrivate->ptAlgDynParams;
-    if (pTemp != NULL) 
-    {        
-        pTemp -= 128;
-    }
-    pComponentPrivate->ptAlgDynParams = (MPEG4AACENC_UALGParams*)pTemp;
-    OMX_MEMFREE_STRUCT(pComponentPrivate->ptAlgDynParams);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->ptAlgDynParams, MPEG4AACENC_UALGParams);
     if(pComponentPrivate->dasfmode == 1) 
     {
-        pTemp = (char*)pComponentPrivate->pParams;
-        if (pTemp != NULL) {        
-            pTemp -= 128;
-        }
-        pComponentPrivate->pParams = (AACENC_AudioCodecParams*)pTemp;
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pParams);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AACENC_AudioCodecParams);
     }
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting Successfully AACENC_CleanupInitParams()\n",__LINE__);
@@ -743,7 +699,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp = NULL;
     LCML_AACENC_BUFHEADERTYPE *pLcmlHdr;
-    char *pTemp_char = NULL;
     int inputPortFlag = 0;
     int outputPortFlag = 0;
 
@@ -1093,14 +1048,11 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         {
                             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: ---- Comp: DASF Functionality is ON ---\n",__LINE__);
 
-                            OMX_MALLOC_STRUCT_SIZE(pComponentPrivate->pParams,
-                                (sizeof(AACENC_AudioCodecParams)+DSP_CACHE_ALIGNMENT),
+                            OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,
+                                sizeof(AACENC_AudioCodecParams),
                                 AACENC_AudioCodecParams); 
 
                             OMX_PRDSP2(pComponentPrivate->dbg, "AACENC: pComponentPrivate->pParams %p \n",pComponentPrivate->pParams);
-                        pTemp_char = (char*)pComponentPrivate->pParams;
-                            pTemp_char += EXTRA_BYTES;
-                            pComponentPrivate->pParams = (AACENC_AudioCodecParams*)pTemp_char;
                             if(pComponentPrivate->unNumChannels == 1)   /*MONO*/
                                 pComponentPrivate->pParams->iAudioFormat = 0x0001;
                             else
@@ -3173,7 +3125,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: ------ Buffer Details ------------\n",__LINE__);
 
     size_lcml = nIpBuf * sizeof(LCML_AACENC_BUFHEADERTYPE);
-    OMX_MALLOC_STRUCT_SIZE(pTemp_lcml, size_lcml, LCML_AACENC_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_AACENC_BUFHEADERTYPE);
     OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml %p to %p \n",pTemp_lcml,(pTemp_lcml + sizeof(pTemp_lcml) ));
     
     pComponentPrivate->pLcmlBufHeader[INPUT_PORT] = pTemp_lcml;
@@ -3190,7 +3142,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_STRUCT(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(AACENC_UAlgInBufParamStruct), AACENC_UAlgInBufParamStruct);
         OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml %p to %p \n",pTemp_lcml,(pTemp_lcml + sizeof(pTemp_lcml) ));
         
         pTemp_lcml->pIpParam->bLastBuffer = 0;
@@ -3203,7 +3155,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     /* Allocate memory for all output buffer headers,  This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(LCML_AACENC_BUFHEADERTYPE);
 
-    OMX_MALLOC_STRUCT_SIZE(pTemp_lcml, size_lcml, LCML_AACENC_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_AACENC_BUFHEADERTYPE);
     OMX_PRDSP2(pComponentPrivate->dbg, "size_lcml %d to %lx \n", (int)size_lcml,(size_lcml + sizeof(size_lcml) ));
     
     pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = pTemp_lcml;
@@ -3228,7 +3180,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
 
-        OMX_MALLOC_STRUCT( pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam, sizeof(AACENC_UAlgOutBufParamStruct), AACENC_UAlgOutBufParamStruct);
         
         OMX_PRINT2(pComponentPrivate->dbg, "\n pTemp_lcml->pOpParam %p \n",pTemp_lcml->pOpParam);
         pTemp->nFlags = NORMAL_BUFFER;
@@ -3364,77 +3316,6 @@ int AACEnc_GetSampleRateIndexL( const int aRate)
 
     return index;
 }
-
-
-#ifdef AACENC_DEBUGMEM
-
-/* ========================================================================== */
-/**
-* @mymalloc() This function is used to debug memory leaks
-*
-* @param 
-*
-* @pre None
-*
-* @post None
-*
-* @return None
-*/
-/* ========================================================================== */
-void* mymalloc(int line, char *s, int size)
-{
-   void *p;    
-   int e=0;
-
-   p = malloc(size);
-   if(p==NULL){
-       OMXDBG_PRINT(stderr, ERROR, 4, 0, "Memory not available\n");
-       /* exit(1);*/
-       }
-   else{
-         while((lines[e]!=0)&& (e<500) ){
-              e++;
-         }
-         arr[e]=p;
-         lines[e]=line;
-         bytes[e]=size;
-         strcpy(file[e],s);
-         OMXDBG_PRINT(stderr, BUFFER, 2, 0, "Allocating %d bytes on address %p, line %d file %s pos %d\n", size, p, line, s, e);
-   }
-   return p;
-
-}
-
- /* ========================================================================== */
-/**
-* @myfree() This function is used to debug memory leaks
-*
-* @param 
-*
-* @pre None
-*
-* @post None
-*
-* @return None
-*/
-/* ========================================================================== */
-void myfree(void *dp, int line, char *s){
-
-    int q;
-    for(q=0;q<500;q++){
-        if(arr[q]==dp){
-           OMXDBG_PRINT(stderr, PRINT, 2, 0, "Deleting %d bytes on address %p, line %d file %s\n", bytes[q],dp, line, s);
-           free(dp);
-           dp = NULL;
-           lines[q]=0;
-           strcpy(file[q],"");
-           break;
-        }            
-     }    
-     if(500==q)
-         OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n\nPointer not found. Line:%d    File%s!!\n\n",line, s);
-}
-#endif
 
 /*  =========================================================================*/
 /*  func    AACENC_HandleUSNError

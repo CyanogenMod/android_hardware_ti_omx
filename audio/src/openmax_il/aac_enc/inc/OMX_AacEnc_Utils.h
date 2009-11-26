@@ -55,9 +55,6 @@
     #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #endif
 
-#define EXTRA_BYTES 128 
-#define DSP_CACHE_ALIGNMENT 256 
-
 #ifdef __PERF_INSTRUMENTATION__
     #include "perf.h"
 #endif
@@ -85,30 +82,6 @@
     _eError = _eCode;               \
     goto OMX_CONF_CMD_BAIL;         \
 }
-
-#define OMX_MALLOC_STRUCT(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));   \
-    if(_pStruct_ == NULL){  \
-        eError = OMX_ErrorInsufficientResources;    \
-        goto EXIT;  \
-    } \
-    memset(_pStruct_,0,sizeof(_sName_));
-    
-#define OMX_MALLOC_STRUCT_SIZE(_ptr_, _size_,_name_)    \
-    _ptr_ = (_name_ *)newmalloc(_size_);    \
-    if(_ptr_ == NULL){  \
-        eError = OMX_ErrorInsufficientResources;    \
-        goto EXIT;  \
-    } \
-    memset(_ptr_,0,_size_);
-    
-    
-#define OMX_MEMFREE_STRUCT(_pStruct_)\
-    OMXDBG_PRINT(stderr, PRINT, 2, OMX_DBG_BASEMASK, "%d :: FREEING MEMORY = %p\n",__LINE__,_pStruct_);\
-    if(_pStruct_ != NULL){\
-        newfree(_pStruct_);\
-        _pStruct_ = NULL;\
-    }
 
 #define OMX_CLOSE_PIPE(_pStruct_,err)\
     OMXDBG_PRINT(stderr, PRINT, 2, OMX_DBG_BASEMASK, "%d :: CLOSING PIPE \n",__LINE__);\

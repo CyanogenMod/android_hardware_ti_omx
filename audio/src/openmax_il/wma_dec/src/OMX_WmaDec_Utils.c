@@ -90,14 +90,6 @@ void sleep(DWORD Duration)
 }
 #endif
 
-#ifdef WMADEC_MEMDEBUG
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
 /* ========================================================================== */
 /**
  * @WMADECFill_LCMLInitParams () This function is used by the component thread to
@@ -125,7 +117,6 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     OMX_U16 index;
     LCML_WMADEC_BUFHEADERTYPE *pTemp_lcml = NULL;
     LCML_STRMATTR *strmAttr = NULL;
-    char *pTemp_char = NULL;
     LCML_DSP_INTERFACE *pHandle;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate, *pComponentPrivate_CC;
 
@@ -180,28 +171,15 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
     plcml_Init->DeviceInfo.TypeofDevice =0;
     
-    WMAD_OMX_MALLOC_SIZE(pComponentPrivate->pDynParams, sizeof(WMADEC_UALGParams) + 256,WMADEC_UALGParams);
-    pTemp_char = (char*)pComponentPrivate->pDynParams;
-    pTemp_char += 128;
-    pComponentPrivate->pDynParams = (WMADEC_UALGParams*)pTemp_char;    
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pDynParams, sizeof(WMADEC_UALGParams), WMADEC_UALGParams);
 
     pComponentPrivate->first_buffer=1;
     
     if(pComponentPrivate_CC->dasfmode == 1)
     {
-        WMAD_OMX_MALLOC_SIZE(pComponentPrivate->pParams, sizeof(WMADEC_AudioCodecParams) + 256, WMADEC_AudioCodecParams);
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pComponentPrivate->pParams);
-        if(NULL == pComponentPrivate->pParams)
-        {
-            OMX_ERROR4(pComponentPrivate->dbg, "Memory Allocation Failed");
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;                          
-        }
-        pTemp_char = (char*)pComponentPrivate->pParams;
-        pTemp_char += 128;
-        pComponentPrivate->pParams = (WMADEC_AudioCodecParams*)pTemp_char;
+        OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(WMADEC_AudioCodecParams), WMADEC_AudioCodecParams);
     
-        WMAD_OMX_MALLOC(strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,strmAttr);
 
         if (strmAttr == NULL)
@@ -299,13 +277,13 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
     size_lcml = nIpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
-    WMAD_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
     OMX_PRDSP2(pComponentPrivate->dbg, "Line %d::pTemp_lcml = %p",__LINE__,pTemp_lcml);
     if(pTemp_lcml == NULL)
     {
         /* Free previously allocated memory before bailing */
-        OMX_WMADECMEMFREE_STRUCT(strmAttr);
+        OMX_MEMFREE_STRUCT(strmAttr);
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -331,20 +309,14 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
         pTemp->nTickCount = NOT_USED;
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
-        WMAD_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam, 
-                             sizeof(WMADEC_UAlgInBufParamStruct) + 256,
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, 
+                             sizeof(WMADEC_UAlgInBufParamStruct),
                              WMADEC_UAlgInBufParamStruct);
-        pTemp_char = (char*)pTemp_lcml->pIpParam;
-        pTemp_char += 128;
-        pTemp_lcml->pIpParam = (WMADEC_UAlgInBufParamStruct*)pTemp_char;
-        
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml->pIpParam);
         if (pTemp_lcml->pIpParam == NULL)
         {
             /* Free previously allocated memory before bailing */
-            OMX_WMADECMEMFREE_STRUCT(strmAttr);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:::[FREE] %p",__LINE__,pTemp_lcml);
-            OMX_WMADECMEMFREE_STRUCT(pTemp_lcml );
+            OMX_MEMFREE_STRUCT(strmAttr);
+            OMX_MEMFREE_STRUCT(pTemp_lcml );
 
             goto EXIT;
         }
@@ -360,12 +332,12 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     /* Allocate memory for all output buffer headers..
      * This memory pointer will be sent to LCML */
     size_lcml = pComponentPrivate_CC->pOutputBufferList->numBuffers * sizeof(LCML_WMADEC_BUFHEADERTYPE);
-    WMAD_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
     if(pTemp_lcml == NULL)
     {
         /* Free previously allocated memory before bailing */
-        OMX_WMADECMEMFREE_STRUCT(strmAttr);
+        OMX_MEMFREE_STRUCT(strmAttr);
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -586,9 +558,7 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
             OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
             OMX_PRCOMM2(pComponentPrivate->dbg, "freeing pComponentPrivate->pPortDef[INPUT_PORT] = \
                           %p",pComponentPrivate->pPortDef[INPUT_PORT]);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
-                            pComponentPrivate->pPortDef[INPUT_PORT]);
-            OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
         }
         OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
 
@@ -597,18 +567,14 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
             OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
             OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->pPortDef[OUTPUT_PORT] = %p",
                           pComponentPrivate->pPortDef[OUTPUT_PORT]);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
-                            pComponentPrivate->pPortDef[OUTPUT_PORT]);
-            OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
         }
 
         if (pComponentPrivate->wmaParams[INPUT_PORT])
         {
             OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->wmaParams[INPUT_PORT] = %p",
                           pComponentPrivate->wmaParams[INPUT_PORT]);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
-                            pComponentPrivate->wmaParams[INPUT_PORT]);
-            OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->wmaParams[INPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[INPUT_PORT]);
         }
 
         if (pComponentPrivate->wmaParams[OUTPUT_PORT])
@@ -617,9 +583,7 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
                           pComponentPrivate->wmaParams[OUTPUT_PORT]);
             OMX_PRCOMM2(pComponentPrivate->dbg, "wmaParams[OUTPUT_PORT]->nPortIndex = %ld",
                           pComponentPrivate->wmaParams[OUTPUT_PORT]->nPortIndex);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
-                            pComponentPrivate->wmaParams[OUTPUT_PORT]);
-            OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->wmaParams[OUTPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[OUTPUT_PORT]);
             OMX_PRCOMM2(pComponentPrivate->dbg, "after pComponentPrivate->wmaParams[OUTPUT_PORT] = \
                           %p",pComponentPrivate->wmaParams[OUTPUT_PORT]);
         }
@@ -674,40 +638,14 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf = 0;
     OMX_U16 i=0;
-    char *pTemp = NULL;    
 
-    if (pComponentPrivate->strmAttr)
-    {
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,pComponentPrivate->strmAttr);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
 
-        OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->strmAttr);
-    }
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pDynParams, WMADEC_UALGParams);
 
-    if(pComponentPrivate->pDynParams)
-    {
-        OMX_PRBUFFER2(pComponentPrivate->dbg, ":: [FREE]: pComponentPrivate->pDynParams = %p",
-                        pComponentPrivate->pDynParams);
-                        
-        pTemp = (char*)pComponentPrivate->pDynParams;
-        if (pTemp != NULL)
-        {
-            pTemp -= 128;
-        }
-        pComponentPrivate->pDynParams = (WMADEC_UALGParams*)pTemp;
-        OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pDynParams);
-    }
     if (pComponentPrivate->dasfmode == 1)
     {
-        OMX_PRBUFFER2(pComponentPrivate->dbg, ":: [FREE]: pComponentPrivate->pParams = %p",
-                        pComponentPrivate->pParams);
-                        
-        pTemp = (char*)pComponentPrivate->pParams;
-        if (pTemp != NULL)
-        {       
-            pTemp -= 128;
-        }
-        pComponentPrivate->pParams = (WMADEC_AudioCodecParams*)pTemp;        
-        OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pParams);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, WMADEC_AudioCodecParams);
     }    
     
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
@@ -718,15 +656,7 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
         for(i=0; i<nIpBuf; i++)
         {
             OMX_PRDSP2(pComponentPrivate->dbg, "freeing pTemp_lcml->pIpParam = %p", pTemp_lcml->pIpParam);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,pTemp_lcml->pIpParam);
-            
-            pTemp = (char*)pTemp_lcml->pIpParam;
-            if(pTemp != NULL){
-                pTemp -= 128;
-            }
-            pTemp_lcml->pIpParam = (WMADEC_UAlgInBufParamStruct*)pTemp;
-       
-            OMX_WMADECMEMFREE_STRUCT(pTemp_lcml->pIpParam);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, WMADEC_UAlgInBufParamStruct);
             pTemp_lcml++;
         }
     }
@@ -736,14 +666,14 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
                     pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
                     
-    OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
     OMX_PRCOMM2(pComponentPrivate->dbg, "freeing pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = %p",
                   pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
                   
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
                     pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
                     
-    OMX_WMADECMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting Successfully WMADEC_CleanupInitParams()");
     return eError;
 }
@@ -3715,7 +3645,6 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
     OMX_U16 i;
     OMX_BUFFERHEADERTYPE *pTemp;
     int size_lcml;
-    char *char_temp = NULL;
     LCML_WMADEC_BUFHEADERTYPE *pTemp_lcml = NULL;
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate;
@@ -3738,7 +3667,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
     if(indexport == 0 || indexport == -1){
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
         size_lcml = nIpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
-        WMAD_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
+        OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
         OMX_PRDSP1(pComponentPrivate->dbg, "Line %d::pTemp_lcml = %p",__LINE__,pTemp_lcml);
     
@@ -3766,21 +3695,15 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
             pTemp_lcml->buffer = pTemp;
             pTemp_lcml->eDir = OMX_DirInput;
 
-            WMAD_OMX_MALLOC_SIZE(pTemp_lcml->pIpParam, 
-                                 sizeof(WMADEC_UAlgInBufParamStruct)+256,
+            OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, 
+                                 sizeof(WMADEC_UAlgInBufParamStruct),
                                  WMADEC_UAlgInBufParamStruct);
                              
-            char_temp = (char*)pTemp_lcml->pIpParam;
-            char_temp += 128;
-            pTemp_lcml->pIpParam = (WMADEC_UAlgInBufParamStruct*)char_temp;
-        
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml->pIpParam);
             if (pTemp_lcml->pIpParam == NULL)
             {
                 /* Free previously allocated memory before bailing */
                 if (pTemp_lcml != NULL) {
-                    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:::[FREE] %p",__LINE__,pTemp_lcml);
-                    OMX_WMADECMEMFREE_STRUCT(pTemp_lcml);
+                    OMX_MEMFREE_STRUCT(pTemp_lcml);
                 }
 
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Malloc Failed...Exiting..",__LINE__);
@@ -3798,7 +3721,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
         /* Allocate memory for all output buffer headers..
          * This memory pointer will be sent to LCML */
         size_lcml = nOpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
-        WMAD_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
+        OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
     
         if(pTemp_lcml == NULL)
