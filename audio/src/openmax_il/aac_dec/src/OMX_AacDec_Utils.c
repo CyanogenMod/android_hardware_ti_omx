@@ -835,6 +835,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif 
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: In HandleCommand: Stopping the codec\n",__LINE__);
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;
+                    pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
 			if (pComponentPrivate->codecStop_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
                     }
@@ -881,6 +882,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: Comp: Stop Command Received\n",__LINE__);
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d: AACDECUTILS::About to call LCML_ControlCodec\n",__LINE__);
+                    pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
 			if (pComponentPrivate->codecStop_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
                     }
@@ -2238,7 +2240,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                to LCML\n", __LINE__,pBufHeader,pBufHeader->pBuffer);
             if (pComponentPrivate->curState == OMX_StateExecuting) {
                 if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
-                    if(!pComponentPrivate->bDspStoppedWhileExecuting) {
+                    if(!(pComponentPrivate->bDspStoppedWhileExecuting || pComponentPrivate->bNoIdleOnStop)) {
                         if(!pComponentPrivate->reconfigInputPort){
                             AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
                             OMX_PRBUFFER2(pComponentPrivate->dbg, "Calling LCML_QueueBuffer Line %d\n",__LINE__);
@@ -2371,7 +2373,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                     if (!AACDEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput) &&
                         (pComponentPrivate->numPendingBuffers < pComponentPrivate->pOutputBufferList->numBuffers))  {
-                        if (!pComponentPrivate->bDspStoppedWhileExecuting){
+                        if (!(pComponentPrivate->bDspStoppedWhileExecuting || pComponentPrivate->bNoIdleOnStop)){
                             if(!pComponentPrivate->reconfigOutputPort){
                                 AACDEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                                 eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
@@ -2774,7 +2776,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
              OMX_PRDSP2(pComponentPrivate->dbg,"stop ack. received. stop waiting for sending disable command completed\n");
         }
 	  pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
-        if (!pComponentPrivate->bNoIdleOnStop) {
             OMX_PRDSP2(pComponentPrivate->dbg, "setting state to idle after EMMCodecProcessingStoped event\n\n");
             pComponentPrivate->curState = OMX_StateIdle;
 
@@ -2818,10 +2819,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                        NULL);
                                 OMX_ERROR4(pComponentPrivate->dbg, "Error: pre-empted\n");
             }
-        }else {
-            pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;
             pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
-        }
     } else if(event == EMMCodecAlgCtrlAck) {
         OMX_PRDSP2(pComponentPrivate->dbg, "GOT MESSAGE USN_DSPACK_ALGCTRL \n");
     } else if (event == EMMCodecDspError) {
