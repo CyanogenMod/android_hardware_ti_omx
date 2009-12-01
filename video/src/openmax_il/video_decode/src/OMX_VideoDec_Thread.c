@@ -290,7 +290,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
                                                                OMX_TI_ErrorSevere,
                                                                "Error from Component Thread while processing dsp Responses");
                     }
-                    pComponentPrivate->nOutputBCountDsp--;
                 }
                 if ((FD_ISSET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds))){
                     OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
@@ -311,7 +310,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
                                                                OMX_TI_ErrorSevere,
                                                                "Error from Component Thread while processing input buffer");
                     }
-                    pComponentPrivate->nInputBCountApp--;
                 }
                 }
                 if (FD_ISSET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
@@ -329,7 +327,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
                                                                OMX_TI_ErrorSevere,
                                                                "Error from Component Thread while processing free input buffer");
                     }
-                    pComponentPrivate->nInputBCountDsp--;
                 }
                 if (FD_ISSET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
                      if(pComponentPrivate->bDynamicConfigurationInProgress){
@@ -347,7 +344,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
                                                                OMX_TI_ErrorSevere,
                                                                "Error from Component Thread while processing free output buffer");
                     }
-                    pComponentPrivate->nOutputBCountApp--;
                 }
             }
         }
@@ -392,10 +388,10 @@ void* OMX_VidDec_Return (void* pThreadData)
     if (pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_READ] > fdmax) {
         fdmax = pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_READ];
     }
-    while ((pComponentPrivate->nInputBCountApp != 0 && 
-                (pComponentPrivate->eLCMLState == VidDec_LCML_State_Start && pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE)) || 
-            pComponentPrivate->nOutputBCountApp != 0 ||
-            pComponentPrivate->nInputBCountDsp != 0 || pComponentPrivate->nOutputBCountDsp != 0) {
+    while ((pComponentPrivate->nCountInputBFromApp != 0 &&
+                (pComponentPrivate->eLCMLState == VidDec_LCML_State_Start && pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE)) ||
+            pComponentPrivate->nCountOutputBFromApp != 0 ||
+            pComponentPrivate->nCountInputBFromDsp != 0 || pComponentPrivate->nCountOutputBFromDsp != 0) {
         FD_ZERO (&rfds);
         FD_SET(pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_READ], &rfds);
         FD_SET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds);
@@ -449,7 +445,6 @@ void* OMX_VidDec_Return (void* pThreadData)
                                                            OMX_TI_ErrorSevere,
                                                            "Error from Component Thread while processing dsp Responses");
                 }
-                pComponentPrivate->nOutputBCountDsp--;
             }
             if ((FD_ISSET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds))){
                 OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
@@ -464,7 +459,6 @@ void* OMX_VidDec_Return (void* pThreadData)
                                                            OMX_TI_ErrorSevere,
                                                            "Error from Component Thread while processing input buffer");
                 }
-                pComponentPrivate->nInputBCountApp--;
                 }
             }
             if (FD_ISSET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
@@ -478,7 +472,6 @@ void* OMX_VidDec_Return (void* pThreadData)
                                                            OMX_TI_ErrorSevere,
                                                            "Error from Component Thread while processing free input buffer");
                 }
-                pComponentPrivate->nInputBCountDsp--;
             }
             if (FD_ISSET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
                 OMX_PRSTATE2(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
@@ -492,7 +485,6 @@ void* OMX_VidDec_Return (void* pThreadData)
                                                            OMX_TI_ErrorSevere,
                                                            "Error from Component Thread while processing free output buffer");
                 }
-                pComponentPrivate->nOutputBCountApp--;
             }
         }
     }

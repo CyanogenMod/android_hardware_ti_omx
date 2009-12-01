@@ -955,10 +955,10 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
 #endif
     VIDDEC_RMPROXY_STATES eRMProxyState;
 
-    OMX_U8 nInputBCountDsp;
-    OMX_U8 nOutputBCountDsp;
-    OMX_U8 nInputBCountApp;
-    OMX_U8 nOutputBCountApp;
+    OMX_U8 nCountInputBFromDsp;
+    OMX_U8 nCountOutputBFromDsp;
+    OMX_U8 nCountInputBFromApp;
+    OMX_U8 nCountOutputBFromApp;
 
     VIDDEC_CBUFFER_BUFFERFLAGS aBufferFlags[CBUFFER_SIZE];
     VIDDEC_LCML_STATES eLCMLState;
@@ -968,6 +968,10 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL bIsSparkInput;
 #endif
     VIDDEC_MUTEX sMutex;
+    pthread_mutex_t mutexInputBFromApp;
+    pthread_mutex_t mutexOutputBFromApp;
+    pthread_mutex_t mutexInputBFromDSP;
+    pthread_mutex_t mutexOutputBFromDSP;
     VIDDEC_MUTEX sDynConfigMutex;
     VIDDEC_SEMAPHORE sInSemaphore;
     VIDDEC_SEMAPHORE sOutSemaphore;
@@ -1390,6 +1394,8 @@ OMX_U32 VIDDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 OMX_S32 VIDDEC_UVLC_dec(OMX_U32 *nPosition, OMX_U8* pBuffer);
 OMX_ERRORTYPE AddStateTransition(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE RemoveStateTransition(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BOOL bEnableSignal);
+OMX_ERRORTYPE IncrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex);
+OMX_ERRORTYPE DecrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex);
 
 #endif
 #endif
