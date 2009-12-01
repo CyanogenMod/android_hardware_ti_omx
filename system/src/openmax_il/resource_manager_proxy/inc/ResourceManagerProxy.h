@@ -133,8 +133,7 @@ void RM_CancelWaitForResource(OMX_HANDLETYPE hComponent, OMX_U32 param1, OMX_U32
 void RMProxy_itoa(int n, char s[]);
 void RMProxy_reverse(char s[]);
 void RMProxy_CallbackClient(OMX_HANDLETYPE hComponent, OMX_ERRORTYPE *error, RMPROXY_CORE *core);
-
-
+int RMProxy_CheckQosDependency();
 
 #endif
 

@@ -121,9 +121,6 @@ OMX_ERRORTYPE RMProxy_NewInitalize()
     RMPROXY_DPRINT("[Resource_Manager_Proxy] - RMProxy_Init\n");
     RMPROXY_CORE *proxy_core;
 
-
-    
-
     if (nInstances > 8)
     {
         RMPROXY_DPRINT("[Resource_Manager_Proxy] - RMProxy_Init - more than 8 instances\n");
@@ -504,22 +501,28 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
         write(RMProxy_Handle.tothread[1],&RMProxy_CommandData,sizeof(RMPROXY_COMMANDDATATYPE)) ;
 
 
-    if (cmd == RMProxy_RequestResource) { 
-#ifndef __ENABLE_RMPM_STUB__    
-        // wait for response back from resource manager server 
-        if (sem) { 
-            sem_wait(sem) ; 
-        }
-        if (NULL != RM_Error)
-            ReturnValue = *RM_Error;
+    if (cmd == RMProxy_RequestResource) {
+#ifndef __ENABLE_RMPM_STUB__
+        if(RMProxy_CheckQosDependency())
+        {
+            // wait for response back from resource manager server 
+            if (sem) { 
+                sem_wait(sem);
+            }
+            if (NULL != RM_Error)
+                ReturnValue = *RM_Error;
 
-        free(sem) ; 
-        sem=NULL;
-        free(RM_Error) ; 
-        RM_Error=NULL;
+            free(sem);
+            sem=NULL;
+            free(RM_Error);
+            RM_Error=NULL;
+        }
 #else
-        /* if using stubbed implementation always return grant */
-        ReturnValue = OMX_ErrorNone;
+        if(!RMProxy_CheckQosDependency())
+        {
+            /* if using stubbed implementation always return grant */
+            ReturnValue = OMX_ErrorNone;
+        }
 #endif
         responsePending = 0;
     }
@@ -528,7 +531,21 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
     return(ReturnValue);
 
 }
+/* scan for QoS dll, if DNE then fall back to stub mode */
+int RMProxy_CheckQosDependency()
+{
+    char *qosdllname;
 
+    qosdllname = getenv ("QOSDYN_FILE");
+    if (qosdllname == NULL) /*is the var defined? */
+    {
+        return 0;
+    }
+    if(fopen(qosdllname, "r") == NULL)
+       return 0;
+    else
+       return 1; //file exists, so no need to use stub implementation
+}
 /*
 
 
@@ -768,13 +785,17 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
             }
             else if (rm_data.rm_status == RM_GRANT) {
 #ifndef __ENABLE_RMPM_STUB__
-                /* if we are stubbing out the actual implmentation there will be no response */
-                if (RM_Error) {
-                    *RM_Error = OMX_ErrorNone;  
-                }
+                /* if the dependency is located... */
+                if(RMProxy_CheckQosDependency())
+                {
+                    /* if we are stubbing out the actual implmentation there will be no response */
+                    if (RM_Error) {
+                        *RM_Error = OMX_ErrorNone;  
+                    }
                 
-                if (sem) { 
-                    sem_post(sem) ;
+                    if (sem) { 
+                        sem_post(sem) ;
+                    }
                 }
 #endif                
             
