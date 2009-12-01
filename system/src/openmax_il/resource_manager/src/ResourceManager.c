@@ -1090,10 +1090,6 @@ void *RM_CPULoadThread(int pipeToWatch)
         tv.tv_nsec = 100000000;
         tv.tv_sec = 0;
 
-        while (1) {
-            results = NULL;
-            NumFound = 0;
-
 #ifdef DVFS_ENABLED
             FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
             if (fp == NULL) RM_DPRINT("open file max_dsp_frequency failed\n");
@@ -1103,10 +1099,10 @@ void *RM_CPULoadThread(int pipeToWatch)
             if (dsp_max_freq == vdd1_dsp_mhz_3420[RM_OPERATING_POINT_5]){
                 cpu_variant = OMAP3420_CPU;
             }
-            else if (mpu_max_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_5]){
+            else if (dsp_max_freq == vdd1_dsp_mhz_3430[RM_OPERATING_POINT_5]){
                 cpu_variant = OMAP3430_CPU;
             }
-            else if (mpu_max_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_6]){
+            else if (dsp_max_freq == vdd1_dsp_mhz_3440[RM_OPERATING_POINT_6]){
             /* 3440 has 6 OPPs */
                 cpu_variant = OMAP3440_CPU;
             }
@@ -1145,7 +1141,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 }
                 else
                 {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
+                    RM_DPRINT("Read incorrect frequency from sysfs 3420\n");
                     return NULL;
                 }
             }
@@ -1177,7 +1173,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 }
                 else
                 {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
+                    RM_DPRINT("Read incorrect frequency from sysfs 3430\n");
                     return NULL;
                 }
             }
@@ -1214,7 +1210,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 }
                 else
                 {
-                    RM_DPRINT("Read incorrect frequency from sysfs\n");
+                    RM_DPRINT("Read incorrect frequency from sysfs 3440\n");
                     return NULL;
                 }
             }
@@ -1232,6 +1228,10 @@ void *RM_CPULoadThread(int pipeToWatch)
             }
 #endif
 
+        while (1) {
+            results = NULL;
+            NumFound = 0;
+
             status = QosTI_GetProcLoadStat (&dsp_currload, &dsp_predload, &dsp_currfreq, &dsp_predfreq);
             if (DSP_SUCCEEDED(status)) 
             {
@@ -1243,7 +1243,7 @@ void *RM_CPULoadThread(int pipeToWatch)
                 /* get the dsp load from the Registry call by a DSP wake up*/
                 status = DSPRegistry_Find(QOSDataType_Processor_C6X, registry, results, &NumFound);
                 if ( !DSP_SUCCEEDED(status) && status != DSP_ESIZE) {
-                    RM_DPRINT("None.\n stub_mode=%d\n", stub_mode);
+                    RM_DPRINT("None.\n\n");
                 }
 
                 results = malloc(NumFound * sizeof (struct QOSDATA *));
