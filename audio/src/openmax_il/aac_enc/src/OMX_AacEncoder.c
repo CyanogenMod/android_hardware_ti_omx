@@ -435,6 +435,14 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from loading ResourceManagerProxy thread\n",__LINE__);
         goto EXIT;
     }
+    pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
+    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
+    LOGE("BAW: rm_error = %x",rm_error);
+    if (rm_error != OMX_ErrorNone) {
+    LOGE("BAW:  AAC Encoder Exiting ");
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
 #endif
 #ifndef UNDER_CE
 #ifdef DSP_RENDERING_ON
@@ -475,10 +483,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pComponentPrivate->nPendingStateChangeRequests = 0;
 
-#ifdef RESOURCE_MANAGER_ENABLED
-    pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
-    rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
-#endif
 
 EXIT:
     if (pComponentPrivate != NULL) {
