@@ -285,6 +285,10 @@ OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentNam
                     componentTable[refIndex].refCount += 1;
                     goto UNLOCK_MUTEX;  // Component is found, and thus we are done
                 }
+                else if (err == OMX_ErrorInsufficientResources) {
+                        LOGE("%d :: Core: Insufficient Resources for Component %d\n",__LINE__, err);
+                        goto CLEAN_UP;
+                }
             }
         }
     }
