@@ -716,7 +716,8 @@ this option supportsonly up to 3 mega pixels
     //                7:422_IN_UY_WS, 8:422_IN_YU_WS, 9:YUV420P, 10:GRAY8, 11:GRAY4, 12:GRAY2_IN, 13:GRAY1
     if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatCbYCrY
         ||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888
-        ||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr)
+        ||  pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr
+        ||  ptCreateString[17] == 10)
     {
         ptCreateStringPPLIB[14] = 5;
     }
@@ -734,7 +735,8 @@ this option supportsonly up to 3 mega pixels
 
     //YuvOutputFormat
     // --> 0 = OFF, 1 = YUV420, 2 = YUV422ILE, 3 = YUV422IBE
-    if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatYUV420PackedPlanar)
+    if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatYUV420PackedPlanar
+        && ptCreateString[17] != 10)
     {
         ptCreateStringPPLIB[15] = 1;
     }
