@@ -8408,40 +8408,32 @@ OMX_ERRORTYPE VIDDEC_CopyBuffer(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
 
     /* only if NAL-bitstream format in frame mode */
-    if (pComponentPrivate->ProcessMode == 0 && pComponentPrivate->H264BitStreamFormat > 0) {
+    if (
+        ((pComponentPrivate->ProcessMode == 0 && pComponentPrivate->H264BitStreamFormat > 0)
+     || (pBuffHead->nFilledLen > pComponentPrivate->eFirstBuffer.nFilledLen))
+     && (pBuffHead->nAllocLen >= pComponentPrivate->eFirstBuffer.nFilledLen + pBuffHead->nFilledLen)
+       ) {
         OMX_MALLOC_STRUCT_SIZED(pTemp, OMX_U8, pBuffHead->nFilledLen, NULL);
         memcpy(pTemp, pBuffHead->pBuffer, pBuffHead->nFilledLen); /*copy somewere actual buffer*/
         memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer to the beganing of pBuffer.*/
-        memcpy(pBuffHead->pBuffer+((OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen), (OMX_U8 *)pTemp, pBuffHead->nFilledLen); /* copy back actual buffer after first buffer*/
-        pBuffHead->nFilledLen += (OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen; /*Add first buffer size*/
+        memcpy((OMX_U8 *)pBuffHead->pBuffer+pComponentPrivate->eFirstBuffer.nFilledLen, pTemp, pBuffHead->nFilledLen); /* copy back actual buffer after first buffer*/
+        pBuffHead->nFilledLen += pComponentPrivate->eFirstBuffer.nFilledLen; /*Add first buffer size*/
 
         free(pTemp);
         free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
         pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
     }
-    else {
-        if (pBuffHead->nFilledLen > pComponentPrivate->eFirstBuffer.nFilledLen) {
-            OMX_MALLOC_STRUCT_SIZED(pTemp, OMX_U8, pBuffHead->nFilledLen, NULL);
-            memcpy(pTemp, pBuffHead->pBuffer, pBuffHead->nFilledLen); /*copy somewere actual buffer*/
-            memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer to the beganing of pBuffer.*/
-            memcpy(pBuffHead->pBuffer+((OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen), (OMX_U8 *)pTemp, pBuffHead->nFilledLen); /* copy back actual buffer after first buffer*/
-            pBuffHead->nFilledLen += (OMX_U8)pComponentPrivate->eFirstBuffer.nFilledLen; /*Add first buffer size*/
-
-            free(pTemp);
-            free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
-            pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
-        }
         /*The first buffer has more information than the second, so the first buffer will be send to codec*/
         /*We are loosing the second fame. TODO: Fix this*/
-        else {
+        else if (pBuffHead->nAllocLen >= pComponentPrivate->eFirstBuffer.nFilledLen){
             /*copy first buffer data to the actual buffer*/
             memcpy(pBuffHead->pBuffer, pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pComponentPrivate->eFirstBuffer.nFilledLen); /*copy first buffer*/
             pBuffHead->nFilledLen = pComponentPrivate->eFirstBuffer.nFilledLen; /*Update buffer size*/
             free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
             pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+        } else {
+            LOGE("Not enough memory in the buffer to concatenate the 2 frames, loosing first frame\n");
         }
-    }
-
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "OUT\n");
     return eError;
