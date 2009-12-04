@@ -8854,11 +8854,9 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 #endif
     else {
-        if(pComponentPrivate->eState == OMX_StateIdle) {
-            eError = VIDDEC_Set_Debocking(pComponentPrivate);
-            if (eError != OMX_ErrorNone){
-                goto EXIT;
-            }
+        eError = VIDDEC_Set_Debocking(pComponentPrivate);
+        if (eError != OMX_ErrorNone){
+            goto EXIT;
         }
     }
 
