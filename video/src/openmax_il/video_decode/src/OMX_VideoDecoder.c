@@ -1458,8 +1458,11 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
             if (mDebugFps == OMX_FALSE) {
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
-                        pComponentPrivate->pDeblockingParamType->bDeblocking = 
-                            ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;
+                        /*pComponentPrivate->pDeblockingParamType->bDeblocking = 
+                            ((OMX_PARAM_DEBLOCKINGTYPE*)pCompParam)->bDeblocking;*/
+                        /*codec is not supporting deblocking by now*/
+                        pComponentPrivate->pDeblockingParamType->bDeblocking = OMX_FALSE;
+                        eError = OMX_ErrorUnsupportedIndex;
                     break;
                 }
             }
