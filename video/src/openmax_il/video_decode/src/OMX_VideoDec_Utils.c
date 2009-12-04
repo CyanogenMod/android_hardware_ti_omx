@@ -3034,7 +3034,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 #endif
                 else {
                     if(pComponentPrivate->eState == OMX_StateIdle) {
-                        eError = VIDDEC_Set_Debocking(pComponentPrivate);
+                        eError = VIDDEC_SetMpeg4_Parameters(pComponentPrivate);
                         if (eError != OMX_ErrorNone){
                             goto EXIT;
                         }
@@ -8854,7 +8854,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 #endif
     else {
-        eError = VIDDEC_Set_Debocking(pComponentPrivate);
+        eError = VIDDEC_SetMpeg4_Parameters(pComponentPrivate);
         if (eError != OMX_ErrorNone){
             goto EXIT;
         }
@@ -9062,7 +9062,7 @@ EXIT:
 
 /* ========================================================================== */
 /**
- *  VIDDEC_Set_Debocking() Enable Deblocking filter
+ *  VIDDEC_SetMpeg4_Parameters() Enable Deblocking filter
  *       
  * @param
  *     pComponentPrivate            Component private structure
@@ -9073,7 +9073,7 @@ EXIT:
  **/
 /* ========================================================================== */
 
-OMX_ERRORTYPE VIDDEC_Set_Debocking(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
+OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 {
     MP4VDEC_UALGDynamicParams* pDynParams = NULL;
     LCML_DSP_INTERFACE* pLcmlHandle = NULL;
