@@ -525,6 +525,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->bSetLumaQuantizationTable = OMX_FALSE;
     pComponentPrivate->bSetChromaQuantizationTable = OMX_FALSE;    
     pComponentPrivate->bConvert420pTo422i = OMX_FALSE;
+#ifdef __JPEG_OMX_PPLIB_ENABLED__
+    pComponentPrivate->bPPLibEnable = OMX_TRUE;
+#else
+    pComponentPrivate->bPPLibEnable = OMX_FALSE;
+#endif
 
     pComponentPrivate->InParams.pInParams = NULL;
     pComponentPrivate->InParams.size = 0;   
@@ -1530,8 +1535,16 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 	break;
 
 	case OMX_IndexCustomColorFormatConvertion_420pTo422i :
-	{		
-		pComponentPrivate->bConvert420pTo422i = *((OMX_BOOL*)ComponentConfigStructure);			
+	{
+		pComponentPrivate->bConvert420pTo422i = *((OMX_BOOL*)ComponentConfigStructure);
+		break;
+	}
+
+	 case OMX_IndexCustomPPLibEnable :
+	{
+#ifdef __JPEG_OMX_PPLIB_ENABLED__
+		pComponentPrivate->bPPLibEnable = *((OMX_BOOL*)ComponentConfigStructure);
+#endif
 		break;
 	}
 
@@ -2344,6 +2357,7 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.encoder.Config.DRI", OMX_IndexCustomDRI},
     {"OMX.TI.JPEG.encoder.Config.Debug", OMX_IndexCustomDebug},
     {"OMX.TI.JPEG.encoder.Config.ColorFormatConvertion_420pTo422i", OMX_IndexCustomColorFormatConvertion_420pTo422i},
+    {"OMX.TI.JPEG.encoder.Config.PPLibEnable", OMX_IndexCustomPPLibEnable},
     {"",0x0}
     };
 
