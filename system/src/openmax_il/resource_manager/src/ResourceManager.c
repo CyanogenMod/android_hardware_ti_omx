@@ -138,7 +138,7 @@ int main()
     fd_set watchset;
     OMX_BOOL Exitflag = OMX_FALSE;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    
+    int reuse_pipe = -1;
 
 #ifndef __ENABLE_RMPM_STUB__
     int MemoryIsPresent = FALSE;
@@ -240,29 +240,19 @@ int main()
 
                     case RM_OpenPipe:
                         // create pipe for write
-                        RM_itoa((int)cmd_data.nPid,rmsideHandleString);
-                        strcpy(rmsideNamedPipeName,RM_SERVER_OUT);
-                        strcat(rmsideNamedPipeName,"_");
-                        strcat(rmsideNamedPipeName,rmsideHandleString);
+                        RM_CreatePipe(cmd_data,rmsideNamedPipeName,rmsideHandleString);
 
-                        // try to create the pipe, don't fail it already exists (reuse the pipe instead)
-                        RM_DPRINT("[Resource Manager] - Create and open the write (out) pipe\n");
-                        if((mknod(rmsideNamedPipeName,S_IFIFO|PERMS,0)<0) && (errno!=EEXIST))
-                        RM_DPRINT("[Resource Manager] - mknod failure to create the write pipe, error=%d\n", errno);
-                        //wait for the pipe to be established before opening it.??
-
-                        RM_DPRINT("[Resource Manager] - Try opening the write out pipe for PID %d\n", (int)cmd_data.nPid);
-                        if((fdwrite=open(rmsideNamedPipeName,O_WRONLY))<0) {
-                            RM_DPRINT("[Resource Manager] - failure to open the WRITE pipe, errno=%d\n", errno);
-                        }
-                        else {
-                            RM_DPRINT("[Resource Manager] - WRITE pipe opened successfully, Add pipe to the table\n");
-                            RM_AddPipe(cmd_data,fdwrite);
-                        }
                         break;
                         
                     case RM_ReusePipe:
-                        RM_AddPipe(cmd_data,RM_GetPipe((OMX_HANDLETYPE)cmd_data.param4,cmd_data.nPid));
+                        reuse_pipe = RM_GetPipe((OMX_HANDLETYPE)cmd_data.param4,cmd_data.nPid);
+                        if(reuse_pipe != -1){
+                            RM_AddPipe(cmd_data,reuse_pipe);
+                        }
+                        else{
+                            RM_DPRINT("[Resource Manager] - Couldn't reuse pipe, opening a new one \n");
+                            RM_CreatePipe(cmd_data,rmsideNamedPipeName,rmsideHandleString);
+                        }
                         break;
 
 
@@ -860,6 +850,28 @@ void RM_ClosePipe(RESOURCEMANAGER_COMMANDDATATYPE cmd_data)
     }
  }
 
+void RM_CreatePipe(RESOURCEMANAGER_COMMANDDATATYPE cmd_data, char rmsideNamedPipeName[],char rmsideHandleString[])
+{
+    RM_itoa((int)cmd_data.nPid,rmsideHandleString);
+    strcpy(rmsideNamedPipeName,RM_SERVER_OUT);
+    strcat(rmsideNamedPipeName,"_");
+    strcat(rmsideNamedPipeName,rmsideHandleString);
+
+    // try to create the pipe, don't fail it already exists (reuse the pipe instead)
+    RM_DPRINT("[Resource Manager] - Create and open the write (out) pipe\n");
+    if((mknod(rmsideNamedPipeName,S_IFIFO|PERMS,0)<0) && (errno!=EEXIST))
+    RM_DPRINT("[Resource Manager] - mknod failure to create the write pipe, error=%d\n", errno);
+    //wait for the pipe to be established before opening it.??
+
+    RM_DPRINT("[Resource Manager] - Try opening the write out pipe for PID %d\n", (int)cmd_data.nPid);
+    if((fdwrite=open(rmsideNamedPipeName,O_WRONLY))<0) {
+        RM_DPRINT("[Resource Manager] - failure to open the WRITE pipe, errno=%d\n", errno);
+    }
+    else {
+        RM_DPRINT("[Resource Manager] - WRITE pipe opened successfully, Add pipe to the table\n");
+        RM_AddPipe(cmd_data,fdwrite);
+    }
+}
 
 void RM_itoa(int n, char s[])
 {
