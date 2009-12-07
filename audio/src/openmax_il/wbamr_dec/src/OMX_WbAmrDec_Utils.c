@@ -2277,6 +2277,21 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 }
             }
         }
+        else
+        {
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "line %d:: No Frames in Buffer, calling EmptyBufferDone\n",__LINE__);
+            pComponentPrivate->nEmptyBufferDoneCount++;
+#ifdef __PERF_INSTRUMENTATION__
+            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      pBufHeader->pBuffer,
+                                      0,
+                                      PERF_ModuleHLMM);
+#endif
+            pComponentPrivate->cbInfo.EmptyBufferDone( pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       pBufHeader);
+            SignalIfAllBuffersAreReturned(pComponentPrivate);
+        }
 
         if (pComponentPrivate->bFlushInputPortCommandPending) {
             OMX_SendCommand(pComponentPrivate->pHandle,OMX_CommandFlush,0,NULL);
