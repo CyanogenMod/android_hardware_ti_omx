@@ -151,6 +151,7 @@ void HandleCancelWaitForResource(RESOURCEMANAGER_COMMANDDATATYPE cmd);
 void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd);
 void RM_AddPipe(RESOURCEMANAGER_COMMANDDATATYPE cmd, int aPipe);
 void RM_ClosePipe(RESOURCEMANAGER_COMMANDDATATYPE cmd_data);
+void RM_CreatePipe(RESOURCEMANAGER_COMMANDDATATYPE cmd_data, char rmsideNamedPipeName[],char rmsideHandleString[]);
 int RM_RemoveComponentFromList(OMX_HANDLETYPE hComponent, OMX_U32 aPid);
 int RM_GetPipe(OMX_HANDLETYPE hComponent,OMX_U32 aPid);
 void RM_itoa(int n, char s[]);
