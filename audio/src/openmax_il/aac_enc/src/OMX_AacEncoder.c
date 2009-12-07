@@ -437,9 +437,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     }
     pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
-    LOGE("BAW: rm_error = %x",rm_error);
     if (rm_error != OMX_ErrorNone) {
-    LOGE("BAW:  AAC Encoder Exiting ");
+        RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_AAC_Encoder_COMPONENT, 0, 3456, NULL);
+        RMProxy_Deinitalize();
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
