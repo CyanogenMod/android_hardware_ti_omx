@@ -684,10 +684,11 @@ this option supportsonly up to 3 mega pixels
 	else if (pComponentPrivate->bConvert420pTo422i ){
 		if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar ){
 			ptCreateString[17] = 10;
-#ifdef __JPEG_OMX_PPLIB_ENABLED__
-            /* memory requirement for having both conversion and pplib is much larger */
-            lcml_dsp->ProfileID +=3;
-#endif
+			if(pComponentPrivate->bPPLibEnable)
+			{
+				/* memory requirement for having both conversion and pplib is much larger */
+				lcml_dsp->ProfileID +=3;
+			}
 		}
 		else{
 			OMX_PRMGR4(pComponentPrivate->dbg, "Error invalid ColorFormat for YUVConvertion\n");
@@ -750,7 +751,13 @@ this option supportsonly up to 3 mega pixels
     //     7 = GRAY8, 8 = GRAY4, 9 = GRAY2, 10 = GRAY1
     ptCreateStringPPLIB[16] = 0;
 
-    ptCreateString[34] = END_OF_CR_PHASE_ARGS;
+    if(pComponentPrivate->bPPLibEnable)
+    {
+        ptCreateString[34] = END_OF_CR_PHASE_ARGS;
+    }else
+    {
+        ptCreateString[20] = END_OF_CR_PHASE_ARGS;
+    }
 #else
     ptCreateString[20] = END_OF_CR_PHASE_ARGS;
 #endif
