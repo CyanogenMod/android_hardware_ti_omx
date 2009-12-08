@@ -5280,7 +5280,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pCSD = pBuffHead->pBuffer;
                 pCSD += CSD_POSITION;
                 nSize_CSD = pBuffHead->nFilledLen - CSD_POSITION;
-#elif
+#else
                 pCSD = pBuffHead->pBuffer;
                 nSize_CSD = pBuffHead->nFilledLen;
 #endif
