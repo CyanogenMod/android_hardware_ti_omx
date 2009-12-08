@@ -61,7 +61,8 @@ typedef enum _OMAP_CPU
 {
     OMAP3420_CPU = 0,
     OMAP3430_CPU,
-    OMAP3440_CPU
+    OMAP3440_CPU,
+    OMAP_NOT_SUPPORTED /* this should always be at the end of the list */
 } OMAP_CPU;
 
 /* for 3420 family */
