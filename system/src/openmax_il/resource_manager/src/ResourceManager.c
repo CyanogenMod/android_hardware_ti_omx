@@ -155,15 +155,25 @@ int main()
                         read we will wait to give time for the policy manager time to establish pipes */
     componentList.numRegisteredComponents = 0;
 
-#ifndef __ENABLE_RMPM_STUB__
-    /* try initialize Qos, if fail fallback to stub mode */
-    eError = InitializeQos();
-    if (eError != OMX_ErrorNone)
-    {
-        RM_DPRINT ("InitializeQos failed, fallback to stub mode\n");
+    /* check that running OMAP is supported, if not fallback to stub mode */
+    if (get_omap_version() == OMAP_NOT_SUPPORTED){
         stub_mode = 1;
+        RM_DPRINT("OMAP version not supported by RM: falling back to stub mode\n");
     }
-    if (!stub_mode)
+
+#ifndef __ENABLE_RMPM_STUB__
+    /* if already set stub mode, we don't need to check for QoS */
+    if (!stub_mode){
+        /* try initialize Qos, if fail fallback to stub mode */
+        eError = InitializeQos();
+        if (eError != OMX_ErrorNone)
+        {
+            RM_DPRINT ("InitializeQos failed, fallback to stub mode\n");
+            stub_mode = 1;
+        }
+    }
+    /* after here, we know for sure if we are in stub_mode or not. */
+    if (!stub_mode) 
     {
         // create pipe for read
         if((pmfdwrite=open(PM_SERVER_IN,O_WRONLY))<0)

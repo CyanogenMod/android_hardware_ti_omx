@@ -158,6 +158,11 @@ int dsp_mhz_to_vdd1_opp(int MHz)
     return vdd1_opp;
 }
 
+
+/*===================================================================
+/* returns OMAP_NOT_SUPPORTED if not supported by this version of RM, otherwise returns
+/* the enum value for the correct omap
+=====================================================================*/
 int get_omap_version()
 {
     int cpu_variant = 0;
@@ -178,7 +183,10 @@ int get_omap_version()
         /* 3440 has 6 OPPs */
         cpu_variant = OMAP3440_CPU;
     }
-    
+    else {
+        cpu_variant = OMAP_NOT_SUPPORTED;
+    }
+
     return cpu_variant;
     
 }

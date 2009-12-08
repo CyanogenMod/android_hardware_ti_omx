@@ -503,7 +503,7 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
 
     if (cmd == RMProxy_RequestResource) {
 #ifndef __ENABLE_RMPM_STUB__
-        if(RMProxy_CheckQosDependency())
+        if(!RMProxy_CheckForStubMode())
         {
             // wait for response back from resource manager server 
             if (sem) { 
@@ -518,7 +518,7 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
             RM_Error=NULL;
         }
 #else
-        if(!RMProxy_CheckQosDependency())
+        if(RMProxy_CheckForStubMode())
         {
             /* if using stubbed implementation always return grant */
             ReturnValue = OMX_ErrorNone;
@@ -532,19 +532,30 @@ OMX_ERRORTYPE RMProxy_NewSendCommand(OMX_HANDLETYPE hComponent, RMPROXY_COMMANDT
 
 }
 /* scan for QoS dll, if DNE then fall back to stub mode */
-int RMProxy_CheckQosDependency()
+int RMProxy_CheckForStubMode()
 {
     char *qosdllname;
+    int stubMode = 0;
 
+    /* first check omap version is supported */
+    if (get_omap_version() == OMAP_NOT_SUPPORTED){
+        stubMode = 1;
+        RMPROXY_DPRINT("OMAP version not supported by RM: falling back to stub mode\n");
+        return stubMode;
+    }
+   
+    /* check QoS dependency is also met */
     qosdllname = getenv ("QOSDYN_FILE");
     if (qosdllname == NULL) /*is the var defined? */
     {
-        return 0;
+        stubMode = 1;
     }
     if(fopen(qosdllname, "r") == NULL)
-       return 0;
+        stubMode = 1;
     else
-       return 1; //file exists, so no need to use stub implementation
+        stubMode = 0; //file exists, so no need to use stub implementation
+
+    return stubMode;
 }
 /*
 
@@ -785,8 +796,8 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
             }
             else if (rm_data.rm_status == RM_GRANT) {
 #ifndef __ENABLE_RMPM_STUB__
-                /* if the dependency is located... */
-                if(RMProxy_CheckQosDependency())
+                /* if not in stub mode... */
+                if(!RMProxy_CheckForStubMode())
                 {
                     /* if we are stubbing out the actual implmentation there will be no response */
                     if (RM_Error) {
