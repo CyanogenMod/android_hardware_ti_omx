@@ -5124,12 +5124,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             if(bOutPortSettingsChanged && bInPortSettingsChanged){
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "sending OMX_EventPortSettingsChanged to both ports\n");
 
-
-#ifdef ANDROID
-                /*We must send first INPUT port callback*/
-                VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sDynConfigMutex);
-#endif
-
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                     pComponentPrivate->pHandle->pApplicationPrivate,
                                                     OMX_EventPortSettingsChanged,
@@ -5143,10 +5137,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                                                     VIDDEC_OUTPUT_PORT,
                                                     0,
                                                     NULL);
-
-#ifdef ANDROID
-                VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sDynConfigMutex);
-#endif
                 eError = OMX_ErrorBadParameter;
                 goto EXIT;
             }

@@ -972,7 +972,6 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     pthread_mutex_t mutexOutputBFromApp;
     pthread_mutex_t mutexInputBFromDSP;
     pthread_mutex_t mutexOutputBFromDSP;
-    VIDDEC_MUTEX sDynConfigMutex;
     VIDDEC_SEMAPHORE sInSemaphore;
     VIDDEC_SEMAPHORE sOutSemaphore;
     /* used by RM callback */
