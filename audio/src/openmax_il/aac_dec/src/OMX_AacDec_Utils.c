@@ -1731,7 +1731,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandFlush) {
         if(commandData == 0x0 || commandData == -1) {
-            if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
+            OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n", pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
+            if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
                     OMX_PRCOMM2(pComponentPrivate->dbg, "about to be Flushing input port\n");
@@ -1785,7 +1786,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
         if(commandData == 0x1 || commandData == -1){
-            if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
+            OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n", pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
+            if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
                 AACDEC_EPRINT("About to be Flushing output port\n");
@@ -1989,7 +1991,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         goto EXIT;
     }
     if (eDir == OMX_DirInput) {
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        pComponentPrivate->nHandledEmptyThisBuffers++;
         if (pComponentPrivate->curState == OMX_StateIdle){
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2335,7 +2337,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             OMX_SendCommand(pComponentPrivate->pHandle,OMX_CommandFlush,0,NULL);
         }
     }else if (eDir == OMX_DirOutput) {
-        pComponentPrivate->nUnhandledFillThisBuffers--;
+        pComponentPrivate->nHandledFillThisBuffers++;
         if (pComponentPrivate->curState == OMX_StateIdle){
             pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                       pComponentPrivate->pHandle->pApplicationPrivate,
