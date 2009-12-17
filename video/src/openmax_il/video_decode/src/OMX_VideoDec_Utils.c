@@ -2856,6 +2856,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                    (void*)p);
                         if (eError != OMX_ErrorNone) {
                             eError = OMX_ErrorHardware;
+                            pTmp = (char*)pDynParams;
+                            pTmp -= VIDDEC_PADDING_HALF;
+                            pDynParams = (H264_Iualg_Cmd_SetStatus*)pTmp;
+                            free(pDynParams);
                             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                             break;
                         }
@@ -3014,6 +3018,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                        (void*)p);
                             if (eError != OMX_ErrorNone) {
                                 eError = OMX_ErrorHardware;
+                                pTmp = (char*)pDynParams;
+                                pTmp -= VIDDEC_PADDING_HALF;
+                                pDynParams = (SPARKVDEC_UALGDynamicParams*)pTmp;
+                                free(pDynParams);
                                 goto EXIT;
                             }
                             VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
