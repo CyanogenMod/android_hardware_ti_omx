@@ -3898,14 +3898,19 @@ EXIT:
 }
 
 #ifdef VIDDEC_ACTIVATEPARSER
-OMX_S32 GET_NUM_BIT_REQ(OMX_U32 num)
+OMX_U32 GET_NUM_BIT_REQ(OMX_U32 num)
 {
-    OMX_S32 i;
-    for ( i = 31; i >= 0; i--)
-    {
-        if (num & (0x1 << i) ) break;
+    OMX_U8 i = 0;
+    if (num){
+       num--;
+       for ( i = 32; i != 0; i--)
+       {
+          if (num & (0x1 << (i-1)) ) break;
+       }
+    } else {
+       printf("%d: Error in GET_NUM_BIT_REQ arg can't be zero\n", __LINE__);
     }
-    return (i+1);
+    return (i);
 }
 #endif
 
