@@ -4021,8 +4021,8 @@ static OMX_ERRORTYPE ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 
     if (hComponent==NULL)
     {
-        goto OMX_CONF_CMD_BAIL;
         eError= OMX_ErrorBadParameter;
+        goto OMX_CONF_CMD_BAIL;
         }
 
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
