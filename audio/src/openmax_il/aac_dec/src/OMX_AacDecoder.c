@@ -702,7 +702,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 {
     OMXDBG_PRINT(stderr, PRINT, 2, 0,"%d :: Entering OMX_GetParameter\n", __LINE__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    AACDEC_COMPONENT_PRIVATE  *pComponentPrivate;
+    AACDEC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
     pParameterStructure = (OMX_PARAM_PORTDEFINITIONTYPE*)ComponentParameterStructure;
     
@@ -1912,9 +1912,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
  EXIT:
-    if(OMX_ErrorNone != eError) {
-        OMX_PRINT1(pComponentPrivate->dbg, "%d :: ************* ERROR: Freeing Other Malloced Resources\n",__LINE__);
-	    OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+    if(OMX_ErrorNone != eError && NULL != pBufferHeader) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
         OMX_MEMFREE_STRUCT(pBufferHeader);
     }
     return eError;
