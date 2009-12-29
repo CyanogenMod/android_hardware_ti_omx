@@ -536,6 +536,7 @@ int RMProxy_CheckForStubMode()
 {
     char *qosdllname;
     int stubMode = 0;
+    FILE* fp = NULL;
 
     /* first check omap version is supported */
     if (get_omap_version() == OMAP_NOT_SUPPORTED){
@@ -550,10 +551,13 @@ int RMProxy_CheckForStubMode()
     {
         stubMode = 1;
     }
-    if(fopen(qosdllname, "r") == NULL)
+    if( (fp = fopen(qosdllname, "r")) == NULL) {
         stubMode = 1;
-    else
+        }
+    else {
         stubMode = 0; //file exists, so no need to use stub implementation
+        fclose(fp);
+        }
 
     return stubMode;
 }
