@@ -2623,6 +2623,7 @@ OMX_HANDLETYPE NBAMRENC_GetLCMLHandle(AMRENC_COMPONENT_PRIVATE *pComponentPrivat
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     eError = (*fpGetHandle)(&pHandle);
@@ -2630,6 +2631,7 @@ OMX_HANDLETYPE NBAMRENC_GetLCMLHandle(AMRENC_COMPONENT_PRIVATE *pComponentPrivat
         eError = OMX_ErrorUndefined;
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: OMX_ErrorUndefined...\n",__LINE__);
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
     pComponentPrivate_CC = (AMRENC_COMPONENT_PRIVATE*)pComponentPrivate;

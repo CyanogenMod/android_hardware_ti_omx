@@ -2431,6 +2431,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     if ((error = dlerror()) != NULL)
     {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     
@@ -2440,6 +2441,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         eError = OMX_ErrorUndefined;
         OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...");
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
     

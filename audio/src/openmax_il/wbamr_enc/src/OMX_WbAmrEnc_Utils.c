@@ -2834,6 +2834,7 @@ OMX_HANDLETYPE WBAMRENC_GetLCMLHandle(WBAMRENC_COMPONENT_PRIVATE *pComponentPriv
 
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
 
@@ -2843,6 +2844,7 @@ OMX_HANDLETYPE WBAMRENC_GetLCMLHandle(WBAMRENC_COMPONENT_PRIVATE *pComponentPriv
         eError = OMX_ErrorUndefined;
         OMX_ERROR4(pComponentPrivate->dbg, "OMX_ErrorUndefined...\n");
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
 

@@ -2951,6 +2951,7 @@ OMX_HANDLETYPE MP3DEC_GetLCMLHandle(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     eError = (*fpGetHandle)(&pHandle);
@@ -2958,6 +2959,7 @@ OMX_HANDLETYPE MP3DEC_GetLCMLHandle(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
         eError = OMX_ErrorUndefined;
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "eError != OMX_ErrorNone...\n");
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
 

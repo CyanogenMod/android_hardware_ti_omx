@@ -3063,6 +3063,7 @@ OMX_HANDLETYPE NBAMRDECGetLCMLHandle(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate
     if ((error = (void*)dlerror()) != NULL) 
     {
         fputs((void*)error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     eError = (*fpGetHandle)(&pHandle);
@@ -3070,6 +3071,7 @@ OMX_HANDLETYPE NBAMRDECGetLCMLHandle(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate
         eError = OMX_ErrorUndefined;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: eError != OMX_ErrorNone...\n",__LINE__);
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
     pComponentPrivate->bLcmlHandleOpened = 1;
