@@ -1699,7 +1699,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     aParam[1] = 0x0; 
                     aParam[2] = 0x0; 
 
-                    OMX_ERROR4(pComponentPrivate->dbg, "Flushing input port\n");
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing input port\n");
                     OMX_ERROR2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec FLUSH in %d\n", __LINE__);
                     if (pComponentPrivate->codecFlush_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
@@ -1757,7 +1757,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     aParam[1] = 0x1; 
                     aParam[2] = 0x0; 
 
-                    OMX_ERROR4(pComponentPrivate->dbg, "Flushing output port\n");
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing output port\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec FLUSH out %d\n", __LINE__);
                     if (pComponentPrivate->codecFlush_waitingsignal == 0){
                         pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
@@ -2603,19 +2603,19 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             if((pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount) || (pComponentPrivate->nFillThisBufferCount != pComponentPrivate->nFillBufferDoneCount)) {
                 if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
                 {
-                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: bufferReturned_mutex mutex lock error\n",__LINE__);
                 }
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "pthread_cond_waiting for OMX to return all input and outbut buffers");
+                OMX_PRINT2(pComponentPrivate->dbg, ":: pthread_cond_waiting for OMX to return all input and outbut buffers\n");
                 pthread_cond_wait(&bufferReturned_condition, &bufferReturned_mutex);
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
+                OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
                 if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
                 {
-                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: bufferReturned_mutex mutex unlock error\n",__LINE__);
                 }
             }
             else
             {
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
+                OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
             }
             if(pComponentPrivate->bPreempted==0){
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2713,7 +2713,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     if(pComponentPrivate->codecFlush_waitingsignal == 0){
                         pComponentPrivate->codecFlush_waitingsignal = 1; 
                         pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
-                        OMX_ERROR4(pComponentPrivate->dbg, "flush ack. received. for input port\n");
+                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for input port\n");
                     }     
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
 
@@ -2757,7 +2757,7 @@ OMX_ERRORTYPE MP3DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     if(pComponentPrivate->codecFlush_waitingsignal == 0){
                         pComponentPrivate->codecFlush_waitingsignal = 1; 
                         pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
-                        OMX_ERROR4(pComponentPrivate->dbg, "flush ack. received. for output port\n");
+                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for output port\n");
                     }     
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
@@ -3514,13 +3514,13 @@ void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
     {
         if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
         {
-            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: bufferReturned_mutex mutex lock error\n",__LINE__);
         }
         pthread_cond_broadcast(&bufferReturned_condition);
-        OMXDBG_PRINT(stderr, PRINT, 1, 0, "Sending pthread signal that OMX has returned all buffers to app"); 
+        OMX_PRINT2(pComponentPrivate->dbg, ":: Sending pthread signal that OMX has returned all buffers to app\n");
         if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
         {
-            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: bufferReturned_mutex mutex unlock error\n",__LINE__);
         }
         return;
     }

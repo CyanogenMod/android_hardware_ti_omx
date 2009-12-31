@@ -1863,9 +1863,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_BUFFERHEADERTYPE *pBufferHeader = NULL;
 
 
-    OMXDBG_PRINT(stderr, PRINT, 4, 0, ":: Entering AllocateBuffer\n");
     MP3D_OMX_CONF_CHECK_CMD(hComponent,1,1);
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_PRINT1 (pComponentPrivate->dbg,"Entering AllocateBuffer\n");
     
     MP3D_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 #ifdef _ERROR_PROPAGATION__
@@ -2052,7 +2052,7 @@ static OMX_ERRORTYPE FreeBuffer(
     for (i=0; i < MP3D_MAX_NUM_OF_BUFS; i++) {
         buff = (OMX_U8 *)pComponentPrivate->pOutputBufferList->pBufHdr[i];
         if (buff == (OMX_U8 *)pBuffer) {
-            OMX_ERROR4(pComponentPrivate->dbg, "Found matching output buffer\n");
+            OMX_PRINT2(pComponentPrivate->dbg, "Found matching output buffer\n");
             OMX_PRBUFFER2(pComponentPrivate->dbg, "buff = %p\n",buff);
             OMX_PRBUFFER2(pComponentPrivate->dbg, "pBuffer = %p\n",pBuffer);
             outputIndex = i;

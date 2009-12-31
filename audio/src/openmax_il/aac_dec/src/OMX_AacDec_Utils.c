@@ -1790,13 +1790,13 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
-                AACDEC_EPRINT("About to be Flushing output port\n");
+                OMX_PRCOMM2(pComponentPrivate->dbg, "About to be Flushing output port\n");
                 if(pComponentPrivate->num_Op_Issued && !pComponentPrivate->reconfigOutputPort ){ //no buffers sent to DSP yet
                     aParam[0] = USN_STRMCMD_FLUSH;
                     aParam[1] = 0x1;
                     aParam[2] = 0x0;
 
-                    AACDEC_EPRINT("Flushing output port dsp\n");
+                    OMX_PRCOMM2(pComponentPrivate->dbg,"Flushing output port dsp\n");
                     if (pComponentPrivate->codecFlush_waitingsignal == 0){
                             pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
                     }
@@ -1811,7 +1811,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         goto EXIT;
                     }
                 }else{
-                    AACDEC_EPRINT("skipped dsp flush, Flushing output port\n");
+                    OMX_ERROR2(pComponentPrivate->dbg,"skipped dsp flush, Flushing output port\n");
 //force FillBufferDone calls on pending buffers
                     for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
 #ifdef __PERF_INSTRUMENTATION__
@@ -2938,7 +2938,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     if(pComponentPrivate->codecFlush_waitingsignal == 0){
                         pComponentPrivate->codecFlush_waitingsignal = 1; 
                         pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
-                        OMX_ERROR4(pComponentPrivate->dbg, "flush ack. received. for output port\n");
+                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for output port\n");
                     }     
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
