@@ -420,6 +420,7 @@ typedef enum {
 typedef struct {
     /* Set to 1 if buffer is last buffer */
     unsigned long bLastBuffer;
+    unsigned long ulFrameIndex;
 }MP3DEC_UAlgInBufParamStruct;
 
 /* ======================================================================= */
@@ -443,6 +444,7 @@ typedef struct USN_AudioCodecParams{
 /* ==================================================================== */
 typedef struct {
     /* Number of frames in a buffer */
+    unsigned long ulFrameIndex;
     unsigned long ulFrameCount;
     unsigned long ulIsLastBuffer;
 }MP3DEC_UAlgOutBufParamStruct;

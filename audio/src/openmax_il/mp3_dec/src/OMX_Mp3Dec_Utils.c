@@ -295,6 +295,7 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
                              sizeof(MP3DEC_UAlgInBufParamStruct),
                              MP3DEC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->bLastBuffer = 0;
+        pTemp_lcml->pIpParam->ulFrameIndex = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((MP3DEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -331,6 +332,7 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
                              MP3DEC_UAlgOutBufParamStruct);
         pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
         pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
+        pTemp_lcml->pOpParam->ulFrameIndex = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((MP3DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3404,6 +3406,7 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
                                  sizeof(MP3DEC_UAlgInBufParamStruct),
                                  MP3DEC_UAlgInBufParamStruct);
             pTemp_lcml->pIpParam->bLastBuffer = 0;
+            pTemp_lcml->pIpParam->ulFrameIndex = 0;
 
             pTemp->nFlags = NORMAL_BUFFER;
             ((MP3DEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3441,6 +3444,7 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_U32 ind
                                  MP3DEC_UAlgOutBufParamStruct);
             pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
             pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
+            pTemp_lcml->pOpParam->ulFrameIndex= 0;
 
             pTemp->nFlags = NORMAL_BUFFER;
             ((MP3DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3543,6 +3547,7 @@ void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
         case IUALG_WARN_UNDERFLOW:
         case IUALG_WARN_OVERFLOW:
         case IUALG_WARN_ENDOFDATA:
+        case IUALG_WARN_ALG_ERR:
             OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
             /* all of these are informative messages, Algo can recover, no need to notify the
              * IL Client at this stage of the implementation */
