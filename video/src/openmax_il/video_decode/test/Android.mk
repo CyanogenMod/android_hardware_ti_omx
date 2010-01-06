@@ -13,7 +13,8 @@ LOCAL_SRC_FILES:= \
 	
 LOCAL_C_INCLUDES := \
 	$(TI_OMX_VIDEO)/video_decode/inc \
-	$(TI_OMX_COMP_C_INCLUDES)
+    hardware/ti/omap3/liboverlay \
+    $(TI_OMX_COMP_C_INCLUDES)
 
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES)
 
