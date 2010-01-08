@@ -70,7 +70,7 @@ static const int vdd1_dsp_mhz_3420[5] = {90, 180, 360, 360, 360};
 static const int vdd1_mpu_mhz_3420[5] = {125, 250, 500, 550, 600};
 
 /* for 3430 family */
-static const int vdd1_dsp_mhz_3430[5] = {90, 180, 360, 430, 430};
+static const int vdd1_dsp_mhz_3430[5] = {90, 180, 360, 400, 430};
 static const int vdd1_mpu_mhz_3430[5] = {125, 250, 500, 550, 600};
 
 /* for 3440 family */
