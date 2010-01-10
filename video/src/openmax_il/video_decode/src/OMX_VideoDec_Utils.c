@@ -2650,12 +2650,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                 pComponentPrivate->eState = OMX_StateIdle;
                 pComponentPrivate->bIsPaused = 0;
-
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                      return OMX_ErrorUndefined;
-                }
-
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -2743,10 +2737,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                 pComponentPrivate->bIsStopping = OMX_FALSE;
                 pComponentPrivate->eState = OMX_StateIdle;
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                      return OMX_ErrorUndefined;
-                }
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -2856,6 +2846,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                    (void*)p);
                         if (eError != OMX_ErrorNone) {
                             eError = OMX_ErrorHardware;
+                            pTmp = (char*)pDynParams;
+                            pTmp -= VIDDEC_PADDING_HALF;
+                            pDynParams = (H264_Iualg_Cmd_SetStatus*)pTmp;
+                            free(pDynParams);
                             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                             break;
                         }
@@ -3014,6 +3008,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                        (void*)p);
                             if (eError != OMX_ErrorNone) {
                                 eError = OMX_ErrorHardware;
+                                pTmp = (char*)pDynParams;
+                                pTmp -= VIDDEC_PADDING_HALF;
+                                pDynParams = (SPARKVDEC_UALGDynamicParams*)pTmp;
+                                free(pDynParams);
                                 goto EXIT;
                             }
                             VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
@@ -3096,10 +3094,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->bIsPaused = 0;
                 pComponentPrivate->iEndofInputSent = 0;
                 pComponentPrivate->eState = OMX_StateExecuting;
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                      return OMX_ErrorUndefined;
-                }
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -3241,10 +3235,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                             eError = OMX_ErrorNone;
                             pComponentPrivate->bIsPaused = 0;
                             pComponentPrivate->eState = OMX_StateLoaded;
-                            /* Decrement reference count with signal enabled */
-                            if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                                return OMX_ErrorUndefined;
-                            }
                             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    OMX_EventCmdComplete,
@@ -3262,10 +3252,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                             eError = OMX_ErrorNone;
                             pComponentPrivate->bIsPaused = 0;
                             pComponentPrivate->eState = OMX_StateLoaded;
-                            /* Decrement reference count with signal enabled */
-                            if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                                return OMX_ErrorUndefined;
-                            }
                             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    OMX_EventCmdComplete,
@@ -3290,10 +3276,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         eError = OMX_ErrorNone;
                         pComponentPrivate->bIsPaused = 0;
                         pComponentPrivate->eState = OMX_StateLoaded;
-                        /* Decrement reference count with signal enabled */
-                        if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                            return OMX_ErrorUndefined;
-                        }
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventCmdComplete,
@@ -3317,10 +3299,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         eError = OMX_ErrorNone;
                         pComponentPrivate->bIsPaused = 0;
                         pComponentPrivate->eState = OMX_StateLoaded;
-                        /* Decrement reference count with signal enabled */
-                        if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                            return OMX_ErrorUndefined;
-                        }
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventCmdComplete,
@@ -3358,10 +3336,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
                     pComponentPrivate->eState = OMX_StateLoaded;
                     pComponentPrivate->bIsPaused = 0;
-                    /* Decrement reference count with signal enabled */
-                    if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                        return OMX_ErrorUndefined;
-                    }
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete,
@@ -3378,10 +3352,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
             else if (pComponentPrivate->eState == OMX_StateWaitForResources) {
                 pComponentPrivate->eState = OMX_StateLoaded;
                 pComponentPrivate->bIsPaused = 0;
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                    return OMX_ErrorUndefined;
-                }
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -3459,10 +3429,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 eError = OMX_ErrorNone;
                 pComponentPrivate->bIsPaused = 1;
                 pComponentPrivate->eState = OMX_StatePause;
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                    return OMX_ErrorUndefined;
-                }
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -3502,10 +3468,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 eError = OMX_ErrorNone;
                 pComponentPrivate->bIsPaused = 1;
                 pComponentPrivate->eState = OMX_StatePause;
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                    return OMX_ErrorUndefined;
-                }
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -3786,6 +3748,10 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
 
 EXIT:
+    /* Decrement reference count with signal enabled */
+    if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
+        return OMX_ErrorUndefined;
+    }
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
@@ -3862,7 +3828,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
 
             OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                      EMMCodecOutputBufferMapReuse,
+                                      EMMCodecOuputBuffer,
                                       pBuffHead->pBuffer,
                                       pBuffHead->nAllocLen,
                                       pBuffHead->nFilledLen,
@@ -3890,14 +3856,19 @@ EXIT:
 }
 
 #ifdef VIDDEC_ACTIVATEPARSER
-OMX_S32 GET_NUM_BIT_REQ(OMX_U32 num)
+OMX_U32 GET_NUM_BIT_REQ(OMX_U32 num)
 {
-    OMX_S32 i;
-    for ( i = 31; i >= 0; i--)
-    {
-        if (num & (0x1 << i) ) break;
+    OMX_U8 i = 0;
+    if (num){
+       num--;
+       for ( i = 32; i != 0; i--)
+       {
+          if (num & (0x1 << (i-1)) ) break;
+       }
+    } else {
+       printf("%d: Error in GET_NUM_BIT_REQ arg can't be zero\n", __LINE__);
     }
-    return (i+1);
+    return (i);
 }
 #endif
 
@@ -5153,12 +5124,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             if(bOutPortSettingsChanged && bInPortSettingsChanged){
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "sending OMX_EventPortSettingsChanged to both ports\n");
 
-
-#ifdef ANDROID
-                /*We must send first INPUT port callback*/
-                VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sDynConfigMutex);
-#endif
-
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                     pComponentPrivate->pHandle->pApplicationPrivate,
                                                     OMX_EventPortSettingsChanged,
@@ -5172,10 +5137,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                                                     VIDDEC_OUTPUT_PORT,
                                                     0,
                                                     NULL);
-
-#ifdef ANDROID
-                VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sDynConfigMutex);
-#endif
                 eError = OMX_ErrorBadParameter;
                 goto EXIT;
             }

@@ -656,19 +656,16 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
             if (nParam1 == VIDDEC_INPUT_PORT) {
                 pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
-                VIDDEC_HandleCommandFlush(pComponentPrivate, 0, OMX_FALSE);
             }
             else if (nParam1 == VIDDEC_OUTPUT_PORT) {
                 pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-                VIDDEC_HandleCommandFlush(pComponentPrivate, 1, OMX_FALSE);
             }
             else if (nParam1 == OMX_ALL) {
                 pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
                 pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling OMX_ALL IN 0x%x OUT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled,
                     pComponentPrivate->pOutPortDef->bEnabled);
-                VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
             }
             else {
                 eError = OMX_ErrorBadParameter;
@@ -684,17 +681,7 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
                 eError = OMX_ErrorUndefined;
                 goto EXIT;
             }
-#ifdef ANDROID
-            /*Workaround version to handle pv app */
-            /*After ports is been flush*/
-
-            if (nParam1 == VIDDEC_INPUT_PORT && 
-                    pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE &&
-                    pComponentPrivate->bInPortSettingsChanged == OMX_TRUE) {
-                VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sDynConfigMutex);
-            }
-#endif
-            break;
+           break;
         case OMX_CommandPortEnable:
             if (nParam1 == VIDDEC_INPUT_PORT) {
                 pComponentPrivate->pInPortDef->bEnabled = OMX_TRUE;

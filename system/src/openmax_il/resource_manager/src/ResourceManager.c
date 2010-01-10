@@ -1114,7 +1114,10 @@ void *RM_CPULoadThread(int pipeToWatch)
 
 #ifdef DVFS_ENABLED
             FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
-            if (fp == NULL) RM_DPRINT("open file max_dsp_frequency failed\n");
+            if (fp == NULL) {
+                RM_DPRINT("open file max_dsp_frequency failed\n");
+                return NULL;
+            }
             fscanf(fp, "%d",&dsp_max_freq);
             fclose(fp);
             dsp_max_freq /= 1000000;
@@ -1129,8 +1132,10 @@ void *RM_CPULoadThread(int pipeToWatch)
                 cpu_variant = OMAP3440_CPU;
             }
             fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
-            if (fp == NULL) 
+            if (fp == NULL) {
                 RM_DPRINT("open file cpuinfo_cur_freq failed\n");
+                return NULL;
+            }
             fscanf(fp, "%d",&cur_freq);
             fclose(fp);
             cur_freq /= 1000;

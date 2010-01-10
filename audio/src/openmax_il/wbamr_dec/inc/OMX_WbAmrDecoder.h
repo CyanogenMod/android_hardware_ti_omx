@@ -610,8 +610,10 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
     
-    OMX_S8 nUnhandledFillThisBuffers;
-    OMX_S8 nUnhandledEmptyThisBuffers;
+    OMX_U32 nUnhandledFillThisBuffers;
+    OMX_U32 nHandledFillThisBuffers;
+    OMX_U32 nUnhandledEmptyThisBuffers;
+    OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
 #else

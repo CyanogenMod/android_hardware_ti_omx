@@ -2529,7 +2529,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 #ifdef UNDER_CE
     OMX_U8 i;
 #endif
-    OMX_U32 pValues[4];
     AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
     OMX_COMPONENTTYPE *pHandle = NULL;
     LCML_DSP_INTERFACE *pLcmlHandle;
@@ -3776,6 +3775,8 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
     OMX_COMPONENTTYPE *pHandle = NULL;
     OMX_U8 pending_buffers = OMX_FALSE;
     OMX_U32 i;
+    OMX_U32 pValues[4];
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     switch (arg)
     {
         case AACDEC_SBR_CONTENT:
@@ -3803,6 +3804,7 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
                                                            OMX_TI_ErrorSevere,
                                                            NULL);
                 }
+            }
 #endif
                 break;
         case AACDEC_PS_CONTENT:

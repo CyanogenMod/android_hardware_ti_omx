@@ -1644,9 +1644,10 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandFlush) {
         OMX_U32 aParam[3] = {0};
-        OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing input port %d\n",pComponentPrivate->nUnhandledEmptyThisBuffers);
+        OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+                    pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
         if(commandData == 0x0 || commandData == -1) {
-            if(pComponentPrivate->nUnhandledEmptyThisBuffers == 0) {
+            if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
 
                 aParam[0] = USN_STRMCMD_FLUSH;
@@ -1665,8 +1666,9 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
         if(commandData == 0x1 || commandData == -1){
-            OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing out port %d\n",pComponentPrivate->nUnhandledFillThisBuffers);
-            if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
+            OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+                       pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
+            if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
 
                 aParam[0] = USN_STRMCMD_FLUSH;
@@ -1758,7 +1760,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         goto EXIT;
     }
     if (eDir == OMX_DirInput) {
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        pComponentPrivate->nHandledEmptyThisBuffers++;
         if (pComponentPrivate->curState == OMX_StateIdle){
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2304,7 +2306,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
          */
 
         /*******/
-        pComponentPrivate->nUnhandledFillThisBuffers--;
+        pComponentPrivate->nHandledFillThisBuffers++;
         if (pComponentPrivate->curState == OMX_StateIdle){
             pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                       pComponentPrivate->pHandle->pApplicationPrivate,

@@ -341,7 +341,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->PendingPausedBufs = 0;
 
     pComponentPrivate->nUnhandledFillThisBuffers=0;
+    pComponentPrivate->nHandledFillThisBuffers = 0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
+    pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->SendAfterEOS = 0;
     
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
@@ -1549,8 +1551,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->pMarkData = pBuffer->pMarkData;
     pComponentPrivate->hMarkTargetComponent = pBuffer->hMarkTargetComponent;
     
-    pComponentPrivate->nUnhandledEmptyThisBuffers++;
-
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer,
                                        sizeof(OMX_BUFFERHEADERTYPE*));
     if (ret == -1) {
@@ -1558,7 +1558,10 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
         eError = OMX_ErrorHardware;
         goto EXIT;
     }
-    pComponentPrivate->nEmptyThisBufferCount++;
+    else{
+        pComponentPrivate->nUnhandledEmptyThisBuffers++;
+        pComponentPrivate->nEmptyThisBufferCount++;
+    }
 
 EXIT:
     return eError;
@@ -1585,6 +1588,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate =
                          (AMRDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef;
+    ssize_t ret;
     OMX_PRBUFFER2(pComponentPrivate->dbg, "\n------------------------------------------\n\n");
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c :: Component Sending Emptied op buff %p \
                              to Component Thread\n",__LINE__,pBuffer);
@@ -1661,11 +1665,17 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
         pComponentPrivate->pMarkData = NULL;
     }
 
-    pComponentPrivate->nUnhandledFillThisBuffers++;
-
-    write (pComponentPrivate->dataPipe[1], &pBuffer,
+    ret=write (pComponentPrivate->dataPipe[1], &pBuffer,
                                       sizeof (OMX_BUFFERHEADERTYPE*));
-    pComponentPrivate->nFillThisBufferCount++;
+    if (ret == -1) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c :: Error in Writing to the Data pipe\n", __LINE__);
+        eError = OMX_ErrorHardware;
+        goto EXIT;
+    }
+    else{
+        pComponentPrivate->nUnhandledFillThisBuffers++;
+        pComponentPrivate->nFillThisBufferCount++;
+    }
 
 EXIT:
     return eError;
