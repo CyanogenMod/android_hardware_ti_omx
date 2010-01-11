@@ -1573,7 +1573,9 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                           (OMX_U8 *)pBufHeader->pBuffer, 
                                                           pBufHeader->nAllocLen,
                                                           pBufHeader->nAllocLen,
-                                                          NULL, 0, NULL);
+                                                          NULL,
+                                                          sizeof(WMADEC_UAlgOutBufParamStruct),
+                                                          NULL);
 
                                 if (eError != OMX_ErrorNone )
                                 {
@@ -3090,7 +3092,7 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                               pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
                                               pComponentPrivate->pOutputBufHdrPending[i]->nFilledLen,
                                               NULL,
-                                              sizeof(WMADEC_UAlgInBufParamStruct),
+                                              sizeof(WMADEC_UAlgOutBufParamStruct),
                                               NULL);
                 }
             }
@@ -3716,6 +3718,7 @@ void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
         case IUALG_WARN_UNDERFLOW:
         case IUALG_WARN_OVERFLOW:
         case IUALG_WARN_ENDOFDATA:
+        case IUALG_WARN_ALG_ERR:
             OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
             /* all of these are informative messages, Algo can recover, no need to notify the
              * IL Client at this stage of the implementation */

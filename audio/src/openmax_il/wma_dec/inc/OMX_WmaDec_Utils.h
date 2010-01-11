@@ -458,7 +458,8 @@ typedef struct {
 typedef struct 
 {   
     OMX_U32      size;              
-    OMX_S32      iOutputFormat;     
+    OMX_S32      iOutputFormat;
+    OMX_S32      lMonoToStereo;
 } WMADEC_UALGParams;
 
 typedef struct {
