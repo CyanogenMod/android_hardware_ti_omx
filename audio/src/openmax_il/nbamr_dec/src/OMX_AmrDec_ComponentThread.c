@@ -42,9 +42,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <dbapi.h>
@@ -57,7 +54,6 @@
 #include <signal.h>
 #include <sys/select.h>
 
-#endif
 #include "OMX_AmrDec_Utils.h"
 #include "OMX_AmrDecoder.h"
 #include "OMX_AmrDec_ComponentThread.h"
@@ -97,14 +93,10 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-#ifndef UNDER_CE
-		sigset_t set;
-		sigemptyset (&set);
-		sigaddset (&set, SIGALRM);
-		status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
+	sigset_t set;
+	sigemptyset (&set);
+	sigaddset (&set, SIGALRM);
+	status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
 
         if (pComponentPrivate->bIsStopping == 1) {
             OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");

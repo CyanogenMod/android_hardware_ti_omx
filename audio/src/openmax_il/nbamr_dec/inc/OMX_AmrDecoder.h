@@ -233,9 +233,6 @@
 #undef AMRDEC_DEBUG
 #undef AMRDEC_MEMCHECK
 
-
-#ifndef UNDER_CE
-
 #define AMRDEC_EPRINT(...)  __android_log_print(ANDROID_LOG_VERBOSE, __FILE__,"%s %d:: ERROR    ",__FUNCTION__, __LINE__);\
                                     __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, __VA_ARGS__);\
                                     __android_log_print(ANDROID_LOG_VERBOSE, __FILE__, "\n");
@@ -262,32 +259,6 @@
 #else
         #define AMRDEC_MCP_DPRINT(...)
 #endif
-#else /*UNDER_CE*/
-#define AMRDEC_EPRINT   printf
-#ifdef  AMRDEC_DEBUG
- #define AMRDEC_DPRINT(STR, ARG...) printf()
-#else
-#endif
-
-#ifdef AMRDEC_MEMCHECK
-    #define AMRDEC_MEMPRINT(STR, ARG...) printf()
-#else
-#endif
-#ifdef UNDER_CE
-
-#ifdef DEBUG
-    #define AMRDEC_DPRINT   printf
-    #define AMRDEC_MEMPRINT   printf
-
-#else
-    #define AMRDEC_DPRINT
-    #define AMRDEC_MEMPRINT
-#endif
-
-#endif  //UNDER_CE
-
-#endif
-
 
 /* ======================================================================= */
 /**
@@ -472,21 +443,7 @@ typedef struct LCML_NBAMRDEC_BUFHEADERTYPE {
       DMM_BUFFER_OBJ* pDmmBuf;
 }LCML_NBAMRDEC_BUFHEADERTYPE;
 
-#ifndef UNDER_CE
-
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-
-#else
-/* =================================================================================== */
-/**
-*   OMX_EXPORT                                           WinCE Implicit Export Syntax
-*/
-/* ================================================================================== */
-#define OMX_EXPORT __declspec(dllexport)
-
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-
-#endif
 
 OMX_ERRORTYPE NBAMRDEC_StartComponentThread(OMX_HANDLETYPE pHandle);
 OMX_ERRORTYPE NBAMRDEC_StopComponentThread(OMX_HANDLETYPE pHandle);
@@ -511,15 +468,6 @@ struct _NBAMRDEC_BUFFERLIST{
     OMX_U32 bBufferPending[MAX_NUM_OF_BUFS];
     OMX_U16 numBuffers;
 };
-
-#ifdef UNDER_CE
-    #ifndef _OMX_EVENT_
-        #define _OMX_EVENT_
-        typedef struct OMX_Event {
-            HANDLE event;
-        } OMX_Event;
-    #endif
-#endif
 
 typedef struct PV_OMXComponentCapabilityFlagsType
 {
@@ -766,7 +714,6 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     OMX_U32 nRuntimeOutputBuffers;
 
     /* Removing sleep() calls. Definition. */
-#ifndef UNDER_CE
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -789,16 +736,6 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded;
-#endif
     /* Removing sleep() calls. Definition. */
 
     OMX_U8 PendingPausedBufs;
