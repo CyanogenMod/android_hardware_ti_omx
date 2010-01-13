@@ -787,7 +787,8 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
     /*add check if state != loaded or port not disabled*/
     if (pComponentPrivate->eState == OMX_StateInvalid) {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
     }
 
     switch (nParamIndex) {
@@ -1147,7 +1148,8 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
     pComponentPrivate = pHandle->pComponentPrivate;
 
     if (pComponentPrivate->eState != OMX_StateLoaded && pComponentPrivate->eState != OMX_StateWaitForResources) {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
     }
     switch (nParamIndex) {
         case OMX_IndexParamVideoPortFormat:
@@ -1593,7 +1595,8 @@ static OMX_ERRORTYPE VIDDEC_GetConfig (OMX_HANDLETYPE hComp,
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     if (pComponentPrivate->eState == OMX_StateInvalid) {
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
     }
     else {
         switch ((OMX_S32) nConfigIndex)
@@ -2286,16 +2289,22 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pComponentPrivate->pInPortDef->bEnabled %d\n",
         pComponentPrivate->pInPortDef->bEnabled);
-    if(!pComponentPrivate->pInPortDef->bEnabled)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+    if(!pComponentPrivate->pInPortDef->bEnabled){
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
+    }
 
-    if(pBuffHead->nInputPortIndex != VIDDEC_INPUT_PORT)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+    if(pBuffHead->nInputPortIndex != VIDDEC_INPUT_PORT){
+        eError = OMX_ErrorBadPortIndex;
+        goto EXIT;
+    }
 
     if(pComponentPrivate->eState != OMX_StateExecuting &&
         pComponentPrivate->eState != OMX_StatePause &&
-        pComponentPrivate->eState != OMX_StateIdle)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        pComponentPrivate->eState != OMX_StateIdle){
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
+    }
 
     OMX_CONF_CHK_VERSION(pBuffHead, OMX_BUFFERHEADERTYPE, eError, pComponentPrivate->dbg);
 
@@ -2373,16 +2382,22 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pComponentPrivate->pOutPortDef->bEnabled %d\n",
         pComponentPrivate->pOutPortDef->bEnabled);
-    if(!pComponentPrivate->pOutPortDef->bEnabled)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+    if(!pComponentPrivate->pOutPortDef->bEnabled){
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
+    }
 
-    if(pBuffHead->nOutputPortIndex != 0x1)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorBadPortIndex);
+    if(pBuffHead->nOutputPortIndex != 0x1){
+        eError = OMX_ErrorBadPortIndex;
+        goto EXIT;
+    }
 
     if(pComponentPrivate->eState != OMX_StateExecuting &&
         pComponentPrivate->eState != OMX_StatePause &&
-        pComponentPrivate->eState != OMX_StateIdle)
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation);
+        pComponentPrivate->eState != OMX_StateIdle){
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
+    }
 
     OMX_CONF_CHK_VERSION(pBuffHead, OMX_BUFFERHEADERTYPE, eError, pComponentPrivate->dbg);
 
