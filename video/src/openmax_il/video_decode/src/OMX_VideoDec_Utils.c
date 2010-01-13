@@ -7877,27 +7877,27 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
         pComponentPrivate->bTransPause = 1;
     }
-    if (event == EMMCodecAlgCtrlAck) {
+    else if (event == EMMCodecAlgCtrlAck) {
         VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
         VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sMutex);
         VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
         pComponentPrivate->bTransPause = 1;
     }
-    if (event == EMMCodecProcessingStoped) {
-        VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
-        VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sMutex);
-        VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-        pComponentPrivate->bTransPause = 1;
-        pComponentPrivate->bIsPaused = 0;
-    }
-    if (event == EMMCodecProcessingStarted) {
+    else if (event == EMMCodecProcessingStoped) {
         VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
         VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sMutex);
         VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
         pComponentPrivate->bTransPause = 1;
         pComponentPrivate->bIsPaused = 0;
     }
-    if (event == EMMCodecBufferProcessed) {
+    else if (event == EMMCodecProcessingStarted) {
+        VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
+        VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sMutex);
+        VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
+        pComponentPrivate->bTransPause = 1;
+        pComponentPrivate->bIsPaused = 0;
+    }
+    else if (event == EMMCodecBufferProcessed) {
         OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecBufferProcessed 0x%lx\n", (OMX_U32)argsCb [0]);
         if ((OMX_U32)argsCb [0] == EMMCodecOuputBuffer) {
             OMX_PRBUFFER1(pComponentPrivate->dbg, "EMMCodecOuputBuffer\n");
@@ -8061,7 +8061,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
       }
     }
     /************************************************************************************************/
-    if (event == EMMCodecBufferNotProcessed) {
+    else if (event == EMMCodecBufferNotProcessed) {
         OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecBufferNotProcessed\n");
         if ((OMX_U32)argsCb [0] == EMMCodecOuputBuffer) {
             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
@@ -8222,7 +8222,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         }
     }
     /************************************************************************************************/
-    if (event == EMMCodecDspError) {
+    else if (event == EMMCodecDspError) {
         OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecDspError\n");
         if((argsCb[4] == (void *)NULL) && (argsCb[5] == (void*)NULL)) {
             OMX_PRDSP4(pComponentPrivate->dbg, "DSP MMU_Fault\n");
@@ -8272,7 +8272,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
 
         }
     }
-    if (event == EMMCodecInternalError || event == EMMCodecInitError) {
+    else if (event == EMMCodecInternalError || event == EMMCodecInitError) {
         OMX_PRDSP4(pComponentPrivate->dbg, "EMMCodecInternalError || EMMCodecInitError\n");
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -8281,7 +8281,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                OMX_TI_ErrorCritical,
                                                "Error from the DSP");
     }
-    if (event == EMMCodecStrmCtrlAck) {
+    else if (event == EMMCodecStrmCtrlAck) {
         if ((int)argsCb [0] == USN_ERR_NONE) {
             OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecStrmCtrlAck\n");
             VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
