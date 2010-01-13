@@ -280,10 +280,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     char EnvChangeValue[VIDDEC_MAX_NAMESIZE];
     char* EnvChangeValueu = NULL;
 #endif
-#ifdef ANDROID
-    /* print to logcat to verify that we are running a TI OMX codec*/
-    LOGI("TI Video Decoder \n");
-#endif
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
@@ -301,6 +297,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
                                            PERF_ModuleLLMM | PERF_ModuleVideoDecode);
 #endif
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_VIDDEC");
+
+    /* Print to verify that we are running a TI OMX codec*/
+    OMX_PRINT4(pComponentPrivate->dbg, "TI Video Decoder \n");
+
     ((VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
 
     pHandle->SetCallbacks                   = VIDDEC_SetCallbacks;
@@ -866,26 +866,27 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         {
            OMX_VIDEO_PARAM_PROFILELEVELTYPE *pParamProfileLevel = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)ComponentParameterStructure;
            if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-           LOGW("Getparameter OMX_IndexParamVideoProfileLevelCurrent AVC");
+           OMX_PRINT2(pComponentPrivate->dbg, " Getparameter OMX_IndexParamVideoProfileLevelCurrent AVC \n");
            pParamProfileLevel->eProfile = pComponentPrivate->pH264->eProfile;
            pParamProfileLevel->eLevel = pComponentPrivate->pH264->eLevel;
         }
         else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-           LOGW("Getparameter OMX_IndexParamVideoProfileLevelCurrent MPEG4");
+           OMX_PRINT2(pComponentPrivate->dbg, " Getparameter OMX_IndexParamVideoProfileLevelCurrent MPEG4 \n");
            pParamProfileLevel->eProfile = pComponentPrivate->pMpeg4->eProfile;
            pParamProfileLevel->eLevel = pComponentPrivate->pMpeg4->eLevel;
         }
         else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-           LOGW("Getparameter OMX_IndexParamVideoProfileLevelCurrent H.263");
+           OMX_PRINT2(pComponentPrivate->dbg, "Getparameter OMX_IndexParamVideoProfileLevelCurrent H263 \n");
            pParamProfileLevel->eProfile = pComponentPrivate->pH263->eProfile;
            pParamProfileLevel->eLevel = pComponentPrivate->pH263->eLevel;
         }
         else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
+           OMX_PRINT2(pComponentPrivate->dbg, "Getparameter OMX_IndexParamVideoProfileLevelCurrent MPEG2 \n");
            pParamProfileLevel->eProfile = pComponentPrivate->pMpeg2->eProfile;
            pParamProfileLevel->eLevel = pComponentPrivate->pMpeg2->eLevel;
         }
         else {
-           LOGD("Error in Getparameter OMX_IndexParamVideoProfileLevelCurrent");
+           OMX_ERROR4(pComponentPrivate->dbg, "Error in Getparameter OMX_IndexParamVideoProfileLevelCurrent \n");
            eError = OMX_ErrorBadParameter;
          }
       }
@@ -1443,7 +1444,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
             char value[PROPERTY_VALUE_MAX];
             property_get("debug.video.showfps", value, "0");
             mDebugFps = atoi(value);
-            LOGD_IF(mDebugFps, "Not setting deblocking to measure fps");
             if (mDebugFps == OMX_FALSE) {
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                         pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
@@ -1456,6 +1456,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 }
             }
             else {
+                OMX_PRINT4(pComponentPrivate->dbg, "Not setting deblocking to measure fps \n");
                 eError = OMX_ErrorUnsupportedIndex;
                 break;
             }

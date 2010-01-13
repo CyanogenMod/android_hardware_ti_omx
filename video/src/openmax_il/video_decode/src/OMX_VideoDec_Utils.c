@@ -54,7 +54,6 @@
 #include "OMX_VideoDec_Utils.h"
 #include "OMX_VideoDec_DSP.h"
 #include "OMX_VideoDec_Thread.h"
-#define LOG_TAG "TI_Video_Decoder"
 /*----------------------------------------------------------------------------*/
 /**
   * VIDDEC_GetRMFrecuency() Return the value for frecuecny to use RM.
@@ -7092,10 +7091,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
 
     nFrameWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
     nFrameHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-    LOGV("Before Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
     if (nFrameWidth & 0xF) nFrameWidth = (nFrameWidth & 0xFFF0) + 0x10;
     if (nFrameHeight & 0xF) nFrameHeight = (nFrameHeight & 0xFFF0) + 0x10;
-    LOGV("After Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
 
     pCreatePhaseArgs->unNumOfStreams            = 2;
     pCreatePhaseArgs->unInputStreamID           = 0;
@@ -7284,10 +7283,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     /* ulMaxWidth and ulMaxHeight needs to be multiples of 16. */
     nFrameWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
     nFrameHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-    LOGD("Before Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
     if (nFrameWidth & 0xF) nFrameWidth = (nFrameWidth & 0xFFF0) + 0x10;
     if (nFrameHeight & 0xF) nFrameHeight = (nFrameHeight & 0xFFF0) + 0x10;    
-    LOGD("After Rounding: nFrameWidth = %d, nFrameHeight = %d", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
 
     pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(nFrameWidth);
     pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(nFrameHeight);
@@ -8400,7 +8399,7 @@ OMX_ERRORTYPE VIDDEC_CopyBuffer(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
             pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
         } else {
-            LOGE("Not enough memory in the buffer to concatenate the 2 frames, loosing first frame\n");
+            OMX_ERROR4(pComponentPrivate->dbg, "Not enough memory in the buffer to concatenate the 2 frames, loosing first frame \n");
         }
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "OUT\n");
@@ -9080,8 +9079,8 @@ OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPri
     /* Disable deblocking filter if resolution higher than D1 NTSC (720x480) */
     if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth > 480 || 
            pComponentPrivate->pOutPortDef->format.video.nFrameHeight > 480){
-       bDisDeblocking = OMX_TRUE; 
-       LOGD("D1 or higher resolution: Disable Deblocking!!");
+       bDisDeblocking = OMX_TRUE;
+       OMX_PRINT4(pComponentPrivate->dbg, "D1 or higher resolution: Disable Deblocking!! \n");
     }
 
     if(pComponentPrivate->pDeblockingParamType->bDeblocking && bDisDeblocking == OMX_FALSE){
