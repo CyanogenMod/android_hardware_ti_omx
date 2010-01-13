@@ -1630,7 +1630,7 @@ static OMX_ERRORTYPE JPEGENC_GetState (OMX_HANDLETYPE hComponent, OMX_STATETYPE*
               }
               eError = OMX_ErrorNone;
            }
-           else if(ret == ETIMEDOUT) {
+           else {
               /* Unlock mutex in case of timeout */
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout; 
