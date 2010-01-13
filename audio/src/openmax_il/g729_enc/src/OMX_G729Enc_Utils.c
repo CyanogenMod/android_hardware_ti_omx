@@ -170,7 +170,7 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     if(pComponentPrivate->dasfMode == 1)
     {
         G729ENC_DPRINT("Codec is configuring to DASF mode\n");
-        OMX_G729MALLOC_STRUCT(pComponentPrivate->strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_GENERIC(pComponentPrivate->strmAttr, LCML_STRMATTR);
         pComponentPrivate->strmAttr->uSegid = G729ENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = G729ENC_SN_TIMEOUT;
@@ -238,14 +238,8 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
 
     /* Allocate memory for all input buffer headers... This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(G729ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G729ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G729ENC_LCML_BUFHEADERTYPE);
     G729ENC_MEMPRINT("%d :: [ALLOC]  %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL)
-    {
-        eError = OMX_ErrorInsufficientResources;
-        G729ENC_EPRINT("OMX_ErrorInsufficientResources.\n");
-        goto EXIT;
-    }
     memset(pTemp_lcml, 0x0, size_lcml);
     pComponentPrivate->pLcmlBufHeader[G729ENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++)
@@ -263,7 +257,7 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp->nTickCount = G729ENC_NOT_USED;
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
-        OMX_G729MALLOC_STRUCT(pTemp_lcml->pIpParam, G729ENC_UAlgInBufParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G729ENC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->usEndOfFile = 0;
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -275,14 +269,8 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     /* Allocate memory for all output buffer headers..
      * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(G729ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G729ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G729ENC_LCML_BUFHEADERTYPE);
     G729ENC_MEMPRINT("%d :: [ALLOC]  %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL)
-    {
-        eError = OMX_ErrorInsufficientResources;
-        G729ENC_EPRINT("OMX_ErrorInsufficientResources.\n");
-        goto EXIT;
-    }
     memset(pTemp_lcml, 0x0, size_lcml);
     pComponentPrivate->pLcmlBufHeader[G729ENC_OUTPUT_PORT] = pTemp_lcml;
     for (i=0; i<nOpBuf; i++)
@@ -302,7 +290,7 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         G729ENC_DPRINT("pTemp_lcml->buffer->pBuffer = %p\n", pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
-        OMX_G729MALLOC_STRUCT(pTemp_lcml->pOpParam, G729ENC_UAlgOutBufParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pOpParam, G729ENC_UAlgOutBufParamStruct);
         pTemp_lcml->pOpParam->ulFrameCount = 0;
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -453,30 +441,23 @@ OMX_ERRORTYPE G729ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     }
 
-    if (pAlgParmTemp != NULL)
-        pAlgParmTemp -= 128;
-    pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)pAlgParmTemp;
-    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pAlgParam);
-
-    if (pParmsTemp != NULL)
-        pParmsTemp -= 128;
-    pComponentPrivate->pParams = (G729ENC_AudioCodecParams*)pParmsTemp;
-    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pParams);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, G729ENC_TALGCtrl);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G729ENC_AudioCodecParams);
 
     if (pComponentPrivate->bPortDefsAllocated)
     {
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pPortDef[G729ENC_INPUT_PORT]);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pPortDef[G729ENC_OUTPUT_PORT]);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pcmParams);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->g729Params);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_INPUT_PORT]->pPortFormat);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_OUTPUT_PORT]->pPortFormat);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_INPUT_PORT]);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_OUTPUT_PORT]);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->sPortParam);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G729ENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G729ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParams);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->g729Params);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_INPUT_PORT]->pPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_OUTPUT_PORT]->pPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
     }
     pComponentPrivate->bPortDefsAllocated = 0;
  EXIT:
@@ -515,45 +496,32 @@ OMX_ERRORTYPE G729ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     G729ENC_DPRINT("Entering\n");
     if(pComponentPrivate->dasfMode == 1)
     {
-        pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
-        if (pParmsTemp != NULL)
-        {
-            pParmsTemp -= 128;
-        }
-        pComponentPrivate->pParams = (G729ENC_AudioCodecParams*)pParmsTemp;
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pParams);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G729ENC_AudioCodecParams);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
     }
-
-    pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
-    if (pAlgParmTemp != NULL)
-    {
-        pAlgParmTemp -= 128;
-    }
-    pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)pAlgParmTemp;
-    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, G729ENC_TALGCtrl);
     if(pComponentPrivate->nMultiFrameMode == 1)
     {
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->iHoldBuffer);
-        OMX_G729MEMFREE_STRUCT(pComponentPrivate->iMMFDataLastBuffer);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->iHoldBuffer);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->iMMFDataLastBuffer);
     }
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G729ENC_INPUT_PORT];
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
     for(i=0; i<nIpBuf; i++)
     {
-        OMX_G729MEMFREE_STRUCT(pTemp_lcml->pIpParam);
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
         pTemp_lcml++;
     }
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G729ENC_OUTPUT_PORT];
     nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
     for(i=0; i<nOpBuf; i++)
     {
-        OMX_G729MEMFREE_STRUCT(pTemp_lcml->pOpParam);
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pOpParam);
         pTemp_lcml++;
     }
-    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G729ENC_INPUT_PORT]);
-    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G729ENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G729ENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G729ENC_OUTPUT_PORT]);
     G729ENC_DPRINT("Exiting\n");
     return eError;
 }
@@ -830,13 +798,7 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)pArgs);
-                    pAlgParmTemp = (OMX_U8*)pComponentPrivate->pAlgParam;
-                    if (pAlgParmTemp != NULL)
-                    {
-                        pAlgParmTemp -= 128;
-                    }
-                    pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)pAlgParmTemp;
-                    OMX_G729MEMFREE_STRUCT(pComponentPrivate->pAlgParam);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, G729ENC_TALGCtrl);
                     if(eError != OMX_ErrorNone)
                     {
                         G729ENC_EPRINT("from LCML_ControlCodec MMCodecControlStop.\n");
@@ -884,18 +846,7 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     /* Sending commands to DSP via LCML_ControlCodec third argument is not used for time being */
                     pComponentPrivate->nNumInputBufPending = 0;
                     pComponentPrivate->nNumOutputBufPending = 0;
-                    pAlgParmTemp = (OMX_U8*)malloc(sizeof(G729ENC_TALGCtrl) + 256);
-                    if(pAlgParmTemp == NULL)
-                    {
-                        G729ENC_EPRINT("*************\n"); 
-                        G729ENC_EPRINT("Malloc Failed\n"); 
-                        G729ENC_EPRINT("*************\n"); 
-                        eError = OMX_ErrorInsufficientResources; 
-                        goto EXIT;      
-                    }
-                    memset(pAlgParmTemp, 0x0, sizeof(G729ENC_TALGCtrl) + 256);
-                    G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pAlgParmTemp);
-                    pComponentPrivate->pAlgParam = (G729ENC_TALGCtrl*)(pAlgParmTemp + 128);
+                    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pAlgParam, sizeof(G729ENC_TALGCtrl), OMX_U8); 
                     pComponentPrivate->pAlgParam->vadFlag = pComponentPrivate->g729Params->bDTX;
                     pComponentPrivate->pAlgParam->size = sizeof( G729ENC_TALGCtrl );
                     pComponentPrivate->pAlgParam->frameSize = 0;
@@ -910,22 +861,16 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     if (eError != OMX_ErrorNone)
                     {
                         G729ENC_EPRINT("from LCML_ControlCodec.\n");
+			/*free the allocated memory before returning */
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, G729ENC_TALGCtrl);
                         goto EXIT;
                     }
                     if(pComponentPrivate->dasfMode == 1)
                     {
                         G729ENC_DPRINT("DASF Functionality is ON ---\n");
-                        pParmsTemp = (OMX_U8*)malloc(sizeof(G729ENC_AudioCodecParams) + 256);
-                        if(pParmsTemp == NULL)
-                        {
-                            G729ENC_EPRINT("*************\n"); 
-                            G729ENC_EPRINT("Malloc Failed\n"); 
-                            G729ENC_EPRINT("*************\n"); 
-                            eError = OMX_ErrorInsufficientResources; 
-                            goto EXIT;      
-                        } 
-                        memset(pParmsTemp, 0x0, sizeof(G729ENC_AudioCodecParams));
-                        pComponentPrivate->pParams = (G729ENC_AudioCodecParams*)(pParmsTemp + 128);
+                       	OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, 
+                                                 sizeof(G729ENC_AudioCodecParams),
+                                                 OMX_U8);
                         G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pComponentPrivate->pParams);
                         pComponentPrivate->pParams->iAudioFormat = 1;
                         pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
@@ -938,6 +883,9 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                    EMMCodecControlStrmCtrl,(void *)pValues);
                         if(eError != OMX_ErrorNone)
                         {
+			    /*free the allocated memory before returning */
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G729ENC_AudioCodecParams);
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, G729ENC_TALGCtrl);
                             G729ENC_EPRINT("from LCML_ControlCodec.\n");
                             goto EXIT;
                         }
@@ -2220,14 +2168,11 @@ OMX_ERRORTYPE G729ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
         {
             /*Sending Last Buufer Data which on iHoldBuffer to App */
             G729ENC_DPRINT("Sending iMMFDataLastBuffer Data which on iHoldBuffer to App\n");
-            pComponentPrivate->iMMFDataLastBuffer = malloc(G729ENC_OUTPUT_BUFFER_SIZE_MIME * (pComponentPrivate->pOutputBufferList->numBuffers + 1));
+            OMX_MALLOC_SIZE(pComponentPrivate->iMMFDataLastBuffer,
+                            G729ENC_OUTPUT_BUFFER_SIZE_MIME * (pComponentPrivate->pOutputBufferList->numBuffers + 1),
+                            OMX_U8);
+
             G729ENC_MEMPRINT("%d :: [ALLOC]  = %p\n",__LINE__, pComponentPrivate->iMMFDataLastBuffer);
-            if(pComponentPrivate->iMMFDataLastBuffer == NULL)
-            {
-                eError = OMX_ErrorInsufficientResources;
-                G729ENC_EPRINT("Malloc Failed.\n");
-                goto EXIT;
-            }
             G729ENC_DPRINT("pComponentPrivate->iHoldLen = %ld \n",
                            pComponentPrivate->iHoldLen);
             /* Copy the data from iHoldBuffer to dataPtr */
@@ -2631,14 +2576,8 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     G729ENC_DPRINT("------ Buffer Details ------------\n");
     /* Allocate memory for all input buffer headers This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(G729ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G729ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G729ENC_LCML_BUFHEADERTYPE);
     G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL)
-    {
-        G729ENC_EPRINT("Memory Allocation Failed.\n");
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
     memset(pTemp_lcml, 0x0, size_lcml);
     pComponentPrivate->pLcmlBufHeader[G729ENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++)
@@ -2657,7 +2596,7 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         G729ENC_DPRINT("pTemp_lcml->buffer->pBuffer = %p \n", pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
-        OMX_G729MALLOC_STRUCT(pTemp_lcml->pIpParam, G729ENC_UAlgInBufParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G729ENC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->usEndOfFile = 0;
         /* This means, it is not a last buffer. This flag is to be modified by  the application to indicate the last buffer */
         pTemp->nFlags = G729ENC_NORMAL_BUFFER;
@@ -2667,14 +2606,8 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
     /* Allocate memory for all output buffer headers This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(G729ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G729ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G729ENC_LCML_BUFHEADERTYPE);
     G729ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL)
-    {
-        eError = OMX_ErrorInsufficientResources;
-        G729ENC_EPRINT("Memory Allocation Failed.\n");
-        goto EXIT;
-    }
     memset(pTemp_lcml, 0x0, size_lcml);
     pComponentPrivate->pLcmlBufHeader[G729ENC_OUTPUT_PORT] = pTemp_lcml;
     for (i=0; i<nOpBuf; i++)
@@ -2694,7 +2627,7 @@ OMX_ERRORTYPE G729ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         G729ENC_DPRINT("pTemp_lcml->buffer->pBuffer = %p \n", pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
-        OMX_G729MALLOC_STRUCT(pTemp_lcml->pOpParam, G729ENC_UAlgOutBufParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pOpParam, G729ENC_UAlgOutBufParamStruct);
         pTemp_lcml->pOpParam->ulFrameCount = 0;
         /* This means, it is not a last buffer. This flag is to be modified by the application to indicate the last buffer */
         pTemp->nFlags = G729ENC_NORMAL_BUFFER;

@@ -63,6 +63,7 @@
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
 #include <TIDspOmx.h>
+#include "OMX_TI_Common.h"
 
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
@@ -204,14 +205,6 @@ void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionNam
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
-#define OMX_G729MEMFREE_STRUCT(_pStruct_)                       \
-    if(_pStruct_ != NULL)                                       \
-    {                                                           \
-        G729ENC_MEMPRINT("%d :: [FREE] %p\n", __LINE__, _pStruct_); \
-        free(_pStruct_);                                        \
-        _pStruct_ = NULL;                                       \
-    }
-
 #define OMX_G729CLOSE_PIPE(_pStruct_,err)                       \
     G729ENC_DPRINT("%d :: CLOSING PIPE \n", __LINE__);          \
     err = close (_pStruct_);                                    \
@@ -221,20 +214,6 @@ void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionNam
         printf("%d :: Error while closing pipe\n", __LINE__);   \
         goto EXIT;                                              \
     }
-
-#define OMX_G729MALLOC_STRUCT(_pStruct_, _sName_)                   \
-    _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
-    if(_pStruct_ == NULL)                                           \
-    {                                                               \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n", __LINE__);                  \
-        printf("***********************************\n");            \
-        eError = OMX_ErrorInsufficientResources;                    \
-        goto EXIT;                                                  \
-    }                                                               \
-    memset(_pStruct_, 0x0, sizeof(_sName_));                        \
-    G729ENC_MEMPRINT("%d :: [ALLOC] %p\n", __LINE__, _pStruct_);
-
 
 /* ======================================================================= */
 /**
@@ -829,6 +808,8 @@ typedef struct G729ENC_COMPONENT_PRIVATE
     OMX_U32 nOutStandingFillDones;
 
 #ifndef UNDER_CE
+    /** Tells whether mutex have been initialized or not */
+    OMX_U32 bMutexInit;
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
