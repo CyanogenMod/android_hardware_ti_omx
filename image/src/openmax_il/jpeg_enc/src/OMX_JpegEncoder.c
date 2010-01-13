@@ -1931,9 +1931,9 @@ static OMX_ERRORTYPE JPEGENC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	pHandle = (OMX_COMPONENTTYPE *)hComponent;
 	pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 	memcpy(&dbg, &(pComponentPrivate->dbg), sizeof(dbg));
+	JPEGEnc_Free_ComponentResources(pComponentPrivate);
         pthread_mutex_destroy(&pComponentPrivate->mutexStateChangeRequest);
         pthread_cond_destroy(&pComponentPrivate->StateChangeCondition);
-	JPEGEnc_Free_ComponentResources(pComponentPrivate);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 	eError = RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
