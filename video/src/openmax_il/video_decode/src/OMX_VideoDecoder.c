@@ -838,13 +838,13 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 switch(pComponentPrivate->pInPortDef->format.video.eCompressionFormat)
                 {
                    case OMX_VIDEO_CodingH263:
-                      pProfileLevel = &SupportedH263ProfileLevels;
+                      pProfileLevel = SupportedH263ProfileLevels;
                       break;
                    case OMX_VIDEO_CodingMPEG4:
-                      pProfileLevel = &SupportedMPEG4ProfileLevels;
+                      pProfileLevel = SupportedMPEG4ProfileLevels;
                       break;
                    case OMX_VIDEO_CodingAVC:
-                      pProfileLevel = &SupportedAVCProfileLevels;
+                      pProfileLevel = SupportedAVCProfileLevels;
                       break;
                   }
 
@@ -1500,13 +1500,13 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
            switch(pComponentPrivate->pInPortDef->format.video.eCompressionFormat)
            {
               case OMX_VIDEO_CodingH263:
-                 pProfileLevel = &SupportedH263ProfileLevels;
+                 pProfileLevel = SupportedH263ProfileLevels;
                  break;
               case OMX_VIDEO_CodingMPEG4:
-                 pProfileLevel = &SupportedMPEG4ProfileLevels;
+                 pProfileLevel = SupportedMPEG4ProfileLevels;
                  break;
               case OMX_VIDEO_CodingAVC:
-                 pProfileLevel = &SupportedAVCProfileLevels;
+                 pProfileLevel = SupportedAVCProfileLevels;
                  break;
             }
 
