@@ -61,11 +61,6 @@
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
 
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <wchar.h>
 #include <dbapi.h>
 #include <unistd.h>
@@ -79,7 +74,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#endif
 /*-------program files ----------------------------------------*/
 #include "OMX_AmrEnc_Utils.h"
 #include "OMX_AmrEnc_ComponentThread.h"
@@ -125,14 +119,10 @@ void* NBAMRENC_CompThread(void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-#ifndef UNDER_CE
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (pComponentPrivate->bIsThreadstop == 1) {
             OMX_ERROR2(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
