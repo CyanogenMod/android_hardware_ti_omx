@@ -1841,7 +1841,12 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
  EXIT:
     G711DEC_DPRINT("%d : Exiting from  G711DECHandleDataBuf_FromApp \n",__LINE__);
     G711DEC_DPRINT("Returning error %d\n",eError);
+
+    if (eError != OMX_ErrorNone && NULL != pBufParmsTemp){
+        OMX_MEMFREE_STRUCT(pBufParmsTemp);
+    }
     return eError;
+
 }
 
 /*-------------------------------------------------------------------*/
@@ -2371,26 +2376,29 @@ OMX_HANDLETYPE G711DECGetLCMLHandle()
     G711DEC_DPRINT("G711DECGetLCMLHandle %d\n",__LINE__);
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
-        fputs(dlerror(), stderr);
-        goto EXIT;
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+            return pHandle;
+        }
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
-        goto EXIT;
+        dlclose(handle);
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
         G711DEC_DPRINT("eError != OMX_ErrorNone...\n");
+        dlclose(handle);
         pHandle = NULL;
-        goto EXIT;
+        return pHandle;
     }
 
     pComponentPrivate_CC->bLcmlHandleOpened = 1;
 
- EXIT:
     G711DEC_DPRINT("G711DECGetLCMLHandle returning %p\n",pHandle);
 
     return pHandle;

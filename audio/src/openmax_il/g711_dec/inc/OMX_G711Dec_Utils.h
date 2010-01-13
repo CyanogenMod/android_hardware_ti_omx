@@ -44,6 +44,7 @@
 
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
+#include "OMX_TI_Common.h"
 #include <pthread.h>
 
 #ifdef RESOURCE_MANAGER_ENABLED
