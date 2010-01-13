@@ -1789,6 +1789,77 @@ EXIT:
     return eError;
 }
 
+
+
+/* ========================================================================== */
+/**
+  * VIDDEC_EmptyBufferDone()
+  *
+  * Called to send the EmptyBufferDone callback to the client.
+  *
+  * @param
+  *     pComponentPrivate         This is the pointer to the private structure
+  *     pBufferHeader             Header of the buffer
+  *
+  * @retval NONE
+  *
+  **/
+/* ========================================================================== */
+
+OMX_ERRORTYPE VIDDEC_EmptyBufferDone(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufferHeader)
+{
+    OMX_PRBUFFER1(pComponentPrivate->dbg, " pBufferHeader:%p pBuffer: %p \n", pBufferHeader, pBufferHeader->pBuffer);
+    ((VIDDEC_BUFFER_PRIVATE* )pBufferHeader->pInputPortPrivate)->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
+
+    /* No buffer flag EOS event needs to be sent for INPUT port */
+
+    return pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
+                                                     pComponentPrivate->pHandle->pApplicationPrivate,
+                                                     pBufferHeader);
+}
+
+
+
+/* ========================================================================== */
+/**
+  * VIDDEC_FillBufferDone()
+  *
+  * Called to send the FillBufferDone callback to the client and
+  * OMX_EventBufferFlag event if OMX_BUFFERFLAG_EOS in the buffer.
+  *
+  * @param
+  *     pComponentPrivate         This is the pointer to the private structure
+  *     pBufferHeader             Header of the buffer
+  *
+  * @retval NONE
+  *
+  **/
+/* ========================================================================== */
+
+OMX_ERRORTYPE VIDDEC_FillBufferDone(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufferHeader)
+{
+    OMX_PRBUFFER1(pComponentPrivate->dbg, " pBufferHeader: %p pBuffer: %p \n", pBufferHeader, pBufferHeader->pBuffer);
+    ((VIDDEC_BUFFER_PRIVATE* )pBufferHeader->pOutputPortPrivate)->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
+
+    /* OpenMAX-IL standard specifies that a component generates the OMX_EventBufferFlag event when an OUTPUT port
+     * emits a buffer with the OMX_BUFFERFLAG_EOS flag set in the nFlags field.
+     **/
+    if (pBufferHeader->nFlags & OMX_BUFFERFLAG_EOS) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventBufferFlag,
+                                               VIDDEC_OUTPUT_PORT,
+                                               pBufferHeader->nFlags,
+                                               NULL);
+    }
+
+    return pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
+                                                     pComponentPrivate->pHandle->pApplicationPrivate,
+                                                     pBufferHeader);
+}
+
+
+
 /* ========================================================================== */
 /**
   * Return Buffers()
@@ -1814,11 +1885,7 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     if (nParam1 == pComponentPrivate->pInPortFormat->nPortIndex || nParam1 == OMX_ALL) {
             for (i = 0; i < pComponentPrivate->pInPortDef->nBufferCountActual; i++) {
                     if((pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "inBuffer 0x%p eBufferOwner 0x%x\n",pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr,
-                            pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->eBufferOwner);
-                        pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
                         pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
-
 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                           pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
@@ -1826,9 +1893,8 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                                           PERF_ModuleHLMM);
 #endif
 
-                        eError = pComponentPrivate->cbInfo.EmptyBufferDone((OMX_HANDLETYPE *)pComponentPrivate->pHandle,
-                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                    (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr);
+                        eError = VIDDEC_EmptyBufferDone(pComponentPrivate,
+                                                        pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr);
                     }
             }
        }
@@ -1863,9 +1929,6 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                 OMX_PRINT1(pComponentPrivate->dbg, "non tunneling\n");
                 for (i = 0; i < pComponentPrivate->pOutPortDef->nBufferCountActual; i++) {
                         if((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
-                            OMX_PRBUFFER1(pComponentPrivate->dbg, "xBuffer 0x%p eBufferOwner 0x%x\n",pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr,
-                                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner);
-                            pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
                             pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -1874,12 +1937,9 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                                               pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
                                               PERF_ModuleHLMM);
 #endif
-
                             pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
                             VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                            eError = pComponentPrivate->cbInfo.FillBufferDone((OMX_HANDLETYPE *)pComponentPrivate->pHandle,
-                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                        (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr);
+                            eError = VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
                        }
                 }
            }
@@ -4681,9 +4741,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 /* We have received some part of the config Buffer.
                  * Send EmptyThisBuffer of the buffer we have just received to Client
                  */
-                pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                    pComponentPrivate->pHandle->pApplicationPrivate,
-                    pBuffHead);
+                VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
+
                 /* Exit with out error to avoid sending again EmptyBufferDone in upper function*/
                 eError = OMX_ErrorNone;
                 goto EXIT;
@@ -4991,18 +5050,14 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                                 size_dsp,
                                                 (OMX_U8*)&pComponentPrivate->pBufferTemp);
                     OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application\n");
-                    pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
             #ifdef __PERF_INSTRUMENTATION__
                     PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                       pBuffHead->pBuffer,
                                       pBuffHead->nFilledLen,
                                       PERF_ModuleHLMM);
             #endif
-                    pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               pBuffHead);
+                    VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     pComponentPrivate->bFirstHeader = OMX_TRUE;
                     goto EXIT;
             }
@@ -5039,9 +5094,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         eError = VIDDEC_ParseHeader( pComponentPrivate, pBuffHead);
 #endif
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application %x\n",eError);
-                        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
                 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                           pBuffHead->pBuffer,
@@ -5055,9 +5108,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                         pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
-                        pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   pBuffHead);
+                        VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                         return OMX_ErrorNone;
                    }
                    else {
@@ -5076,9 +5127,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         if(eError != OMX_ErrorNone) {
                                 OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application\n");
                                 pComponentPrivate->bFirstHeader = OMX_TRUE;
-                                pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                                OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
                         #ifdef __PERF_INSTRUMENTATION__
                                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                                   pBuffHead->pBuffer,
@@ -5092,9 +5141,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                                 pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
-                                pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                                          pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                          pBuffHead);
+                            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                             eError = OMX_ErrorNone;
                             goto EXIT;
                         }
@@ -5156,9 +5203,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     if(eError != OMX_ErrorNone) {
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application\n");
                             pComponentPrivate->bFirstHeader = OMX_TRUE;
-                            pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                            pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                            OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
                     #ifdef __PERF_INSTRUMENTATION__
                             PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                               pBuffHead->pBuffer,
@@ -5172,9 +5217,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                             pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
-                            pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                      pBuffHead);
+                        VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                         eError = OMX_ErrorNone;
                         goto EXIT;
                     }
@@ -5226,19 +5269,14 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
 #endif
 
-                pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
         #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                   pBuffHead->pBuffer,
                                   pBuffHead->nFilledLen,
                                   PERF_ModuleHLMM);
         #endif
-
-                pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                          pComponentPrivate->pHandle->pApplicationPrivate,
-                                                          pBuffHead);
+                VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
             }
             eError = OMX_ErrorNone;
             goto EXIT;
@@ -5431,14 +5469,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
 
                 if(pComponentPrivate->bDynamicConfigurationInProgress){
-                    pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
-                    pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                              pComponentPrivate->pHandle->pApplicationPrivate,
-                                                              pBuffHead);
+                    VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     goto EXIT;
                 }
 
@@ -5603,13 +5635,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
 
                 if(pComponentPrivate->bDynamicConfigurationInProgress){
-                    pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
-                    pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                              pComponentPrivate->pHandle->pApplicationPrivate,
-                                                              pBuffHead);
+                    VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     goto EXIT;
                 }
 
@@ -5739,11 +5766,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                             pComponentPrivate->aCCDsize[pComponentPrivate->nCCDcnt++] = pBuffHead->nFilledLen;
 
                             OMX_PRINT1(pComponentPrivate->dbg,"send ccd buffer back to client\n");
-                            pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                            pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                            pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                      pComponentPrivate->pHandle->pApplicationPrivate,
-                                                      pBuffHead);
+                            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                             goto EXIT;
                         }
                         else {
@@ -5982,14 +6005,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
 
                 if(pComponentPrivate->bDynamicConfigurationInProgress){
-                    pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-                    pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                    OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
-                    pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                              pComponentPrivate->pHandle->pApplicationPrivate,
-                                                              pBuffHead);
+                    VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     goto EXIT;
                 }
 #ifdef ANDROID
@@ -6346,19 +6363,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
     #endif
 
                 VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-                OMX_PRBUFFER1(pComponentPrivate->dbg, "standalone buffer eBufferOwner 0x%x  --  %lx\n", pBufferPrivate->eBufferOwner,pBuffHead->nFlags);
-                if((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS)){
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                                        OMX_EventBufferFlag,
-                                                        VIDDEC_OUTPUT_PORT,
-                                                        OMX_BUFFERFLAG_EOS,
-                                                        NULL);
-                }
-                pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
-                                                         pComponentPrivate->pHandle->pApplicationPrivate,
-                                                         pBuffHead);
+                VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
             }
         }
     }
@@ -6404,20 +6409,15 @@ OMX_ERRORTYPE VIDDEC_HandleFreeDataBuf( VIDDEC_COMPONENT_PRIVATE *pComponentPriv
     }
     OMX_PRSTATE1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
     if (pBuffHead != NULL) {
-        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
         pBuffHead->nAllocLen = inputbufsize;
-        pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
-        OMX_PRBUFFER1(pComponentPrivate->dbg, "eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
+
 #ifdef __PERF_INSTRUMENTATION__
         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                           pBuffHead->pBuffer,
                           pBuffHead->nFilledLen,
                           PERF_ModuleHLMM);
 #endif
-
-        pComponentPrivate->cbInfo.EmptyBufferDone(pComponentPrivate->pHandle,
-                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                  pBuffHead);
+        VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "---EXITING(0x%x) \n",eError);
 EXIT:
