@@ -454,7 +454,6 @@ OMX_ERRORTYPE G722DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
  EXIT:
     if(eError == OMX_ErrorInsufficientResources || eError == OMX_ErrorBadParameter){
         G722D_OMX_FREE(strmAttr);
-        G722D_OMX_FREE(arr);
         G722D_OMX_FREE(pTemp_lcml);
     }
     G722DEC_DPRINT("Exiting G722DEC_Fill_LCMLInitParams\n");
@@ -1980,25 +1979,29 @@ OMX_HANDLETYPE G722DEC_GetLCMLHandle(G722DEC_COMPONENT_PRIVATE *pComponentPrivat
 
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
-        fputs(dlerror(), stderr);
-        goto EXIT;
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+            return pHandle;
+        }
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
-        goto EXIT;
+        dlclose(handle);
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
         G722DEC_DPRINT("eError != OMX_ErrorNone...\n");
         pHandle = NULL;
-        goto EXIT;
+        dlclose(handle);
+        return pHandle;
     }
 
     ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
- EXIT:
+
     return pHandle;
 }
 #else
@@ -2408,6 +2411,9 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     pComponentPrivate->bInitParamsInitialized = 1;
 
  EXIT:
+    if (eError != OMX_ErrorNone && NULL != pTemp){
+        OMX_MEMFREE_STRUCT(pTemp);
+    }
     return eError;
 }
 /**
