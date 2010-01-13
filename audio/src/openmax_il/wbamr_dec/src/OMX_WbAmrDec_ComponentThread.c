@@ -50,9 +50,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <dbapi.h>
@@ -63,7 +60,6 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <signal.h>
-#endif
 #include "OMX_WbAmrDec_Utils.h"
 #include "OMX_WbAmrDecoder.h"
 #include "OMX_WbAmrDec_ComponentThread.h"
@@ -112,14 +108,10 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
         tv.tv_nsec = 0;
 
         OMX_PRINT1(pComponentPrivate->dbg, "AmrComponentThread \n");
-#ifndef UNDER_CE
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (pComponentPrivate->bIsStopping == 1) {
             OMX_ERROR4(pComponentPrivate->dbg, "Comp Thrd Exiting here...\n");

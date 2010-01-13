@@ -122,22 +122,14 @@ enum WBAMRDEC_MimeMode {
  * @def    WBAMR_DEC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define WBAMR_DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define WBAMR_DEC_USN_DLL_NAME "usn.dll64P"
-#endif
 
 /* ======================================================================= */
 /**
  * @def    WBAMR_DEC_DLL_NAME   WB AMR Decoder socket node dll name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define WBAMR_DEC_DLL_NAME "\\windows\\wbamrdec_sn.dll64P"
-#else
 #define WBAMR_DEC_DLL_NAME "wbamrdec_sn.dll64P"
-#endif
 
 /* ===========================================================  */
 /**
@@ -376,18 +368,5 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg);
 
 void WBAMRDEC_HandleUSNError (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
-
-#ifdef UNDER_CE
-	#ifndef _OMX_EVENT_
-		#define _OMX_EVENT_
-		typedef struct OMX_Event {
-			HANDLE event;
-		} OMX_Event;
-	#endif
-	int OMX_CreateEvent(OMX_Event *event);
-	int OMX_SignalEvent(OMX_Event *event);
-	int OMX_WaitForEvent(OMX_Event *event);
-	int OMX_DestroyEvent(OMX_Event *event);
-#endif
 
 #endif
