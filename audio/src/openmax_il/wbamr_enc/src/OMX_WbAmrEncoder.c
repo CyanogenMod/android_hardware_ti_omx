@@ -49,11 +49,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -64,7 +59,6 @@
 #include <pthread.h>
 
 #include <semaphore.h>
-#endif
 
 #include <string.h>
 #include <fcntl.h>
@@ -454,7 +448,6 @@ MultiFrame modes to 0");
     pComponentPrivate->ProcessingOutputBuf = 0;
     strcpy((char*)pComponentPrivate->componentRole.cRole,
            "audio_encoder.amrwb");
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -467,16 +460,6 @@ MultiFrame modes to 0");
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#endif
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -506,8 +489,6 @@ ComponentThread %d", eError);
                        PERF_FOURCC('W', 'B', 'E', 'T'));
 #endif
 
-#ifndef UNDER_CE
-
     if ((pComponentPrivate->fdwrite = open(FIFO1, O_WRONLY)) < 0) {
         OMX_PRCOMM4(pComponentPrivate->dbg, "Failure to open Write pipe");
     }
@@ -515,8 +496,6 @@ ComponentThread %d", eError);
     if ((pComponentPrivate->fdread = open(FIFO2, O_RDONLY)) < 0) {
         OMX_PRCOMM4(pComponentPrivate->dbg, "Failure to open Read pipe");
     }
-
-#endif
 
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exit Returning = 0x%x", eError);
@@ -883,7 +862,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                    sizeof(OMX_AUDIO_PARAM_AMRTYPE));
             pCompAmrParam = (OMX_AUDIO_PARAM_AMRTYPE *)ComponentParameterStructure;
 
-            switch (pCompAmrParam->eAMRBandMode) {
+            switch ((AUDIO_SN_WBAMRBANDMODETYPE)pCompAmrParam->eAMRBandMode) {
                 case SN_AUDIO_BR660:
                     pCompAmrParam->eAMRBandMode = OMX_AUDIO_AMRBandModeWB0;
                     break;
@@ -1362,7 +1341,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 
 #endif
 
-    switch (nConfigIndex) {
+    switch ((WBAMRENC_OMX_INDEXAUDIOTYPE)nConfigIndex) {
         case OMX_IndexCustomWbAmrEncHeaderInfoConfig: {
             OMX_PRDSP2(pComponentPrivate->dbg,
                        "OMX_IndexCustomWbAmrEncHeaderInfoConfig");
@@ -1443,7 +1422,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
             break;
         }
 
-        case OMX_IndexConfigAudioVolume:
+        case (WBAMRENC_OMX_INDEXAUDIOTYPE)OMX_IndexConfigAudioVolume:
 #ifdef DSP_RENDERING_ON
             pGainStructure = (OMX_AUDIO_CONFIG_VOLUMETYPE *)ComponentConfigStructure;
             cmd_data.hComponent = hComp;
@@ -1520,30 +1499,19 @@ EXIT:
 /*-------------------------------------------------------------------*/
 
 static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState) {
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
+    WBAMRENC_OMX_CONF_CHECK_CMD(pState, 1, 1);
+    *pState = OMX_StateLoaded;
+    WBAMRENC_OMX_CONF_CHECK_CMD(pComponent, 1, 1);
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate;
+    WBAMRENC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
     OMX_PRINT1 (pComponentPrivate->dbg, "Entering");
 
-    if (!pState) {
-        eError = OMX_ErrorBadParameter;
-        OMX_ERROR4 (pComponentPrivate->dbg, "OMX_ErrorBadParameter");
-        goto EXIT;
-    }
+    *pState = pComponentPrivate->curState;
 
-    if (pHandle && pComponentPrivate) {
-        *pState =  ((WBAMRENC_COMPONENT_PRIVATE*)
-                    pComponentPrivate)->curState;
-    } else {
-        *pState = OMX_StateLoaded;
-    }
-
-    eError = OMX_ErrorNone;
-
-EXIT:
-    OMX_PRINT1 (pComponentPrivate->dbg, "Exiting GetState Returning = 0x%x", eError);
-    return eError;
+    OMX_PRINT1 (pComponentPrivate->dbg, "Exiting GetState Returning = OMX_ErrorNone");
+    return OMX_ErrorNone;
 }
 
 /*-------------------------------------------------------------------*/
@@ -1927,14 +1895,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     while (!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold,
                           &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -1989,13 +1953,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
              pComponentPrivate->pPortDef[WBAMRENC_INPUT_PORT]->bEnabled) &&
             (pComponentPrivate->InLoaded_readytoidle))) {
         pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -2185,13 +2145,9 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
             pComponentPrivate->InIdle_goingtoloaded) {
 
         pComponentPrivate->InIdle_goingtoloaded = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif
     }
 
     if (pComponentPrivate->bDisableCommandPending &&
@@ -2288,13 +2244,9 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
              ((pComponentPrivate->pPortDef[WBAMRENC_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMRENC_OUTPUT_PORT]->bEnabled) &&
               (pComponentPrivate->InLoaded_readytoidle)))) { /*Dasf Mode*/
         pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -2352,72 +2304,6 @@ static OMX_ERRORTYPE GetExtensionIndex(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting");
     return eError;
 }
-
-#ifdef UNDER_CE
-/* ================================================================================= */
-/**
- * @fns Sleep replace for WIN CE
- */
-/* ================================================================================ */
-int OMX_CreateEvent(OMX_Event *event) {
-    int ret = OMX_ErrorNone;
-    HANDLE createdEvent = NULL;
-
-    if (event == NULL) {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    event->event  = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-    if (event->event == NULL)
-        ret = (int)GetLastError();
-
-EXIT:
-    return ret;
-}
-
-int OMX_SignalEvent(OMX_Event *event) {
-    int ret = OMX_ErrorNone;
-
-    if (event == NULL) {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    SetEvent(event->event);
-    ret = (int)GetLastError();
-EXIT:
-    return ret;
-}
-
-int OMX_WaitForEvent(OMX_Event *event) {
-    int ret = OMX_ErrorNone;
-
-    if (event == NULL) {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    WaitForSingleObject(event->event, INFINITE);
-    ret = (int)GetLastError();
-EXIT:
-    return ret;
-}
-
-int OMX_DestroyEvent(OMX_Event *event) {
-    int ret = OMX_ErrorNone;
-
-    if (event == NULL) {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    CloseHandle(event->event);
-EXIT:
-    return ret;
-}
-#endif
 
 /* ================================================================================= */
 /**
