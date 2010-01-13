@@ -50,9 +50,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <dbapi.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -65,7 +62,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#endif
 #include "OMX_WmaDec_Utils.h" 
 /* ================================================================================= */
 /**
@@ -111,14 +107,10 @@ OMX_PRDSP2(pComponentPrivate->dbg, "PERF%d :: OMX_WmaDec_ComponentThread.c\n",__
         tv.tv_sec = 1;
         tv.tv_nsec = 0;/*WMAD_TIMEOUT * 1000;*/
 
-#ifndef UNDER_CE
 		sigset_t set;
 		sigemptyset (&set);
 		sigaddset (&set, SIGALRM);
 		status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (pComponentPrivate->bIsStopping == 1) {
             OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");

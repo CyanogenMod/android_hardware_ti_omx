@@ -51,11 +51,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE 
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -63,7 +58,6 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -266,34 +260,34 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_GENERIC(pComponentPrivate->pDspDefinition, TI_OMX_DSP_DEFINITION);
  
     /* Temporarily treat these as default values for Khronos tests */
-    pComponentPrivate->pHeaderInfo->iPackets.dwLo           =   178 ;
+    pComponentPrivate->pHeaderInfo->iPackets.dwLo           =   WMADEC_DEFAULT_PACKETS_DWLO ;
     pComponentPrivate->pHeaderInfo->iPlayDuration.dwHi      =   0   ;
-    pComponentPrivate->pHeaderInfo->iPlayDuration.dwLo      =   917760000 ;
-    pComponentPrivate->pHeaderInfo->iMaxPacketSize          =   349 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data1       =   -127295936 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data2       =   23373 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data3       =   4559 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[0]    =   168 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[1]    =   253 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[2]    =   0   ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[3]    =   128 ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[4]    =   95  ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[5]    =   92  ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[6]    =   68  ;
-    pComponentPrivate->pHeaderInfo->iStreamType.Data4[7]    =   43  ;
-    pComponentPrivate->pHeaderInfo->iTypeSpecific           =   28  ;
-    pComponentPrivate->pHeaderInfo->iStreamNum              =   1   ;
-    pComponentPrivate->pHeaderInfo->iFormatTag              =   353 ;
-    pComponentPrivate->pHeaderInfo->iBlockAlign             =   40  ;
-    pComponentPrivate->pHeaderInfo->iSamplePerSec           =   8000;
-    pComponentPrivate->pHeaderInfo->iAvgBytesPerSec         =   625 ;
-    pComponentPrivate->pHeaderInfo->iChannel                =   1   ;
-    pComponentPrivate->pHeaderInfo->iValidBitsPerSample     =   16  ;
-    pComponentPrivate->pHeaderInfo->iSizeWaveHeader         =   10  ;
-    pComponentPrivate->pHeaderInfo->iEncodeOptV             =   0   ;
-    pComponentPrivate->pHeaderInfo->iValidBitsPerSample     =   16  ;
-    pComponentPrivate->pHeaderInfo->iChannelMask            =   0   ;
-    pComponentPrivate->pHeaderInfo->iSamplePerBlock         =   8704;
+    pComponentPrivate->pHeaderInfo->iPlayDuration.dwLo      =   WMADEC_DEFAULT_PLAYDURATION_DWLO ;
+    pComponentPrivate->pHeaderInfo->iMaxPacketSize          =   WMADEC_DEFAULT_MAXPACKETSIZE ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data1       =  WMADEC_DEFAULT_STREAMTYPE_DATA1 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data2       =   WMADEC_DEFAULT_STREAMTYPE_DATA2 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data3       =   WMADEC_DEFAULT_STREAMTYPE_DATA3 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[0]    =   WMADEC_DEFAULT_STREAMTYPE_DATA40 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[1]    =   WMADEC_DEFAULT_STREAMTYPE_DATA41 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[2]    =   WMADEC_DEFAULT_STREAMTYPE_DATA42   ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[3]    =   WMADEC_DEFAULT_STREAMTYPE_DATA43 ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[4]    =   WMADEC_DEFAULT_STREAMTYPE_DATA44  ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[5]    =   WMADEC_DEFAULT_STREAMTYPE_DATA45  ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[6]    =   WMADEC_DEFAULT_STREAMTYPE_DATA46  ;
+    pComponentPrivate->pHeaderInfo->iStreamType.Data4[7]    =   WMADEC_DEFAULT_STREAMTYPE_DATA47  ;
+    pComponentPrivate->pHeaderInfo->iTypeSpecific           =   WMADEC_DEFAULT_TYPESPECIFIC  ;
+    pComponentPrivate->pHeaderInfo->iStreamNum              =   WMADEC_DEFAULT_STREAMNUM   ;
+    pComponentPrivate->pHeaderInfo->iFormatTag              =   WMADEC_DEFAULT_FORMATTAG ;
+    pComponentPrivate->pHeaderInfo->iBlockAlign             =   WMADEC_DEFAULT_BLOCKALIGN  ;
+    pComponentPrivate->pHeaderInfo->iSamplePerSec           =   WMADEC_DEFAULT_SAMPLEPERSEC;
+    pComponentPrivate->pHeaderInfo->iAvgBytesPerSec         =   WMADEC_DEFAULT_AVGBYTESPERSEC ;
+    pComponentPrivate->pHeaderInfo->iChannel                =   WMADEC_DEFAULT_CHANNEL ;
+    pComponentPrivate->pHeaderInfo->iValidBitsPerSample     =   WMADEC_DEFAULT_VALIDBITSPERSAMPLE  ;
+    pComponentPrivate->pHeaderInfo->iSizeWaveHeader         =   WMADEC_DEFAULT_SIZEWAVEHEADER  ;
+    pComponentPrivate->pHeaderInfo->iEncodeOptV             =   WMADEC_DEFAULT_ENCODEOPTV   ;
+    pComponentPrivate->pHeaderInfo->iValidBitsPerSample     =   WMADEC_DEFAULT_VALIDBITSPERSAMPLE  ;
+    pComponentPrivate->pHeaderInfo->iChannelMask            =   WMADEC_DEFAULT_CHANNELMASK   ;
+    pComponentPrivate->pHeaderInfo->iSamplePerBlock         =   WMADEC_DEFAULT_SAMPLEPERBLOCK;
     
 
     pComponentPrivate->bConfigData = 0;  /* assume the first buffer received will contain only config data, need to use bufferFlag instead */
@@ -344,7 +338,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->sInPortFormat.nPortIndex = INPUT_PORT;
     pComponentPrivate->bPreempted = OMX_FALSE; 
     
-    pComponentPrivate->sOutPortFormat.eEncoding = OMX_AUDIO_CodingPCM;  /*chrisk*/
+    pComponentPrivate->sOutPortFormat.eEncoding = OMX_AUDIO_CodingPCM;
     pComponentPrivate->sOutPortFormat.nIndex = 1;
     pComponentPrivate->sOutPortFormat.nPortIndex = OUTPUT_PORT;
     
@@ -372,7 +366,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
 
     /* Removing sleep() calls. Initialization.*/
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -392,16 +385,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
     pComponentPrivate->codecFlush_waitingsignal = 0;
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-    
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#endif
     /* Removing sleep() calls. Initialization.*/        
     
     OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
@@ -444,8 +427,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->bPopulated = 0;
     pPortDef_op->eDomain = OMX_PortDomainAudio;
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
-    /*    sPortFormat->eEncoding = OMX_AUDIO_CodingPCM; */ /*chrisk*/
-    pPortDef_op->format.audio.eEncoding = OMX_AUDIO_CodingPCM;  /*chrisk*/
+    pPortDef_op->format.audio.eEncoding = OMX_AUDIO_CodingPCM;
 
 #ifdef RESOURCE_MANAGER_ENABLED
     OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: Initialize RM Proxy... \n", __LINE__);
@@ -1676,13 +1658,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     if(!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
 
     }
 
@@ -1692,10 +1670,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
     if(NULL == pBufferHeader->pBuffer) {
-	    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__);
-        if (pBufferHeader) {
-            OMX_MEMFREE_STRUCT(pBufferHeader);
-        }
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: Malloc Failed\n",__LINE__);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         goto EXIT;
     }
 
@@ -1736,14 +1712,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
 
     {
-        pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE                  
+        pComponentPrivate->InLoaded_readytoidle = 0;
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif                   
     }
 
     
@@ -1912,13 +1884,9 @@ static OMX_ERRORTYPE FreeBuffer(
         pComponentPrivate->InIdle_goingtoloaded)
     {
         pComponentPrivate->InIdle_goingtoloaded = 0;                  
-#ifndef UNDER_CE           
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif           
     }
 
     /* Removing sleep() calls.  There are no allocated buffers. */
@@ -2028,12 +1996,10 @@ static OMX_ERRORTYPE UseBuffer (
     OMX_PRINT1(pComponentPrivate->dbg, "nSizeBytes =%ld\n",nSizeBytes);
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pPortDef->nBufferSize =%ld\n",pPortDef->nBufferSize);
 
-#ifndef UNDER_CE
     if(pPortDef->bPopulated) {
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
-#endif  
 
     OMX_PRINT1(pComponentPrivate->dbg, "Line %d\n",__LINE__); 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -2072,13 +2038,9 @@ static OMX_ERRORTYPE UseBuffer (
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE    
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif               
     }
     
     OMX_PRINT1(pComponentPrivate->dbg, "Line %d\n",__LINE__); 
@@ -2176,65 +2138,3 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     }
     return eError;
 };
-
-
-#ifdef UNDER_CE
-/* ================================================================================= */
-/**
- * @fns Sleep replace for WIN CE
- */
-/* ================================================================================ */
-int OMX_CreateEvent(OMX_Event *event){
-
-    int ret = OMX_ErrorNone;   
-    HANDLE createdEvent = NULL;
-    if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    event->event  = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if(event->event == NULL)
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_SignalEvent(OMX_Event *event){
-
-    int ret = OMX_ErrorNone;     
-    if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    SetEvent(event->event);
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_WaitForEvent(OMX_Event *event) {
-
-    int ret = OMX_ErrorNone;         
-    if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    WaitForSingleObject(event->event, INFINITE);    
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_DestroyEvent(OMX_Event *event) {
-
-    int ret = OMX_ErrorNone;
-    if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }  
-    CloseHandle(event->event);
- EXIT:    
-    return ret;
-}
-#endif
-
