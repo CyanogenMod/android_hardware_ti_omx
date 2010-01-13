@@ -8248,6 +8248,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                     OMX_PRDSP2(pComponentPrivate->dbg, "Received PLAYCOMPLETED\n");
                 }
                 else {
+                    OMX_PRDSP4(pComponentPrivate->dbg, "Error from the DSP: argsCb[5]=%d.\n", (int)argsCb [5]);
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                            OMX_EventError,
@@ -8257,6 +8258,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                 }
             }
             else {
+                OMX_PRDSP4(pComponentPrivate->dbg, "Error from the DSP: argsCb[4]=%d.\n", (int)argsCb [4]);
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                            OMX_EventError,
@@ -8267,6 +8269,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             }
         }
         else {
+            OMX_PRDSP4(pComponentPrivate->dbg, "LCML Halted: argsCb[0]=%d.\n", (int)argsCb [0]);
             pComponentPrivate->bLCMLHalted = OMX_TRUE;
             pComponentPrivate->pHandle->SendCommand( pComponentPrivate->pHandle, OMX_CommandStateSet, -2, 0);
 
@@ -8287,7 +8290,11 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_MUTEX_SIGNAL(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
+        } else {
+            OMX_PRDSP4(pComponentPrivate->dbg, "EMMCodecStrmCtrlAck: argsCb[0]=%d\n", (int)argsCb [0]);
         }
+    } else {
+        OMX_PRDSP4(pComponentPrivate->dbg, "Unknown event: %d\n", event);
     }
 
 EXIT:
