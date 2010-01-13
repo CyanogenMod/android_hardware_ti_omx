@@ -1173,13 +1173,6 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     }                                           \
 }
 
-#define OMX_CONF_SET_ERROR_BAIL(_eError, _eCode)\
-{                                               \
-    _eError = _eCode;                           \
-    goto EXIT;                                  \
-}
-
-
 #define OMX_PARSER_CHECKLIMIT(_total, _actual, _step) /*  \
     if(((_actual + _step) >> 3) >= _total){                \
     printf("_total %d _actual %d\n",_total,((_actual + _step)>>3)); \
