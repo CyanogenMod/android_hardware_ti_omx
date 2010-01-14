@@ -500,11 +500,9 @@ typedef struct {
     OMX_U32 ulBytesConsumed;
     OMX_S32 iErrorCode;
     OMX_U32 ulDecodedFrameType;
-#if 1
     OMX_U32 ulNumOfNALUDecoded;
     OMX_S32 lMBErrStatFlag;
     OMX_U8  pMBErrStatOutBuf[H264VDEC_SN_MAX_MB_NUMBER];
-#endif
 } H264VDEC_UALGOutputParam;
 
 #endif
@@ -545,16 +543,12 @@ typedef struct {
 #endif
 
     #define __ERR_PRINT
-#if 1
     #define __APP_DPRINT
     #define __ERR_DPRINT
     #define __PRINT
-#endif
 
-#if 1
     #define __ERR_PRINT
     #define __APP_PRINT
-#endif
 
 #ifdef __APP_PRINT
     #define APP_PRINT printf

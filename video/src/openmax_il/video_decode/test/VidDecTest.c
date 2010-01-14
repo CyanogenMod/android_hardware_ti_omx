@@ -891,7 +891,7 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
                             return OMX_ErrorHardware;
                         }
                         nRead = fread(&pBufferHeader->pBuffer[npartialtotal + 4], 1, nSizeToRead, pAppData->fIn);
-#if 0
+#ifdef DEBUG
                         pBufferHeader->pBuffer[npartialtotal + 0] = (((OMX_U32)nSizeToRead) & 0x000000FF);
                         pBufferHeader->pBuffer[npartialtotal + 1] = (((OMX_U32)nSizeToRead) & 0x0000FF00) >> 8;
                         pBufferHeader->pBuffer[npartialtotal + 2] = (((OMX_U32)nSizeToRead) & 0x00FF0000) >> 16;
@@ -3053,7 +3053,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                 if(pBuf != NULL) {
                     APP_DPRINT("nflags %x  %x\n", (int)pBuf->nFlags, (int)pBuf->nFlags);
 #ifndef __GET_BC_VOP__
- #if 1
                     if(pBuf->nFilledLen != 0) {
                         if(pAppData->nRenamingOut || !pAppData->nTimesCount) {
                             if((pBuf->nFlags & OMX_BUFFERFLAG_DECODEONLY) == 0) {
@@ -3066,7 +3065,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             }
                         }
                     }
- #endif
 #else
                     if( pAppData->nTestCase != 10 ) {
                         if(pBuf->nFilledLen != 0) {
@@ -3074,10 +3072,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                 if((pBuf->nFlags & OMX_BUFFERFLAG_DECODEONLY) == 0) {
                                     APP_DPRINT("%d writing %x  %x\n",(int)(pAppData->nCurrentFrameOut),
                                         (unsigned int)((pBuf->nFlags & OMX_BUFFERFLAG_DECODEONLY)),(unsigned int)pBuf->nFlags);
-#if 1
                                     fwrite(pBuf->pBuffer, 1, pBuf->nFilledLen, pAppData->fOut);
                                     fflush(pAppData->fOut);
-#endif
                                 }
                                 else {
                                     APP_DPRINT("%d erased %x  %x\n",(int)(pAppData->nCurrentFrameOut),
@@ -3815,14 +3811,12 @@ CLOSEFILES:
             pAppData->fOut = NULL;
         }
 
-#if 1
     #ifndef UNCER_CE
             if(chmod(fileOutName,0x1B6) == -1) {
                 ERR_PRINT("Error: failed to erase the file <%s> for writing \n", fileOutName);
                 goto EXIT;
             }
     #endif
-#endif
         if ( (int)pAppData->nCurrentFrameOutCorrupt != 0 ) {
             APP_PRINT("-filename %s frames %d/corrupt %d mode %d\n",argv[2],(int)pAppData->nDecodeFrms, (int)pAppData->nCurrentFrameOutCorrupt,(int)pAppData->ProcessMode);
         }
