@@ -1110,12 +1110,8 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     fd_set rfds;
 
-#ifdef UNDER_CE
-    struct timeval tv;
-#else
     sigset_t set;
     struct timespec tv;
-#endif
 
     OMX_U32 retval = 0;
     OMX_BUFFERHEADERTYPE* pBuf;
@@ -1143,22 +1139,13 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
             FD_SET(pAppData->Error_Pipe[0], &rfds);
             
-#ifdef UNDER_CE
-            tv.tv_sec = 0;
-            tv.tv_usec = 100;
-#else
             tv.tv_sec = 0;
             tv.tv_nsec = 100000;
-#endif
 
-#ifdef UNDER_CE
-            status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#else
             sigemptyset (&set);
             sigaddset (&set, SIGALRM);
             retval = pselect (fdmax+1, &rfds, NULL, NULL,&tv, &set);
             sigdelset (&set, SIGALRM);
-#endif
 
             if (retval == -1) {
                 ERR_PRINT("select()");
@@ -1596,12 +1583,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     fd_set rfds;
     OMX_U32 bMBErrorCount = 0;
 
-#ifdef UNDER_CE
-    struct timeval tv;
-#else
     sigset_t set;
     struct timespec tv;
-#endif
 
     OMX_BUFFERHEADERTYPE* pBuf;
     char* fileOutName = NULL, cmd_format[16];
@@ -2301,27 +2284,23 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             sprintf(fileOutName, cmd_format, pAppData->szOutFile, pAppData->nTimesCount + 1);
         }
         if(pAppData->nRenamingOut || !pAppData->nTimesCount) {
-#ifndef UNDER_CE
             if(stat(fileOutName, &filestat) == 0) {
                 if (unlink(fileOutName) == -1) {
                     ERR_PRINT("Error: failed to erase the file <%s> for writing \n", fileOutName);
                     goto EXIT;
                 }
             }
-#endif
             pAppData->fOut = fopen(fileOutName, "wb");
             if (pAppData->fOut == NULL) {
                 eError = OMX_ErrorBadParameter;
                 APP_PRINT("Error: failed tof open the file <%s> for writing \n", fileOutName);
                 goto EXIT;
             }
-#ifndef UNCER_CE
             if(chmod(fileOutName,0x1b6) == -1) {/*1b6/1FF*/
                 eError = OMX_ErrorBadParameter;
                 ERR_PRINT("Error: failed to chmod the file <%s>\n", fileOutName);
                 goto EXIT;
             }
-#endif
         }
 
         rewind(pAppData->fIn);
@@ -2420,22 +2399,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             FD_SET(pAppData->Error_Pipe[0], &rfds);
 
 
-#ifdef UNDER_CE
-            tv.tv_sec = 0;
-            tv.tv_usec = 100;
-#else
             tv.tv_sec = 0;
             tv.tv_nsec = 1000;
-#endif
 
-#ifdef UNDER_CE
-            status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#else
             sigemptyset (&set);
             sigaddset (&set, SIGALRM);
             retval = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
             sigdelset (&set, SIGALRM);
-#endif
             if (retval == -1) {
                 ERR_PRINT("select()");
                 ERR_PRINT(" : Error \n");
@@ -2962,22 +2932,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             FD_SET(pAppData->IpBuf_Pipe[0], &rfds);
             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
             FD_SET(pAppData->Error_Pipe[0], &rfds);
-#ifdef UNDER_CE
-            tv.tv_sec = 0;
-            tv.tv_usec = 100;
-#else
             tv.tv_sec = 0;
             tv.tv_nsec =  30000;
-#endif
 
-#ifdef UNDER_CE
-            status = select (fdmax + 1, &rfds, NULL, NULL, NULL);
-#else
             sigemptyset (&set);
             sigaddset (&set, SIGALRM);
             retval = pselect (fdmax+1, &rfds, NULL, NULL, NULL, &set);
             sigdelset (&set, SIGALRM);
-#endif
             if (retval == -1) {
                 ERR_PRINT("select()");
                 ERR_PRINT(" : Error \n");
@@ -3195,22 +3156,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                     FD_SET(pAppData->IpBuf_Pipe[0], &rfds);
                                     FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
                                     FD_SET(pAppData->Error_Pipe[0], &rfds);
-#ifdef UNDER_CE
-                                    tv.tv_sec = 0;
-                                    tv.tv_usec = 100;
-#else
                                     tv.tv_sec = 0;
                                     tv.tv_nsec = 100;
-#endif
 
-#ifdef UNDER_CE
-                                    status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#else
                                     sigemptyset (&set);
                                     sigaddset (&set, SIGALRM);
                                     retval = pselect (fdmax+1, &rfds, NULL, NULL,&tv, &set);
                                     sigdelset (&set, SIGALRM);
-#endif
 
                                     if (retval == -1) {
                                         ERR_PRINT("select()");
@@ -3484,22 +3436,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
                             FD_SET(pAppData->Error_Pipe[0], &rfds);
             
-                #ifdef UNDER_CE
-                            tv.tv_sec = 0;
-                            tv.tv_usec = 100;
-                #else
                             tv.tv_sec = 0;
                             tv.tv_nsec = 100000;
-                #endif
 
-                #ifdef UNDER_CE
-                            status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-                #else
                             sigemptyset (&set);
                             sigaddset (&set, SIGALRM);
                             retval = pselect (fdmax+1, &rfds, NULL, NULL,&tv, &set);
                             sigdelset (&set, SIGALRM);
-                #endif
 
                             if (retval == -1) {
                                 ERR_PRINT("select()");
@@ -3629,22 +3572,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             FD_SET(pAppData->IpBuf_Pipe[0], &rfds);
                             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
                             FD_SET(pAppData->Error_Pipe[0], &rfds);
-                #ifdef UNDER_CE
-                            tv.tv_sec = 0;
-                            tv.tv_usec = 100;
-                #else
                             tv.tv_sec = 0;
                             tv.tv_nsec = 100000;
-                #endif
 
-                #ifdef UNDER_CE
-                            status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-                #else
                             sigemptyset (&set);
                             sigaddset (&set, SIGALRM);
                             retval = pselect (fdmax+1, &rfds, NULL, NULL,&tv, &set);
                             sigdelset (&set, SIGALRM);
-                #endif
 
                             if (retval == -1) {
                                 ERR_PRINT("select()");

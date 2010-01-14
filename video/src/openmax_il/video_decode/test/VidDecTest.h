@@ -42,17 +42,10 @@
 #ifndef VIDDECTEST_H
 #define VIDDECTEST_H
 
-#ifdef UNDER_CE
-#ifndef VIDDEC_SLEEP_COMPAT
-    #define sleep(_t_) Sleep(_t_);
-    #define VIDDEC_SLEEP_COMPAT
-#endif
-#else
     #define _XOPEN_SOURCE 600
     #include <sys/select.h>
     #include <signal.h>
     #include <unistd.h>     /* for sleep */
-#endif
 
 #define __GET_BC_VOP__
 /*#define __GET_BC_VOP_ADVANCE__*/
