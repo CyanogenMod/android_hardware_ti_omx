@@ -103,7 +103,6 @@
 #define AACENC_ERROR
 
 
-#ifndef UNDER_CE
 #ifdef  AACENC_ERROR
      #define AACENC_EPRINT(...) fprintf(stderr,__VA_ARGS__)
 #else
@@ -117,36 +116,19 @@
      #define AACENC_DPRINT(...)
 #endif
 
-#else /*UNDER_CE*/ 
-
-#ifdef  AACENC_DEBUG
- #define AACENC_DPRINT(STR, ARG...) printf()
-#else
-#endif
-
-#endif /*UNDER_CE*/ 
-
 /* ======================================================================= */
 /**
  * @def    AACENC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define AACENC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define AACENC_USN_DLL_NAME "usn.dll64P"
-#endif
 
 /* ======================================================================= */
 /**
  * @def    AACENC_DLL_NAME   AAC Enc Encoder socket node DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define AACENC_DLL_NAME "\\windows\\mpeg4aacenc_sn.dll64P"
-#else
 #define AACENC_DLL_NAME "mpeg4aacenc_sn.dll64P"
-#endif
 
 typedef struct 
 {
@@ -300,21 +282,6 @@ struct _BUFFERLIST
     BUFFERLIST *pNextBuf;
     BUFFERLIST *pPrevBuf;
 };
-
-#ifdef UNDER_CE
-    #ifndef _OMX_EVENT_
-        #define _OMX_EVENT_
-        typedef struct OMX_Event {
-            HANDLE event;
-        } OMX_Event;
-    #endif
-    int OMX_CreateEvent(OMX_Event *event);
-    int OMX_SignalEvent(OMX_Event *event);
-    int OMX_WaitForEvent(OMX_Event *event);
-    int OMX_DestroyEvent(OMX_Event *event);
-#endif
-
-
 
 typedef struct AACENC_COMPONENT_PRIVATE 
 {
@@ -529,7 +496,6 @@ typedef struct AACENC_COMPONENT_PRIVATE
 
     OMX_BUFFERHEADERTYPE *LastOutputBufferHdrQueued;
     
-#ifndef UNDER_CE
     OMX_U32 bMutexInit;
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
@@ -556,18 +522,6 @@ typedef struct AACENC_COMPONENT_PRIVATE
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
     
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded; 
-
-    
-#endif
     OMX_BOOL bLoadedCommandPending;
     OMX_BOOL bIsInvalidState;
     void* PtrCollector[6];
@@ -656,13 +610,7 @@ OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivat
 void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
-#ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
 
 
 OMX_ERRORTYPE AACENC_StartComponentThread(OMX_HANDLETYPE pHandle);

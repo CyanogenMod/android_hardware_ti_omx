@@ -50,9 +50,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <wchar.h>
 #include <dbapi.h>
 #include <unistd.h>
@@ -66,7 +63,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#endif
 #include "OMX_AacEncoder.h"
 #include "OMX_AacEnc_Utils.h"
 #include "OMX_AacEnc_CompThread.h"
@@ -108,14 +104,10 @@ void* AACENC_ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-#ifndef UNDER_CE
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (pComponentPrivate->bIsThreadstop == 1) {
             OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");

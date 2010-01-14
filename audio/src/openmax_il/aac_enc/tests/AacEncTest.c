@@ -18,9 +18,6 @@
  *    LIBRARY INCLUDE
  */
 
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <pthread.h>
@@ -28,7 +25,6 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <linux/soundcard.h>
-#endif
 
 #include <unistd.h>
 #include <stdlib.h>

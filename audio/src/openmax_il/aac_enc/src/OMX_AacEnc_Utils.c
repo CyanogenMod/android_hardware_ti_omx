@@ -53,12 +53,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE 
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -71,7 +65,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dlfcn.h>
-#endif
 #include <dbapi.h>
 #include <string.h>
 #include <stdio.h>
@@ -84,9 +77,6 @@
 #include <ResourceManagerProxyAPI.h>
 #endif
 
-#ifdef UNDER_CE     
-#define HASHINGENABLE 1
-#endif
 
 
 
@@ -414,13 +404,6 @@ OMX_ERRORTYPE AACENC_StartComponentThread(OMX_HANDLETYPE pComponent)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     AACENC_COMPONENT_PRIVATE *pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-#ifdef UNDER_CE     
-    pthread_attr_t attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.__inheritsched = PTHREAD_EXPLICIT_SCHED;
-    attr.__schedparam.__sched_priority = OMX_AUDIO_DECODER_THREAD_PRIORITY;
-#endif
-
     
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering  AACENC_StartComponentThread\n", __LINE__);
     /* Initialize all the variables*/
@@ -461,11 +444,7 @@ OMX_ERRORTYPE AACENC_StartComponentThread(OMX_HANDLETYPE pComponent)
     }
 
     /* create the pipe used to send commands to the thread */
-#ifdef UNDER_CE     
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, AACENC_ComponentThread, pComponentPrivate);
-#else   
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, AACENC_ComponentThread, pComponentPrivate);
-#endif
     if (eError || !pComponentPrivate->ComponentThread) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Inside  AACENC_StartComponentThread\n", __LINE__);
         eError = OMX_ErrorInsufficientResources;
@@ -532,7 +511,6 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     }
     pComponentPrivate->bPortDefsAllocated = 0;
 
-#ifndef UNDER_CE
     OMX_PRDSP1(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
     pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
     pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -542,12 +520,6 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#else
-    pComponentPrivate->bPortDefsAllocated = 0;
-    OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-    OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-    OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
 
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting AACENC_FreeCompResources()\n",__LINE__);
@@ -803,14 +775,10 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         {
 
                             pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE
                             pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
                             pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
                             pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
                         
-#else
-                            OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
                         }
 
                         cb.LCML_Callback = (void *) AACENCLCML_Callback;
@@ -1302,14 +1270,10 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         {
                             pComponentPrivate->InIdle_goingtoloaded = 1;
 
-#ifndef UNDER_CE
                             pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
                             pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
                             pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
 
-#else
-                            OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
                         }
 
                         /* Now Deinitialize the component No error should be returned from this function. It should clean the system as much as possible */
@@ -1327,7 +1291,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                             goto EXIT;
                         }
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENCHandleCommand: Cmd Loaded\n",__LINE__);
-#ifndef UNDER_CE
                         /*Closing LCML Lib*/
                         /* This flag is used in Deinit()  function to close LCML. */
                         pComponentPrivate->bCodecDestroyed = OMX_TRUE;  
@@ -1340,7 +1303,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                             OMX_PRDSP1(pComponentPrivate->dbg, "AAC: Closed LCML \n");  
                             
                         }
-#endif
                         OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After CodecControlDestroy \n",__LINE__);
                         if (eError != OMX_ErrorNone) 
                         {
@@ -1566,13 +1528,9 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
                      pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                      pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                      pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                      pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                     OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
                 }
                 if (pComponentPrivate->curState == OMX_StateExecuting) 
                 {
@@ -1656,13 +1614,9 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
 
-#ifndef UNDER_CE
                      pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                      pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                      pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                     OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
 
     }
 
@@ -2882,7 +2836,6 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_HANDLETYPE pHandle = NULL;
-#ifndef UNDER_CE
     void *handle;
     char *error;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
@@ -2898,40 +2851,15 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
         fputs(error, stderr);
         goto EXIT;
     }
-#else
-    HINSTANCE hDLL; 
-    typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE); 
-    LPFNDLLFUNC1 fpGetHandle;
-    
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering AACENCGetLCMLHandle..\n",__LINE__);
-    
-    hDLL = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL, 0);
-    if (hDLL == NULL) {
-        OMX_ERROR4(pComponentPrivate->dbg, "BML Load Failed!!!\n");
-        pHandle = NULL;
-        goto EXIT; 
-    }
-
-    fpGetHandle = (LPFNDLLFUNC1)GetProcAddress(hDLL,TEXT("GetHandle"));
-    if (!fpGetHandle) {
-      // handle the error
-      FreeLibrary(hDLL);
-      OMX_ERROR4(pComponentPrivate->dbg, "BML GetProcAddress Failed!!!\n");
-      pHandle = NULL;
-      goto EXIT;
-    }    
-#endif
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
         OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...\n");
         pHandle = NULL;
 
-#ifndef UNDER_CE
         dlclose(handle);                            /* got error - Close LCML lib  */
         OMX_ERROR4(pComponentPrivate->dbg, "AAC: [AACENCGetLCMLHandle] closing LCML \n");
         handle = NULL;
- #endif
         goto EXIT;
     }
     
@@ -3346,7 +3274,6 @@ void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
             {
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: UTIL: IUALG_WARN_PLAYCOMPLETED/USN_ERR_WARNING event received\n", __LINE__);
                 pComponentPrivate->bPlayCompleteFlag = 1;
-#ifndef UNDER_CE
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventBufferFlag,
@@ -3354,15 +3281,6 @@ void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
                                                        OMX_BUFFERFLAG_EOS,
                                                        NULL);
                 pComponentPrivate->pLcmlBufHeader[0]->pIpParam->bLastBuffer = 0;
-#else
-                /* add callback to application to indicate SN/USN has completed playing of current set of date */
-                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                       pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       OMX_EventBufferFlag,
-                                                       (OMX_U32)NULL,
-                                                       OMX_BUFFERFLAG_EOS,
-                                                       NULL);
-#endif
             }
             break;
 
