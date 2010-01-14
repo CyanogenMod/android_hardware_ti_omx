@@ -29,13 +29,6 @@
 #endif
 #include <cutils/properties.h>
 
-#ifdef UNDER_CE
-    #include <windows.h>
-    #include <oaf_osal.h>
-    #include <omx_core.h>
-    #include <pthread.h>
-    #include <stdlib.h>
-#else
     #define _XOPEN_SOURCE 600
     #include <sys/select.h>
     #include <signal.h>
@@ -59,7 +52,6 @@
     #include <sys/time.h>
     #include <stdlib.h>
     #include <semaphore.h>
-#endif
 
 #ifndef KHRONOS_1_1
 #define KHRONOS_1_1
@@ -76,10 +68,8 @@
 
 #define VIDDEC_WAIT_CODE() sched_yield()
 
-#ifndef UNDER_CE
 #ifndef __ENV_CHANGE__
 #define __ENV_CHANGE__
-#endif
 #endif
 
 #ifndef VIDDEC_ACTIVATEPARSER
@@ -951,9 +941,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     VIDDEC_SAVE_BUFFER eFirstBuffer;
 
 
-#ifndef UNDER_CE
     OMX_BOOL bLCMLOut;
-#endif
     VIDDEC_RMPROXY_STATES eRMProxyState;
 
     OMX_U8 nCountInputBFromDsp;

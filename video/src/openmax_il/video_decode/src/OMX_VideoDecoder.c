@@ -49,11 +49,6 @@
 *  INCLUDE FILES                                                  
 *******************************************************************************/
 /* ----- system and platform files -------------------------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -62,7 +57,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
+
 
 #include <string.h>
 #include <fcntl.h>
@@ -80,9 +75,7 @@
 static int mDebugFps = 0;
 
 #ifdef RESOURCE_MANAGER_ENABLED
-/*#ifndef UNDER_CE*/
 #include <ResourceManagerProxyAPI.h>
-/*#endif*/
 #endif
 
 /*******************************************************************************
@@ -461,7 +454,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 #endif
 
 #ifdef RESOURCE_MANAGER_ENABLED
-/*#ifndef UNDER_CE*/
     /* load the ResourceManagerProxy thread */
     eError = RMProxy_NewInitalizeEx(OMX_COMPONENTTYPE_VIDEO);
     if (eError != OMX_ErrorNone) {
@@ -472,7 +464,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     else{
         pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Load;
     }
-/*#endif*/
 #endif
 
     /* Start the component thread */
@@ -2740,7 +2731,6 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 
     OMX_DBG_CLOSE(pComponentPrivate->dbg);
 
-#ifndef UNDER_CE
     if(pComponentPrivate->eFirstBuffer.pFirstBufferSaved){
         free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
         pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
@@ -2755,7 +2745,6 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     VIDDEC_PTHREAD_MUTEX_DESTROY(pComponentPrivate->sMutex);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sInSemaphore);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sOutSemaphore);
-#endif
     pthread_mutex_destroy(&(pComponentPrivate->mutexInputBFromApp));
     pthread_mutex_destroy(&(pComponentPrivate->mutexOutputBFromApp));
     pthread_mutex_destroy(&(pComponentPrivate->mutexInputBFromDSP));
@@ -2942,14 +2931,12 @@ static OMX_ERRORTYPE VIDDEC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 
     if (pCompPort->nBufferCnt == pPortDef->nBufferCountActual) {
         pPortDef->bPopulated = OMX_TRUE;
-#ifndef UNDER_CE
         if (nPortIndex == VIDDEC_INPUT_PORT) {
             VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sInSemaphore);
         }
         else {
             VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sOutSemaphore);
         }
-#endif
     }
 EXIT:
     if (pComponentPrivate)
@@ -3200,14 +3187,12 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pInCompPort->nBufferCnt--;
         if (pInBufferCnt == 0) {
             pPortDefIn->bPopulated = OMX_FALSE;
-#ifndef UNDER_CE
             if (nPortIndex == VIDDEC_INPUT_PORT) {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sInSemaphore);
             }
             else {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sOutSemaphore);
             }
-#endif
             if (bTransIdle) {
                 i = 0;
             }
@@ -3234,14 +3219,12 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pOutCompPort->nBufferCnt--;
         if (pOutBufferCnt == 0) {
             pPortDefOut->bPopulated = OMX_FALSE;
-#ifndef UNDER_CE
             if (nPortIndex == VIDDEC_INPUT_PORT) {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sInSemaphore);
             }
             else {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sOutSemaphore);
             }
-#endif
             if ((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent == NULL) &&  bTransIdle) {
                 i = 0;
             }
@@ -3442,14 +3425,12 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pCompPort->nBufferCnt,pCompPort->pBufferPrivate[pBufferCnt]->nNumber);
     if (pCompPort->nBufferCnt == pPortDef->nBufferCountActual) {
         pPortDef->bPopulated = OMX_TRUE;
-#ifndef UNDER_CE
             if (nPortIndex == VIDDEC_INPUT_PORT) {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sInSemaphore);
             }
             else {
                 VIDDEC_PTHREAD_SEMAPHORE_POST(pComponentPrivate->sOutSemaphore);
             }
-#endif
     }
 
 EXIT:

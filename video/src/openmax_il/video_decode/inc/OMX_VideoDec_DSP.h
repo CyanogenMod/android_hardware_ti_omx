@@ -54,7 +54,6 @@
     #define VIDDEC_SN_R8_14
 #endif
 
-#ifndef UNDER_CE
     #define H264_DEC_NODE_DLL  "h264vdec_sn.dll64P"
     #define MP4_DEC_NODE_DLL   "mp4vdec_sn.dll64P"
     #define MP4720P_DEC_NODE_DLL   "mpeg4aridec_sn.dll64P"
@@ -66,18 +65,6 @@
  #ifdef VIDDEC_SPARK_CODE
     #define SPARK_DEC_NODE_DLL  "sparkdec_sn.dll64P"
  #endif
-#else
-    #define H264_DEC_NODE_DLL "\\windows\\h264vdec_sn.dll64P"
-    #define MP4_DEC_NODE_DLL  "\\windows\\mp4vdec_sn.dll64P"
-    #define MP2_DEC_NODE_DLL  "\\windows\\mp2vdec_sn.dll64P"
-    #define WMV_DEC_NODE_DLL  "\\windows\\wmv9dec_sn.dll64P"
-    #define RINGIO_NODE_DLL   "\\windows\\ringio.dll64P"
-    #define USN_DLL           "\\windows\\usn.dll64P"
-    #define CONVERSIONS_DLL   "\\windows\\conversions.dll64P"
- #ifdef VIDDEC_SPARK_CODE
-    #define SPARK_DEC_NODE_DLL "\\windows\\sparkdec_sn.dll64P" 
- #endif
-#endif
 
 #define CEILING_1000X(x) ((OMX_U32)(x) + (1000-(OMX_U32)(x)%1000))
 
