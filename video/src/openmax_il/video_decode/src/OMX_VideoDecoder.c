@@ -2186,11 +2186,7 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
     int ret = 0;
     /* Set to sufficiently high value */
     int mutex_timeout = 3;
-
-    if(hComponent == NULL || pState == NULL) {
-        return OMX_ErrorBadParameter;
-    }
-
+    OMX_CONF_CHECK_CMD(hComponent, pState, OMX_TRUE);
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
 
@@ -2235,7 +2231,7 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
         eError = OMX_ErrorInvalidComponent;
         *pState = OMX_StateInvalid;
      }
-
+EXIT:
     return eError;
 }
 
