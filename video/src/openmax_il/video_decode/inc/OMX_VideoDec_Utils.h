@@ -309,31 +309,31 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_CLEARFLAGS                             0
 #define H264VDEC_SN_MAX_NALUNITS                      1200
 
-#define VIDDEC_RM_FREC_MPEG4_QCIF                     30
-#define VIDDEC_RM_FREC_MPEG4_CIF                      80
-#define VIDDEC_RM_FREC_MPEG4_VGA                      165
-#define VIDDEC_RM_FREC_MPEG4_720P                     401
+#define VIDDEC_RM_FREQ_MPEG4_QCIF                     30
+#define VIDDEC_RM_FREQ_MPEG4_CIF                      80
+#define VIDDEC_RM_FREQ_MPEG4_VGA                      165
+#define VIDDEC_RM_FREQ_MPEG4_720P                     401
 
-#define VIDDEC_RM_FREC_MPEG2_QCIF                     30
-#define VIDDEC_RM_FREC_MPEG2_CIF                      80
-#define VIDDEC_RM_FREC_MPEG2_VGA                      165
+#define VIDDEC_RM_FREQ_MPEG2_QCIF                     30
+#define VIDDEC_RM_FREQ_MPEG2_CIF                      80
+#define VIDDEC_RM_FREQ_MPEG2_VGA                      165
 
-#define VIDDEC_RM_FREC_H263_QCIF                      25
-#define VIDDEC_RM_FREC_H263_CIF                       60
-#define VIDDEC_RM_FREC_H263_VGA                       165
+#define VIDDEC_RM_FREQ_H263_QCIF                      25
+#define VIDDEC_RM_FREQ_H263_CIF                       60
+#define VIDDEC_RM_FREQ_H263_VGA                       165
 
-#define VIDDEC_RM_FREC_H264_QCIF                      85
-#define VIDDEC_RM_FREC_H264_CIF                       160
-#define VIDDEC_RM_FREC_H264_VGA                       260
+#define VIDDEC_RM_FREQ_H264_QCIF                      85
+#define VIDDEC_RM_FREQ_H264_CIF                       160
+#define VIDDEC_RM_FREQ_H264_VGA                       260
 
-#define VIDDEC_RM_FREC_WMV_QCIF                       55
-#define VIDDEC_RM_FREC_WMV_CIF                        100
-#define VIDDEC_RM_FREC_WMV_VGA                        300
+#define VIDDEC_RM_FREQ_WMV_QCIF                       55
+#define VIDDEC_RM_FREQ_WMV_CIF                        100
+#define VIDDEC_RM_FREQ_WMV_VGA                        300
 
 #ifdef VIDDEC_SPARK_CODE
- #define VIDDEC_RM_FREC_SPARK_QCIF                    55
- #define VIDDEC_RM_FREC_SPARK_CIF                     100
- #define VIDDEC_RM_FREC_SPARK_VGA                     300
+ #define VIDDEC_RM_FREQ_SPARK_QCIF                    55
+ #define VIDDEC_RM_FREQ_SPARK_CIF                     100
+ #define VIDDEC_RM_FREQ_SPARK_VGA                     300
 #endif
 
 #define VIDDEC_MIN_WIDTH                              176
@@ -1332,7 +1332,7 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 OMX_ERRORTYPE VIDDEC_HandleCommandMarkBuffer(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_PTR pCmdData);
 OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bPass);
 OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing);
-OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
+OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 
 OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex);

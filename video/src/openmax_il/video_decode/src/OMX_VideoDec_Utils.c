@@ -56,10 +56,10 @@
 #include "OMX_VideoDec_Thread.h"
 /*----------------------------------------------------------------------------*/
 /**
-  * VIDDEC_GetRMFrecuency() Return the value for frecuecny to use RM.
+  * VIDDEC_GetRMFrequency() Return the value for frequency to use RM.
   **/
 /*----------------------------------------------------------------------------*/
-OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
+OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 {
    OMX_U32 nReturnValue = VIDDEC_MPU;
 
@@ -69,31 +69,31 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         if ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_CIF_WIDTH) ||
             (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_CIF_HEIGHT)) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                nReturnValue = VIDDEC_RM_FREC_H264_VGA;
+                nReturnValue = VIDDEC_RM_FREQ_H264_VGA;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-                nReturnValue = VIDDEC_RM_FREC_WMV_VGA;
+                nReturnValue = VIDDEC_RM_FREQ_WMV_VGA;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
                 if ((OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_D1MAX_HEIGHT ||
                     (OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_D1MAX_WIDTH)
                 {
-                    nReturnValue = VIDDEC_RM_FREC_MPEG4_720P;
+                    nReturnValue = VIDDEC_RM_FREQ_MPEG4_720P;
                 }
                 else
                 {
-                    nReturnValue = VIDDEC_RM_FREC_MPEG4_VGA;
+                    nReturnValue = VIDDEC_RM_FREQ_MPEG4_VGA;
                 }
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-                nReturnValue = VIDDEC_RM_FREC_MPEG2_VGA;
+                nReturnValue = VIDDEC_RM_FREQ_MPEG2_VGA;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                nReturnValue = VIDDEC_RM_FREC_H263_VGA;
+                nReturnValue = VIDDEC_RM_FREQ_H263_VGA;
             }
 #ifdef VIDDEC_SPARK_CODE
             else if (VIDDEC_SPARKCHECK) {
-                nReturnValue = VIDDEC_RM_FREC_SPARK_VGA;
+                nReturnValue = VIDDEC_RM_FREQ_SPARK_VGA;
             }
 #endif
             else {
@@ -106,23 +106,23 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= VIDDEC_CIF_HEIGHT) &&
             (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_QCIF_HEIGHT))) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                nReturnValue = VIDDEC_RM_FREC_H264_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_H264_CIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-                nReturnValue = VIDDEC_RM_FREC_WMV_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_WMV_CIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-                nReturnValue = VIDDEC_RM_FREC_MPEG4_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_MPEG4_CIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-                nReturnValue = VIDDEC_RM_FREC_MPEG2_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_MPEG2_CIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                nReturnValue = VIDDEC_RM_FREC_H263_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_H263_CIF;
             }
 #ifdef VIDDEC_SPARK_CODE
             else if (VIDDEC_SPARKCHECK) {
-                nReturnValue = VIDDEC_RM_FREC_SPARK_CIF;
+                nReturnValue = VIDDEC_RM_FREQ_SPARK_CIF;
             }
 #endif
             else {
@@ -135,23 +135,23 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= VIDDEC_QCIF_HEIGHT) &&
             (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_HEIGHT))) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                nReturnValue = VIDDEC_RM_FREC_H264_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_H264_QCIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-                nReturnValue = VIDDEC_RM_FREC_WMV_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_WMV_QCIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-                nReturnValue = VIDDEC_RM_FREC_MPEG4_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_MPEG4_QCIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-                nReturnValue = VIDDEC_RM_FREC_MPEG2_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_MPEG2_QCIF;
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                nReturnValue = VIDDEC_RM_FREC_H263_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_H263_QCIF;
             }
 #ifdef VIDDEC_SPARK_CODE
             else if (VIDDEC_SPARKCHECK) {
-                nReturnValue = VIDDEC_RM_FREC_SPARK_QCIF;
+                nReturnValue = VIDDEC_RM_FREQ_SPARK_QCIF;
             }
 #endif
             else {
@@ -161,9 +161,9 @@ OMX_U32 VIDDEC_GetRMFrecuency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         else {
             nReturnValue = VIDDEC_MPU;
     }
-    OMX_PRDSP2(pComponentPrivate->dbg, "Used RM Frec value = %d\n",(int)nReturnValue);
+    OMX_PRDSP2(pComponentPrivate->dbg, "Used RM Freq value = %d\n",(int)nReturnValue);
 #else
-    OMX_PRDSP2(pComponentPrivate->dbg, "Used RM Frec defaulted value = %d\n",(int)nReturnValue);
+    OMX_PRDSP2(pComponentPrivate->dbg, "Used RM Freq defaulted value = %d\n",(int)nReturnValue);
 #endif
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING\n");
     return nReturnValue;
@@ -2342,23 +2342,23 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 if(pComponentPrivate->eRMProxyState != VidDec_RMPROXY_State_Unload){
                     OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 1 %u : %u bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
                     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_H264_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_H264_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
                     else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
                     else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_H263_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_H263_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
                     else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG2_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG2_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
                     else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_WMV_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_WMV_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
 #ifdef VIDDEC_SPARK_CODE
                     else if (VIDDEC_SPARKCHECK) {
-                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrecuency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_RequestResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
 #endif
                     else {
