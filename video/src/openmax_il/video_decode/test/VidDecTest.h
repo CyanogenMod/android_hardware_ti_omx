@@ -581,7 +581,7 @@ typedef struct {
 #endif
 
 #ifdef __PRINT
-    #define PRINT printf/*(stdout, __VA_ARGS__)*/
+    #define PRINT printf
 #else
     #define PRINT(...)
 #endif

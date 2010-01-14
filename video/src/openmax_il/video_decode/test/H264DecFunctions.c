@@ -130,8 +130,6 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     }
     pAppData->pOutPortDef->eDir                                 = OMX_DirOutput;
     pAppData->pOutPortDef->nBufferCountActual                   = pAppData->cOutputBuffers;
-    /*if(pAppData->pOutPortDef->nBufferCountActual == 4)
-        pAppData->pOutPortDef->nBufferCountActual = 3;*/
     pAppData->pOutPortDef->nBufferCountMin                      = BUFFERMINCOUNT;
     pAppData->pOutPortDef->bEnabled                             = PORTENABLED;
     pAppData->pOutPortDef->bPopulated                           = PORTPOPULATED;

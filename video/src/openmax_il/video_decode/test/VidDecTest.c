@@ -278,7 +278,7 @@ OMX_ERRORTYPE VIDDECTEST_LookBack0x0A(FILE* pFile, OMX_U32* nPosition)
             break;
         }
     } while (nRetVal != 0x0A);
-    if (nRetVal == 0x0A /*&& !feof (pFile)*/) {
+    if (nRetVal == 0x0A) {
         if (nPosition != NULL) {
             (*nPosition) = ftell (pFile);
         }
@@ -298,7 +298,6 @@ OMX_ERRORTYPE VIDDECTEST_GetVOPValues(OMX_BUFFERHEADERTYPE *pBufHeader,
                                     OMX_S32* type,
                                     OMX_TICKS* timeStamp)
 {
-    /*OMX_U32 nPosition = 0;*/
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     static OMX_BOOL bFirstBufferRead = OMX_FALSE;
     static fpos_t pos;
@@ -429,8 +428,6 @@ OMX_ERRORTYPE VIDDECTEST_GetVOPValues(OMX_BUFFERHEADERTYPE *pBufHeader,
                         } while (1);
                             /*end counting total frames*/
                         (*nFPosSeek) = ( (*nFPos) / 10) * 7;
-                        /*APP_PRINT("SEEK Position Test \nQty frames %d, look for %d - decode %d\n",
-                            (*nFPos), (*nFPosSeek), (*nFPos) - (*nFPosSeek));*/
                     }
                     (*nFPos) = 0;
                     fseek ( pVopFile, 0, SEEK_SET);
@@ -478,7 +475,6 @@ OMX_ERRORTYPE VIDDECTEST_GetVOPValues(OMX_BUFFERHEADERTYPE *pBufHeader,
                             (*totalRead) = nTempIndex;
                             (*timeStamp) = (OMX_TICKS)temptimeStamp;
                             (*nTestCase) = TESTCASE_TYPE_PLAYBACK;
-                            /*(*nTestCase) = TESTCASE_TYPE_FASTFORWARD;*//*TESTCASE_TYPE_FASTFORWARD*/
                             fseek ( pInFile, (*totalRead), SEEK_SET);
                             fsetpos ( pVopFile, &pos);
                         }
@@ -842,7 +838,6 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
                             }
                         }
                         else {
-                            /*pBufferHeader->nOffset = 0;*/
                             nRead = fread(pBufferHeader->pBuffer, 1, nSizeToRead, pAppData->fIn);
                             pAppData->nFileTotalRead += nRead;
                             pBufferHeader->nFilledLen = nRead;
@@ -1220,14 +1215,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
         pAppData->nWidth    = pAppData->pInPortDef->format.video.nFrameWidth;
         pAppData->nHeight   = pAppData->pInPortDef->format.video.nFrameHeight;
         /*buffersize read only, component is setting this value*/
-        /*if (pAppData->eColorFormat == COLORFORMAT422) {
-            pAppData->pInPortDef->nBufferSize = (pAppData->nWidth * pAppData->nHeight) * FACTORFORMAT422;
-        }
-        else {
-            pAppData->pInPortDef->nBufferSize = (pAppData->nWidth * pAppData->nHeight) * FACTORFORMAT420;
-        }*/
-/*        eError = OMX_SetParameter (pHandle, OMX_IndexParamPortDefinition, pAppData->pInPortDef);
-        CHECK_ERROR(eError, eError, "Error from OMX_SetParameter function %X\n", EXIT);*/ /*JESA: Andorid doesn't need to send the new values the component already have it*/
+        /*JESA: Andorid doesn't need to send the new values the component already have it*/
     }
     if ( nParam == 1 || nParam == -1){
         eError = OMX_GetParameter(pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
@@ -1235,14 +1223,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
         pAppData->nWidth    = pAppData->pOutPortDef->format.video.nFrameWidth;
         pAppData->nHeight   = pAppData->pOutPortDef->format.video.nFrameHeight;
         /*buffersize read only, component is setting this value*/
-        /*if (pAppData->eColorFormat == COLORFORMAT422) {
-            pAppData->pOutPortDef->nBufferSize = (pAppData->nWidth * pAppData->nHeight) * FACTORFORMAT422;
-        }
-        else {
-            pAppData->pOutPortDef->nBufferSize = (pAppData->nWidth * pAppData->nHeight) * FACTORFORMAT420;
-        }*/
-/*        eError = OMX_SetParameter (pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
-        CHECK_ERROR(eError, eError, "Error from OMX_SetParameter function %X\n", EXIT);*/ /*JESA: Android doesn't need to send the new values the component already have it*/
+        /*JESA: Android doesn't need to send the new values the component already have it*/
     }
 
     eError = OMX_SendCommand( pHandle, OMX_CommandPortEnable, nParam, NULL);
@@ -1423,7 +1404,6 @@ void VidDec_EventHandler (OMX_HANDLETYPE hComponent,OMX_PTR pAppData,OMX_EVENTTY
             }
             if(nData1 == sVidDecPortIndex.nOutputPortIndex && (nData2 & OMX_BUFFERFLAG_EOS) == 1) {
                 APP_DPRINT("%d :: App: End of Output Stream %d\n", __LINE__, state);
-                /*((MYDATATYPE *)pAppData)->bExit = 1;*/
             }
             if(nData1 == sVidDecPortIndex.nInputPortIndex && (nData2 & OMX_BUFFERFLAG_EOS) == 1) {
                 APP_DPRINT("%d :: App: End of Input Stream %d\n", __LINE__, state);
@@ -1468,7 +1448,6 @@ void VidDec_FillBufferDone (OMX_HANDLETYPE hComponent, MYDATATYPE* pAppData, OMX
 void calc_time(MYDATATYPE* pAppData)
 {
     OMX_U8 nMinToSec;
-    /*OMX_U8 nSec;*/
     OMX_U8 nFinalSec;
     OMX_U8 nMoreSec;
     float nFPS;
@@ -1614,7 +1593,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     OMX_U32 ntimeoutcount = 0;
     int retval = 0;
     int i = 0;
-    /*int j = 0;*/
     fd_set rfds;
     OMX_U32 bMBErrorCount = 0;
 
@@ -2388,7 +2366,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             nRetValue = stat ((char*)vopname, &filestat);
             if(nRetValue == 0)
             {
-                /*int frame, val, frameR, nItems;*/
                 char *oldname, ext[] = ".old";
                 int sizeoldname;
                 sizeoldname = strlen(vopname)+strlen(ext)+1;
@@ -3007,7 +2984,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                 break;
             }
             if (retval == 0) {
-                /*ERR_PRINT("%d :: App Timeout !!!\n",__LINE__);*/
+                /*Do nothing*/
             }
             eError = OMX_GetState(pHandle, &pAppData->eState);
             if (eError != OMX_ErrorNone) {
@@ -3074,7 +3051,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                 ntimeoutcount = 0;
                 read(pAppData->OpBuf_Pipe[0], &pBuf, sizeof(pBuf));
                 if(pBuf != NULL) {
-                    /*APP_DPRINT("frametype %x  %x\n",((pBuf->nFlags & FRAMETYPE_MASK)>>28),pBuf->nFlags);*/
                     APP_DPRINT("nflags %x  %x\n", (int)pBuf->nFlags, (int)pBuf->nFlags);
 #ifndef __GET_BC_VOP__
  #if 1
@@ -3769,7 +3745,6 @@ DEINIT:
         {
             goto FREEBUFFERS;
         }
-        /*APP_PRINT("\nOMX_GetState 0x%x 0x%x 0x%x\n", pAppData->eState, OMX_StateExecuting, OMX_StatePause);*/
         if((pAppData->eState == OMX_StateExecuting) || (pAppData->eState == OMX_StatePause)){
             APP_DPRINT("Calling OMX_StateIdle\n");
             eError = OMX_SendCommand(pHandle, OMX_CommandStateSet, OMX_StateIdle, NULL);
@@ -3788,7 +3763,6 @@ DEINIT:
             ERR_PRINT("Warning:  VideoDec->GetState has returned status %X\n", eError);
             goto FREEHANDLES;
         }
-        /*APP_PRINT("\nOMX_GetState 0x%x 0x%x 0x%x\n", pAppData->eState, OMX_StateExecuting, OMX_StatePause);*/
         if((pAppData->eState == OMX_StateIdle)){
             APP_DPRINT("Calling OMX_StateLoaded\n");
             eError = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateLoaded, NULL);
