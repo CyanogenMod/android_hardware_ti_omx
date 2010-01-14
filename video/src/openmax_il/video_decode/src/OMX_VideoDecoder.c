@@ -1502,6 +1502,11 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                  break;
             }
 
+            if (pProfileLevel == NULL) {
+                eError = OMX_ErrorBadParameter;
+                break;
+            }
+
             /* Check validity of profile & level parameters */
             while((pProfileLevel->nProfile != (OMX_S32)pParamProfileLevel->eProfile) ||
                  (pProfileLevel->nLevel != (OMX_S32)pParamProfileLevel->eLevel)) {
@@ -2224,6 +2229,11 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
               /* Unlock mutex in case of timeout */
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout;
+           }
+           else {
+              /* Incase of other errors unlock the mutex*/
+              pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
+              return OMX_ErrorUndefined;
            }
         }
      }

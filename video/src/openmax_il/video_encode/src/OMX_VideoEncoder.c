@@ -2718,6 +2718,11 @@ static OMX_ERRORTYPE GetState (OMX_IN OMX_HANDLETYPE hComponent,
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout;
            }
+           else {
+              /* Incase of other errors unlock the mutex*/
+              pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
+              return OMX_ErrorUndefined;
+           }
         }
     }
      else {
@@ -3005,6 +3010,9 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 
     OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    if (pComponentPrivate == NULL){
+        return OMX_ErrorBadParameter;
+    }
 
     dbg = pComponentPrivate->dbg;
 

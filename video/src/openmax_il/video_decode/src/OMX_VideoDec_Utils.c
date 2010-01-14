@@ -8135,7 +8135,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
    char* error;
 
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
-    if (!pComponentPrivate->pModLCML) {
+    if ((!pComponentPrivate->pModLCML)&&
+        ((error = dlerror()) != NULL)) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
         fputs(dlerror(), stderr);
         eError = OMX_ErrorBadParameter;
@@ -8214,6 +8215,10 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pComponentPrivate->bLCMLOut = OMX_FALSE;
     pComponentPrivate->bLCMLHalted = OMX_FALSE;
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+    if (pLcmlHandle == NULL) {
+        eError = OMX_ErrorBadParameter;
+        goto EXIT;
+    }
     pComponentPrivate->eLCMLState = VidDec_LCML_State_Init;
 
     OMX_PRDSP2(pComponentPrivate->dbg, "OUTPUT width=%lu height=%lu\n", pComponentPrivate->pOutPortDef->format.video.nFrameWidth, pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
@@ -8222,7 +8227,6 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     /*Enable EOS propagation at USN*/
     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
-        pComponentPrivate->pLCML != NULL &&
         pComponentPrivate->bLCMLHalted != OMX_TRUE){
         OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlUsnEos, NULL);
@@ -8482,9 +8486,9 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                     OMX_MEMFREE_STRUCT_DSPALIGN (pDynParams,SPARKVDEC_UALGDynamicParams);
                     goto EXIT;
                 }
-                VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
-                VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
             }
+            VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
+            VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
 
             OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,SPARKVDEC_UALGDynamicParams);
 
