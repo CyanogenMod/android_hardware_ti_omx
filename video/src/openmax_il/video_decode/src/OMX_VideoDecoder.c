@@ -2264,7 +2264,7 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
     OMX_S32 ret = 0;
 
-    OMX_CONF_CHECK_CMD(pComponent, OMX_TRUE, OMX_TRUE);
+    OMX_CONF_CHECK_CMD(pComponent, pBuffHead, OMX_TRUE);
 
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -2859,7 +2859,6 @@ static OMX_ERRORTYPE VIDDEC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     *ppBufferHdr = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr;
-    memset(*ppBufferHdr, 0, sizeof(OMX_BUFFERHEADERTYPE));
     OMX_CONF_INIT_STRUCT(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, OMX_BUFFERHEADERTYPE, pComponentPrivate->dbg);
 
     (*ppBufferHdr)->pBuffer = pBuffer;
@@ -3465,7 +3464,7 @@ static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp, struct OMX_TI_Debug *dbg)
     char *pSubstring = NULL;
     OMX_BOOL bResult = OMX_TRUE;
 
-    pTunnelcComponentName = malloc(128);
+    pTunnelcComponentName = malloc(OMX_MAX_STRINGNAME_SIZE);
     if (pTunnelcComponentName == NULL) {
         eError = OMX_ErrorInsufficientResources;
         OMX_TRACE4(*dbg, "Error in Video Decoder OMX_ErrorInsufficientResources\n");
