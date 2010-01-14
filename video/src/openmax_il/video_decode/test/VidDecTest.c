@@ -1678,8 +1678,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
 #endif
         APP_PRINT("arg8:  Output type YUV: 0:420; 1:422\n");
         APP_PRINT("arg9:  Decoder Mode: 0-Frame; 1:Stream\n");
-        APP_PRINT("arg10: Input buffer number  1-4\n");
-        APP_PRINT("arg11: Output buffer number 1-4\n");
+        APP_PRINT("arg10: Input buffer number  1-%d\n", MAX_VIDDEC_NUM_OF_IN_BUFFERS);
+        APP_PRINT("arg11: Output buffer number 1-%d\n", MAX_VIDDEC_NUM_OF_OUT_BUFFERS);
         APP_PRINT("arg12: Repetition time - numeric\n");
         APP_PRINT("arg13: Save output 0:save first out/1: save all out\n");
         APP_PRINT("arg14: profile used, h264 Level and WMV9 Profile selection in stream mode\n");
@@ -1757,14 +1757,14 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     }
 
     /*validating Input Buffers*/
-    if((atoi(argv[10]) < 1) || (atoi(argv[10]) > 4)) {
-        APP_PRINT("Incorrect Input Buffers, invalid value %s, must be 1-4\n", argv[10]);
+    if((atoi(argv[10]) < 1) || (atoi(argv[10]) > MAX_VIDDEC_NUM_OF_IN_BUFFERS)) {
+        APP_PRINT("Incorrect Input Buffers, invalid value %s, must be 1-%d\n", argv[10], MAX_VIDDEC_NUM_OF_IN_BUFFERS);
         return -1;
     }
 
     /*validating Output Buffers*/
-    if((atoi(argv[11]) < 1) || (atoi(argv[11]) > 4)) {
-        APP_PRINT("Incorrect Input Buffers, invalid value %s, must be 1-4\n", argv[11]);
+    if((atoi(argv[11]) < 1) || (atoi(argv[11]) > MAX_VIDDEC_NUM_OF_OUT_BUFFERS)) {
+        APP_PRINT("Incorrect Output Buffers, invalid value %s, must be 1-%d\n", argv[11], MAX_VIDDEC_NUM_OF_OUT_BUFFERS);
         return -1;
     }
 
