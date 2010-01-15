@@ -2265,7 +2265,9 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         
     }
     EXIT:
-        OMX_PRMGR2(pComponentPrivate->dbg, "OMX_RmProxyCallback exiting.\n");
+        if (pComponentPrivate != NULL ) {
+            OMX_PRMGR2(pComponentPrivate->dbg, "OMX_RmProxyCallback exiting.\n");
+        }
 }
 #endif
 
