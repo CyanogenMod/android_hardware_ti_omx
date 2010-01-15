@@ -97,11 +97,6 @@
 extern void * DebugMalloc(int line, char *s, int size);
 extern int DebugFree(void *dp, int line, char *s);
 
-#define SafeMalloc(x) DebugMalloc(__LINE__,__FILE__,x)
-#define SafeFree(z) DebugFree(z,__LINE__,__FILE__)
-#else
-#define SafeMalloc(x) calloc(1,x)
-#define SafeFree(z) free(z)
 #endif
 
 
@@ -214,19 +209,20 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pHandle->ComponentRoleEnum = ComponentRoleEnum;
 
     /*Allocate the memory for Component private data area */
-	OMX_NBMALLOC_STRUCT(pHandle->pComponentPrivate, G726ENC_COMPONENT_PRIVATE);
+	OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, G726ENC_COMPONENT_PRIVATE);
 	memset(pHandle->pComponentPrivate, 0x0, sizeof(G726ENC_COMPONENT_PRIVATE));
 
     ((G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
 	pComponentPrivate = pHandle->pComponentPrivate;
 
-    OMX_NBMALLOC_STRUCT(pCompPort, G726ENC_PORT_TYPE);
+    pComponentPrivate->bMutexInit = 0;
+    OMX_MALLOC_GENERIC(pCompPort, G726ENC_PORT_TYPE);
 	pComponentPrivate->pCompPort[G726ENC_INPUT_PORT] = pCompPort;
 
-    OMX_NBMALLOC_STRUCT(pCompPort, G726ENC_PORT_TYPE);
+    OMX_MALLOC_GENERIC(pCompPort, G726ENC_PORT_TYPE);
 	pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT] = pCompPort;
 
-	OMX_NBMALLOC_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
+	OMX_MALLOC_GENERIC(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
 
     /* Initialize sPortParam data structures to default values */
@@ -234,29 +230,29 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pComponentPrivate->sPortParam->nStartPortNumber = 0x0;
 
 	/* Malloc and Set pPriorityMgmt defaults */
-    OMX_NBMALLOC_STRUCT(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
 	OMX_NBCONF_INIT_STRUCT(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
 
 	/* Initialize sPriorityMgmt data structures to default values */
 	pComponentPrivate->sPriorityMgmt->nGroupPriority = -1;
 	pComponentPrivate->sPriorityMgmt->nGroupID = -1;
 
-	OMX_NBMALLOC_STRUCT(G726_op, OMX_AUDIO_PARAM_G726TYPE);
+	OMX_MALLOC_GENERIC(G726_op, OMX_AUDIO_PARAM_G726TYPE);
     OMX_NBCONF_INIT_STRUCT(G726_op, OMX_AUDIO_PARAM_G726TYPE);
 	pComponentPrivate->G726Params[G726ENC_OUTPUT_PORT] = G726_op;
     G726_op->nPortIndex = G726ENC_OUTPUT_PORT;
 
-	OMX_NBMALLOC_STRUCT(G726_ip, OMX_AUDIO_PARAM_G726TYPE);
+	OMX_MALLOC_GENERIC(G726_ip, OMX_AUDIO_PARAM_G726TYPE);
     OMX_NBCONF_INIT_STRUCT(G726_ip, OMX_AUDIO_PARAM_G726TYPE);
 	pComponentPrivate->G726Params[G726ENC_INPUT_PORT] = G726_ip;
     G726_ip->nPortIndex = G726ENC_INPUT_PORT;
 
     /* malloc and initialize number of input buffers */
-    OMX_NBMALLOC_STRUCT(pComponentPrivate->pInputBufferList, G726ENC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, G726ENC_BUFFERLIST);
 	pComponentPrivate->pInputBufferList->numBuffers = 0;
 
     /* malloc and initialize number of output buffers */
-    OMX_NBMALLOC_STRUCT(pComponentPrivate->pOutputBufferList, G726ENC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, G726ENC_BUFFERLIST);
 	pComponentPrivate->pOutputBufferList->numBuffers = 0;
 
 	for (i=0; i < G726ENC_MAX_NUM_OF_BUFS; i++) {
@@ -269,7 +265,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pComponentPrivate->OpBufindex = 0;	
 
     /* Set input port defaults */
-	OMX_NBMALLOC_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+	OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
 	OMX_NBCONF_INIT_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[G726ENC_INPUT_PORT] = pPortDef_ip;
 
@@ -286,7 +282,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pPortDef_ip->format.audio.bFlagErrorConcealment = OMX_FALSE;
 
  	/* Set output port defaults */
-	OMX_NBMALLOC_STRUCT(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+	OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
 	OMX_NBCONF_INIT_STRUCT(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT] = pPortDef_op;
 
@@ -302,7 +298,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	pPortDef_op->format.audio.pNativeRender         = NULL;
 	pPortDef_op->format.audio.bFlagErrorConcealment = OMX_FALSE;
 
-    OMX_NBMALLOC_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set input port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat;
@@ -311,7 +307,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortFormat->nIndex             = OMX_IndexParamAudioPcm;
     pPortFormat->eEncoding 			= OMX_AUDIO_CodingPCM;
 
-    OMX_NBMALLOC_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set output port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat;
@@ -359,13 +355,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->LastBufSent = 0;
     pComponentPrivate->bPreempted = OMX_FALSE;    
 
-    strcpy((char*)pComponentPrivate->componentRole.cRole, "audio_encoder.g726"); 
-    pComponentPrivate->sDeviceString = SafeMalloc(100*sizeof(OMX_STRING));
-    if (pComponentPrivate->sDeviceString == NULL) {
-	G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources", __LINE__);
-	eError = OMX_ErrorInsufficientResources;
-	goto EXIT;
-    }
+    strcpy((char*)pComponentPrivate->componentRole.cRole, "audio_encoder.g726");
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), void);
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,":srcul/codec\0");
      
@@ -381,6 +372,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
+    pComponentPrivate->bMutexInit = 1;
 #endif
 
     eError = G726ENC_StartComponentThread(pHandle);
@@ -400,8 +392,43 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
 
 EXIT:
-	G726ENC_DPRINT("%d :: Exiting OMX_ComponentInit\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting OMX_ComponentInit\n", __LINE__);
+    if ((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
+
+#ifndef UNDER_CE
+        if (pComponentPrivate->bMutexInit) {
+            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+            pComponentPrivate->bMutexInit = 0;
+        }
+#endif
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat);
+
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G726ENC_INPUT_PORT]);
+
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+
+	OMX_MEMFREE_STRUCT(pComponentPrivate->G726Params[G726ENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->G726Params[G726ENC_OUTPUT_PORT]);
+
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]);
+	OMX_MEMFREE_STRUCT(pComponentPrivate);
+
+    }
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -891,15 +918,15 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     G726ENC_COMPONENT_PRIVATE *pComponentPrivate =
                          (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
-    if(nConfigIndex == OMX_IndexCustomG726ENCStreamIDConfig){
-	    OMX_NBMALLOC_STRUCT(streamInfo, TI_OMX_STREAM_INFO);
+    if(nConfigIndex == (OMX_G726ENC_INDEXAUDIOTYPE)OMX_IndexCustomG726ENCStreamIDConfig){
+	    OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
         if(streamInfo == NULL){
 		    eError = OMX_ErrorBadParameter;
 		    goto EXIT;
 	    }
 		streamInfo->streamId = pComponentPrivate->streamID;
 		memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
-    	OMX_NBMEMFREE_STRUCT(streamInfo);
+                OMX_MEMFREE_STRUCT(streamInfo);
 	}
 EXIT:
     G726ENC_DPRINT("%d :: Entering GetConfig\n", __LINE__);
@@ -930,10 +957,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 	TI_OMX_DSP_DEFINITION *pTiDspDefinition = NULL;
     TI_OMX_DATAPATH dataPath; 
     OMX_S16 *customFlag = NULL;
-    OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
-    OMX_U32 fdwrite = 0;
 	
 #ifdef DSP_RENDERING_ON
+    OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
+    OMX_U32 fdwrite = 0;
     AM_COMMANDDATATYPE cmd_data;
 #endif        
 	G726ENC_DPRINT("%d :: Entering SetConfig\n", __LINE__);
@@ -944,7 +971,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 	}
 
 	pComponentPrivate = (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-	switch (nConfigIndex) {
+	switch ((OMX_G726ENC_INDEXAUDIOTYPE)nConfigIndex) {
 
 		case OMX_IndexCustomG726ENCModeConfig: 
 			pTiDspDefinition = (TI_OMX_DSP_DEFINITION*)ComponentConfigStructure;
@@ -1285,10 +1312,8 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 #endif
-    if (pComponentPrivate->sDeviceString != NULL) {
-        SafeFree(pComponentPrivate->sDeviceString);
-    }
-	OMX_NBMEMFREE_STRUCT(pComponentPrivate);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
 EXIT:
     G726ENC_DPRINT("%d :: Exiting ComponentDeInit\n", __LINE__);
 	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
@@ -1366,21 +1391,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 	}
 
-	OMX_NBMALLOC_STRUCT(pBufferHeader, OMX_BUFFERHEADERTYPE);
+	OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
         memset(pBufferHeader, 0x0, sizeof(OMX_BUFFERHEADERTYPE));
 
-	pBufferHeader->pBuffer = (OMX_U8 *)SafeMalloc(nSizeBytes + 256);
+        OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
 	G726ENC_MEMPRINT("%d :: ALLOCATING MEMORY = %p\n",__LINE__,pBufferHeader->pBuffer);
-	if (pBufferHeader->pBuffer == NULL) {
-		/* Free previously allocated memory before bailing */
-		if (pBufferHeader) {
-			SafeFree(pBufferHeader);
-			pBufferHeader = NULL;
-		}
-		eError = OMX_ErrorInsufficientResources;
-		goto EXIT;
-	}
-    pBufferHeader->pBuffer += 128;
 
 	if (nPortIndex == G726ENC_INPUT_PORT) {
                 pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1512,11 +1527,10 @@ static OMX_ERRORTYPE FreeBuffer(
 	if (inputIndex != -1) {
 		if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
 			tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-			tempBuff -= 128;
-			OMX_NBMEMFREE_STRUCT(tempBuff);
+			OMX_MEMFREE_STRUCT_DSPALIGN(tempBuff, OMX_U8);
 		}
 
-		OMX_NBMEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
+		OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
 
 			pComponentPrivate->pInputBufferList->numBuffers--;
 			if (pComponentPrivate->pInputBufferList->numBuffers <
@@ -1539,10 +1553,9 @@ static OMX_ERRORTYPE FreeBuffer(
 	else if (outputIndex != -1) {
 		 if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
 			tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-			tempBuff -= 128;
-			OMX_NBMEMFREE_STRUCT(tempBuff);
+			OMX_MEMFREE_STRUCT_DSPALIGN(tempBuff, OMX_U8);
 		}
-		OMX_NBMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
+		OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
 
 		pComponentPrivate->pOutputBufferList->numBuffers--;
 		if (pComponentPrivate->pOutputBufferList->numBuffers <
@@ -1628,7 +1641,7 @@ static OMX_ERRORTYPE UseBuffer (
         goto EXIT;
     }
 
-	OMX_NBMALLOC_STRUCT(pBufferHeader, OMX_BUFFERHEADERTYPE);
+	OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     memset((pBufferHeader), 0x0, sizeof(OMX_BUFFERHEADERTYPE));
 
     if (nPortIndex == G726ENC_OUTPUT_PORT) {
