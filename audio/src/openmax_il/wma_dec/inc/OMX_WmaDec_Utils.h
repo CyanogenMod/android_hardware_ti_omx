@@ -71,40 +71,12 @@
     #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 #endif
 
-#ifdef UNDER_CE
-#ifndef _OMX_EVENT_
-#define _OMX_EVENT_
-typedef struct OMX_Event {
-    HANDLE event;
-} OMX_Event;	
-#endif
-
-int OMX_CreateEvent(OMX_Event *event);
-int OMX_SignalEvent(OMX_Event *event);
-int OMX_WaitForEvent(OMX_Event *event);
-int OMX_DestroyEvent(OMX_Event *event);
-
-typedef struct OMXBufferStatus /*BUFFERSTATUS*/
-{
-    DWORD EmptyBufferSent;
-    DWORD FillBufferSent;
-    DWORD EmptyBufferDone;
-    DWORD FillBufferDone;
-} OMXBufferStatus;
-
-#endif
-
 /* PV opencore capability custom parameter index */
 #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
 
 #ifndef ANDROID
 #define ANDROID
 #endif
-
-#define OBJECTTYPE_LC 2
-#define OBJECTTYPE_HE 5
-#define OBJECTTYPE_HE2 29
-
 
 /* ======================================================================= */
 /**
@@ -144,11 +116,7 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    NUM_WMADEC_OUTPUT_BUFFERS   Default number of output buffers                                   
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
 #define NUM_WMADEC_OUTPUT_BUFFERS 4
-#else
-#define NUM_WMADEC_OUTPUT_BUFFERS 4
-#endif
 /* ======================================================================= */
 /**
  * @def    NOT_USED    Defines a value for "don't care" parameters
@@ -354,37 +322,24 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
  * @def    WMADEC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define WMADEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define WMADEC_USN_DLL_NAME "usn.dll64P"
-#endif
 /* ======================================================================= */
 /**
  * @def    WMADEC_DLL_NAME   WMA Decoder socket node dll name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define WMADEC_DLL_NAME "\\windows\\wmadec_sn.dll64P"
-#else
 #define WMADEC_DLL_NAME "wmadec_sn.dll64P"
-#endif
 /* ======================================================================= */
 /**
  * @def    WMADEC_EPRINT   Error print macro
  */
 /* ======================================================================= */
-#ifndef UNDER_CE
 #define WMADEC_EPRINT LOGE
-#else
-#define WMADEC_EPRINT		  printf
-#endif
 /* ======================================================================= */
 /**
  * @def    WMADEC_DPRINT   Debug print macro
  */
 /* ======================================================================= */
-#ifndef UNDER_CE
 #ifdef  WMADEC_DEBUG
 #define WMADEC_DPRINT LOGI
 #else
@@ -402,25 +357,6 @@ typedef struct OMXBufferStatus /*BUFFERSTATUS*/
 #define WMADEC_MCP_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
 #else
 #define WMADEC_MCP_DPRINT(...)
-#endif
-
-#else /*UNDER_CE*/
-#ifdef  WMADEC_DEBUG
-#define WMADEC_DPRINT(STR, ARG...) printf()
-#else
-#define WMADEC_DPRINT 
-#endif
-/* ======================================================================= */
-/**
- * @def    WMADEC_MEMCHECK   Memory print macro
- */
-/* ======================================================================= */
-#ifdef WMADEC_MEMCHECK
-#define WMADEC_MEMPRINT(STR, ARG...) printf()
-#else
-#define WMADEC_MEMPRINT 
-#endif
-
 #endif
 /* ======================================================================= */
 /**
@@ -808,7 +744,6 @@ typedef struct WMADEC_COMPONENT_PRIVATE
 #endif
 	
     /* Removing sleep() calls. Definition. */
-#ifndef UNDER_CE
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -833,17 +768,7 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     OMX_U8 nUnhandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
-    
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded; 
-#endif                       
+
     OMX_BOOL bIsInvalidState;
     void* PtrCollector[6];        
     /* Removing sleep() calls. Definition. */
