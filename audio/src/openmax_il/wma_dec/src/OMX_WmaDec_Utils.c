@@ -838,7 +838,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         if(commandData == 0x0){
             /* disable port */
             for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pInputBufferList->bBufferPending[%ld] = %d",i,
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "pComponentPrivate->pInputBufferList->bBufferPending[%d] = %lu",i,
                               pComponentPrivate->pInputBufferList->bBufferPending[i]);
                 if (WMADEC_IsPending(pComponentPrivate,pComponentPrivate->pInputBufferList->pBufHdr[i],OMX_DirInput)) {
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Forcing EmptyBufferDone");
@@ -2358,7 +2358,8 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle)
     {
-        fputs(dlerror(), stderr);
+        if ((error = dlerror()) != NULL)
+	     fputs(error, stderr);
         goto EXIT;
     }
 
@@ -2366,6 +2367,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     if ((error = dlerror()) != NULL)
     {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     
@@ -2374,6 +2376,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     {
         eError = OMX_ErrorUndefined;
         OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...");
+        dlclose(handle);
         pHandle = NULL;
         goto EXIT;
     }

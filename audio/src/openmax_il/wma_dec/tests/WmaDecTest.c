@@ -468,7 +468,7 @@ printf("\n**********************************************************************
     OMX_PARAM_PORTDEFINITIONTYPE* pCompPrivateStruct;
     OMX_AUDIO_PARAM_WMATYPE *pWmaParam;
     OMX_COMPONENTTYPE *pComponent_dasf;
-	OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
+    OMX_COMPONENTTYPE *pComponent;
     OMX_STATETYPE state;
     /* TODO: Set a max number of buffers */
     OMX_BUFFERHEADERTYPE* pInputBufferHeader[10];
@@ -785,6 +785,10 @@ printf("\n**********************************************************************
 
     APP_DPRINT("%d :: WmaTest\n",__LINE__);
     pCompPrivateStruct = newmalloc (sizeof (OMX_PARAM_PORTDEFINITIONTYPE));
+    if (pCompPrivateStruct == NULL) {
+        printf("Could not allocate pCompPrivateStruct\n");
+        goto EXIT;
+    }
     ArrayOfPointers[0]=(OMX_PARAM_PORTDEFINITIONTYPE*)pCompPrivateStruct;
     APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pCompPrivateStruct);
 
@@ -941,6 +945,10 @@ printf("\n**********************************************************************
     }
 
     pWmaParam = newmalloc (sizeof (OMX_AUDIO_PARAM_WMATYPE));
+    if (pWmaParam == NULL) {
+        printf("Could not allocate pWmaParam\n");
+        goto EXIT;
+    }
     ArrayOfPointers[2]=(OMX_AUDIO_PARAM_WMATYPE*)pWmaParam;
     APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pWmaParam);
     pWmaParam->nSize = sizeof (OMX_AUDIO_PARAM_WMATYPE);
@@ -1471,7 +1479,7 @@ printf("\n**********************************************************************
     if(error != OMX_ErrorNone) {
         APP_DPRINT( "Error:  hWmaEncoder->WaitForState reports an error %X\n", error);
         goto EXIT;
-    }	
+    }
 
 #ifdef USE_BUFFER
     APP_MEMPRINT("%d:::[TESTAPPFREE] %p\n",__LINE__,pInputBuffer);
@@ -1541,7 +1549,16 @@ EXIT:
 									numOutputBuffers,
 									fIn,fOut);
 #endif
-	}else{	
+	}
+	else{
+	    if(fOut != NULL)	{
+                fclose(fOut);
+                fOut=NULL;
+	    }
+	    if(fIn != NULL){
+	        fclose(fIn);
+                fIn=NULL;
+	    }
 	}
 #ifdef OMX_GETTIME
   GT_END("WMA_DEC test <End>");
@@ -1704,6 +1721,10 @@ int fill_data_tc7 (OMX_BUFFERHEADERTYPE *pBuf,FILE *fIn)
     if (!fileHdrReadFlag) {
         nRead = fread(pBuf->pBuffer, 1,75 , fIn);
         tempBuffer = newmalloc(19500*sizeof(OMX_U8));
+	 if (tempBuffer == NULL) {
+              printf("Could not allocate tempBuffer\n");
+		return nRead;
+        }
         fread(tempBuffer, 1, 19500, fIn);
         newfree(tempBuffer);
         pBufferOffset = pBuf->pBuffer;
@@ -1736,7 +1757,12 @@ float calc_buff_size(FILE *fIn)
     float outBuffSize;
     OMX_U8* pBuffer;
     pBuffer = newmalloc((OMX_U8) 100); 
-        
+
+    if (pBuffer == NULL) {
+        printf("Could not allocate pBuffer\n");
+	 return 0;
+    }
+
     /*Read first 70 bytes header + 5 bytes first packet header*/
     nRead = fread(pBuffer, 1, 70, fIn);
     /*for(i = 0; i < 70; i++)
@@ -1824,9 +1850,6 @@ void fill_init_params(OMX_HANDLETYPE pHandle,const char * filename,int dasfmode,
 		goto EXIT;
     }
 #endif    
-    /*dspDefinition.streamId = cmd_data.streamID; */
-    if(dspDefinition.dasfMode)
-        printf("***************StreamId=%d******************\n", (int)dspDefinition.streamId);
 
     error = OMX_SetConfig(pHandle,index,&dspDefinition);
 	if (error != OMX_ErrorNone) {
@@ -2056,6 +2079,10 @@ int freeAllUseResources(OMX_HANDLETYPE pHandle,
 int unParse_Header (OMX_U8* pBuffer, FILE *fIn, int * payload){
 
   OMX_U8* tempBuffer= malloc(75);
+  if (tempBuffer == NULL) {
+      printf("Could not allocate tempBuffer\n");
+      return 0;
+  }
   memset(pBuffer,0x00,75);
   memset(tempBuffer,0x00,75);
   fread(tempBuffer,75,1,fIn);
