@@ -78,10 +78,6 @@
     #include <AudioManagerAPI.h>
 #endif
 
-#ifdef UNDER_CE
-    #define sleep Sleep
-#endif
-
 #ifndef ANDROID
     #define ANDROID
 #endif
@@ -121,25 +117,17 @@
  * @def    AMRENC_EPRINT   Error print macro
  */
 /* ======================================================================= */
-#ifndef UNDER_CE
     #ifdef ANDROID
         #define AMRENC_EPRINT LOGE
     #else   
         #define AMRENC_EPRINT(...)    fprintf(stderr,__VA_ARGS__)
     #endif
-#else
-        #define AMRENC_EPRINT
-#endif
-
-
 
 /* ======================================================================= */
 /**
  * @def    AMRENC_DEBUG   Debug print macro
  */
 /* ======================================================================= */
-#ifndef UNDER_CE
-
 #ifdef  AMRENC_DEBUG
         #define AMRENC_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
 
@@ -168,47 +156,6 @@
 
 #else
         #define AMRENC_MEMPRINT(...)    printf
-#endif
-
-#else   /*UNDER_CE*/
-/* ======================================================================= */
-/**
- * @def    AMRENC_DEBUG   Debug print macro
- */
-/* ======================================================================= */
-#ifdef  AMRENC_DEBUG
-        #define AMRENC_DPRINT(STR, ARG...) printf()
-#else
-
-#endif
-/* ======================================================================= */
-/**
- * @def    AMRENC_MEMCHECK   Memory print macro
- */
-/* ======================================================================= */
-#ifdef  AMRENC_MEMCHECK
-        #define AMRENC_MEMPRINT(STR, ARG...) printf()
-#else
-
-#endif
-
-#ifdef UNDER_CE
-
-#ifdef DEBUG
-    #ifdef ANDROID
-        #define AMRENC_DPRINT     LOGW
-        #define AMRENC_MEMPRINT   LOGW
-    #else
-        #define AMRENC_DPRINT     printf
-        #define AMRENC_MEMPRINT   printf
-    #endif
-#else
-        #define AMRENC_DPRINT
-        #define AMRENC_MEMPRINT
-#endif
-
-#endif  /*UNDER_CE*/
-
 #endif
 
 /* ======================================================================= */
@@ -240,6 +187,14 @@
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);\
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "\n**************** OMX ERROR ************************\n");\
     goto EXIT;
+
+#define NBAMRENC_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)   \
+    {                                                   \
+        if(!_ptr1 || !_ptr2 || !_ptr3){                 \
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d : NBAMRENC_OMX_CONF_CHECK_CMD - Invalid Pointer",__LINE__);\
+            return OMX_ErrorBadParameter;             \
+        }                                               \
+    }
 
 /* ======================================================================= */
 /**
@@ -377,22 +332,14 @@
  * @def    NBAMRENC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-    #define NBAMRENC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
-    #define NBAMRENC_USN_DLL_NAME "usn.dll64P"
-#endif
+#define NBAMRENC_USN_DLL_NAME "usn.dll64P"
 
 /* ======================================================================= */
 /**
  * @def    NBAMRENC_DLL_NAME   NBAMR Encoder socket node dll name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-    #define NBAMRENC_DLL_NAME "\\windows\\nbamrenc_sn.dll64P"
-#else
-    #define NBAMRENC_DLL_NAME "nbamrenc_sn.dll64P"
-#endif
+#define NBAMRENC_DLL_NAME "nbamrenc_sn.dll64P"
 
 /* ======================================================================= */
 /** NBAMRENC_StreamType  Stream types
@@ -672,19 +619,6 @@ typedef struct NBAMRENC_PORT_TYPE {
     OMX_AUDIO_PARAM_PORTFORMATTYPE* pPortFormat;
 } NBAMRENC_PORT_TYPE;
 
-#ifdef UNDER_CE
-    #ifndef _OMX_EVENT_
-        #define _OMX_EVENT_
-        typedef struct OMX_Event {
-            HANDLE event;
-        } OMX_Event;
-    #endif
-    int OMX_CreateEvent(OMX_Event *event);
-    int OMX_SignalEvent(OMX_Event *event);
-    int OMX_WaitForEvent(OMX_Event *event);
-    int OMX_DestroyEvent(OMX_Event *event);
-#endif
-
 /* =================================================================================== */
 /**
 * NBAMRENC_BUFDATA
@@ -853,7 +787,6 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     OMX_S32 nOutStandingFillDones;
     OMX_S32 nOutStandingEmptyDones;
 
-#ifndef UNDER_CE
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -876,16 +809,6 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     OMX_BOOL bFlushInputPortCommandPending;
 
     pthread_mutex_t ToLoaded_mutex;
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded;
-#endif
 
     OMX_U8 nNumOfFramesSent;
 
@@ -932,11 +855,6 @@ typedef struct AMRENC_COMPONENT_PRIVATE
 } AMRENC_COMPONENT_PRIVATE;
 
 
-#ifndef UNDER_CE
-    OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
 /* =================================================================================== */
 /**
 *  OMX_ComponentInit()  Initializes component
@@ -949,8 +867,7 @@ typedef struct AMRENC_COMPONENT_PRIVATE
 *
 */
 /* =================================================================================== */
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
+OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
 /* =================================================================================== */
 /**
 *  NBAMRENC_StartComponentThread()  Starts component thread
