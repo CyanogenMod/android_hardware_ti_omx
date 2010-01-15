@@ -460,10 +460,18 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]);
 	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]);
 	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+
+             pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+             pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+             pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+             pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+             pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+             pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
 	 }
-	 OMX_G711DECMEMFREE_STRUCT(pHandle->pComponentPrivate);
-        OMX_G711DECMEMFREE_STRUCT(pPortDef_ip);
-        OMX_G711DECMEMFREE_STRUCT(pPortDef_op);
+         OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
+         OMX_MEMFREE_STRUCT(pPortDef_ip);
+         OMX_MEMFREE_STRUCT(pPortDef_op);
 
     }
     G711DEC_DPRINT ("%d ::OMX_ComponentInit - returning %d\n", __LINE__,eError);
