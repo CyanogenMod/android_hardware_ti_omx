@@ -174,7 +174,7 @@ OMX_ERRORTYPE VIDDEC_Queue_Init(VIDDEC_QUEUE_TYPE *queue, VIDDEC_QUEUE_TYPES typ
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32 count;
-
+    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
     queue->nHead = 0;
     queue->nTail = 0;
     queue->nElements = 0;
@@ -199,7 +199,7 @@ OMX_ERRORTYPE VIDDEC_Queue_Init(VIDDEC_QUEUE_TYPE *queue, VIDDEC_QUEUE_TYPES typ
     }
 
     eError = OMX_ErrorNone;
-/*EXIT:*/
+EXIT:
     return eError;
 }
 
@@ -207,7 +207,7 @@ OMX_ERRORTYPE VIDDEC_Queue_Flush(VIDDEC_QUEUE_TYPE *queue)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32 count;
-
+    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
     if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
         eError = OMX_ErrorUndefined;
         goto EXIT;
@@ -233,7 +233,7 @@ EXIT:
 OMX_ERRORTYPE VIDDEC_Queue_Add(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-
+    OMX_CONF_CHECK_CMD(queue, pElement, OMX_TRUE);
     if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
         eError = OMX_ErrorUndefined;
         goto EXIT;
@@ -335,7 +335,7 @@ EXIT:
 OMX_ERRORTYPE VIDDEC_Queue_Remove(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-
+    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
     if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
         eError = OMX_ErrorUndefined;
         goto EXIT;
@@ -387,7 +387,7 @@ EXIT:
 OMX_ERRORTYPE VIDDEC_Queue_Get_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-
+    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
     if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
         eError = OMX_ErrorUndefined;
         goto EXIT;
@@ -422,7 +422,7 @@ EXIT:
 OMX_ERRORTYPE VIDDEC_Queue_Replace_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-
+    OMX_CONF_CHECK_CMD(queue, pElement, OMX_TRUE);
     if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
         eError = OMX_ErrorUndefined;
         goto EXIT;
@@ -499,7 +499,7 @@ EXIT:
 OMX_ERRORTYPE VIDDEC_Queue_Free(VIDDEC_QUEUE_TYPE *queue)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-
+    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
     queue->nHead = 0;
     queue->nTail = 0;
     queue->nElements = 0;
@@ -568,7 +568,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
     OMX_U32 nCount = 0;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -595,6 +595,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, 
         return eError;
     }
 #endif
+EXIT:
     return eError;
 }
 
@@ -608,7 +609,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
     OMX_U32 nCount = 0;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -625,6 +626,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     for(nCount = 0; nCount >= CBUFFER_SIZE; nCount++) {
         pTempCBuffer->pElement[nCount] = NULL;
     }
+EXIT:
     return eError;
 }
 
@@ -638,7 +640,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Add(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VI
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, pElement, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -663,6 +665,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Add(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VI
         return eError;
     }
 #endif
+EXIT:
     return eError;
 }
 
@@ -676,7 +679,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Remove(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, pElement, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -709,6 +712,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Remove(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
         return eError;
     }
 #endif
+EXIT:
     return eError;
 }
 
@@ -722,7 +726,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Count(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, 
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, pCount, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -746,6 +750,7 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Count(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, 
         return eError;
     }
 #endif
+EXIT:
     return eError;
 }
 
@@ -757,10 +762,10 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Count(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, 
 /*----------------------------------------------------------------------------*/
 OMX_U8 VIDDEC_CircBuf_GetHead(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex)
 {
-    /*OMX_ERRORTYPE eError = OMX_ErrorNone;*/
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
     OMX_U8 ucHead = 0;
-
+    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
     if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
         pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
     }
@@ -781,6 +786,7 @@ OMX_U8 VIDDEC_CircBuf_GetHead(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDE
         return 0;
     }
 #endif
+EXIT:
     return ucHead;
 }
 
