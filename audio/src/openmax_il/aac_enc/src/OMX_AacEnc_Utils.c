@@ -2171,24 +2171,25 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                         pComponentPrivate->LastOutputBufferHdrQueued = pBufHeader;
 			if (pLcmlHdr != NULL) {
 			    pLcmlHdr->pOpParam->unNumFramesEncoded = 0; /* Resetting the value  for each time*/
-			}
-                        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecOuputBuffer, 
-                                                  (OMX_U8 *)pBufHeader->pBuffer, 
-                                                  pBufHeader->nAllocLen,
-                                                  pBufHeader->nFilledLen, 
-                                                  (OMX_U8 *)pLcmlHdr->pOpParam,
-                                                  sizeof(AACENC_UAlgOutBufParamStruct),
-                                                  NULL);
-                        if (eError != OMX_ErrorNone ) 
-                        {
-                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: Issuing DSP OP: Error Occurred\n",__LINE__);
-                            eError = OMX_ErrorHardware;
-                            goto EXIT;
+
+                            eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                                      EMMCodecOuputBuffer,
+                                                      (OMX_U8 *)pBufHeader->pBuffer,
+                                                      pBufHeader->nAllocLen,
+                                                      pBufHeader->nFilledLen,
+                                                      (OMX_U8 *)pLcmlHdr->pOpParam,
+                                                      sizeof(AACENC_UAlgOutBufParamStruct),
+                                                      NULL);
+                            if (eError != OMX_ErrorNone )
+                            {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: Issuing DSP OP: Error Occurred\n",__LINE__);
+                                eError = OMX_ErrorHardware;
+                                goto EXIT;
+                            }
+                            pComponentPrivate->lcml_nOpBuf++;
+                            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: UTIL: lcml_nOpBuf count : %d\n",__LINE__, (int)pComponentPrivate->lcml_nOpBuf);
                         }
-                        pComponentPrivate->lcml_nOpBuf++;
-                        OMX_PRDSP2(pComponentPrivate->dbg, "%d :: UTIL: lcml_nOpBuf count : %d\n",__LINE__, (int)pComponentPrivate->lcml_nOpBuf);
-                    }
+		    }
                 }
                 else 
                 {

@@ -530,6 +530,7 @@ typedef struct AACENC_COMPONENT_PRIVATE
     OMX_BUFFERHEADERTYPE *LastOutputBufferHdrQueued;
     
 #ifndef UNDER_CE
+    OMX_U32 bMutexInit;
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
