@@ -42,6 +42,7 @@
 #define OMX_G722DEC_UTILS__H
 
 #include <OMX_Component.h>
+#include "OMX_TI_Common.h"
 
 #include "LCML_DspCodec.h"
 
