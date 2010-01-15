@@ -519,6 +519,10 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
+    if (eError != OMX_ErrorNone && NULL != pParmsTemp){
+        free(pParmsTemp);
+        pParmsTemp = NULL;
+    }
     return eError;
 }
 
@@ -1749,26 +1753,30 @@ OMX_HANDLETYPE G722ENC_GetLCMLHandle()
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
-        fputs(dlerror(), stderr);
-        goto EXIT;
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+            return pHandle;
+        }
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
-        goto EXIT;
+        dlclose(handle);
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
         G722ENC_DPRINT("eError != OMX_ErrorNone...\n");
         pHandle = NULL;
-        goto EXIT;
+        dlclose(handle);
+        return pHandle;
     }
 
     pComponentPrivate_CC->lcml_handle = handle;
     pComponentPrivate_CC->bLcmlHandleOpened = 1;
- EXIT:
+
     return pHandle;
 }
 #else
@@ -2634,13 +2642,6 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
                 G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
                 free(strmAttr);
                 strmAttr = NULL;
-            }
-    
-    
-            if (pTemp_lcml) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml);
-                free(pTemp_lcml);
-                pTemp_lcml = NULL;
             }
 
             G722ENC_DPRINT("%d :: Error: Malloc Failed...Exiting..\n",__LINE__);

@@ -471,12 +471,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         G722ENC_DPRINT("%d :: malloc failed\n",__LINE__);
         /* Free previously allocated memory before bailing */
 
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
-        }
-
         if (pcm_ip) {
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pcm_ip);
             free(pcm_ip);
@@ -500,6 +494,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
             free(pComponentPrivate->pOutputBufferList);
             pComponentPrivate->pOutputBufferList = NULL;
         }
+
+        if (pHandle->pComponentPrivate) {
+            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
+            free(pHandle->pComponentPrivate);
+            pHandle->pComponentPrivate = NULL;
+        }
+
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -626,6 +627,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
  EXIT:
     G722ENC_DPRINT("Leaving OMX_ComponentInit\n");
+
+    if (OMX_ErrorNone != eError){
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    }
+
     return eError;
 }
 
