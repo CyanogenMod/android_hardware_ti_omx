@@ -51,6 +51,7 @@
 #include <pthread.h>
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
+#include "OMX_TI_Common.h"
 #include <TIDspOmx.h>
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -157,12 +158,6 @@
     (_s_)->nVersion.s.nRevision = 0x0;		\
     (_s_)->nVersion.s.nStep = 0x0
 
-#define OMX_NBMEMFREE_STRUCT(_pStruct_)\
-	G726ENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
-    if(_pStruct_ != NULL){\
-        SafeFree(_pStruct_);\
-	    _pStruct_ = NULL;\
-	}
 
 #define OMX_NBCLOSE_PIPE(_pStruct_,err)\
 	G726ENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
@@ -172,18 +167,6 @@
 		printf("%d :: Error while closing pipe\n",__LINE__);\
 		goto EXIT;\
 	}
-
-#define OMX_NBMALLOC_STRUCT(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)SafeMalloc(sizeof(_sName_));      \
-    if(_pStruct_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    G726ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,_pStruct_);
-
 
 /* ======================================================================= */
 /**
@@ -633,6 +616,8 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     OMX_U32 nOutStandingFillDones;
 
 #ifndef UNDER_CE
+    /** Tells whether mutex have been initialized or not */
+    OMX_U32 bMutexInit;
     /** sync mutexes and signals */
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
