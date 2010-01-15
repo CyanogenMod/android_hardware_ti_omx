@@ -166,7 +166,6 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_NOPORT                       0xfffffffe
 #define VIDDEC_MPU                          50
 
-#define IUALG_CMD_SETSTATUS                 3
 
 #define VERSION_MAJOR                       1
 #ifdef KHRONOS_1_1

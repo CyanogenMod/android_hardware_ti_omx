@@ -54,6 +54,7 @@
 #include "OMX_VideoDec_Utils.h"
 #include "OMX_VideoDec_DSP.h"
 #include "OMX_VideoDec_Thread.h"
+#include "usn.h"
 /*----------------------------------------------------------------------------*/
 /**
   * VIDDEC_GetRMFrequency() Return the value for frequency to use RM.
@@ -2237,9 +2238,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p phandle 0x%lx\n",pComponentPrivate, nParam1);
     pComponentPrivate->frameCounter = 0;
-
-    message[0] = 0x400;
-    message[1] = 100;
+    message[0] = USN_GPPMSG_ALGCTRL;
+    message[1] = IUALG_CMD_USERSETCMDSTART;
     message[2] = 0;
     p = (void*)&message;
     cmd_rcv = (unsigned int)nParam1;
@@ -2482,8 +2482,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL &&
                     pComponentPrivate->bLCMLHalted != OMX_TRUE){
-                    message[0] = 0x400;
-                    message[1] = 100;
+                    message[0] = USN_GPPMSG_ALGCTRL;
+                    message[1] = IUALG_CMD_USERSETCMDSTART;
                     message[2] = 0;
                     p = (void*)&message;
                     VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
@@ -8184,8 +8184,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingWMV) {
-        message[1] = 100;
-        message[0] = 0x400;
+        message[0] = USN_GPPMSG_ALGCTRL;
+        message[1] = IUALG_CMD_USERSETCMDSTART;
         message[2] = 0;
         p = (void*)&message;
         VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);

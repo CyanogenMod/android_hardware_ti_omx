@@ -45,7 +45,7 @@
 #include "OMX_TI_Common.h"
 #include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
-
+#include "usn.h"
 #ifdef UNDER_CE
 #include <windows.h>
 #include <oaf_osal.h>
@@ -351,44 +351,6 @@ typedef struct {
 } MP3DEC_UALGParams;
 
 
-/* ======================================================================= */
-/** MP3D_IUALG_Cmd: This enum type describes the standard set of commands that 
-* will be passed to iualg control API at DSP. This enum is taken as it is from
-* DSP side USN source code.
-* 
-* @param IUALG_CMD_STOP: This command indicates that higher layer framework
-* has received a stop command and no more process API will be called for the
-* current data stream. The iualg layer is expected to ensure that all processed
-* output as is put in the output IUALG_Buf buffers and the state of all buffers
-* changed as to free or DISPATCH after this function call. 
-*
-* @param IUALG_CMD_PAUSE: This command indicates that higher layer framework
-* has received a PAUSE command on the current data stream. The iualg layer 
-* can change the state of some of its output IUALG_Bufs to DISPATCH to enable
-* high level framework to use the processed data until the command was received.
-*
-* @param IUALG_CMD_GETSTATUS: This command indicates that some algo specific 
-* status needs to be returned to the framework. The pointer to the status
-* structure will be in IALG_status * variable passed to the control API. 
-* The interpretation of the content of this pointer is left to IUALG layer.
-*
-* @param IUALG_CMD_SETSTATUS: This command indicates that some algo specific 
-* status needs to be set. The pointer to the status structure will be in 
-* IALG_status * variable passed to the control API. The interpretation of the
-* content of this pointer is left to IUALG layer.
-*
-* @param IUALG_CMD_USERCMDSTART: The algorithm specific control commands can
-* have the enum type set from this number.
-*/
-/* ==================================================================== */
-typedef enum {
-    IUALG_CMD_STOP          = 0,
-    IUALG_CMD_PAUSE         = 1,
-    IUALG_CMD_GETSTATUS     = 2,
-    IUALG_CMD_SETSTATUS     = 3,
-    IUALG_CMD_USERCMDSTART  = 100
-}IUALG_Cmd;
-
 #ifdef UNDER_CE
     #ifndef _OMX_EVENT_
         #define _OMX_EVENT_
@@ -409,7 +371,7 @@ typedef enum {
 */
 /* ==================================================================== */
 typedef enum {
-    IULAG_CMD_SETSTREAMTYPE = IUALG_CMD_USERCMDSTART
+    IULAG_CMD_SETSTREAMTYPE = IUALG_CMD_USERSETCMDSTART
 }IUALG_MP3DCmd;
 
 /* ======================================================================= */

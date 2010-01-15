@@ -65,7 +65,7 @@
 #include "OMX_TI_Common.h"
 #include "OMX_TI_Debug.h"
 #include <TIDspOmx.h>
-
+#include "usn.h"
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
@@ -1132,17 +1132,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
 void NBAMRENC_HandleUSNError (AMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
-/*===============================================================*/
-
-typedef enum {
-    IUALG_CMD_STOP             = 0,
-    IUALG_CMD_PAUSE            = 1,
-    IUALG_CMD_GETSTATUS        = 2,
-    IUALG_CMD_SETSTATUS        = 3,
-    IUALG_CMD_USERSETCMDSTART  = 100,
-    IUALG_CMD_USERGETCMDSTART  = 150,
-    IUALG_CMD_FLUSH            = 0x100
-}IUALG_Cmd;
 
 typedef enum
 {

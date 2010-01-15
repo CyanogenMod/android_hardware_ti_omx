@@ -49,7 +49,7 @@
 #include <OMX_Component.h>
 #include "LCML_DspCodec.h"
 #include "OMX_G722Encoder.h"
-
+#include "usn.h"
 #define NEWSENDCOMMAND_MEMORY 123
 /*#endif*/
 
@@ -326,28 +326,7 @@ typedef enum {
     G722ENCSTREAMOUTPUT
 } G722ENC_STREAM_TYPE;
 
-/* ======================================================================= */
-/** IUALG_Cmd  Values for create phase params
- *
- *  @param  IULAG_CMD_STOP               Socket node stop command
- *
- *  @param  IULAG_CMD_PAUSE              Socket node pause command
- *
- *  @param  IULAG_CMD_GETSTATUS          Socket node get status command.
- *
- *  @param  IULAG_CMD_SETSTATUS          Socket node set status command.
- *
- *  @param  IUALG_CMD_USERCMDSTART       Socket node start command.
- *
- */
-/*  ==================================================================== */
-typedef enum {
-    IULAG_CMD_STOP          = 0,
-    IULAG_CMD_PAUSE         = 1,
-    IULAG_CMD_GETSTATUS     = 2,
-    IULAG_CMD_SETSTATUS     = 3,
-    IUALG_CMD_USERCMDSTART  = 100
-}IUALG_Cmd;
+
 
 
 /* ======================================================================= */

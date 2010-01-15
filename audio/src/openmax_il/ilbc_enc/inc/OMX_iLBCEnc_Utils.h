@@ -52,6 +52,7 @@
 #include "LCML_DspCodec.h"
 #include <OMX_Component.h>
 #include <TIDspOmx.h>
+#include "usn.h"
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
@@ -1115,18 +1116,6 @@ typedef enum OMX_ILBCENC_INDEXAUDIOTYPE {
 
 OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr);
-
-/*===============================================================*/
-
-typedef enum {
-    IUALG_CMD_STOP             = 0,
-    IUALG_CMD_PAUSE            = 1,
-    IUALG_CMD_GETSTATUS        = 2,
-    IUALG_CMD_SETSTATUS        = 3,
-    IUALG_CMD_USERSETCMDSTART  = 100,
-    IUALG_CMD_USERGETCMDSTART  = 150,
-    IUALG_CMD_FLUSH            = 0x100
-}IUALG_Cmd;
 
 typedef enum
 {

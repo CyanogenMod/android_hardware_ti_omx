@@ -50,7 +50,7 @@
 #define OMX_JPEGENC_UTILS__H
 #include <OMX_Component.h>
 #include <OMX_IVCommon.h>
-
+#include "usn.h"
 
 #ifndef UNDER_CE
 #include <dlfcn.h>
@@ -627,15 +627,7 @@ typedef struct IUALG_Buf {
     unsigned long          ulReserved;
 } IUALG_Buf;
 
-typedef enum {
-    IUALG_CMD_STOP             = 0,
-    IUALG_CMD_PAUSE            = 1,
-    IUALG_CMD_GETSTATUS        = 2,
-    IUALG_CMD_SETSTATUS        = 3,
-    IUALG_CMD_USERSETCMDSTART  = 100,
-    IUALG_CMD_USERGETCMDSTART  = 150,
-    IUALG_CMD_FLUSH            = 0x100
-}IUALG_Cmd;
+
 
 OMX_ERRORTYPE AddStateTransition(JPEGENC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE RemoveStateTransition(JPEGENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BOOL bEnableSignal);
