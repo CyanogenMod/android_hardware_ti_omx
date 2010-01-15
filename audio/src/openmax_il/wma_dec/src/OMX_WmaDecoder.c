@@ -1207,7 +1207,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     }   
 #endif
 
-    switch (nConfigIndex) {
+    switch ((OMX_WMADEC_INDEXAUDIOTYPE)nConfigIndex) {
     case OMX_IndexCustomWMADECHeaderInfoConfig:
         memcpy(pComponentPrivate->pDspDefinition,pDspDefinition,sizeof(TI_OMX_DSP_DEFINITION));
         headerInfo = pDspDefinition->wmaHeaderInfo;
