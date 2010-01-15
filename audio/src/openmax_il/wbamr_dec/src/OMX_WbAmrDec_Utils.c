@@ -53,12 +53,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -71,7 +65,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dlfcn.h>
-#endif
+
 #include <dbapi.h>
 #include <string.h>
 #include <stdio.h>
@@ -385,12 +379,6 @@ OMX_ERRORTYPE WBAMR_DEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate =
         (WBAMR_DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-#ifdef UNDER_CE
-    pthread_attr_t attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.__inheritsched = PTHREAD_EXPLICIT_SCHED;
-    attr.__schedparam.__sched_priority = OMX_AUDIO_DECODER_THREAD_PRIORITY;
-#endif
 
     OMX_PRINT1(pComponentPrivate->dbg, "Inside  WBAMR_DEC_StartComponentThread\n");
 
@@ -424,11 +412,7 @@ OMX_ERRORTYPE WBAMR_DEC_StartComponentThread(OMX_HANDLETYPE pComponent)
 
     /* create the pipe used to send commands to the thread */
     /* Create the Component Thread */
-#ifdef UNDER_CE
-    eError = pthread_create (&(pComponentPrivate->WBAMR_DEC_ComponentThread), &attr, WBAMR_DEC_ComponentThread, pComponentPrivate);
-#else
     eError = pthread_create (&(pComponentPrivate->WBAMR_DEC_ComponentThread), NULL, WBAMR_DEC_ComponentThread, pComponentPrivate);
-#endif
     if (eError || !pComponentPrivate->WBAMR_DEC_ComponentThread) {
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
@@ -512,7 +496,6 @@ OMX_ERRORTYPE WBAMR_DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_MEMFREE_STRUCT(pComponentPrivate->wbamrParams[WBAMR_DEC_INPUT_PORT]);
     OMX_MEMFREE_STRUCT (pComponentPrivate->wbamrParams[WBAMR_DEC_OUTPUT_PORT]);
     pComponentPrivate->bPortDefsAllocated = 0;
-#ifndef UNDER_CE
     OMX_PRDSP1(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
     pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
     pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -522,12 +505,6 @@ OMX_ERRORTYPE WBAMR_DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#else
-    pComponentPrivate->bPortDefsAllocated = 0;
-    OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-    OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-    OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     return eError;
 }
 
@@ -767,13 +744,9 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (!(inputPortFlag && outputPortFlag)) {
                     OMX_PRSTATE2(pComponentPrivate->dbg, "\n\n HandleCommand: In Loaded state. It does not go to sleep.\n\n");
                     pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
                     pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
                     pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                    OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
                 }
 
 
@@ -821,18 +794,10 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
 
                 OMX_PRDSP2(pComponentPrivate->dbg, "Calling LCML_InitMMCodec...\n");
-#ifndef UNDER_CE
                 /* TeeDN will be default for decoder component */
                 OMX_PRINT2(pComponentPrivate->dbg, "WBAMR decoder support TeeDN\n");
                 eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE *)pLcmlHandle)->pCodecinterfacehandle,
                                             p,&pLcmlHandle,(void *)p,&cb, (OMX_STRING)pComponentPrivate->sDeviceString);
-
-#else
-
-                eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE *)pLcmlHandle)->pCodecinterfacehandle,
-                                          p,&pLcmlHandle,(void *)p,&cb);
-
-#endif
 
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "Error returned from\
@@ -1231,13 +1196,9 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->pOutputBufferList->numBuffers) {
                 OMX_ERROR2(pComponentPrivate->dbg, "Wait for InIdle_mutex\n");
                 pComponentPrivate->InIdle_goingtoloaded = 1;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
                 pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
                 pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-                OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
             }
 
             /* Now Deinitialize the component No error should be returned from
@@ -1550,13 +1511,9 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-                    OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
                 }
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
 
@@ -1633,14 +1590,9 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bEnableCommandParam = commandData;
             }
         }
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
-
     }
     else if (command == OMX_CommandFlush) {
         OMX_U32 aParam[3] = {0};
@@ -2513,9 +2465,7 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     LCML_DSP_INTERFACE *phandle = (LCML_DSP_INTERFACE *)args[6];
 #endif
     OMX_COMPONENTTYPE *pHandle = NULL;
-#ifndef UNDER_CE
     char *pArgs = "damedesuStr";
-#endif
     DSP_STATUS status;
     LCML_DSP_INTERFACE *dspphandle = (LCML_DSP_INTERFACE *)args[6];
 
@@ -2954,11 +2904,7 @@ OMX_ERRORTYPE WBAMR_DEC_GetCorresponding_LCMLHeader(WBAMR_DEC_COMPONENT_PRIVATE 
 
     while (!pComponentPrivate->bInitParamsInitialized) {
         OMX_PRINT1(pComponentPrivate->dbg, "Waiting for init to complete\n");
-#ifndef UNDER_CE
         sched_yield();
-#else
-        Sleep(1);
-#endif
     }
 
     OMX_PRINT2(pComponentPrivate->dbg, "eDir = %d\n",eDir);
@@ -2992,8 +2938,6 @@ OMX_ERRORTYPE WBAMR_DEC_GetCorresponding_LCMLHeader(WBAMR_DEC_COMPONENT_PRIVATE 
     return eError;
 }
 
-
-#ifndef UNDER_CE
 /* -------------------------------------------------------------------*/
 /**
   *  WMADEC_GetLCMLHandle()
@@ -3012,80 +2956,37 @@ OMX_HANDLETYPE WBAMR_DEC_GetLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPr
     OMX_PRINT1(pComponentPrivate->dbg, "WBAMR_DEC_GetLCMLHandle\n");
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: dlopen() failed...\n",__LINE__);
         fputs(dlerror(), stderr);
-        goto EXIT;
+        return pHandle;
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
+	/* Close the handle opened already */
+        dlclose(handle);
         fputs(error, stderr);
-        goto EXIT;
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...\n");
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: OMX_ErrorUndefined... close the DL Handle...\n",__LINE__);
+	/* Close the handle opened already */
+        dlclose(handle);
         pHandle = NULL;
-        goto EXIT;
+        return pHandle;
     }
 
     pComponentPrivate->bLcmlHandleOpened = 1;
     ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
 
     pComponentPrivate->ptrLibLCML=handle;           /* saving LCML lib pointer  */
- EXIT:
+
     OMX_PRINT1(pComponentPrivate->dbg, "WBAMR_DEC_GetLCMLHandle returning %p\n",pHandle);
 
     return pHandle;
 }
-
-
-#else
-//WINDOWS Explicit dll load procedure
-OMX_HANDLETYPE WBAMR_DEC_GetLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
-{
-    typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-    OMX_HANDLETYPE pHandle = NULL;
-    OMX_ERRORTYPE eError;
-    HINSTANCE hDLL;               // Handle to DLL
-    LPFNDLLFUNC1 fpGetHandle1;
-
-    hDLL = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL,0);
-    if (hDLL == NULL)
-    {
-        //fputs(dlerror(), stderr);
-        OMX_ERROR4(pComponentPrivate->dbg, "BML Load Failed!!!\n");
-        return pHandle;
-    }
-
-    fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(hDLL,TEXT("GetHandle"));
-    if (!fpGetHandle1)
-    {
-        // handle the error
-        FreeLibrary(hDLL);
-
-        return pHandle;
-    }
-
-    // call the function
-    eError = fpGetHandle1(&pHandle);
-    if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...\n");
-
-
-        pHandle = NULL;
-        return pHandle;
-    }
-
-    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
-
-    return pHandle;
-}
-#endif
-
-
-#ifndef UNDER_CE
 
 OMX_ERRORTYPE WBAMR_DEC_FreeLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
@@ -3104,30 +3005,7 @@ OMX_ERRORTYPE WBAMR_DEC_FreeLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPr
 
     return eError;
 }
-#else
 
-
-OMX_ERRORTYPE WBAMR_DEC_FreeLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
-{
-
-    int retValue;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->bLcmlHandleOpened) {
-
-        retValue = FreeLibrary(pComponentPrivate->pLcmlHandle);
-        if (retValue == 0) {          /* Zero Indicates failure */
-            eError = OMX_ErrorUndefined;
-        }
-        pComponentPrivate->bLcmlHandleOpened = 0;
-    }
-
-    return eError;
-}
-
-
-
-#endif
 /* ================================================================================= */
 /**
 * @fn WBAMR_DEC_SetPending() description for WMADEC_SetPending
@@ -3521,62 +3399,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
  EXIT:
     return eError;
 }
-
-#ifdef UNDER_CE
-/* ================================================================================= */
-/**
-* @fns Sleep replace for WIN CE
-*/
-/* ================================================================================ */
-int OMX_CreateEvent(OMX_Event *event){
-    int ret = OMX_ErrorNone;
-    HANDLE createdEvent = NULL;
-    if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    event->event  = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if(event->event == NULL)
-        ret = (int)GetLastError();
-EXIT:
-    return ret;
-}
-
-int OMX_SignalEvent(OMX_Event *event){
-     int ret = OMX_ErrorNone;
-     if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-     }
-     SetEvent(event->event);
-     ret = (int)GetLastError();
-EXIT:
-    return ret;
-}
-
-int OMX_WaitForEvent(OMX_Event *event) {
-     int ret = OMX_ErrorNone;
-     if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-     }
-     WaitForSingleObject(event->event, INFINITE);
-     ret = (int)GetLastError();
-EXIT:
-     return ret;
-}
-
-int OMX_DestroyEvent(OMX_Event *event) {
-     int ret = OMX_ErrorNone;
-     if(event == NULL){
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-     }
-     CloseHandle(event->event);
-EXIT:
-     return ret;
-}
-#endif
 
 /* ========================================================================== */
 /**
