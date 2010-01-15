@@ -1047,26 +1047,18 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->pWMV->eFormat                    = VIDDEC_DEFAULT_WMV_FORMAT;
             pComponentPrivate->nWMVFileType                     = VIDDEC_WMV_RCVSTREAM; /* RCVSTREAM must be the default value*/
             pComponentPrivate->wmvProfile                       = VIDDEC_WMV_PROFILEMAX;
-#ifdef UNDER_CE
-            pComponentPrivate->bIsNALBigEndian                   = OMX_TRUE;
-#else
             pComponentPrivate->bIsNALBigEndian                   = OMX_FALSE;
-#endif
             pComponentPrivate->eLCMLState                       = VidDec_LCML_State_Unload;
             pComponentPrivate->bLCMLHalted                      = OMX_TRUE;
-#ifndef UNDER_CE
             pComponentPrivate->bLCMLOut                         = OMX_FALSE;
-#endif
             pComponentPrivate->eRMProxyState                    = VidDec_RMPROXY_State_Unload;
             pComponentPrivate->ProcessMode                      = VIDDEC_DEFAULT_PROCESSMODE;
             pComponentPrivate->bParserEnabled                   = OMX_TRUE;
 
             VIDDEC_CircBuf_Init(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
-#ifndef UNDER_CE
             VIDDEC_PTHREAD_MUTEX_INIT(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sInSemaphore);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sOutSemaphore);
-#endif
             for (iCount = 0; iCount < CBUFFER_SIZE; iCount++) {
                 pComponentPrivate->aBufferFlags[iCount].nTimeStamp = 0;
                 pComponentPrivate->aBufferFlags[iCount].nFlags = 0;
@@ -1508,12 +1500,6 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_TRACE2(pComponentPrivate->dbg, "pthread_join 0x%lx\n",(OMX_U32) pComponentPrivate->ComponentThread);
 
-#ifdef UNDER_CE
-    pthreadError = pthread_join(pComponentPrivate->ComponentThread, (void*)&threadError);
-    if (0 != pthreadError) {
-        eError = OMX_ErrorHardware;
-    }
-#else
     if(pComponentPrivate->bLCMLOut == OMX_TRUE) {
         /*pthreadError = pthread_cancel(pComponentPrivate->ComponentThread);*/
         if (0 != pthreadError) {
@@ -1526,7 +1512,6 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
             eError = OMX_ErrorHardware;
         }
     }
-#endif
 
     /* Check for the errors */
     if (OMX_ErrorNone != eError) {
@@ -1710,64 +1695,6 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
 
 
 
-#ifdef UNDER_CE
-    while(1) {
-        if (nParam1 == VIDDEC_INPUT_PORT && !pComponentPrivate->pInPortDef->bPopulated) {
-            /* return cmdcomplete event if input unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Unpopulated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortDisable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == VIDDEC_OUTPUT_PORT && !pComponentPrivate->pOutPortDef->bPopulated) {
-            /* return cmdcomplete event if output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Unpopulated VIDDEC_OUTPUT_PORT OUT 0x%x\n",pComponentPrivate->pOutPortDef->bPopulated);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortDisable,
-                                                    VIDDEC_OUTPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == VIDDEC_BOTH_PORT && !pComponentPrivate->pInPortDef->bPopulated &&
-                                  !pComponentPrivate->pOutPortDef->bPopulated) {
-            /* return cmdcomplete event if inout & output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Unpopulated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortDisable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Unpopulated VIDDEC_OUTPUT_PORT OUT 0x%x\n",pComponentPrivate->pOutPortDef->bPopulated);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortDisable,
-                                                    VIDDEC_OUTPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == VIDDEC_BOTH_PORT && !pComponentPrivate->pInPortDef->bPopulated &&
-                                  (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL)) {
-            /* return cmdcomplete event if inout & output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Unpopulated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortDisable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        VIDDEC_WAIT_CODE();
-    }
-#else
     if (nParam1 == VIDDEC_INPUT_PORT) {
         if((!(pComponentPrivate->eState == OMX_StateLoaded) && pComponentPrivate->pInPortDef->bPopulated) ||
             pComponentPrivate->sInSemaphore.bSignaled) {
@@ -1841,7 +1768,6 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
                                                     NULL);
         }
     }
-#endif
 
         /* Reset values to initial state*/
     if(pComponentPrivate->bDynamicConfigurationInProgress){
@@ -1975,69 +1901,6 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p nParam1 0x%lx\n",pComponentPrivate, nParam1);
 
-#ifdef UNDER_CE
-    while(1) {
-        if (nParam1 == VIDDEC_INPUT_PORT && (pComponentPrivate->eState == OMX_StateLoaded || pComponentPrivate->pInPortDef->bPopulated)) {
-            /* return cmdcomplete event if input unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortEnable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == VIDDEC_OUTPUT_PORT && (pComponentPrivate->eState == OMX_StateLoaded ||
-                                    pComponentPrivate->pOutPortDef->bPopulated)) {
-            /* return cmdcomplete event if output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortEnable,
-                                                    VIDDEC_OUTPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == VIDDEC_BOTH_PORT && (pComponentPrivate->eState == OMX_StateLoaded ||
-                                    (pComponentPrivate->pInPortDef->bPopulated &&
-                                    pComponentPrivate->pOutPortDef->bPopulated))) {
-            /* return cmdcomplete event if inout & output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortEnable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortEnable,
-                                                    VIDDEC_OUTPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        else if (nParam1 == OMX_ALL && && (pComponentPrivate->eState == OMX_StateLoaded ||
-                                    pComponentPrivate->pInPortDef->bPopulated) &&
-                                  (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL)) {
-            /* return cmdcomplete event if inout & output unpopulated */
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
-            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandPortEnable,
-                                                    VIDDEC_INPUT_PORT,
-                                                    NULL);
-            break;
-        }
-        VIDDEC_WAIT_CODE();
-    }
-#else
     if (nParam1 == VIDDEC_INPUT_PORT) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
         if((!(pComponentPrivate->eState == OMX_StateLoaded) && !pComponentPrivate->pInPortDef->bPopulated) ||
@@ -2141,7 +2004,6 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                                                     NULL);
         }
     }
-#endif
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
@@ -2293,15 +2155,9 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
     OMX_HANDLETYPE hLCML = NULL;
     void* p = NULL;
 
-#ifdef UNDER_CE
-   typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-   HINSTANCE hDLL;
-   LPFNDLLFUNC1 fpGetHandle1;
-#else
    void* pMyLCML;
    VIDDEC_fpo fpGetHandle;
    char* error;
-#endif
 
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p phandle 0x%lx\n",pComponentPrivate, nParam1);
@@ -2336,22 +2192,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
             if ((pPortDefIn->bEnabled == OMX_TRUE && pPortDefOut->bEnabled == OMX_TRUE) ||
                 (pPortDefIn->bEnabled == OMX_TRUE && pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL)) {
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "Before pPortDefIn->bEnabled 0x%x pPortDefOut->bEnabled 0x%x\n",pPortDefIn->bEnabled, pPortDefOut->bEnabled);
-#ifdef UNDER_CE
-                while (1) {
-                    if (pPortDefIn->bPopulated && pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "tunneling pPortDefIn->bEnabled 0x%x pPortDefOut->bEnabled 0x%x\n",
-                            pPortDefIn->bEnabled, pPortDefOut->bEnabled);
-                        break;
-                    }
-                    if (pPortDefIn->bPopulated && pPortDefOut->bPopulated) {
-                        OMX_PRINT1(pComponentPrivate->dbg, "Standalone pPortDefIn->bEnabled 0x%x pPortDefOut->bEnabled 0x%x\n",
-                            pPortDefIn->bEnabled, pPortDefOut->bEnabled);
-                        break;
-                    }
-                    /* Sleep for a while, so the application thread can allocate buffers */
-                    VIDDEC_WAIT_CODE();
-                }
-#else
                 if(pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
                     if((!pComponentPrivate->pInPortDef->bPopulated) || pComponentPrivate->sInSemaphore.bSignaled) {
                         VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sInSemaphore);
@@ -2367,10 +2207,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                             pPortDefIn->bEnabled, pPortDefOut->bEnabled);
                     }
                 }
-#endif
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "After pPortDefIn->bEnabled 0x%x pPortDefOut->bEnabled 0x%x\n",pPortDefIn->bEnabled, pPortDefOut->bEnabled);
             }
-#ifndef UNDER_CE
             else {
                 if(pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
                     if(pComponentPrivate->sInSemaphore.bSignaled){
@@ -2386,10 +2224,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
                 }
             }
-#endif
 
 #if 1
-#ifndef UNDER_CE
                 pMyLCML = dlopen("libLCML.so", RTLD_LAZY);
                 if (!pMyLCML) {
                     OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -2415,33 +2251,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     goto EXIT;
                 }
                 pComponentPrivate->pModLCML = pMyLCML;
-#else
-                hDLL = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL, 0);
-                if (hDLL == NULL) {
-                    OMX_PRDSP4(pComponentPrivate->dbg, "BML Load Failed!!!\n");
-                    eError = OMX_ErrorBadParameter;
-                    goto EXIT;
-                }
-                fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(hDLL,TEXT("GetHandle"));
-                if (!fpGetHandle1) {
-                    /* handle the error */
-                    OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-                    FreeLibrary(hDLL);
-                    hDLL = NULL;
-                    eError = OMX_ErrorBadParameter;
-                    goto EXIT;
-                }
-                /* call the function */
-                eError = fpGetHandle1(&hLCML);
-                if (eError != OMX_ErrorNone) {
-                    OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-                    FreeLibrary(hDLL);
-                    hDLL = NULL;
-                    eError = OMX_ErrorBadParameter;
-                    goto EXIT;
-                }
-                pComponentPrivate->pModLCML = hDLL;
-#endif
 
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Load;
                 OMX_PRDSP2(pComponentPrivate->dbg, "LCML Handler 0x%p\n",hLCML);
@@ -2454,9 +2263,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->lcml_nCntOpReceived = 0;
 #endif
                 eError = OMX_ErrorNone;
-#ifndef UNDER_CE
                 pComponentPrivate->bLCMLOut = OMX_TRUE;
-#endif
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                     eError = VIDDEC_InitDSP_H264Dec(pComponentPrivate);
                 }
@@ -2492,22 +2299,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 if(eError != OMX_ErrorNone){
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                         pComponentPrivate->pModLCML != NULL){
-#ifndef UNDER_CE
                         if(pComponentPrivate->pModLCML != NULL){
                             dlclose(pComponentPrivate->pModLCML);
                             pComponentPrivate->pModLCML = NULL;
                             pComponentPrivate->pLCML = NULL;
                             pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
                         }
-#else
-                        if(pComponentPrivate->pModLCML != NULL){
-                            FreeLibrary(pComponentPrivate->pModLCML);
-                            pComponentPrivate->pModLCML = NULL;
-                            pComponentPrivate->pLCML = NULL;
-                            pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
-                        }
-#endif
-
                         pComponentPrivate->bLCMLHalted = OMX_TRUE;
                     }
                     OMX_PRDSP4(pComponentPrivate->dbg, "LCML Error %x\n", pComponentPrivate->eState);
@@ -2520,9 +2317,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                      goto EXIT;
                 }
 
-#ifndef UNDER_CE
                 pComponentPrivate->bLCMLOut = OMX_FALSE;
-#endif
                 pComponentPrivate->bLCMLHalted = OMX_FALSE;
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
                 if (!pLcmlHandle) {
@@ -3207,19 +3002,11 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                 OMX_PRDSP2(pComponentPrivate->dbg, "Closing LCML lib 0x%p\n",pComponentPrivate->pModLCML);
 
-#ifndef UNDER_CE
                 if(pComponentPrivate->pModLCML != NULL){
                     dlclose(pComponentPrivate->pModLCML);
                     pComponentPrivate->pModLCML = NULL;
                     pComponentPrivate->pLCML = NULL;
                 }
-#else
-                if(pComponentPrivate->pModLCML != NULL){
-                    FreeLibrary(pComponentPrivate->pModLCML);
-                    pComponentPrivate->pModLCML = NULL;
-                    pComponentPrivate->pLCML = NULL;
-                }
-#endif
             pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
 
                OMX_PRDSP1(pComponentPrivate->dbg, "Closed LCML lib 0x%p\n",pComponentPrivate->pModLCML);
@@ -3227,44 +3014,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                OMX_PRBUFFER1(pComponentPrivate->dbg, "Tunneling 0x%p\n",(pComponentPrivate->pCompPort[1]->hTunnelComponent));
                if ((pPortDefIn->bEnabled == OMX_TRUE && pPortDefOut->bEnabled == OMX_TRUE) ||
                 (pPortDefIn->bEnabled == OMX_TRUE && pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL)) {
-#ifdef UNDER_CE
-                    while(1) {
-                        if(!pPortDefIn->bPopulated && !pPortDefOut->bPopulated) {
-                            OMX_PRBUFFER2(pComponentPrivate->dbg, "Standalone unpopulated ports IN 0x%x OUT 0x%x\n",pPortDefIn->bEnabled,pPortDefOut->bEnabled);
-                            eError = OMX_ErrorNone;
-                            pComponentPrivate->bIsPaused = 0;
-                            pComponentPrivate->eState = OMX_StateLoaded;
-                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   OMX_EventCmdComplete,
-                                                                   OMX_CommandStateSet,
-                                                                   pComponentPrivate->eState,
-                                                                   NULL);
-                            OMX_PRSTATE2(pComponentPrivate->dbg, "Transition to OMX_StateLoaded\n");
-                            VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_VARS);
-                            pComponentPrivate->eIdleToLoad = OMX_StateInvalid;
-                            break;
-                        }
-                        else if(!pPortDefIn->bPopulated && (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL)) {
-                            OMX_PRBUFFER2(pComponentPrivate->dbg, "Tunneling unpopulated ports IN 0x%x TUNNEL 0x%x\n",
-                                pPortDefIn->bEnabled,pComponentPrivate->pCompPort[1]->hTunnelComponent);
-                            eError = OMX_ErrorNone;
-                            pComponentPrivate->bIsPaused = 0;
-                            pComponentPrivate->eState = OMX_StateLoaded;
-                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   OMX_EventCmdComplete,
-                                                                   OMX_CommandStateSet,
-                                                                   pComponentPrivate->eState,
-                                                                   NULL);
-                            OMX_PRSTATE2(pComponentPrivate->dbg, "Transition to OMX_StateLoaded\n");
-                            VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_VARS);
-                            pComponentPrivate->eIdleToLoad = OMX_StateInvalid;
-                            break;
-                        }
-                        VIDDEC_WAIT_CODE();
-                    }
-#else
                     if(pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
                         if((!(pComponentPrivate->eState == OMX_StateLoaded) && pComponentPrivate->pInPortDef->bPopulated) ||
                             pComponentPrivate->sInSemaphore.bSignaled) {
@@ -3311,14 +3060,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
 
 
-#endif
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,
                                   PERF_BoundaryComplete | PERF_BoundaryCleanup);
 #endif
 
                 }
-#ifndef UNDER_CE
                 else {
                     if(pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
                         if(pComponentPrivate->sInSemaphore.bSignaled){
@@ -3346,7 +3093,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Transition to OMX_StateLoaded\n");
                     break;
                 }
-#endif
             }
             else if (pComponentPrivate->eState == OMX_StateWaitForResources) {
                 pComponentPrivate->eState = OMX_StateLoaded;
@@ -3547,21 +3293,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload) {
-#ifndef UNDER_CE
                     if(pComponentPrivate->pModLCML != NULL){
                         dlclose(pComponentPrivate->pModLCML);
                         pComponentPrivate->pModLCML = NULL;
                         pComponentPrivate->pLCML = NULL;
                         pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
                     }
-#else
-                    if(pComponentPrivate->pModLCML != NULL){
-                        FreeLibrary(pComponentPrivate->pModLCML);
-                        pComponentPrivate->pModLCML = NULL;
-                        pComponentPrivate->pLCML = NULL;
-                        pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
-                    }
-#endif
                 }
                 for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
                     if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->bAllocByComponent == OMX_TRUE){
@@ -8428,16 +8165,9 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     LCML_DSP_INTERFACE *pLcmlHandle = NULL;
     OMX_HANDLETYPE hLCML = NULL;
     void* p = NULL;
-#ifdef UNDER_CE
-   typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-   HINSTANCE hDLL;
-   LPFNDLLFUNC1 fpGetHandle1;
-#else
    VIDDEC_fpo fpGetHandle;
    char* error;
-#endif
 
-#ifndef UNDER_CE
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
     if (!pComponentPrivate->pModLCML) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -8463,7 +8193,6 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         goto EXIT;
     }
 
-#endif
 
     pComponentPrivate->eLCMLState = VidDec_LCML_State_Load;
     OMX_PRDSP2(pComponentPrivate->dbg, "LCML Handler 0x%p\n",hLCML);
@@ -8476,9 +8205,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pComponentPrivate->lcml_nCntOpReceived = 0;
 #endif
     eError = OMX_ErrorNone;
-#ifndef UNDER_CE
     pComponentPrivate->bLCMLOut = OMX_TRUE;
-#endif
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
         eError = VIDDEC_InitDSP_H264Dec(pComponentPrivate);
     }
@@ -8518,9 +8245,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                                                "DSP Initialization");
         goto EXIT;
     }
-    #ifndef UNDER_CE
     pComponentPrivate->bLCMLOut = OMX_FALSE;
-#endif
     pComponentPrivate->bLCMLHalted = OMX_FALSE;
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
     pComponentPrivate->eLCMLState = VidDec_LCML_State_Init;
@@ -8905,22 +8630,12 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
     OMX_PRDSP1(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
 
-#ifndef UNDER_CE
         if(pComponentPrivate->pModLCML != NULL){
             dlclose(pComponentPrivate->pModLCML);
             pComponentPrivate->pModLCML = NULL;
             pComponentPrivate->pLCML = NULL;
             pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
         }
-#else
-        if(pComponentPrivate->pModLCML != NULL){
-            FreeLibrary(pComponentPrivate->pModLCML);
-            pComponentPrivate->pModLCML = NULL;
-            pComponentPrivate->pLCML = NULL;
-            pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
-        }
-#endif
-
         pComponentPrivate->bLCMLHalted = OMX_TRUE;
     }
     eError = OMX_ErrorNone;

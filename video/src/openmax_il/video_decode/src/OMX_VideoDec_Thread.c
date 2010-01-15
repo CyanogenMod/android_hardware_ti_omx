@@ -50,11 +50,6 @@
 *  INCLUDE FILES                                                 
 *******************************************************************************/
 /* ----- system and platform files -------------------------------------------*/
-#ifdef UNDER_CE
-    #include <windows.h>
-    #include <oaf_osal.h>
-    #include <omx_core.h>
-#else
 #define _XOPEN_SOURCE 600
     #include <wchar.h>    
     #include <sys/select.h>
@@ -66,7 +61,6 @@
     #include <fcntl.h>
     #include <errno.h>
      
-#endif 
 
 #include <dbapi.h>
 #include <string.h>
@@ -105,12 +99,8 @@ extern OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComp
 void* OMX_VidDec_Thread (void* pThreadData)
 {
     int status;
-#ifdef UNDER_CE
-    struct timeval tv;
-#else
     sigset_t set;
     struct timespec tv;
-#endif
     int fdmax;
     fd_set rfds;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -120,9 +110,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate;
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U32 aParam[4];
-#ifndef UNDER_CE
     OMX_BOOL bFlag = OMX_FALSE;
-#endif
     /*OMX_U32 timeout = 0;*/
 
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pThreadData;
@@ -161,23 +149,14 @@ void* OMX_VidDec_Thread (void* pThreadData)
         FD_SET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds);
         FD_SET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds);
 
-#ifdef UNDER_CE
-        tv.tv_sec = 0;
-        tv.tv_usec = VIDD_TIMEOUT * 30; 
-#else
         tv.tv_sec = 0;
         tv.tv_nsec = 30000;
-#endif
 
 
-#ifdef UNDER_CE
-        status = select (fdmax+1, &rfds, NULL, NULL, NULL);
-#else
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, NULL, &set);
         sigdelset (&set, SIGALRM);
-#endif
         
         if (0 == status) {
             ;
@@ -194,11 +173,9 @@ void* OMX_VidDec_Thread (void* pThreadData)
         }
         else {
             if (FD_ISSET(pComponentPrivate->cmdPipe[VIDDEC_PIPE_READ], &rfds)) {
-#ifndef UNDER_CE
             if(!bFlag) {
             
                 bFlag = OMX_TRUE;
-#endif
                 read(pComponentPrivate->cmdPipe[VIDDEC_PIPE_READ], &eCmd, sizeof(eCmd));
                 read(pComponentPrivate->cmdDataPipe[VIDDEC_PIPE_READ], &nParam1, sizeof(nParam1));
                 
@@ -263,13 +240,9 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     pComponentPrivate->nInCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
 
                 }
-#ifndef UNDER_CE
     bFlag = OMX_FALSE;
-#endif
 
-#ifndef UNDER_CE
             }
-#endif
         }
             if(pComponentPrivate->bPipeCleaned){
                 pComponentPrivate->bPipeCleaned =0;
@@ -360,12 +333,8 @@ void* OMX_VidDec_Return (void* pThreadData)
 {
     int status = 0;
     struct timeval tv1;
-#ifdef UNDER_CE
-    struct timeval tv;
-#else
     sigset_t set;
     struct timespec tv;
-#endif
     int fdmax = 0;
     OMX_U32 iLock = 0;
     fd_set rfds;
@@ -398,23 +367,14 @@ void* OMX_VidDec_Return (void* pThreadData)
         FD_SET(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ], &rfds);
         FD_SET(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ], &rfds);
 
-#ifdef UNDER_CE
-        tv.tv_sec = 0;
-        tv.tv_usec = VIDD_TIMEOUT * 30; 
-#else
     tv.tv_sec = 0;
     tv.tv_nsec = 10000;
-#endif
 
         
-#ifdef UNDER_CE
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#else
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
         sigdelset (&set, SIGALRM);
-#endif
         if (0 == status) {
             iLock++;
             if (iLock > 2){
