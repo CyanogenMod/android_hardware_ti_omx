@@ -108,11 +108,7 @@
  *                                           at initialization
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-	#define NBAMRDEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
-	#define NBAMRDEC_USN_DLL_NAME "usn.dll64P"
-#endif
+#define NBAMRDEC_USN_DLL_NAME "usn.dll64P"
 
 /* ======================================================================= */
 /**
@@ -120,11 +116,7 @@
  *                                           at initialization
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-	#define NBAMRDEC_DLL_NAME "\\windows\\nbamrdec_sn.dll64P"
-#else
-	#define NBAMRDEC_DLL_NAME "nbamrdec_sn.dll64P"
-#endif
+#define NBAMRDEC_DLL_NAME "nbamrdec_sn.dll64P"
 
 OMX_ERRORTYPE NBAMRDECGetCorresponding_LCMLHeader(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                           OMX_U8 *pBuffer,
@@ -160,17 +152,5 @@ void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
 void NBAMRDEC_HandleUSNError (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
-#ifdef UNDER_CE
-	#ifndef _OMX_EVENT_
-		#define _OMX_EVENT_
-		typedef struct OMX_Event {
-			HANDLE event;
-		} OMX_Event;
-	#endif
-	int OMX_CreateEvent(OMX_Event *event);
-	int OMX_SignalEvent(OMX_Event *event);
-	int OMX_WaitForEvent(OMX_Event *event);
-	int OMX_DestroyEvent(OMX_Event *event);
-#endif
 
 #endif
