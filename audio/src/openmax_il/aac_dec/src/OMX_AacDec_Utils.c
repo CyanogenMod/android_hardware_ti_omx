@@ -275,6 +275,7 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
                              AACDEC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->bLastBuffer = 0;
         pTemp_lcml->pIpParam->bConcealBuffer = 0;
+        pTemp_lcml->pIpParam->ulFrameIndex = 0;
 
         pTemp->nFlags = NORMAL_BUFFER_AACDEC;
         ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -310,6 +311,7 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
                              AACDEC_UAlgOutBufParamStruct);
         pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
         pTemp_lcml->pOpParam->isLastBuffer = 0;
+        pTemp_lcml->pOpParam->ulFrameIndex = 0;
 		
         pTemp->nFlags = NORMAL_BUFFER_AACDEC;
         ((AACDEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3636,6 +3638,7 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
                                    AACDEC_UAlgInBufParamStruct);
 
             pTemp_lcml->pIpParam->bLastBuffer = 0;
+            pTemp_lcml->pIpParam->ulFrameIndex = 0;
 
             pTemp->nFlags = NORMAL_BUFFER_AACDEC;
             ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3678,6 +3681,7 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 
             pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
             pTemp_lcml->pOpParam->isLastBuffer = 0;
+            pTemp_lcml->pOpParam->ulFrameIndex = 0;
 			
             pTemp->nFlags = NORMAL_BUFFER_AACDEC;
             ((AACDEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3779,7 +3783,7 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     switch (arg)
     {
-        case AACDEC_SBR_CONTENT:
+        case IAAC_WARN_SBR_PRESENT:
 #ifndef ANDROID
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: SBR content detected \n" ,__LINE__);
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE &&
@@ -3807,7 +3811,7 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
             }
 #endif
                 break;
-        case AACDEC_PS_CONTENT:
+        case IAAC_WARN_PS_PRESENT:
 #ifndef ANDROID
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: PS content detected \n" ,__LINE__);
             if(pComponentPrivate->aacParams->eAACProfile != OMX_AUDIO_AACObjectHE_PS){
@@ -3834,10 +3838,23 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
             }
 #endif
             break;
+        case IAAC_WARN_INVALID_DNSAMPLESBR:
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Invalid value in Down sample SBR \n" ,__LINE__);
+            break;
+        case IAAC_WARN_INVALID_ENABLEPS:
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Invalid value in Enable PS \n" ,__LINE__);
+            break;
+        case IAAC_WARN_INVALID_DUALMONOMODE:
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Invalid value in Dual Mono Mode \n" ,__LINE__);
+            break;
+        case IAAC_WARN_ENABLEPS_NOTSET :
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Invalid value: Enable PS not set \n" ,__LINE__);
+            break;
         case IUALG_WARN_CONCEALED:
         case IUALG_WARN_UNDERFLOW:
         case IUALG_WARN_OVERFLOW:
         case IUALG_WARN_ENDOFDATA:
+        case IUALG_WARN_ALG_ERR:
             OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error" );
             /* all of these are informative messages, Algo can recover, no need to notify the
              * IL Client at this stage of the implementation */

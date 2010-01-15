@@ -536,6 +536,21 @@ typedef enum {
     IUALG_CMD_SETSTATUS     = 3,
     IUALG_CMD_USERCMDSTART_AACDEC  = 100
 }IUALG_Cmd_AAC_DEC;
+/* ======================================================================= */
+/** IAAC_WARN_MSG:  The first two warnings are used when SBR and PS content
+ *  is detected. The INVALID type of warnings indicate the ARM side that
+ *  dynamic parameters are out of range.  These warnings are defined as
+ *  macros in mpeg4aacdec_ualg.h.
+ */
+/* ======================================================================= */
+typedef enum{
+    IAAC_WARN_SBR_PRESENT = 0x0601,
+    IAAC_WARN_PS_PRESENT,
+    IAAC_WARN_INVALID_DNSAMPLESBR= 0x0800,
+    IAAC_WARN_INVALID_ENABLEPS,
+    IAAC_WARN_INVALID_DUALMONOMODE, /* Invalid dual mono rendering mode */
+    IAAC_WARN_ENABLEPS_NOTSET /* to indicate in case of PS stream and EnablePS not set */
+}IAAC_WARN_MSG;
 
 #ifdef UNDER_CE
 #ifndef _OMX_EVENT_
@@ -569,6 +584,7 @@ typedef struct {
     /* Set to 1 if buffer is last buffer */
     unsigned short bLastBuffer;
     unsigned short bConcealBuffer;
+    unsigned long ulFrameIndex;
 }AACDEC_UAlgInBufParamStruct;
 
 /* ======================================================================= */
@@ -593,6 +609,7 @@ typedef struct USN_AudioCodecParams{
 typedef struct {
     unsigned long ulFrameCount;
     unsigned long isLastBuffer;
+    unsigned long ulFrameIndex;
 }AACDEC_UAlgOutBufParamStruct;
 
 typedef struct AACDEC_UALGParams{
