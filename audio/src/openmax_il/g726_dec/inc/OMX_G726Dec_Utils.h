@@ -44,6 +44,7 @@
 #define OMX_G726DEC_UTILS__H
 
 #include <OMX_Component.h>
+#include "OMX_TI_Common.h"
 #include "LCML_DspCodec.h"
 
 #ifdef UNDER_CE
@@ -167,32 +168,6 @@
 
 #endif /*for UNDER_CE*/
 
-#define G726D_OMX_MALLOC(_pStruct_, _sName_)                        \
-    _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
-    if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
-        eError = OMX_ErrorInsufficientResources;                    \
-        goto EXIT;                                                  \
-    }                                                               \
-    memset(_pStruct_,0,sizeof(_sName_));                            \
-    G726DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-
-#define G726D_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)             \
-    _ptr_ = (_name_ *)malloc(_size_);                           \
-    if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
-        eError = OMX_ErrorInsufficientResources;                \
-        goto EXIT;                                              \
-    }                                                           \
-    memset(_ptr_,0,_size_);                                     \
-    G726DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
-
 #define G726D_OMX_ERROR_EXIT(_e_, _c_, _s_)                             \
     _e_ = _c_;                                                          \
     printf("\n**************** OMX ERROR ************************\n");  \
@@ -207,13 +182,6 @@
             eError = OMX_ErrorBadParameter;             \
             goto EXIT;                                  \
         }                                               \
-    }
-
-#define G726D_OMX_FREE(ptr)                                             \
-    if(NULL != ptr) {                                                   \
-        G726DEC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr);  \
-        free(ptr);                                                      \
-        ptr = NULL;                                                     \
     }
 
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
@@ -636,6 +604,8 @@ typedef struct G726DEC_COMPONENT_PRIVATE
     OMX_BOOL bFlushInputPortCommandPending;
     
 #ifndef UNDER_CE
+    /** Tells whether mutex have been initialized or not */
+    OMX_U32 bMutexInit;
     /* mutex for allocating buffers */
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
