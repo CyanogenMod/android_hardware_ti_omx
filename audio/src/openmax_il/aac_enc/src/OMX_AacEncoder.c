@@ -197,6 +197,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, AACENC_COMPONENT_PRIVATE);
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     
+    pComponentPrivate = pHandle->pComponentPrivate;
+    pComponentPrivate->bMutexInit = 0;
     /* Initialize component data structures to default values */
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->sPortParam.nPorts = 0x2;
     ((AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->sPortParam.nStartPortNumber = 0x0;
@@ -244,7 +246,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     /* ---------end of OMX_AUDIO_PARAM_PCMMODETYPE --------- */
 
 
-    pComponentPrivate = pHandle->pComponentPrivate;
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_AACENC");
 
 #ifdef ANDROID /* leave this now, we may need them later. */
@@ -374,6 +375,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
+
+    pthread_mutex_init(&pComponentPrivate->mutexStateChangeRequest, NULL);
+    pthread_cond_init (&pComponentPrivate->StateChangeCondition, NULL);
+    pComponentPrivate->nPendingStateChangeRequests = 0;
+    pComponentPrivate->bMutexInit = 1;
 #else
     OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -473,20 +479,44 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                        PERF_FOURCC('A','A','E','T'));
 #endif
 
-    if(pthread_mutex_init(&pComponentPrivate->mutexStateChangeRequest, NULL)) {
-       return OMX_ErrorUndefined;
-    }
-
-    if(pthread_cond_init (&pComponentPrivate->StateChangeCondition, NULL)) {
-       return OMX_ErrorUndefined;
-    }
-
-    pComponentPrivate->nPendingStateChangeRequests = 0;
-
-
 EXIT:
-    if (pComponentPrivate != NULL) {
-	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting OMX_ComponentInit\n", __LINE__);
+    if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
+
+#ifndef UNDER_CE
+        if (pComponentPrivate->bMutexInit) {
+            OMX_PRINT1(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
+            pthread_mutex_destroy(&pComponentPrivate->mutexStateChangeRequest);
+            pthread_cond_destroy(&pComponentPrivate->StateChangeCondition);
+
+            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+            pComponentPrivate->bMutexInit = 0;
+	}
+#else
+        pComponentPrivate->bPortDefsAllocated = 0;
+        OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
+        OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
+        OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
+#endif
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: Freeing memory\n", __LINE__);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParam[OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParam[INPUT_PORT]);
+
+        OMX_MEMFREE_STRUCT(pComponentPrivate->aacParams[OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->aacParams[INPUT_PORT]);
+
+        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
     }
     return eError;
 }
@@ -1234,13 +1264,13 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     }   
 #endif
 
-    if(nConfigIndex == OMX_IndexCustomAacEncStreamIDConfig)
+    if((OMX_AACENC_INDEXAUDIOTYPE)nConfigIndex == OMX_IndexCustomAacEncStreamIDConfig)
     {
         /* copy component info */
         streamInfo->streamId = pComponentPrivate->streamID;
         memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
     }
-    else if(nConfigIndex == OMX_IndexCustomDebug)
+    else if((OMX_AACENC_INDEXAUDIOTYPE)nConfigIndex == OMX_IndexCustomDebug)
     {
 	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
     }
@@ -1296,7 +1326,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     }   
 #endif
 
-    switch (nConfigIndex) 
+    switch ((OMX_AACENC_INDEXAUDIOTYPE)nConfigIndex)
     {
         case OMX_IndexCustomAacEncHeaderInfoConfig:
         {
@@ -1333,7 +1363,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             break;          
         }
            
-        case OMX_IndexConfigAudioVolume:
+        case (OMX_AACENC_INDEXAUDIOTYPE)OMX_IndexConfigAudioVolume:
 #ifdef DSP_RENDERING_ON
             pGainStructure = (OMX_AUDIO_CONFIG_VOLUMETYPE *)ComponentConfigStructure;
             cmd_data.hComponent = hComp;
@@ -1461,6 +1491,12 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE hComponent, OMX_STATETYPE* pState)
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout;
            }
+	   else
+	   {
+              /* Unlock mutex in case of error */
+              pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
+              return OMX_ErrorUndefined;
+	   }
         }
      }
      else {
