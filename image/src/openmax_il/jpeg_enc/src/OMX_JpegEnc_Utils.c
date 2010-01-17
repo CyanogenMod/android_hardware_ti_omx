@@ -644,8 +644,20 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     ptCreateString[4] = JPGENC_SNTEST_OUTSTRMID;/* Stream ID   */
     ptCreateString[5] = 0;                      /* Stream based input stream   */
     ptCreateString[6] = JPGENC_SNTEST_OUTBUFCNT;/* Number of buffers on input stream   */
-    ptCreateString[7] = (pPortDefOut->format.image.nFrameWidth > 0) ? pPortDefOut->format.image.nFrameWidth : JPGENC_SNTEST_MAX_WIDTH;
-    ptCreateString[8] = (pPortDefOut->format.image.nFrameHeight > 0) ? pPortDefOut->format.image.nFrameHeight : JPGENC_SNTEST_MAX_HEIGHT;
+	
+	if (pPortDefOut->format.image.nFrameWidth == 0)
+		ptCreateString[7]=JPGENC_SNTEST_MAX_WIDTH;
+	else if (pPortDefOut->format.image.nFrameWidth < 320)
+		ptCreateString[7] = 322;
+	else
+		ptCreateString[7] = pPortDefOut->format.image.nFrameWidth ;
+
+        if (pPortDefOut->format.image.nFrameHeight == 0)
+                ptCreateString[8]=JPGENC_SNTEST_MAX_HEIGHT;
+        else if (pPortDefOut->format.image.nFrameHeight < 240)
+		ptCreateString[8] = 242;
+	else
+        	ptCreateString[8] = pPortDefOut->format.image.nFrameHeight;
 
     /*
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar ) {
@@ -2137,23 +2149,8 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
     pBuffPrivate->eBufferOwner = JPEGENC_BUFFER_DSP;
 
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
-    if (pComponentPrivate->pOutParams != NULL)
-    {
-        pComponentPrivate->pOutParams = (OMX_U8*)pComponentPrivate->pOutParams - PADDING_128_BYTE;
-	OMX_FREE(pComponentPrivate->pOutParams);
-    }
-    OMX_MALLOC(pComponentPrivate->pOutParams,sizeof(PPLIB_UALGRunTimeParam_t) + PADDING_256_BYTE);
-    pComponentPrivate->pOutParams = (OMX_U8*)pComponentPrivate->pOutParams + PADDING_128_BYTE;
 
-    if (pComponentPrivate->pOutParams != NULL)
-    {
-    }
-    else
-    {
-        goto EXIT;
-    }
-
-    eError = SendDynamicPPLibParam(pComponentPrivate,pComponentPrivate->pOutParams);
+    eError = SendDynamicPPLibParam(pComponentPrivate,&pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam[sizeof(OMX_U32)]);
        if (eError != OMX_ErrorNone ) {
            goto EXIT;
        }
@@ -2164,8 +2161,8 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                                  pBuffHead->pBuffer,
                                  pPortDefOut->nBufferSize,
                                  0,
-                                 (OMX_U8 *)pComponentPrivate->pOutParams,
-                                 sizeof(PPLIB_UALGRunTimeParam_t),
+				 (OMX_U8 *)pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam,
+                                 sizeof(JPEGENC_UALGOutputParams),
                                  (OMX_U8 *)  pBuffHead);
 
 #else
@@ -2174,8 +2171,8 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                               pBuffHead->pBuffer,
                               pPortDefOut->nBufferSize,
                               0,
-                              NULL,
-                              0,
+                              (OMX_U8 *)pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam,
+                              sizeof(JPEGENC_UALGOutputParams),
                               (OMX_U8 *)  pBuffHead);
 #endif
 
@@ -2711,6 +2708,8 @@ OMX_ERRORTYPE HandleJpegEncDataBuf_FromDsp(JPEGENC_COMPONENT_PRIVATE *pComponent
     OMX_ERRORTYPE eError                 = OMX_ErrorNone;
     OMX_BUFFERHEADERTYPE* pInpBuf        = NULL;
     JPEGENC_BUFFER_PRIVATE* pBuffPrivate = NULL;
+    OMX_ERRORTYPE eExtendedError         = OMX_ErrorNone; 
+    JPEGENC_BUFFER_PRIVATE* pBufferPrivate = NULL;
 
     OMX_CHECK_PARAM(pComponentPrivate);
 
@@ -2775,7 +2774,63 @@ OMX_ERRORTYPE HandleJpegEncDataBuf_FromDsp(JPEGENC_COMPONENT_PRIVATE *pComponent
         pComponentPrivate->nFlags = 0;
     }
 
+  if(pBuffHead != NULL) {
+    OMX_S32 nErrorCode = 0;
+    JPEGENC_UALGOutputParams* pUalgOutParams=NULL;
+   
+    pBufferPrivate = (JPEGENC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
+    pUalgOutParams = (JPEGENC_UALGOutputParams *)pBufferPrivate->pUalgParam;
+    nErrorCode = (pUalgOutParams->lErrorCode);
+ 	
+     if((nErrorCode & 0xff) != 0){/*OMX_BUFFERFLAG_DATACORRUPT*/
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_FATALERROR)){
+                 eExtendedError = OMX_ErrorStreamCorrupt;
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Not Recoverable Error Detected in Buffer in buffer %p (ErrorCode# %lx) OMX_ErrorStreamCorrupt\n",
+                         pBuffHead,  nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_APPLIEDCONCEALMENT)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Applied Concealment in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_INSUFFICIENTDATA)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Insufficient Data in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_CORRUPTEDDATA)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Data in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_CORRUPTEDHEADER)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Header in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_UNSUPPORTEDINPUT)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Unsupported Input in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+             if(JPEGENC_ISFLAGSET(nErrorCode,JPEGENC_XDM_UNSUPPORTEDPARAM)){
+                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                 pBuffHead->nFilledLen = 0;
+                 OMX_PRDSP4(pComponentPrivate->dbg, "Unsupported Parameter in buffer %p (ErrorCode# %lx)\n",
+                         pBuffHead, nErrorCode);
+             }
+         }
+    }
     EXIT:
+    if(eExtendedError != OMX_ErrorNone) {
+        eError = eExtendedError;
+    }
     return eError;
 }
 

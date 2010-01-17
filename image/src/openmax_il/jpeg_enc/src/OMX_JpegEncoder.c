@@ -145,6 +145,9 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                                 OMX_IN  OMX_U32 nPortIndex,
                                 OMX_IN  OMX_BUFFERHEADERTYPE* pBuffer);
 
+static OMX_ERRORTYPE JPEGENC_Allocate_DSPResources(OMX_IN JPEGENC_COMPONENT_PRIVATE *pComponentPrivate,
+                                                   OMX_IN OMX_U32 nPortIndex);
+
 static OMX_ERRORTYPE JPEGENC_ComponentDeInit(OMX_HANDLETYPE pHandle);
 
 static OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
@@ -180,7 +183,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     JPEGENC_BUFFER_PRIVATE* pBuffPrivate         = NULL;
     JPEG_PORT_TYPE* pCompPort                    = NULL;
     OMX_ERRORTYPE eError                         = OMX_ErrorNone;
-    char* pTemp                                  = NULL;
+    OMX_U8* pTemp                                = NULL;
     
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pBuffer);
@@ -220,7 +223,15 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
            pBuffer->pBuffer = NULL;
         }
     }
-                       
+
+    if (pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam) {
+            pTemp = (OMX_U8*)(pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam);
+            pTemp -= 128;
+            pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam = (JPEGENC_UALGOutputParams *)pTemp;
+            OMX_FREE(pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam);
+            pBuffPrivate->pUalgParam = NULL;
+            }
+
     OMX_FREE(pBuffer);
 
     if ( pPortDef->bEnabled && 
@@ -385,6 +396,13 @@ OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     else {
         pComponentPrivate->pCompPort[nPortIndex]->pBufferPrivate[nBufferCount]->eBufferOwner = JPEGENC_BUFFER_CLIENT;
     }
+
+	eError = JPEGENC_Allocate_DSPResources(pComponentPrivate, nPortIndex);
+    if (eError != OMX_ErrorNone) {
+        OMX_PRDSP4(pComponentPrivate->dbg, "Error: JPEGENC_Allocate_DSPResources failed\n");
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    	}
 
     if ( nPortIndex == pComponentPrivate->pCompPort[nPortIndex]->pPortFormat->nPortIndex ) {
         pComponentPrivate->pCompPort[nPortIndex]->nBuffCount++;
@@ -2246,6 +2264,12 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pBufferHdr->pBuffer = pTemp;
     OMX_PRBUFFER2(pComponentPrivate->dbg, "Allocate Buffer Input pBufferPrivate[0]-pBuffer = %p\n",pBufferHdr->pBuffer);
     
+    eError = JPEGENC_Allocate_DSPResources(pComponentPrivate, nPortIndex);
+    if (eError != OMX_ErrorNone)    {
+        OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorInsufficientResources\n");
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
 
     if (nPortIndex == JPEGENC_INP_PORT) {
         pBufferHdr->pInputPortPrivate  = pComponentPrivate->pCompPort[nPortIndex]->pBufferPrivate[nBufferCount];
@@ -2382,5 +2406,49 @@ EXIT:
     return eError;
 }
 
+/* ========================================================================== */
+/**
+ * @fn Allocate_DSPResources_JPEGENC - Allocate the Ialg structure for each port's
+ * buffer header.
+ * @param hComponent - handle for this instance of the component
+ * @param nPort - Index Port
+ * @return: OMX_ERRORTYPE
+ *          OMX_ErrorNone on success
+ *          !OMX_ErrorNone on any failure
+ */
+/* ========================================================================== */
+static OMX_ERRORTYPE JPEGENC_Allocate_DSPResources(OMX_IN JPEGENC_COMPONENT_PRIVATE *pComponentPrivate,
+                                                   OMX_IN OMX_U32 nPortIndex)
+{
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+    void *pUalgOutParams;
+    void *pUalgInpParams;
+    OMX_U8* pTemp;
+    OMX_U8 nBufferCount = -1;
 
+   /* JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); */          
+
+    OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion Allocate_DSPResources_JPEGDec\n");
+
+    nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
+ 
+   if ( nPortIndex == pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortFormat->nPortIndex ) {
+        /* For inp_port don't have anything to allocate.*/
+	goto EXIT;
+    }
+    else if ( nPortIndex == pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortFormat->nPortIndex  ) {
+        OMX_MALLOC(pUalgOutParams, sizeof(JPEGENC_UALGOutputParams) + 256);
+        pTemp = (OMX_U8*)pUalgOutParams;
+        pTemp += 128;
+        pUalgOutParams = pTemp;
+        (pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[nBufferCount]->pUalgParam) = (JPEGENC_UALGOutputParams *)(pUalgOutParams);
+    }
+    else {
+        eError = OMX_ErrorBadPortIndex;
+        goto EXIT;
+    }
+
+EXIT:
+    return eError;
+}  /* End of Allocate_DSPResources_JPEGDec */
 
