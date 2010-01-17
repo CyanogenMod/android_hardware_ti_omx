@@ -597,6 +597,14 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     strcpy ((char *)lcml_dsp->NodeInfo.AllUUIDs[2].DllName,USN_DLL);
     lcml_dsp->NodeInfo.AllUUIDs[2].eDllType = DLL_DEPENDENT;
 
+    lcml_dsp->NodeInfo.AllUUIDs[3].uuid = (struct DSP_UUID *)&CONVERSIONS_UUID;
+    strcpy ((char *)lcml_dsp->NodeInfo.AllUUIDs[3].DllName,CONVERSIONS_DLL);
+    lcml_dsp->NodeInfo.AllUUIDs[3].eDllType = DLL_DEPENDENT;
+
+    lcml_dsp->NodeInfo.AllUUIDs[4].uuid =(struct DSP_UUID *) &RINGIO_UUID;
+    strcpy ((char *)lcml_dsp->NodeInfo.AllUUIDs[4].DllName,RINGIO_DLL);
+    lcml_dsp->NodeInfo.AllUUIDs[4].eDllType = DLL_DEPENDENT;
+
     lcml_dsp->DeviceInfo.TypeofDevice = 0;
     lcml_dsp->SegID = 0;
     lcml_dsp->Timeout = -1;
@@ -1687,6 +1695,7 @@ OMX_ERRORTYPE HandleFreeOutputBufferFromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pC
     ptJPGDecUALGOutBufParam->ulOutNumFrame = 1;
     ptJPGDecUALGOutBufParam->ulOutFrameAlign = 4;
     ptJPGDecUALGOutBufParam->ulOutFrameSize = pBuffHead->nAllocLen;
+    ptJPGDecUALGOutBufParam->lErrorCode = 0;
 
     pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_DSP;
 
@@ -1770,8 +1779,8 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
     ptJPGDecUALGInBufParam->ulXOrg = (int)pComponentPrivate->pSubRegionDecode->nXOrg;
     ptJPGDecUALGInBufParam->ulYOrg = (int)pComponentPrivate->pSubRegionDecode->nYOrg;
     ptJPGDecUALGInBufParam->ulXLength = (int)pComponentPrivate->pSubRegionDecode->nXLength;
-    ptJPGDecUALGInBufParam->ulYLength = (int)pComponentPrivate->pSubRegionDecode->nYLength;
-    
+    ptJPGDecUALGInBufParam->ulYLength = (int)pComponentPrivate->pSubRegionDecode->nYLength; 
+    ptJPGDecUALGInBufParam->ulTotalsize = 0; /*SLIDE_MODE (int)pComponentPrivate->pSectionDecode->ImageSize;  */
 
     if (pComponentPrivate->nOutputColorFormat == OMX_COLOR_FormatCbYCrY) {
         ptJPGDecUALGInBufParam->forceChromaFormat= 4;
@@ -1817,6 +1826,7 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
     OMX_PRDSP0(pComponentPrivate->dbg, "ulXLenght\t= %lu\n", ptJPGDecUALGInBufParam->ulYLength);
     OMX_PRBUFFER0(pComponentPrivate->dbg, "pBuffHead->nFlags\t= %lu\n", pBuffHead->nFlags);
     OMX_PRBUFFER0(pComponentPrivate->dbg, "Queue INPUT bufheader %p\n", pBuffHead);
+    OMX_PRBUFFER0(pComponentPrivate->dbg, "TotalSize_Image =  %lu\n", ptJPGDecUALGInBufParam->ulTotalsize);
     eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                               EMMCodecInputBuffer,
                               pBuffHead->pBuffer,
