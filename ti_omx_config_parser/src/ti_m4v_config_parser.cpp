@@ -915,7 +915,7 @@ OSCL_EXPORT_REF int16 iGetAVCConfigInfo(uint8 *buffer, int32 length, int32 *widt
 
 void scaling_list_h264(int32 i4_list_size, mp4StreamType *psBits)
 {
-    int32 i4_j, i4_delta_scale, i4_lastScale = 8, i4_nextScale =8;
+    int32 i4_j, i4_delta_scale=0, i4_lastScale = 8, i4_nextScale =8;
 
 
     for(i4_j = 0; i4_j < i4_list_size; i4_j++)
