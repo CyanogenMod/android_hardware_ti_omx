@@ -137,6 +137,8 @@ void LinkedList_Destroy(LinkedList *LinkedList);
  *     M A C R O S
  */
 
+#define JPEGENC_ISFLAGSET(x,y)         (((x)>>(y)) & 0x1)
+
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)   \
     memset((_s_), 0x0, sizeof(_name_)); \
     (_s_)->nSize = sizeof(_name_);      \
@@ -278,8 +280,8 @@ typedef struct IDMJPGE_TIGEM_DynamicParams {
 #define JPGENC_SNTEST_INSTRMID         0
 #define JPGENC_SNTEST_OUTSTRMID        1
 #define JPGENC_SNTEST_ARGLENGTH        20
-#define JPGENC_SNTEST_INBUFCNT         4
-#define JPGENC_SNTEST_OUTBUFCNT        4
+#define JPGENC_SNTEST_INBUFCNT         1
+#define JPGENC_SNTEST_OUTBUFCNT        1
 #define JPGENC_SNTEST_MAX_HEIGHT       4096
 #define JPGENC_SNTEST_MAX_WIDTH        4096
 #define JPGENC_SNTEST_PROG_FLAG        1
@@ -288,6 +290,12 @@ typedef struct IDMJPGE_TIGEM_DynamicParams {
 #define JPEGE_DSPSTOP       0x01
 #define JPEGE_BUFFERBACK    0x02
 #define JPEGE_IDLEREADY     ( JPEGE_DSPSTOP | JPEGE_BUFFERBACK )
+
+typedef enum {
+    JPEGENC_XDM_APPLIEDCONCEALMENT=9, JPEGENC_XDM_INSUFFICIENTDATA=10, JPEGENC_XDM_CORRUPTEDDATA=11,
+    JPEGENC_XDM_CORRUPTEDHEADER=12, JPEGENC_XDM_UNSUPPORTEDINPUT=13, JPEGENC_XDM_UNSUPPORTEDPARAM=14,
+    JPEGENC_XDM_FATALERROR=15
+} JPEGENC_XDM_ErrorBit;
 
 typedef enum Content_Type
 {
@@ -350,6 +358,7 @@ typedef struct JPEGENC_BUFFER_PRIVATE {
     JPEGENC_BUFFER_OWNER eBufferOwner;
     OMX_BOOL bAllocByComponent;
     OMX_BOOL bReadFromPipe;
+    OMX_PTR pUalgParam
 } JPEGENC_BUFFER_PRIVATE;
 
 typedef struct JPEG_PORT_TYPE   {
@@ -369,6 +378,46 @@ typedef struct JPEGE_INPUT_PARAMS {
     OMX_U32 *pInParams;
     OMX_U32 size;
 } JPEGE_INPUT_PARAMS;
+
+typedef struct JPEGENC_UALGOutputParams{
+    OMX_U32 lErrorCode;
+
+#ifdef __JPEG_OMX_PPLIB_ENABLED__
+    OMX_U32 size;                            /**< Size of the structure in bytes. */
+    OMX_U32 ulInWidth;                       /**< Input picture buffer width.  This value should be the same as the original decoded output width of the WMV9/VC1 stream. */
+    OMX_U32 ulInHeight;                      /**< Input picture buffer height.  This value should be the same as the original decoded output height of the WMV9/VC1 stream. */
+    OMX_U32 ulFrameEnabled[2];               /**< It is possible to run the VGPOP twice with two separate sets of configuration parameters using PPLIB.  This parameter specifies whether each set of configuration parameters is to be used when running PPLIB for this particular frame. */
+    OMX_U32 ulEnableYUVOutput[2];            /**< Flag to enable YUV output */
+    OMX_U32 ulEnableRGBOutput[2];            /**< Flag to enable RGB output. */
+    OMX_U32 ulFrameInputStartYOffset[2];     /**< Offset from the start of the input buffer where the input Y data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be 0. */
+    OMX_U32 ulFrameInputStartCOffset[2];     /**< Offset from the start of the input buffer where the input CrCb data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be the same as (input width * input height) + Y offset. */
+    OMX_U32 ulFrameOutputStartYOffset[2];    /**< Offset from the start of the output buffer where the output Y data should be placed.  You can specify a different offset for each set of VGPOP parameters. */
+    OMX_U32 ulFrameOutputStartCOffset[2];    /**< Offset from the start of the output buffer where the output CrCb data should be placed.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be the same as (output width * output height) + Y offset. */
+    OMX_U32 ulFrameOutputRGBOffset[2];       /**< Offset from the start of the output buffer where the output RGB data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be 0. */
+    OMX_U32 ulFrameOutputHeight[2];          /**< Output picture buffer height for each VGPOP parameter set.*/
+    OMX_U32 ulFrameOutputWidth[2];           /**< Output picture buffer width for each VGPOP parameter set. */
+    OMX_U32 ulFrameContrast[2];              /**< Contrast Method for each VGPOP parameter set */
+    OMX_U32 ulFrameInXStart[2];              /**< Horizontal cropping start position in the input buffer.  Set to 0 if no cropping is desired. */
+    OMX_U32 ulFrameInYStart[2];              /**< Vertical cropping start position in the input buffer.  Set to 0 if no cropping is desired.*/
+    OMX_U32 ulFrameInXSize[2];               /**< Horizontal cropping width.  Set to 0 if no cropping is desired */
+    OMX_U32 ulFrameInYSize[2];               /**< Vertical cropping height.  Set to 0 if no cropping is desired.*/
+    OMX_U32 ulFrameZoomFactor[2];            /**< Zooming ratio value, where ulZoomFactor = (Desired Zoom Ratio * 1024).  Set to 1024 if no zooming is desired.  Set above 1024 to enable zooming. */
+    OMX_U32 ulFrameZoomLimit[2];             /**< Zooming ratio limit, where ulZoomLimit=(Desired Zoom Limit * 1024).*/
+    OMX_U32 ulFrameZoomSpeed[2];             /**< Speed of ratio change.  Set to 0 to disable zoom variation.  The variation speed is proportional to the value while the direction (in/out) is given by the sign.*/
+    OMX_U32 ulFrameEnableLightChroma[2];     /**< Light chrominance process.  */
+    OMX_U32 ulFrameEnableAspectRatioLock[2]; /**< Locked H/V ratio */
+    OMX_U32 ulFrameEnableMirroring[2];       /**< To mirror the picture: */
+    OMX_U32 ulFrameRGBRotation[2];           /**< Rotation to apply to RGB Output. May be set to 0, 90, 180 or 270.*/
+    OMX_U32 ulFrameYUVRotation[2];           /**< Rotation to apply to YUV Output. May be set to 0, 90, 180, or 270*/
+    OMX_U32 ulFrameIORange[2];               /**< IO Video Range.   */
+    OMX_U32 ulFrameEnableDithering[2];       /**< Dithering Enable */
+    OMX_U32 ulFrameOutputPitch[2];           /**< Enable an output pitch */
+    OMX_U32 ulAlphaRGB[2];                   /**< This is the default alpha values for ARGB32 or RGBA32. */
+    OMX_U32 ulIsFrameGenerated[2];           /**< Flag to notify the user if a frame has been generated */
+    OMX_U32 ulYUVFrameSize[2];               /**< YUV output size in bytes */
+    OMX_U32 ulRGBFrameSize[2];               /**< RGB output size in bytes. */
+#endif
+} JPEGENC_UALGOutputParams;
 
 typedef struct _JPEGENC_CUSTOM_PARAM_DEFINITION {
     OMX_U8 cCustomParamName[128];
@@ -500,44 +549,6 @@ OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp);
 #define JPEGENC_PPLIB_DYNPARM_SIZE 252
 OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate,OMX_U32 *ptInputParam);
 
-
-
-typedef struct _PPLIB_UALGRunTimeParam_t
-{
-    OMX_U32 size;                            /**< Size of the structure in bytes. */
-    OMX_U32 ulInWidth;                       /**< Input picture buffer width.  This value should be the same as the original decoded output width of the WMV9/VC1 stream. */
-    OMX_U32 ulInHeight;                      /**< Input picture buffer height.  This value should be the same as the original decoded output height of the WMV9/VC1 stream. */
-    OMX_U32 ulFrameEnabled[2];               /**< It is possible to run the VGPOP twice with two separate sets of configuration parameters using PPLIB.  This parameter specifies whether each set of configuration parameters is to be used when running PPLIB for this particular frame. */
-    OMX_U32 ulEnableYUVOutput[2];            /**< Flag to enable YUV output */
-    OMX_U32 ulEnableRGBOutput[2];            /**< Flag to enable RGB output. */
-    OMX_U32 ulFrameInputStartYOffset[2];     /**< Offset from the start of the input buffer where the input Y data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be 0. */
-    OMX_U32 ulFrameInputStartCOffset[2];     /**< Offset from the start of the input buffer where the input CrCb data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be the same as (input width * input height) + Y offset. */
-    OMX_U32 ulFrameOutputStartYOffset[2];    /**< Offset from the start of the output buffer where the output Y data should be placed.  You can specify a different offset for each set of VGPOP parameters. */
-    OMX_U32 ulFrameOutputStartCOffset[2];    /**< Offset from the start of the output buffer where the output CrCb data should be placed.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be the same as (output width * output height) + Y offset. */
-    OMX_U32 ulFrameOutputRGBOffset[2];       /**< Offset from the start of the output buffer where the output RGB data is located.  You can specify a different offset for each set of VGPOP parameters.  In most cases, this will be 0. */
-    OMX_U32 ulFrameOutputHeight[2];          /**< Output picture buffer height for each VGPOP parameter set.*/
-    OMX_U32 ulFrameOutputWidth[2];           /**< Output picture buffer width for each VGPOP parameter set. */
-    OMX_U32 ulFrameContrast[2];              /**< Contrast Method for each VGPOP parameter set */
-    OMX_U32 ulFrameInXStart[2];              /**< Horizontal cropping start position in the input buffer.  Set to 0 if no cropping is desired. */
-    OMX_U32 ulFrameInYStart[2];              /**< Vertical cropping start position in the input buffer.  Set to 0 if no cropping is desired.*/
-    OMX_U32 ulFrameInXSize[2];               /**< Horizontal cropping width.  Set to 0 if no cropping is desired */
-    OMX_U32 ulFrameInYSize[2];               /**< Vertical cropping height.  Set to 0 if no cropping is desired.*/
-    OMX_U32 ulFrameZoomFactor[2];            /**< Zooming ratio value, where ulZoomFactor = (Desired Zoom Ratio * 1024).  Set to 1024 if no zooming is desired.  Set above 1024 to enable zooming. */
-    OMX_U32 ulFrameZoomLimit[2];             /**< Zooming ratio limit, where ulZoomLimit=(Desired Zoom Limit * 1024).*/
-    OMX_U32 ulFrameZoomSpeed[2];             /**< Speed of ratio change.  Set to 0 to disable zoom variation.  The variation speed is proportional to the value while the direction (in/out) is given by the sign.*/
-    OMX_U32 ulFrameEnableLightChroma[2];     /**< Light chrominance process.  */
-    OMX_U32 ulFrameEnableAspectRatioLock[2]; /**< Locked H/V ratio */
-    OMX_U32 ulFrameEnableMirroring[2];       /**< To mirror the picture: */
-    OMX_U32 ulFrameRGBRotation[2];           /**< Rotation to apply to RGB Output. May be set to 0, 90, 180 or 270.*/
-    OMX_U32 ulFrameYUVRotation[2];           /**< Rotation to apply to YUV Output. May be set to 0, 90, 180, or 270*/
-    OMX_U32 ulFrameIORange[2];               /**< IO Video Range.   */
-    OMX_U32 ulFrameEnableDithering[2];       /**< Dithering Enable */
-    OMX_U32 ulFrameOutputPitch[2];           /**< Enable an output pitch */
-    OMX_U32 ulAlphaRGB[2];                   /**< This is the default alpha values for ARGB32 or RGBA32. */
-    OMX_U32 ulIsFrameGenerated[2];           /**< Flag to notify the user if a frame has been generated */
-    OMX_U32 ulYUVFrameSize[2];               /**< YUV output size in bytes */
-    OMX_U32 ulRGBFrameSize[2];               /**< RGB output size in bytes. */
-} PPLIB_UALGRunTimeParam_t;
 
 
 

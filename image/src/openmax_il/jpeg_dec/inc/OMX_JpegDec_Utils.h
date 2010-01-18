@@ -268,16 +268,19 @@ do {					       \
 #define NUM_OF_BUFFERS 4
 #define NUM_OF_PORTS 2
 
-
-#define OMX_JPEGDEC_NUM_DLLS (3)
+#define OMX_JPEGDEC_NUM_DLLS (5)
 #ifdef UNDER_CE
     #define JPEG_DEC_NODE_DLL "/windows/jpegdec_sn.dll64P"
     #define JPEG_COMMON_DLL "/windows/usn.dll64P"
     #define USN_DLL "/windows/usn.dll64P"
+    #define RINGIO_DLL "/windows/ringio.dll64P"
+    #define CONVERSIONS_DLL "/windows/conversions.dll64P"
 #else
 #define JPEG_DEC_NODE_DLL "jpegdec_sn.dll64P"
 #define JPEG_COMMON_DLL "usn.dll64P"
 #define USN_DLL "usn.dll64P"
+#define RINGIO_DLL "ringio.dll64P"
+#define CONVERSIONS_DLL "conversions.dll64P"
 #endif
 
 #define JPGDEC_SNTEST_STRMCNT       2
@@ -286,8 +289,8 @@ do {					       \
 #define JPGDEC_SNTEST_MAX_HEIGHT    3000
 #define JPGDEC_SNTEST_MAX_WIDTH     4000
 #define JPGDEC_SNTEST_PROG_FLAG     1
-#define JPGDEC_SNTEST_INBUFCNT      4
-#define JPGDEC_SNTEST_OUTBUFCNT     4
+#define JPGDEC_SNTEST_INBUFCNT      1
+#define JPGDEC_SNTEST_OUTBUFCNT     1
 
 #define OMX_NOPORT 0xFFFFFFFE
 
@@ -312,6 +315,19 @@ static const struct DSP_UUID USN_UUID = {
         0xCF, 0x80, 0x57, 0x73, 0x05, 0x41
     }
 };
+
+static const struct DSP_UUID RINGIO_UUID = {
+        0x47698bfb, 0xa7ee, 0x417e, 0xa6, 0x7a, {
+        0x41, 0xc0, 0x27, 0x9e, 0xb8, 0x05
+    }
+};
+
+static const struct DSP_UUID CONVERSIONS_UUID = {
+        0x722dd0da, 0xf532, 0x4238, 0xb8, 0x46, {
+        0xab, 0xff, 0x5d, 0xa4, 0xba, 0x02
+    }
+};
+
 
 typedef enum JPEGDEC_COMP_PORT_TYPE
 {
@@ -371,6 +387,7 @@ typedef struct OMX_CUSTOM_IMAGE_DECODE_SECTION
     OMX_U32 nAU;
     OMX_BOOL bSectionsInput;
     OMX_BOOL bSectionsOutput;
+    OMX_U32 ImageSize;
 }OMX_CUSTOM_IMAGE_DECODE_SECTION;
 
 typedef struct OMX_CUSTOM_IMAGE_DECODE_SUBREGION
@@ -505,6 +522,7 @@ typedef struct
     OMX_U32 ulXLength;      /*Sectional decoding: X lenght*/
     OMX_U32 ulYLength;      /*Sectional decoding: Y lenght*/
     OMX_U32 ulAlphaRGB;   /* Alpha RGB value, it only takes values from 0 to 255 */
+    OMX_U32 ulTotalsize;	/*Total size of the image when input slice mode is activated */
 }JPEGDEC_UAlgInBufParamStruct;
 
 typedef struct
@@ -529,6 +547,7 @@ typedef struct
     OMX_U32 ulbytesConsumed;    /* Total number of bytes consumed*/
     OMX_U32 ulcurrentAU;        /* current access unit number */
     OMX_U32 ulcurrentScan;      /*current scan number*/
+    long int lErrorCode; 	/* Error propagation from DSP  */
 }JPEGDEC_UAlgOutBufParamStruct;
 
 typedef enum OMX_INDEXIMAGETYPE
