@@ -309,6 +309,7 @@ typedef struct H264VE_GPP_SN_UALGOutputParams {
     OMX_U32   ulNALUnitsSizes[240];
     OMX_U32   ulFrameIndex;         /*Gives the number of the input frame wich NAL unit belongs*/
     OMX_U32   ulNALUnitIndex;       /*Number of current NAL unit inside the frame*/
+    OMX_S32   lErrorCode;           /* Error code for robustness */
 } H264VE_GPP_SN_UALGOutputParams;
 
 /* MPEG4/H263 Encoder DSP s/n create phase arguments */
@@ -388,7 +389,7 @@ typedef struct MP4VE_GPP_SN_UALGInputParams {
 /* MPEG4/H263 Encoder DSP s/n run-time output parameters */
 typedef struct MP4VE_GPP_SN_UALGOutputParams {
     unsigned int   ulBitstreamSize;
-    unsigned int  cFrameType;/*changed from unsigned char  as SN did*/
+    signed   int   cFrameType;/*changed from unsigned char  as SN did*/
     unsigned int   mvDataSize;
     unsigned int   numPackets;
     #ifdef MODE_3410
@@ -398,6 +399,8 @@ typedef struct MP4VE_GPP_SN_UALGOutputParams {
     unsigned char   MVData[12960];
     unsigned int    ResyncData[1620];
     #endif
+    unsigned int    ulFrameIndex;
+    signed int      lErrorCode;
 } MP4VE_GPP_SN_UALGOutputParams;
 
 /*
