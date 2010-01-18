@@ -167,7 +167,7 @@ int get_omap_version()
 {
     int cpu_variant = 0;
     int dsp_max_freq = 0;
-    
+
     FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
     if (fp == NULL) RAM_DPRINT("open file failed\n");
     fscanf(fp, "%d",&dsp_max_freq);
@@ -183,12 +183,16 @@ int get_omap_version()
         /* 3440 has 6 OPPs */
         cpu_variant = OMAP3440_CPU;
     }
+    else if (dsp_max_freq == vdd1_dsp_mhz_3630[OPERATING_POINT_4]){
+        /* 3630 has 4 OPPs */
+        cpu_variant = OMAP3630_CPU;
+    }
     else {
         cpu_variant = OMAP_NOT_SUPPORTED;
     }
 
     return cpu_variant;
-    
+
 }
 
 int rm_get_vdd1_constraint()
@@ -218,7 +222,11 @@ void rm_request_boost(int level)
                 break;
                 
             case OMAP3440_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3440[ sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3420[0]) ];
+                boostConstraintMHz = vdd1_dsp_mhz_3440[ sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) ];
+                break;
+
+            case OMAP3630_CPU:
+                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) ];
                 break;
                 
             case OMAP3430_CPU:
@@ -238,6 +246,10 @@ void rm_request_boost(int level)
                 
             case OMAP3440_CPU:
                 boostConstraintMHz = vdd1_dsp_mhz_3440[sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) -1];
+                break;
+
+            case OMAP3630_CPU:
+                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -1];
                 break;
                 
             case OMAP3430_CPU:
