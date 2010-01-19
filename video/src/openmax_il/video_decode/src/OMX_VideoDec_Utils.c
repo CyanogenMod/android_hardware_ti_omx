@@ -8138,7 +8138,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     if ((!pComponentPrivate->pModLCML)&&
         ((error = dlerror()) != NULL)) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-        fputs(dlerror(), stderr);
+        fputs(error, stderr);
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
