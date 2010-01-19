@@ -1175,11 +1175,14 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 
 #endif
 
-                pComponentPrivate->curState = OMX_StateExecuting;
- 
+pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing --- */
+                
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySteadyState);
 #endif
+
+
+
                 /*Send state change notificaiton to Application */
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                        pHandle->pApplicationPrivate,
@@ -1206,6 +1209,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef __PERF_INSTRUMENTATION__
                             PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
 #endif
+
                             pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                                    pHandle->pApplicationPrivate,
                                                                    OMX_EventCmdComplete, 
@@ -3303,4 +3307,3 @@ void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 }
 #endif
-

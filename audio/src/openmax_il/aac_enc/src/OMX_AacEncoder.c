@@ -345,10 +345,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     /* initialize role name */
     strcpy((char *)pComponentPrivate->componentRole.cRole, "audio_encoder.aac");
     
+
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
-            
+
     pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
     pComponentPrivate->codecStop_waitingsignal = 0;
@@ -356,20 +357,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
     pComponentPrivate->codecFlush_waitingsignal = 0;
-            
+
     pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
     pComponentPrivate->InLoaded_readytoidle = 0;
-    
+
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
-
-    pthread_mutex_init(&pComponentPrivate->mutexStateChangeRequest, NULL);
-    pthread_cond_init (&pComponentPrivate->StateChangeCondition, NULL);
-    pComponentPrivate->nPendingStateChangeRequests = 0;
+    
     pComponentPrivate->bMutexInit = 1;
-        
+
     /* port definition, input port */
     OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_PRCOMM2(pComponentPrivate->dbg, "AACENC: pPortDef_ip %p \n",pPortDef_ip );
@@ -457,12 +455,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
 
 EXIT:
-    if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
+   if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
 
         if (pComponentPrivate->bMutexInit) {
             OMX_PRINT1(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
-            pthread_mutex_destroy(&pComponentPrivate->mutexStateChangeRequest);
-            pthread_cond_destroy(&pComponentPrivate->StateChangeCondition);
 
             pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
             pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -473,7 +469,7 @@ EXIT:
             pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
             pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
             pComponentPrivate->bMutexInit = 0;
-	}
+        }
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Freeing memory\n", __LINE__);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
@@ -657,37 +653,37 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
             {
                 pCompPrivate->bLoadedCommandPending = OMX_TRUE;
             }
-       
-            OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Inside SendCommand\n",__LINE__);
-            OMX_PRSTATE1(pCompPrivate->dbg, "%d :: AACENC: pCompPrivate->curState = %d\n",__LINE__,pCompPrivate->curState);
-            if(pCompPrivate->curState == OMX_StateLoaded)
-            {
-                if((nParam == OMX_StateExecuting) || (nParam == OMX_StatePause))
+        
+                OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Inside SendCommand\n",__LINE__);
+                OMX_PRSTATE1(pCompPrivate->dbg, "%d :: AACENC: pCompPrivate->curState = %d\n",__LINE__,pCompPrivate->curState);
+                if(pCompPrivate->curState == OMX_StateLoaded) 
                 {
-                    pCompPrivate->cbInfo.EventHandler(pHandle,
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorIncorrectStateTransition,
-                                                      OMX_TI_ErrorMinor,
-                                                      NULL);
-                    goto EXIT;
-                }
+                    if((nParam == OMX_StateExecuting) || (nParam == OMX_StatePause)) 
+                    {
+                        pCompPrivate->cbInfo.EventHandler(pHandle,
+                                                          pHandle->pApplicationPrivate,
+                                                          OMX_EventError,
+                                                          OMX_ErrorIncorrectStateTransition,
+                                                          OMX_TI_ErrorMinor,
+                                                          NULL);
+                        goto EXIT;
+                    }
 
-                if(nParam == OMX_StateInvalid)
-                {
-                    OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Inside SendCommand\n",__LINE__);
-                    OMX_PRSTATE2(pCompPrivate->dbg, "AACENC: State changed to OMX_StateInvalid Line %d\n",__LINE__);
-                    pCompPrivate->curState = OMX_StateInvalid;
-                    pCompPrivate->cbInfo.EventHandler(pHandle,
-                                                      pHandle->pApplicationPrivate,
-                                                      OMX_EventError,
-                                                      OMX_ErrorInvalidState,
-                                                      OMX_TI_ErrorMinor,
-                                                      NULL);
-                    goto EXIT;
+                    if(nParam == OMX_StateInvalid) 
+                    {
+                        OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Inside SendCommand\n",__LINE__);
+                        OMX_PRSTATE2(pCompPrivate->dbg, "AACENC: State changed to OMX_StateInvalid Line %d\n",__LINE__);
+                        pCompPrivate->curState = OMX_StateInvalid;
+                        pCompPrivate->cbInfo.EventHandler(pHandle,
+                                                          pHandle->pApplicationPrivate,
+                                                          OMX_EventError,
+                                                          OMX_ErrorInvalidState,
+                                                          OMX_TI_ErrorMinor,
+                                                          NULL);
+                        goto EXIT;
+                    }
                 }
-            }
-            break;
+                break;
 
         case OMX_CommandFlush:
                 OMX_PRINT1(pCompPrivate->dbg, "%d :: IAACENC: nside SendCommand\n",__LINE__);
@@ -1711,6 +1707,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
     OMX_PRBUFFER2(dbg, "%d :: AACENC: After AACENC_FreeCompResources\n",__LINE__);
     OMX_PRBUFFER2(dbg, "%d :: AACENC: [FREE] %p\n",__LINE__,pComponentPrivate);
+
     if (pComponentPrivate->sDeviceString != NULL) 
     {
         OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
