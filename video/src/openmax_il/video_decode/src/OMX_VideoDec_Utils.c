@@ -2478,13 +2478,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL &&
                     pComponentPrivate->bLCMLHalted != OMX_TRUE){
-                    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                        message[1] = 4;
-                    }
-                    else {
-                        message[1] = 100;
-                    }
                     message[0] = 0x400;
+                    message[1] = 100;
                     message[2] = 0;
                     p = (void*)&message;
                     VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
@@ -2659,25 +2654,25 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Start;
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC &&
                     pComponentPrivate->eState == OMX_StateIdle) {
-                    H264_Iualg_Cmd_SetStatus* pDynParams = NULL;
+                    H264VDEC_UALGDynamicParams* pDynParams = NULL;
                     char* pTmp = NULL;
                     OMX_U32 cmdValues[3] = {0, 0, 0};
 
                     VIDDEC_Load_Defaults(pComponentPrivate, VIDDEC_INIT_IDLEEXECUTING);
                     OMX_PRDSP2(pComponentPrivate->dbg, "Initializing DSP for h264 eCompressionFormat 0x%x\n",
                     pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
-                    OMX_MALLOC_STRUCT_SIZED(pDynParams, H264_Iualg_Cmd_SetStatus, sizeof(H264_Iualg_Cmd_SetStatus) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
+                    OMX_MALLOC_STRUCT_SIZED(pDynParams, H264VDEC_UALGDynamicParams, sizeof(H264VDEC_UALGDynamicParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
                     if (pDynParams == NULL) {
                        OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                        eError = OMX_ErrorInsufficientResources;
                        goto EXIT;
                    }
-                    memset(pDynParams, 0, sizeof(H264_Iualg_Cmd_SetStatus) + VIDDEC_PADDING_FULL);
+                    memset(pDynParams, 0, sizeof(H264VDEC_UALGDynamicParams) + VIDDEC_PADDING_FULL);
                     pTmp = (char*)pDynParams;
                     pTmp += VIDDEC_PADDING_HALF;
-                    pDynParams = (H264_Iualg_Cmd_SetStatus*)pTmp;
+                    pDynParams = (H264VDEC_UALGDynamicParams*)pTmp;
 #ifdef VIDDEC_SN_R8_14
-                    pDynParams->size = sizeof(H264_Iualg_Cmd_SetStatus);
+                    pDynParams->size = sizeof(H264VDEC_UALGDynamicParams);
 #endif
                     pDynParams->ulDecodeHeader = 1;
                     pDynParams->ulDisplayWidth = 0;
@@ -2686,7 +2681,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                     cmdValues[0] = IUALG_CMD_SETSTATUS;
                     cmdValues[1] = (OMX_U32)(pDynParams);
-                    cmdValues[2] = sizeof(H264_Iualg_Cmd_SetStatus);
+                    cmdValues[2] = sizeof(H264VDEC_UALGDynamicParams);
 
                     p = (void*)&cmdValues;
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
@@ -2700,14 +2695,14 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         if (eError != OMX_ErrorNone) {
                             eError = OMX_ErrorHardware;
                             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-                            OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264_Iualg_Cmd_SetStatus);
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264VDEC_UALGDynamicParams);
                             break;
                         }
                         VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
                         VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                     }
 
-                    OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264_Iualg_Cmd_SetStatus);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264VDEC_UALGDynamicParams);
 
                     if (eError != OMX_ErrorNone) {
                         OMX_PRDSP4(pComponentPrivate->dbg, "Codec AlgCtrl 0x%x\n",eError);
@@ -5038,6 +5033,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     }
                     size_dsp = sizeof(WMV9DEC_UALGInputParam);
                     ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = ++pComponentPrivate->frameCounter;
+                    ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                     pUalgInpParams = pComponentPrivate->pUalgParams;
                     /* Only WMV need to send EMMCodecInputBufferMapBufLen buffers */
                     eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
@@ -5320,8 +5316,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         if(pBuffHead->nFilledLen != 0) { /*TODO: Validate this lagic*/
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
-                    ((H264VDEC_UALGInputParam *)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
+                ((H264VDEC_UALGInputParam *)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
+                ((H264VDEC_UALGInputParam *)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
 
                 /* prepare buffer and input parameter if H264BitStreamFormat = 1 */
                 /*     the orignial buffer is: NAL1_Len NAL1 NAL2_Len NAL2...*/
@@ -5382,39 +5378,32 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         /* update with the new data size*/
                         pBuffHead->nFilledLen = data_pos;
                     }
-                }
                 size_dsp = sizeof(H264VDEC_UALGInputParam);
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((WMV9DEC_UALGInputParam*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
+                    ((WMV9DEC_UALGInputParam*)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 size_dsp = sizeof(WMV9DEC_UALGInputParam);
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                      pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
+                    ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->uRingIOBlocksize = 0;
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 2;
-                }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP2VDEC_UALGInputParam*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
                 size_dsp = sizeof(MP2VDEC_UALGInputParam);
             }
 #ifdef VIDDEC_SPARK_CODE
             else if (VIDDEC_SPARKCHECK) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((SPARKVD_GPP_SN_UALGInputParams*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
                 ((SPARKVD_GPP_SN_UALGInputParams*)pUalgInpParams)->nIsSparkInput = 1;
                 size_dsp = sizeof(SPARKVD_GPP_SN_UALGInputParams);
             }
@@ -5535,6 +5524,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(H264VDEC_UALGInputParam);
                 ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount = -1;
+                ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount);
             }
@@ -5551,6 +5541,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(WMV9DEC_UALGInputParam);
                 ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
+                ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
             }
@@ -5568,6 +5559,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = ++pComponentPrivate->frameCounter;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
                 /* If EOS is sent, set nPerformMode to 0 (this handle thumbnail case)*/
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
@@ -5695,8 +5687,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         if(pBuffHead->nFilledLen != 0) {
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((H264VDEC_UALGInputParam *)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
+                    ((H264VDEC_UALGInputParam *)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                     if (pComponentPrivate->H264BitStreamFormat) {
                         H264VDEC_UALGInputParam *pParam;
 #ifndef ANDROID
@@ -5916,14 +5908,12 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         }/* end else */
 #endif
                     }/* end bitstrm fmt */
-                }/* end nFlags & EOS */
                 size_dsp = sizeof(H264VDEC_UALGInputParam);
             }/* end if AVC */
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((WMV9DEC_UALGInputParam*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
+                    ((WMV9DEC_UALGInputParam*)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 size_dsp = sizeof(WMV9DEC_UALGInputParam);
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
@@ -5932,24 +5922,19 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->uRingIOBlocksize = 0;
                 ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nPerformMode = 2;
 
-               if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->nBuffCount = ++pComponentPrivate->frameCounter;
-                }
+                    ((MP4VD_GPP_SN_UALGInputParams*)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
             }
             else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((MP2VDEC_UALGInputParam*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
                 size_dsp = sizeof(MP2VDEC_UALGInputParam);
             }
 #ifdef VIDDEC_SPARK_CODE
             else if (VIDDEC_SPARKCHECK) {
                 pUalgInpParams = pBufferPrivate->pUalgParam;
-                if ((pBuffHead->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                     ((SPARKVD_GPP_SN_UALGInputParams*)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
-                }
                 ((SPARKVD_GPP_SN_UALGInputParams*)pUalgInpParams)->nIsSparkInput = 1;
                 size_dsp = sizeof(SPARKVD_GPP_SN_UALGInputParams);
             }
@@ -6124,7 +6109,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
     if(pBuffHead != NULL) {
         OMX_S32 nErrorCode = 0;
         OMX_S32 nInternalErrorCode = 0;
-        OMX_U32 ulDisplayID = 0;
+        OMX_U32 ulFrameIndex = 0;
         pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
         pBuffHead->nFlags &= ~(OMX_BUFFERFLAG_SYNCFRAME);
         pBuffHead->nFlags &= ~(VIDDEC_BUFFERFLAG_FRAMETYPE_MASK);
@@ -6134,7 +6119,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             H264VDEC_UALGOutputParam* pUalgOutParams = NULL;
             pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
-            ulDisplayID = pUalgOutParams->ulDisplayID;
+            ulFrameIndex = pUalgOutParams->ulFrameIndex;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6154,7 +6139,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             WMV9DEC_UALGOutputParam* pUalgOutParams = NULL;
             pUalgOutParams = (WMV9DEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
-            ulDisplayID = pUalgOutParams->ulDisplayID;
+            ulFrameIndex = pUalgOutParams->ulFrameIndex;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6174,7 +6159,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             MP4VD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
             pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
-            ulDisplayID = pUalgOutParams->ulDisplayID;
+            ulFrameIndex = pUalgOutParams->ulFrameIndex;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6193,7 +6178,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             MP2VDEC_UALGOutputParam* pUalgOutParams = NULL;
             pUalgOutParams = (MP2VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->lErrorCode);
-            ulDisplayID = pUalgOutParams->ulDisplayID;
+            ulFrameIndex = pUalgOutParams->ulDisplayID;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6213,7 +6198,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             SPARKVD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
             pUalgOutParams = (SPARKVD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
-            ulDisplayID = pUalgOutParams->ulDisplayID;
+            ulFrameIndex = pUalgOutParams->ulDisplayID;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6242,42 +6227,42 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Not Recoverable Error Detected in Buffer in buffer %p %lu(int# %lx/%lu) OMX_ErrorStreamCorrupt\n",
-                        pBuffHead, ulDisplayID, (nErrorCode & VIDDEC_BUFFERFLAG_EXTENDERROR_DIRTY), pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, (nErrorCode & VIDDEC_BUFFERFLAG_EXTENDERROR_DIRTY), pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_APPLIEDCONCEALMENT)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Applied Concealment in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_INSUFFICIENTDATA)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Insufficient Data in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_CORRUPTEDDATA)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Data in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_CORRUPTEDHEADER)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Header in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_UNSUPPORTEDINPUT)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Unsupported Input in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_UNSUPPORTEDPARAM)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
                 pBuffHead->nFilledLen = 0;
                 OMX_PRDSP4(pComponentPrivate->dbg, "Unsupported Parameter in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulDisplayID, nInternalErrorCode, pBuffHead->nFilledLen);
+                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
         }
 #ifdef KHRONOS_1_1
@@ -6398,7 +6383,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeDataBuf( VIDDEC_COMPONENT_PRIVATE *pComponentPriv
         eError = OMX_ErrorHardware;
         goto EXIT;
     }
-    eError = IncrementCount (&(pComponentPrivate->nCountInputBFromDsp), &(pComponentPrivate->mutexInputBFromDSP));
+    eError = DecrementCount (&(pComponentPrivate->nCountInputBFromDsp), &(pComponentPrivate->mutexInputBFromDSP));
     if (eError != OMX_ErrorNone) {
         return eError;
     }
@@ -7022,7 +7007,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     }
     pCreatePhaseArgs->ulMaxLevel                = -1;
     pCreatePhaseArgs->ulProcessMode             = pComponentPrivate->ProcessMode;
-    pCreatePhaseArgs->ulPreRollBufConfig        = 0;
+    pCreatePhaseArgs->ulPreRollBufConfig        = 4;
     pCreatePhaseArgs->ulDisplayWidth = 0;
     pCreatePhaseArgs->endArgs                   = END_OF_CR_PHASE_ARGS;
 
@@ -8245,12 +8230,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingWMV) {
-        if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-            message[1] = 4;
-        }
-        else {
-            message[1] = 100;
-        }
+        message[1] = 100;
         message[0] = 0x400;
         message[2] = 0;
         p = (void*)&message;
@@ -8295,24 +8275,24 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC &&
         pComponentPrivate->eState == OMX_StateIdle) {
-        H264_Iualg_Cmd_SetStatus* pDynParams = NULL;
+        H264VDEC_UALGDynamicParams* pDynParams = NULL;
         char* pTmp = NULL;
         OMX_U32 cmdValues[3] = {0, 0, 0};
 
         OMX_PRDSP2(pComponentPrivate->dbg, "Initializing DSP for h264 eCompressionFormat 0x%x\n",
         pComponentPrivate->pInPortDef->format.video.eCompressionFormat);
-        OMX_MALLOC_STRUCT_SIZED(pDynParams, H264_Iualg_Cmd_SetStatus, sizeof(H264_Iualg_Cmd_SetStatus) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
+        OMX_MALLOC_STRUCT_SIZED(pDynParams, H264VDEC_UALGDynamicParams, sizeof(H264VDEC_UALGDynamicParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]);
         if (pDynParams == NULL) {
            OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
            eError = OMX_ErrorInsufficientResources;
            goto EXIT;
        }
-        memset(pDynParams, 0, sizeof(H264_Iualg_Cmd_SetStatus) + VIDDEC_PADDING_FULL);
+        memset(pDynParams, 0, sizeof(H264VDEC_UALGDynamicParams) + VIDDEC_PADDING_FULL);
         pTmp = (char*)pDynParams;
         pTmp += VIDDEC_PADDING_HALF;
-        pDynParams = (H264_Iualg_Cmd_SetStatus*)pTmp;
+        pDynParams = (H264VDEC_UALGDynamicParams*)pTmp;
 #ifdef VIDDEC_SN_R8_14
-        pDynParams->size = sizeof(H264_Iualg_Cmd_SetStatus);
+        pDynParams->size = sizeof(H264VDEC_UALGDynamicParams);
 #endif
         pDynParams->ulDecodeHeader = 1;
         pDynParams->ulDisplayWidth = 0;
@@ -8321,7 +8301,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 
         cmdValues[0] = IUALG_CMD_SETSTATUS;
         cmdValues[1] = (OMX_U32)(pDynParams);
-        cmdValues[2] = sizeof(H264_Iualg_Cmd_SetStatus);
+        cmdValues[2] = sizeof(H264VDEC_UALGDynamicParams);
 
         p = (void*)&cmdValues;
         if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
@@ -8335,13 +8315,13 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             if (eError != OMX_ErrorNone) {
                 eError = OMX_ErrorHardware;
                 VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-                OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264_Iualg_Cmd_SetStatus);
+                OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264VDEC_UALGDynamicParams);
                 goto EXIT;
             }
             VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
         }
-        OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264_Iualg_Cmd_SetStatus);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pDynParams,H264VDEC_UALGDynamicParams);
 
         if (eError != OMX_ErrorNone) {
             OMX_PRDSP4(pComponentPrivate->dbg, "Codec AlgCtrl 0x%x\n",eError);
