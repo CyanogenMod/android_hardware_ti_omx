@@ -158,7 +158,7 @@ int main()
     /* check that running OMAP is supported, if not fallback to stub mode */
     if (get_omap_version() == OMAP_NOT_SUPPORTED){
         stub_mode = 1;
-        RM_DPRINT("OMAP version not supported by RM: falling back to stub mode\n");
+        RM_EPRINT("OMAP version not supported by RM: falling back to stub mode\n");
     }
 
 #ifndef __ENABLE_RMPM_STUB__
@@ -168,7 +168,7 @@ int main()
         eError = InitializeQos();
         if (eError != OMX_ErrorNone)
         {
-            RM_DPRINT ("InitializeQos failed, fallback to stub mode\n");
+            RM_EPRINT ("InitializeQos failed, fallback to stub mode\n");
             stub_mode = 1;
         }
     }
@@ -1131,6 +1131,10 @@ void *RM_CPULoadThread(int pipeToWatch)
             /* 3440 has 6 OPPs */
                 cpu_variant = OMAP3440_CPU;
             }
+            else if (dsp_max_freq == vdd1_dsp_mhz_3630[RM_OPERATING_POINT_4]){
+            /* 3440 has 6 OPPs */
+                cpu_variant = OMAP3630_CPU;
+            }
             fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
             if (fp == NULL) {
                 RM_DPRINT("open file cpuinfo_cur_freq failed\n");
@@ -1241,7 +1245,33 @@ void *RM_CPULoadThread(int pipeToWatch)
                     return NULL;
                 }
             }
-
+            else if (cpu_variant == OMAP3630_CPU){
+                if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_1])
+                {
+                    op = RM_OPERATING_POINT_1;
+                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_1];
+                }
+                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_2])
+                {
+                    op = RM_OPERATING_POINT_2;
+                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_2];
+                }
+                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_3])
+                {
+                    op = RM_OPERATING_POINT_3;
+                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_3];
+                }
+                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_4])
+                {
+                    op = RM_OPERATING_POINT_4;
+                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_4];
+                }
+                else
+                {
+                    RM_DPRINT("Read incorrect frequency from sysfs 3630\n");
+                    return NULL;
+                }
+            }
 #else
             // if DVFS is not available, use opp4 constraints
             if (cpu_variant == OMAP3420_CPU){
@@ -1252,6 +1282,9 @@ void *RM_CPULoadThread(int pipeToWatch)
             }
             else if (cpu_variant == OMAP3440_CPU){
                 maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_4];
+            }
+            else if (cpu_variant == OMAP3630_CPU){
+                maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_3];
             }
 #endif
 
