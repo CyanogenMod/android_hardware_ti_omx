@@ -875,12 +875,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                             OMX_ERROR2(pComponentPrivate->dbg, "%d :: AACENC: OMX_ErrorInsufficientResources\n", __LINE__);
                         }
                         pComponentPrivate->curState = OMX_StateIdle;
-
-                        /* Decrement reference count with signal enabled */
-                        if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                            return OMX_ErrorUndefined;
-                        }
-
                         pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                                pHandle->pApplicationPrivate,
                                                                OMX_EventCmdComplete, 
@@ -889,12 +883,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                NULL);
 #else           
                 pComponentPrivate->curState = OMX_StateIdle;
-
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                     return OMX_ErrorUndefined;
-                }
-
                 pComponentPrivate->cbInfo.EventHandler( pHandle,
                                                         pHandle->pApplicationPrivate,
                                                         OMX_EventCmdComplete,
@@ -979,12 +967,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
             
                         rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_AAC_Encoder_COMPONENT, OMX_StateIdle, 3456, NULL); 
 #endif
-
-                        /* Decrement reference count with signal enabled */
-                        if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                            return OMX_ErrorUndefined;
-                        }
-
                         pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                                pHandle->pApplicationPrivate,
                                                                OMX_EventCmdComplete,
@@ -1198,12 +1180,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySteadyState);
 #endif
-
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                     return OMX_ErrorUndefined;
-                }
-
                 /*Send state change notificaiton to Application */
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                        pHandle->pApplicationPrivate,
@@ -1230,12 +1206,6 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef __PERF_INSTRUMENTATION__
                             PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundaryCleanup);
 #endif
-
-                            /* Decrement reference count with signal enabled */
-                            if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-                                return OMX_ErrorUndefined;
-                            }
-
                             pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                                    pHandle->pApplicationPrivate,
                                                                    OMX_EventCmdComplete, 
@@ -2573,12 +2543,6 @@ pHandle = pComponentPrivate_CC->pHandle;
 
 #endif  
             if (pComponentPrivate_CC->bPreempted == 0) {
-
-                /* Decrement reference count with signal enabled */
-                if(RemoveStateTransition(pComponentPrivate_CC, OMX_TRUE) != OMX_ErrorNone) {
-                      return OMX_ErrorUndefined;
-                }
-
                 pComponentPrivate_CC->cbInfo.EventHandler(pComponentPrivate_CC->pHandle,
                                                        pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                                        OMX_EventCmdComplete,
@@ -2849,6 +2813,7 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
+        dlclose(handle);
         goto EXIT;
     }
     eError = (*fpGetHandle)(&pHandle);
@@ -2995,12 +2960,6 @@ OMX_ERRORTYPE AACENC_TransitionToPause(AACENC_COMPONENT_PRIVATE *pComponentPriva
     if (pComponentPrivate->nOutStandingFillDones <= 0 && pComponentPrivate->nOutStandingEmptyDones <= 0) 
     {
         pComponentPrivate->curState = OMX_StatePause;
-
-        /* Decrement reference count with signal enabled */
-        if(RemoveStateTransition(pComponentPrivate, OMX_TRUE) != OMX_ErrorNone) {
-              return OMX_ErrorUndefined;
-        }
-
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                 pComponentPrivate->pHandle->pApplicationPrivate,
                                                 OMX_EventCmdComplete,
@@ -3345,37 +3304,3 @@ void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 }
 #endif
 
-OMX_ERRORTYPE AddStateTransition(AACENC_COMPONENT_PRIVATE* pComponentPrivate) {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if(pthread_mutex_lock(&pComponentPrivate->mutexStateChangeRequest)) {
-       return OMX_ErrorUndefined;
-    }
-    /* Increment state change request reference count */
-    pComponentPrivate->nPendingStateChangeRequests++;
-
-    if(pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest)) {
-       return OMX_ErrorUndefined;
-    }
-    return eError;
-}
-
-OMX_ERRORTYPE RemoveStateTransition(AACENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BOOL bEnableSignal) {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-     /* Decrement state change request reference count*/
-    if(pthread_mutex_lock(&pComponentPrivate->mutexStateChangeRequest)) {
-       return OMX_ErrorUndefined;
-    }
-    pComponentPrivate->nPendingStateChangeRequests--;
-
-    /* If there are no more pending requests, signal the thread waiting on this*/
-    if(!pComponentPrivate->nPendingStateChangeRequests && bEnableSignal) {
-       pthread_cond_signal(&(pComponentPrivate->StateChangeCondition));
-    }
-    if(pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest)) {
-       return OMX_ErrorUndefined;
-    }
-
-    return eError;
-}

@@ -2378,6 +2378,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...");
         dlclose(handle);
         pHandle = NULL;
+        dlclose(handle);
         goto EXIT;
     }
     

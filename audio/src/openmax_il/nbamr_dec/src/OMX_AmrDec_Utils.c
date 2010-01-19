@@ -3389,13 +3389,13 @@ void SignalIfAllBuffersAreReturned(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
     {
         if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
         {
-            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: bufferReturned_mutex mutex lock error\n",__LINE__);
         }
         pthread_cond_broadcast(&bufferReturned_condition);
-        OMXDBG_PRINT(stderr, PRINT, 1, 0, "Sending pthread signal that OMX has returned all buffers to app"); 
+        OMX_PRINT2(pComponentPrivate->dbg, ":: Sending pthread signal that OMX has returned all buffers to app\n"); 
         if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
         {
-            OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: bufferReturned_mutex mutex unlock error\n",__LINE__);
         }
         return;
     }

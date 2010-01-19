@@ -220,6 +220,5 @@ EXIT:
 #endif
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
-    OMX_PRINT1(pComponentPrivate->dbg, ":: Exiting ComponentThread \n");
     return (void*)eError;
 }
