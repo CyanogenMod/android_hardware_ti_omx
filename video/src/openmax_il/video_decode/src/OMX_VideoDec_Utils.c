@@ -189,6 +189,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Init(VIDDEC_QUEUE_TYPE *queue, VIDDEC_QUEUE_TYPES typ
             queue->Elements = (void*)malloc(VIDDEC_MAX_QUEUE_SIZE*sizeof(OMX_MARKTYPE));
             /*OMX_MALLOC_STRUCT_SIZED(queue->Elements, void, VIDDEC_MAX_QUEUE_SIZE*sizeof(OMX_MARKTYPE));*/
             break;
+        default:
+           break;
     }
 
     pthread_mutex_init(&(queue->mMutex), NULL);
@@ -255,6 +257,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Add(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDE
                     /*memcpy(&pLocal[queue->nHead], pElement, sizeof(OMX_MARKTYPE));*/
                 }
                 break;
+            default:
+               break;
         }
         queue->CounterElements[queue->nHead] = 1;
         queue->nElements++;
@@ -319,6 +323,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Add(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDE
                     }
                 }
                 break;
+            default:
+               break;
         }
 
         eError = OMX_ErrorNone;
@@ -359,6 +365,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Remove(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VI
                     *(OMX_MARKTYPE *)pElement = pLocal[queue->nTail];
                     break;
                 }
+                default:
+                   break;
             }
         }
         queue->CounterElements[queue->nTail]--;
@@ -408,6 +416,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Get_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, 
                 *(OMX_MARKTYPE *)pElement = pLocal[queue->nTail];
                 break;
             }
+            default:
+               break;
         }
         eError = OMX_ErrorNone;
     }
@@ -486,6 +496,8 @@ OMX_ERRORTYPE VIDDEC_Queue_Replace_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pEleme
                 }
                 break;
             }
+            default:
+               break;
         }
     }
 UNLOCK:
@@ -1390,6 +1402,8 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               VIDDEC_FACTORFORMAT422;
 
             break;
+        default:
+           break;
 
     }
 
@@ -7540,6 +7554,8 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         case EMMCodecStrmCtrlAck:
             OMX_PRDSP1(pComponentPrivate->dbg, "[LCML CALLBACK EVENT]  EMMCodecStrmCtrlAck\n");
             break;
+        default:
+           break;
     }
 #endif
 

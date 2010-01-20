@@ -837,6 +837,8 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                    case OMX_VIDEO_CodingAVC:
                       pProfileLevel = SupportedAVCProfileLevels;
                       break;
+                   default:
+                      break;
                   }
 
                   /* Point to table entry based on index */
@@ -1511,6 +1513,8 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
               case OMX_VIDEO_CodingAVC:
                  pProfileLevel = SupportedAVCProfileLevels;
                  break;
+              default:
+                 break;
             }
 
             if (pProfileLevel == NULL) {
@@ -1539,6 +1543,9 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                   case OMX_VIDEO_CodingAVC:
                      pComponentPrivate->pH264->eProfile = pParamProfileLevel->eProfile;
                      pComponentPrivate->pH264->eLevel = pParamProfileLevel->eLevel;
+                     break;
+                  default:
+                     break;
                }
                eError = OMX_ErrorNone;
             }
@@ -1548,22 +1555,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
             break;
             }
 
-        case OMX_IndexConfigVideoBitrate:
-        case OMX_IndexConfigVideoFramerate:
-        case OMX_IndexConfigVideoIntraVOPRefresh:
-        case OMX_IndexConfigVideoIntraMBRefresh:
-        case OMX_IndexConfigVideoMacroBlockErrorMap:
-        case OMX_IndexParamVideoSliceFMO:
-        case OMX_IndexConfigVideoAVCIntraPeriod:
-        case OMX_IndexConfigVideoNalSize:
-        case OMX_IndexConfigCommonExposureValue:
-        case OMX_IndexConfigCommonOutputSize:
-        case OMX_IndexParamCommonExtraQuantData:
-        case OMX_IndexConfigCommonFocusRegion:
-        case OMX_IndexConfigCommonFocusStatus:
-        case OMX_IndexParamContentURI:
-        case OMX_IndexConfigCaptureMode:
-        case OMX_IndexConfigCapturing:
 #endif
         default:
             eError = OMX_ErrorUnsupportedIndex;
@@ -1680,202 +1671,13 @@ static OMX_ERRORTYPE VIDDEC_GetConfig (OMX_HANDLETYPE hComp,
                 }
                 break;
             }
-            case OMX_IndexParamNumAvailableStreams:
-            case OMX_IndexParamActiveStream:
-            case OMX_IndexParamSuspensionPolicy:
-            case OMX_IndexParamComponentSuspended:
-            case OMX_IndexAutoPauseAfterCapture:
-            case OMX_IndexParamCustomContentPipe:
-            case OMX_IndexParamDisableResourceConcealment:
-#ifdef KHRONOS_1_2
-            case OMX_IndexConfigMetadataItemCount:
-            case OMX_IndexConfigContainerNodeCount:
-            case OMX_IndexConfigMetadataItem:
-            case OMX_IndexConfigCounterNodeID:
-            case OMX_IndexParamMetadataFilterType:
-            case OMX_IndexConfigCommonTransitionEffect:
-            case OMX_IndexKhronosExtensions:
-#else
-            case OMX_IndexConfigMetaDataSize:
-            case OMX_IndexConfigMetaDataAtIndex:
-            case OMX_IndexConfigMetaDataAtKey:
-            case OMX_IndexConfigMetaDataNodeCount:
-            case OMX_IndexConfigMetaDataNode:
-            case OMX_IndexConfigMetaDataItemCount:
 #endif
-            case OMX_IndexParamMetadataKeyFilter:
-            case OMX_IndexConfigPriorityMgmt:
-            case OMX_IndexParamStandardComponentRole:
-            case OMX_IndexConfigAudioChannelVolume:
-            case OMX_IndexConfigFlashControl:
-            case OMX_IndexParamVideoProfileLevelQuerySupported:
-            case OMX_IndexParamVideoProfileLevelCurrent:
-            case OMX_IndexConfigVideoBitrate:
-            case OMX_IndexConfigVideoFramerate:
-            case OMX_IndexConfigVideoIntraVOPRefresh:
-            case OMX_IndexConfigVideoIntraMBRefresh:
-            case OMX_IndexParamVideoSliceFMO:
-            case OMX_IndexConfigVideoAVCIntraPeriod:
-            case OMX_IndexConfigVideoNalSize:
-            case OMX_IndexConfigCommonExposureValue:
-            case OMX_IndexConfigCommonOutputSize:
-            case OMX_IndexParamCommonExtraQuantData:
-            case OMX_IndexConfigCommonFocusRegion:
-            case OMX_IndexConfigCommonFocusStatus:
-            case OMX_IndexParamContentURI:
-            case OMX_IndexConfigCaptureMode:
-            case OMX_IndexConfigCapturing:
-#endif
-            case OMX_IndexComponentStartUnused:
-            case OMX_IndexParamPriorityMgmt:    /**< reference: OMX_PRIORITYMGMTTYPE */
-            case OMX_IndexParamAudioInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamImageInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamVideoInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamOtherInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-
-            case OMX_IndexPortStartUnused:
-            case OMX_IndexParamCompBufferSupplier: /**< reference: OMX_PARAM_BUFFERSUPPLIERTYPE (*/ 
-            case OMX_IndexReservedStartUnused:
-
-            /* Audio parameters and configurations */
-            case OMX_IndexAudioStartUnused:
-            case OMX_IndexParamAudioPortFormat: /**< reference: OMX_AUDIO_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamAudioPcm:        /**< reference: OMX_AUDIO_PARAM_PCMMODETYPE */
-            case OMX_IndexParamAudioAac:        /**< reference: OMX_AUDIO_PARAM_AACPROFILETYPE */
-            case OMX_IndexParamAudioRa:         /**< reference: OMX_AUDIO_PARAM_RATYPE */
-            case OMX_IndexParamAudioMp3:        /**< reference: OMX_AUDIO_PARAM_MP3TYPE */
-            case OMX_IndexParamAudioAdpcm:      /**< reference: OMX_AUDIO_PARAM_ADPCMTYPE */
-            case OMX_IndexParamAudioG723:       /**< reference: OMX_AUDIO_PARAM_G723TYPE */
-            case OMX_IndexParamAudioG729:       /**< reference: OMX_AUDIO_PARAM_G729TYPE */
-            case OMX_IndexParamAudioAmr:        /**< reference: OMX_AUDIO_PARAM_AMRTYPE */
-            case OMX_IndexParamAudioWma:        /**< reference: OMX_AUDIO_PARAM_WMATYPE */
-            case OMX_IndexParamAudioSbc:        /**< reference: OMX_AUDIO_PARAM_SBCTYPE */
-            case OMX_IndexParamAudioMidi:       /**< reference: OMX_AUDIO_PARAM_MIDITYPE */
-            case OMX_IndexParamAudioGsm_FR:     /**< reference: OMX_AUDIO_PARAM__GSMFRTYPE */
-            case OMX_IndexParamAudioMidiLoadUserSound: /**< reference: OMX_AUDIO_PARAM_MIDILOADUSERSOUNDTYPE */
-            case OMX_IndexParamAudioG726:       /**< reference: OMX_AUDIO_PARAM_G726TYPE */
-            case OMX_IndexParamAudioGsm_EFR:    /**< reference: OMX_AUDIO_PARAM__GSMEFRTYPE */
-            case OMX_IndexParamAudioGsm_HR:     /**< reference: OMX_AUDIO_PARAM__GSMHRTYPE */
-            case OMX_IndexParamAudioPdc_FR:     /**< reference: OMX_AUDIO_PARAM__PDCFRTYPE */
-            case OMX_IndexParamAudioPdc_EFR:    /**< reference: OMX_AUDIO_PARAM__PDCEFRTYPE */
-            case OMX_IndexParamAudioPdc_HR:     /**< reference: OMX_AUDIO_PARAM__PDCHRTYPE */
-            case OMX_IndexParamAudioTdma_FR:    /**< reference: OMX_AUDIO_PARAM__TDMAFRTYPE */
-            case OMX_IndexParamAudioTdma_EFR:   /**< reference: OMX_AUDIO_PARAM__TDMAEFRTYPE */
-            case OMX_IndexParamAudioQcelp8:     /**< reference: OMX_AUDIO_PARAM__QCELP8TYPE */
-            case OMX_IndexParamAudioQcelp13:    /**< reference: OMX_AUDIO_PARAM__QCELP13TYPE */
-            case OMX_IndexParamAudioEvrc:       /**< reference: OMX_AUDIO_PARAM__EVRCTYPE */
-            case OMX_IndexParamAudioSmv:        /**< reference: OMX_AUDIO_PARAM__SMVTYPE */
-            case OMX_IndexParamAudioVorbis:     /**< reference: OMX_AUDIO_PARAM__VORBISTYPE */
-
-            case OMX_IndexConfigAudioMidiImmediateEvent:   /**< OMX_AUDIO_CONFIG_MIDIIMMEDIATEEVENTTYPE */
-            case OMX_IndexConfigAudioMidiControl:          /**< reference: OMX_AUDIO_CONFIG_MIDICONTROLTYPE */
-            case OMX_IndexConfigAudioMidiSoundBankProgram: /**< reference: OMX_AUDIO_CONFIG_MIDISOUNDBANKPROGRAMTYPE */
-            case OMX_IndexConfigAudioMidiStatus:           /**< reference: OMX_AUDIO_CONFIG_MIDISTATUSTYPE */
-            case OMX_IndexConfigAudioMidiMetaEvent:        /**< reference: OMX_AUDIO_CONFIG_MIDIMETAEVENTTYPE */
-            case OMX_IndexConfigAudioMidiMetaEventData:    /**< reference: OMX_AUDIO_CONFIG_MIDIMETAEVENTDATATYPE */
-            case OMX_IndexConfigAudioVolume:               /**< reference: OMX_AUDIO_CONFIG_VOLUMETYPE */
-            case OMX_IndexConfigAudioBalance:              /**< reference: OMX_AUDIO_CONFIG_BALANCETYPE */
-            case OMX_IndexConfigAudioChannelMute:          /**< reference: OMX_AUDIO_CONFIG_CHANNELMUTETYPE */
-            case OMX_IndexConfigAudioMute:                 /**< reference: OMX_AUDIO_CONFIG_MUTETYPE */
-            case OMX_IndexConfigAudioLoudness:             /**< reference: OMX_AUDIO_CONFIG_LOUDNESSTYPE */
-            case OMX_IndexConfigAudioEchoCancelation:      /**< reference: OMX_AUDIO_CONFIG_ECHOCANCELATIONTYPE */
-            case OMX_IndexConfigAudioNoiseReduction:       /**< reference: OMX_AUDIO_CONFIG_NOISEREDUCTIONTYPE */
-            case OMX_IndexConfigAudioBass:                 /**< reference: OMX_AUDIO_CONFIG_BASSTYPE */
-            case OMX_IndexConfigAudioTreble:               /**< reference: OMX_AUDIO_CONFIG_TREBLETYPE */
-            case OMX_IndexConfigAudioStereoWidening:       /**< reference: OMX_AUDIO_CONFIG_STEREOWIDENINGTYPE */
-            case OMX_IndexConfigAudioChorus:               /**< reference: OMX_AUDIO_CONFIG_CHORUSTYPE */
-            case OMX_IndexConfigAudioEqualizer:            /**< reference: OMX_AUDIO_CONFIG_EQUALIZERTYPE */
-            case OMX_IndexConfigAudioReverberation:        /**< reference: OMX_AUDIO_CONFIG_REVERBERATIONTYPE */
-
-            /* Image specific parameters and configurations */
-            case OMX_IndexImageStartUnused:
-            case OMX_IndexParamImagePortFormat:   /**< reference: OMX_IMAGE_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamFlashControl:      /**< refer to OMX_IMAGE_PARAM_FLASHCONTROLTYPE */
-            case OMX_IndexConfigFocusControl:     /**< refer to OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE */
-            case OMX_IndexParamQFactor:           /**< refer to OMX_IMAGE_PARAM_QFACTORTYPE */
-            case OMX_IndexParamQuantizationTable: /**< refer to OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE */
-            case OMX_IndexParamHuffmanTable:      /**< For jpeg, refer to OMX_IMAGE_PARAM_HUFFMANTTABLETYPE */
-
-            /* Video specific parameters and configurations */
-            case OMX_IndexVideoStartUnused:
-            case OMX_IndexParamVideoPortFormat:   /**< reference: OMX_VIDEO_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamVideoQuantization: /**< reference: OMX_VIDEO_PARAM_QUANTIZATIONPARAMTYPE */
-            case OMX_IndexParamVideoFastUpdate:   /**< reference: OMX_VIDEO_PARAM_VIDEOFASTUPDATETYPE */
-            case OMX_IndexParamVideoBitrate:      /**< reference: OMX_VIDEO_PARAM_BITRATETYPE */
-            case OMX_IndexParamVideoMotionVector: /**< reference: OMX_VIDEO_PARAM_MOTIONVECTORTYPE */
-            case OMX_IndexParamVideoIntraRefresh: /**< reference: OMX_VIDEO_PARAM_INTRAREFRESHTYPE */
-            case OMX_IndexParamVideoErrorCorrection: /**< reference: OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE */
-            case OMX_IndexParamVideoVBSMC: /**< reference:OMX_VIDEO_PARAM_VBSMCTYPE */
-            case OMX_IndexParamVideoMpeg2: /**< reference:OMX_VIDEO_PARAM_MPEG2TYPE */
-            case OMX_IndexParamVideoMpeg4: /**< reference: OMX_VIDEO_CONFIG_MPEG4TYPE */
-            case OMX_IndexParamVideoWmv:   /**< reference:OMX_VIDEO_PARAM_WMVTYPE */
-            case OMX_IndexParamVideoRv:    /**< reference:OMX_VIDEO_PARAM_RVTYPE */
-            case OMX_IndexParamVideoAvc:   /**< reference:OMX_VIDEO_PARAM_AVCTYPE */
-            case OMX_IndexParamVideoH263:  /**< reference:OMX_VIDEO_PARAM_H263TYPE */
-
-            /* Image & Video common Configurations */
-            case OMX_IndexCommonStartUnused:
-            case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
-            case OMX_IndexParamCommonSensorMode: /**< reference: OMX_PARAM_SENSORMODETYPE */
-            case OMX_IndexParamCommonInterleave: /** reference: OMX_PARAM_INTERLEAVETYPE */
-            case OMX_IndexConfigCommonColorFormatConversion: /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE */
-            case OMX_IndexConfigCommonScale:            /**< reference: OMX_CONFIG_SCALEFACTORTYPE */
-            case OMX_IndexConfigCommonImageFilter:      /**< reference: OMX_CONFIG_IMAGEFILTERTYPE */
-            case OMX_IndexConfigCommonColorEnhancement: /**< reference: OMX_CONFIG_COLORENHANCEMENTTYPE */
-            case OMX_IndexConfigCommonColorKey:         /**< reference: OMX_CONFIG_COLORKEYTYPE */
-            case OMX_IndexConfigCommonColorBlend:       /**< reference: OMX_CONFIG_COLORBLENDTYPE */
-            case OMX_IndexConfigCommonFrameStabilisation: /**< reference: OMX_CONFIG_FRAMESTABTYPE */
-            case OMX_IndexConfigCommonRotate:         /**< reference: OMX_CONFIG_ROTATIONTYPE */
-            case OMX_IndexConfigCommonMirror:         /**< reference: OMX_CONFIG_MIRRORTYPE */
-            case OMX_IndexConfigCommonOutputPosition: /**< reference: OMX_CONFIG_POINTTYPE */
-            case OMX_IndexConfigCommonInputCrop:      /**< reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonOutputCrop:     /**< reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonDigitalZoom:    /**< reference: OMX_SCALEFACTORTYPE */
-            case OMX_IndexConfigCommonOpticalZoom:    /**< reference: OMX_SCALEFACTORTYPE*/
-            case OMX_IndexConfigCommonWhiteBalance:   /**< reference: OMX_CONFIG_WHITEBALCONTROLTYPE */
-            case OMX_IndexConfigCommonExposure:       /**< reference: OMX_CONFIG_EXPOSURECONTROLTYPE */
-            case OMX_IndexConfigCommonContrast:       /**< reference to OMX_CONFIG_CONTRASTTYPE */
-            case OMX_IndexConfigCommonBrightness:     /**< reference to OMX_CONFIG_BRIGHTNESSTYPE */
-            case OMX_IndexConfigCommonBacklight:      /**< reference to OMX_CONFIG_BACKLIGHTTYPE */
-            case OMX_IndexConfigCommonGamma:          /**< reference to OMX_CONFIG_GAMMATYPE */
-            case OMX_IndexConfigCommonSaturation:     /**< reference to OMX_CONFIG_SATURATIONTYPE */
-            case OMX_IndexConfigCommonLightness:      /**< reference to OMX_CONFIG_LIGHTNESSTYPE */
-            case OMX_IndexConfigCommonExclusionRect:  /** reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonDithering:      /**< reference: OMX_TIME_CONFIG_DITHERTYPE */
-            case OMX_IndexConfigCommonPlaneBlend:     /** reference: OMX_CONFIG_PLANEBLENDTYPE */
-
-            /* Reserved Configuration range */
-            case OMX_IndexOtherStartUnused:
-            case OMX_IndexParamOtherPortFormat: /**< reference: OMX_OTHER_PARAM_PORTFORMATTYPE */
-            case OMX_IndexConfigOtherPower:     /**< reference: OMX_OTHER_CONFIG_POWERTYPE */
-            case OMX_IndexConfigOtherStats:     /**< reference: OMX_OTHER_CONFIG_STATSTYPE */
-
-            /* Reserved Time range */
-            case OMX_IndexTimeStartUnused:
-            case OMX_IndexConfigTimeScale:      /**< reference: OMX_TIME_CONFIG_SCALETYPE */
-            case OMX_IndexConfigTimeClockState: /**< reference: OMX_TIME_CONFIG_CLOCKSTATETYPE */
-            case OMX_IndexConfigTimeActiveRefClock:   /**< reference: OMX_TIME_CONFIG_ACTIVEREFCLOCKTYPE */
-            case OMX_IndexConfigTimeCurrentMediaTime: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (read only)*/
-            case OMX_IndexConfigTimeCurrentWallTime:  /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (read only)*/
-            case OMX_IndexConfigTimeCurrentAudioReference: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimeCurrentVideoReference: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimeMediaTimeRequest:      /**< reference: OMX_TIME_CONFIG_MEDIATIMEREQUESTTYPE (write only) */
-            case OMX_IndexConfigTimeClientStartTime:       /**<reference:  OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimePosition:              /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE */
-            case OMX_IndexConfigTimeSeekMode:              /**< reference: OMX_TIME_CONFIG_SEEKMODETYPE */
-
-            /* Vendor specific area */
-#ifdef KHRONOS_1_2
-            case OMX_IndexVendorStartUnused:
-#else
-            case OMX_IndexIndexVendorStartUnused:
-#endif
-            /* Vendor specific structures should be in the range of 0xFF000000 
+            /* Vendor specific structures should be in the range of 0xFF000000
                to 0xFFFFFFFF.  This range is not broken out by vendor, so
                private indexes are not guaranteed unique and therefore should
                only be sent to the appropriate component. */
 
-            case OMX_IndexMax:
+            default:
                 eError = OMX_ErrorUnsupportedIndex;
             break;
         }
@@ -1968,203 +1770,13 @@ static OMX_ERRORTYPE VIDDEC_SetConfig (OMX_HANDLETYPE hComp,
                 }
                 break;
             }
-            case OMX_IndexParamVideoMacroblocksPerFrame:
-            case OMX_IndexParamNumAvailableStreams:
-            case OMX_IndexParamActiveStream:
-            case OMX_IndexParamSuspensionPolicy:
-            case OMX_IndexParamComponentSuspended:
-            case OMX_IndexAutoPauseAfterCapture:
-            case OMX_IndexParamCustomContentPipe:
-            case OMX_IndexParamDisableResourceConcealment:
-#ifdef KHRONOS_1_2
-            case OMX_IndexConfigMetadataItemCount:
-            case OMX_IndexConfigContainerNodeCount:
-            case OMX_IndexConfigMetadataItem:
-            case OMX_IndexConfigCounterNodeID:
-            case OMX_IndexParamMetadataFilterType:
-            case OMX_IndexConfigCommonTransitionEffect:
-            case OMX_IndexKhronosExtensions:
-#else
-            case OMX_IndexConfigMetaDataSize:
-            case OMX_IndexConfigMetaDataAtIndex:
-            case OMX_IndexConfigMetaDataAtKey:
-            case OMX_IndexConfigMetaDataNodeCount:
-            case OMX_IndexConfigMetaDataNode:
-            case OMX_IndexConfigMetaDataItemCount:
 #endif
-            case OMX_IndexParamMetadataKeyFilter:
-            case OMX_IndexConfigPriorityMgmt:
-            case OMX_IndexParamStandardComponentRole:
-            case OMX_IndexConfigAudioChannelVolume:
-            case OMX_IndexConfigFlashControl:
-            case OMX_IndexParamVideoProfileLevelQuerySupported:
-            case OMX_IndexParamVideoProfileLevelCurrent:
-            case OMX_IndexConfigVideoBitrate:
-            case OMX_IndexConfigVideoFramerate:
-            case OMX_IndexConfigVideoIntraVOPRefresh:
-            case OMX_IndexConfigVideoIntraMBRefresh:
-            case OMX_IndexParamVideoSliceFMO:
-            case OMX_IndexConfigVideoAVCIntraPeriod:
-            case OMX_IndexConfigVideoNalSize:
-            case OMX_IndexConfigVideoMacroBlockErrorMap:
-            case OMX_IndexConfigCommonExposureValue:
-            case OMX_IndexConfigCommonOutputSize:
-            case OMX_IndexParamCommonExtraQuantData:
-            case OMX_IndexConfigCommonFocusRegion:
-            case OMX_IndexConfigCommonFocusStatus:
-            case OMX_IndexParamContentURI:
-            case OMX_IndexConfigCaptureMode:
-            case OMX_IndexConfigCapturing:
-#endif
-            case OMX_IndexComponentStartUnused:
-            case OMX_IndexParamPriorityMgmt:    /**< reference: OMX_PRIORITYMGMTTYPE */
-            case OMX_IndexParamAudioInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamImageInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamVideoInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-            case OMX_IndexParamOtherInit:       /**< reference: OMX_PORT_PARAM_TYPE  */
-
-            case OMX_IndexPortStartUnused:
-            case OMX_IndexParamCompBufferSupplier: /**< reference: OMX_PARAM_BUFFERSUPPLIERTYPE (*/ 
-            case OMX_IndexReservedStartUnused:
-
-            /* Audio parameters and configurations */
-            case OMX_IndexAudioStartUnused:
-            case OMX_IndexParamAudioPortFormat: /**< reference: OMX_AUDIO_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamAudioPcm:        /**< reference: OMX_AUDIO_PARAM_PCMMODETYPE */
-            case OMX_IndexParamAudioAac:        /**< reference: OMX_AUDIO_PARAM_AACPROFILETYPE */
-            case OMX_IndexParamAudioRa:         /**< reference: OMX_AUDIO_PARAM_RATYPE */
-            case OMX_IndexParamAudioMp3:        /**< reference: OMX_AUDIO_PARAM_MP3TYPE */
-            case OMX_IndexParamAudioAdpcm:      /**< reference: OMX_AUDIO_PARAM_ADPCMTYPE */
-            case OMX_IndexParamAudioG723:       /**< reference: OMX_AUDIO_PARAM_G723TYPE */
-            case OMX_IndexParamAudioG729:       /**< reference: OMX_AUDIO_PARAM_G729TYPE */
-            case OMX_IndexParamAudioAmr:        /**< reference: OMX_AUDIO_PARAM_AMRTYPE */
-            case OMX_IndexParamAudioWma:        /**< reference: OMX_AUDIO_PARAM_WMATYPE */
-            case OMX_IndexParamAudioSbc:        /**< reference: OMX_AUDIO_PARAM_SBCTYPE */
-            case OMX_IndexParamAudioMidi:       /**< reference: OMX_AUDIO_PARAM_MIDITYPE */
-            case OMX_IndexParamAudioGsm_FR:     /**< reference: OMX_AUDIO_PARAM__GSMFRTYPE */
-            case OMX_IndexParamAudioMidiLoadUserSound: /**< reference: OMX_AUDIO_PARAM_MIDILOADUSERSOUNDTYPE */
-            case OMX_IndexParamAudioG726:       /**< reference: OMX_AUDIO_PARAM_G726TYPE */
-            case OMX_IndexParamAudioGsm_EFR:    /**< reference: OMX_AUDIO_PARAM__GSMEFRTYPE */
-            case OMX_IndexParamAudioGsm_HR:     /**< reference: OMX_AUDIO_PARAM__GSMHRTYPE */
-            case OMX_IndexParamAudioPdc_FR:     /**< reference: OMX_AUDIO_PARAM__PDCFRTYPE */
-            case OMX_IndexParamAudioPdc_EFR:    /**< reference: OMX_AUDIO_PARAM__PDCEFRTYPE */
-            case OMX_IndexParamAudioPdc_HR:     /**< reference: OMX_AUDIO_PARAM__PDCHRTYPE */
-            case OMX_IndexParamAudioTdma_FR:    /**< reference: OMX_AUDIO_PARAM__TDMAFRTYPE */
-            case OMX_IndexParamAudioTdma_EFR:   /**< reference: OMX_AUDIO_PARAM__TDMAEFRTYPE */
-            case OMX_IndexParamAudioQcelp8:     /**< reference: OMX_AUDIO_PARAM__QCELP8TYPE */
-            case OMX_IndexParamAudioQcelp13:    /**< reference: OMX_AUDIO_PARAM__QCELP13TYPE */
-            case OMX_IndexParamAudioEvrc:       /**< reference: OMX_AUDIO_PARAM__EVRCTYPE */
-            case OMX_IndexParamAudioSmv:        /**< reference: OMX_AUDIO_PARAM__SMVTYPE */
-            case OMX_IndexParamAudioVorbis:     /**< reference: OMX_AUDIO_PARAM__VORBISTYPE */
-
-            case OMX_IndexConfigAudioMidiImmediateEvent:   /**< OMX_AUDIO_CONFIG_MIDIIMMEDIATEEVENTTYPE */
-            case OMX_IndexConfigAudioMidiControl:          /**< reference: OMX_AUDIO_CONFIG_MIDICONTROLTYPE */
-            case OMX_IndexConfigAudioMidiSoundBankProgram: /**< reference: OMX_AUDIO_CONFIG_MIDISOUNDBANKPROGRAMTYPE */
-            case OMX_IndexConfigAudioMidiStatus:           /**< reference: OMX_AUDIO_CONFIG_MIDISTATUSTYPE */
-            case OMX_IndexConfigAudioMidiMetaEvent:        /**< reference: OMX_AUDIO_CONFIG_MIDIMETAEVENTTYPE */
-            case OMX_IndexConfigAudioMidiMetaEventData:    /**< reference: OMX_AUDIO_CONFIG_MIDIMETAEVENTDATATYPE */
-            case OMX_IndexConfigAudioVolume:               /**< reference: OMX_AUDIO_CONFIG_VOLUMETYPE */
-            case OMX_IndexConfigAudioBalance:              /**< reference: OMX_AUDIO_CONFIG_BALANCETYPE */
-            case OMX_IndexConfigAudioChannelMute:          /**< reference: OMX_AUDIO_CONFIG_CHANNELMUTETYPE */
-            case OMX_IndexConfigAudioMute:                 /**< reference: OMX_AUDIO_CONFIG_MUTETYPE */
-            case OMX_IndexConfigAudioLoudness:             /**< reference: OMX_AUDIO_CONFIG_LOUDNESSTYPE */
-            case OMX_IndexConfigAudioEchoCancelation:      /**< reference: OMX_AUDIO_CONFIG_ECHOCANCELATIONTYPE */
-            case OMX_IndexConfigAudioNoiseReduction:       /**< reference: OMX_AUDIO_CONFIG_NOISEREDUCTIONTYPE */
-            case OMX_IndexConfigAudioBass:                 /**< reference: OMX_AUDIO_CONFIG_BASSTYPE */
-            case OMX_IndexConfigAudioTreble:               /**< reference: OMX_AUDIO_CONFIG_TREBLETYPE */
-            case OMX_IndexConfigAudioStereoWidening:       /**< reference: OMX_AUDIO_CONFIG_STEREOWIDENINGTYPE */
-            case OMX_IndexConfigAudioChorus:               /**< reference: OMX_AUDIO_CONFIG_CHORUSTYPE */
-            case OMX_IndexConfigAudioEqualizer:            /**< reference: OMX_AUDIO_CONFIG_EQUALIZERTYPE */
-            case OMX_IndexConfigAudioReverberation:        /**< reference: OMX_AUDIO_CONFIG_REVERBERATIONTYPE */
-
-            /* Image specific parameters and configurations */
-            case OMX_IndexImageStartUnused:
-            case OMX_IndexParamImagePortFormat:   /**< reference: OMX_IMAGE_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamFlashControl:      /**< refer to OMX_IMAGE_PARAM_FLASHCONTROLTYPE */
-            case OMX_IndexConfigFocusControl:     /**< refer to OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE */
-            case OMX_IndexParamQFactor:           /**< refer to OMX_IMAGE_PARAM_QFACTORTYPE */
-            case OMX_IndexParamQuantizationTable: /**< refer to OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE */
-            case OMX_IndexParamHuffmanTable:      /**< For jpeg, refer to OMX_IMAGE_PARAM_HUFFMANTTABLETYPE */
-
-            /* Video specific parameters and configurations */
-            case OMX_IndexVideoStartUnused:
-            case OMX_IndexParamVideoPortFormat:   /**< reference: OMX_VIDEO_PARAM_PORTFORMATTYPE */
-            case OMX_IndexParamVideoQuantization: /**< reference: OMX_VIDEO_PARAM_QUANTIZATIONPARAMTYPE */
-            case OMX_IndexParamVideoFastUpdate:   /**< reference: OMX_VIDEO_PARAM_VIDEOFASTUPDATETYPE */
-            case OMX_IndexParamVideoBitrate:      /**< reference: OMX_VIDEO_PARAM_BITRATETYPE */
-            case OMX_IndexParamVideoMotionVector: /**< reference: OMX_VIDEO_PARAM_MOTIONVECTORTYPE */
-            case OMX_IndexParamVideoIntraRefresh: /**< reference: OMX_VIDEO_PARAM_INTRAREFRESHTYPE */
-            case OMX_IndexParamVideoErrorCorrection: /**< reference: OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE */
-            case OMX_IndexParamVideoVBSMC: /**< reference:OMX_VIDEO_PARAM_VBSMCTYPE */
-            case OMX_IndexParamVideoMpeg2: /**< reference:OMX_VIDEO_PARAM_MPEG2TYPE */
-            case OMX_IndexParamVideoMpeg4: /**< reference: OMX_VIDEO_CONFIG_MPEG4TYPE */
-            case OMX_IndexParamVideoWmv:   /**< reference:OMX_VIDEO_PARAM_WMVTYPE */
-            case OMX_IndexParamVideoRv:    /**< reference:OMX_VIDEO_PARAM_RVTYPE */
-            case OMX_IndexParamVideoAvc:   /**< reference:OMX_VIDEO_PARAM_AVCTYPE */
-            case OMX_IndexParamVideoH263:  /**< reference:OMX_VIDEO_PARAM_H263TYPE */
-
-            /* Image & Video common Configurations */
-            case OMX_IndexCommonStartUnused:
-            case OMX_IndexParamCommonDeblocking: /**< reference: OMX_PARAM_DEBLOCKINGTYPE */
-            case OMX_IndexParamCommonSensorMode: /**< reference: OMX_PARAM_SENSORMODETYPE */
-            case OMX_IndexParamCommonInterleave: /** reference: OMX_PARAM_INTERLEAVETYPE */
-            case OMX_IndexConfigCommonColorFormatConversion: /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE */
-            case OMX_IndexConfigCommonScale:            /**< reference: OMX_CONFIG_SCALEFACTORTYPE */
-            case OMX_IndexConfigCommonImageFilter:      /**< reference: OMX_CONFIG_IMAGEFILTERTYPE */
-            case OMX_IndexConfigCommonColorEnhancement: /**< reference: OMX_CONFIG_COLORENHANCEMENTTYPE */
-            case OMX_IndexConfigCommonColorKey:         /**< reference: OMX_CONFIG_COLORKEYTYPE */
-            case OMX_IndexConfigCommonColorBlend:       /**< reference: OMX_CONFIG_COLORBLENDTYPE */
-            case OMX_IndexConfigCommonFrameStabilisation: /**< reference: OMX_CONFIG_FRAMESTABTYPE */
-            case OMX_IndexConfigCommonRotate:         /**< reference: OMX_CONFIG_ROTATIONTYPE */
-            case OMX_IndexConfigCommonMirror:         /**< reference: OMX_CONFIG_MIRRORTYPE */
-            case OMX_IndexConfigCommonOutputPosition: /**< reference: OMX_CONFIG_POINTTYPE */
-            case OMX_IndexConfigCommonInputCrop:      /**< reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonOutputCrop:     /**< reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonDigitalZoom:    /**< reference: OMX_SCALEFACTORTYPE */
-            case OMX_IndexConfigCommonOpticalZoom:    /**< reference: OMX_SCALEFACTORTYPE*/
-            case OMX_IndexConfigCommonWhiteBalance:   /**< reference: OMX_CONFIG_WHITEBALCONTROLTYPE */
-            case OMX_IndexConfigCommonExposure:       /**< reference: OMX_CONFIG_EXPOSURECONTROLTYPE */
-            case OMX_IndexConfigCommonContrast:       /**< reference to OMX_CONFIG_CONTRASTTYPE */
-            case OMX_IndexConfigCommonBrightness:     /**< reference to OMX_CONFIG_BRIGHTNESSTYPE */
-            case OMX_IndexConfigCommonBacklight:      /**< reference to OMX_CONFIG_BACKLIGHTTYPE */
-            case OMX_IndexConfigCommonGamma:          /**< reference to OMX_CONFIG_GAMMATYPE */
-            case OMX_IndexConfigCommonSaturation:     /**< reference to OMX_CONFIG_SATURATIONTYPE */
-            case OMX_IndexConfigCommonLightness:      /**< reference to OMX_CONFIG_LIGHTNESSTYPE */
-            case OMX_IndexConfigCommonExclusionRect:  /** reference: OMX_CONFIG_RECTTYPE */
-            case OMX_IndexConfigCommonDithering:      /**< reference: OMX_TIME_CONFIG_DITHERTYPE */
-            case OMX_IndexConfigCommonPlaneBlend:     /** reference: OMX_CONFIG_PLANEBLENDTYPE */
-
-            /* Reserved Configuration range */
-            case OMX_IndexOtherStartUnused:
-            case OMX_IndexParamOtherPortFormat: /**< reference: OMX_OTHER_PARAM_PORTFORMATTYPE */
-            case OMX_IndexConfigOtherPower:     /**< reference: OMX_OTHER_CONFIG_POWERTYPE */
-            case OMX_IndexConfigOtherStats:     /**< reference: OMX_OTHER_CONFIG_STATSTYPE */
-
-            /* Reserved Time range */
-            case OMX_IndexTimeStartUnused:
-            case OMX_IndexConfigTimeScale:      /**< reference: OMX_TIME_CONFIG_SCALETYPE */
-            case OMX_IndexConfigTimeClockState: /**< reference: OMX_TIME_CONFIG_CLOCKSTATETYPE */
-            case OMX_IndexConfigTimeActiveRefClock:   /**< reference: OMX_TIME_CONFIG_ACTIVEREFCLOCKTYPE */
-            case OMX_IndexConfigTimeCurrentMediaTime: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (read only)*/
-            case OMX_IndexConfigTimeCurrentWallTime:  /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (read only)*/
-            case OMX_IndexConfigTimeCurrentAudioReference: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimeCurrentVideoReference: /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimeMediaTimeRequest:      /**< reference: OMX_TIME_CONFIG_MEDIATIMEREQUESTTYPE (write only) */
-            case OMX_IndexConfigTimeClientStartTime:       /**<reference:  OMX_TIME_CONFIG_TIMESTAMPTYPE (write only) */
-            case OMX_IndexConfigTimePosition:              /**< reference: OMX_TIME_CONFIG_TIMESTAMPTYPE */
-            case OMX_IndexConfigTimeSeekMode:              /**< reference: OMX_TIME_CONFIG_SEEKMODETYPE */
-
-            /* Vendor specific area */
-#ifdef KHRONOS_1_2
-            case OMX_IndexVendorStartUnused:
-#else
-            case OMX_IndexIndexVendorStartUnused:
-#endif            /* Vendor specific structures should be in the range of 0xFF000000 
+            /* Vendor specific structures should be in the range of 0xFF000000
                to 0xFFFFFFFF.  This range is not broken out by vendor, so
                private indexes are not guaranteed unique and therefore should
                only be sent to the appropriate component. */
 
-            case OMX_IndexMax:
+            default:
                 eError = OMX_ErrorUnsupportedIndex;
             break;
         }
