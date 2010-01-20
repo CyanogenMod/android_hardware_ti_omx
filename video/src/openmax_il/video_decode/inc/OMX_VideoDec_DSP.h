@@ -160,10 +160,11 @@ typedef struct WMV9DEC_SNCreatePhArg {
 
 typedef struct {
     OMX_S32 lBuffCount;
+    OMX_U32 ulFrameIndex;
 } WMV9DEC_UALGInputParam;
 
 typedef struct {
-    OMX_U32 ulDisplayID;
+    OMX_U32 ulFrameIndex;
     OMX_U32 ulBytesConsumed;
     OMX_S32 iErrorCode;
     OMX_U32 ulDecodedFrameType;
@@ -279,6 +280,7 @@ typedef struct MP4VD_GPP_SN_Obj_CreatePhase {
 
 typedef struct
 {
+    OMX_U32 ulFrameIndex;
     OMX_S32 nBuffCount;
     OMX_U32 uRingIOBlocksize;
     OMX_S32 nPerformMode;
@@ -286,7 +288,7 @@ typedef struct
 
 typedef struct
 {
-    OMX_U32 ulDisplayID;
+    OMX_U32 ulFrameIndex;
     OMX_U32 uBytesConsumed;
     OMX_S32 iErrorCode;
     OMX_U32 ulDecodedFrameType;
@@ -329,12 +331,13 @@ typedef struct {
     OMX_U32 pNALUSizeArray[H264VDEC_SN_MAX_NALUNITS];
 /*     OMX_U32 *pNALUSizeArray;*/
 #endif
+    OMX_U32 ulFrameIndex;
 } H264VDEC_UALGInputParam;
 
 #define H264VDEC_SN_MAX_MB_NUMBER 1620
 
 typedef struct {
-    OMX_U32 ulDisplayID;
+    OMX_U32 ulFrameIndex;
     OMX_U32 ulBytesConsumed;
     OMX_S32 iErrorCode;
     OMX_U32 ulDecodedFrameType;
@@ -569,7 +572,7 @@ typedef struct WMV9DEC_UALGDynamicParams
     
 }WMV9DEC_UALGDynamicParams;
 
-typedef struct H264_Iualg_Cmd_SetStatus
+typedef struct H264VDEC_UALGDynamicParams
 {
 #ifdef VIDDEC_SN_R8_14
     OMX_S32 size;
@@ -577,12 +580,9 @@ typedef struct H264_Iualg_Cmd_SetStatus
     OMX_U32 ulDecodeHeader; 
     OMX_U32 ulDisplayWidth;  
     OMX_U32 ulFrameSkipMode; 
-    OMX_U32 ulPPType;        
-    
-/*#if defined(WMV9PGIN)    */
- /*   OMX_U16 usIsElementaryStream; */
-/*#endif */   
-} H264_Iualg_Cmd_SetStatus;
+    OMX_U32 ulPPType;
+    OMX_U32 ulInputBitStreamFormat;
+} H264VDEC_UALGDynamicParams;
 
 typedef struct MP4VDEC_UALGDynamicParams
 {

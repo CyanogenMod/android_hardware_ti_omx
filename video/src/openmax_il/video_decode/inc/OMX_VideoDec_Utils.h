@@ -307,7 +307,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_ALIGNMENT                              4
 
 #define VIDDEC_CLEARFLAGS                             0
-#define H264VDEC_SN_MAX_NALUNITS                      1200
+#define H264VDEC_SN_MAX_NALUNITS                      1620
 
 #define VIDDEC_RM_FREQ_MPEG4_QCIF                     30
 #define VIDDEC_RM_FREQ_MPEG4_CIF                      80
@@ -357,7 +357,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 /* In the current release the suport for : VIDDEC_MAX_FRAMERATE  & VIDDEC_MAX_BITRATE
  * is not provided by the algorithm. But is require to set this field to a non-zero value */
 #define VIDDEC_MAX_FRAMERATE                        30000  /* Max frame rate to be suported * 1000 */
-#define VIDDEC_MAX_BITRATE                        8000000  /* Max bit rate (in bits per second) to be suported */
+#define VIDDEC_MAX_BITRATE                        4000000  /* Max bit rate (in bits per second) to be suported */
 
 #define VIDDEC_WMV_PROFILE_ID0                          0
 #define VIDDEC_WMV_PROFILE_ID1                          1
@@ -944,10 +944,10 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL bLCMLOut;
     VIDDEC_RMPROXY_STATES eRMProxyState;
 
-    OMX_U8 nCountInputBFromDsp;
-    OMX_U8 nCountOutputBFromDsp;
-    OMX_U8 nCountInputBFromApp;
-    OMX_U8 nCountOutputBFromApp;
+    OMX_U32 nCountInputBFromDsp;
+    OMX_U32 nCountOutputBFromDsp;
+    OMX_U32 nCountInputBFromApp;
+    OMX_U32 nCountOutputBFromApp;
 
     VIDDEC_CBUFFER_BUFFERFLAGS aBufferFlags[CBUFFER_SIZE];
     VIDDEC_LCML_STATES eLCMLState;
