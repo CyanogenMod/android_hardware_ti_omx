@@ -1794,6 +1794,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                 if (pComponentPrivate->first_output_buf_rcv != 0){
+                   pComponentPrivate->first_output_buf_rcv = 0;
                    pComponentPrivate->first_buff = 0;
                 }
                 AACDEC_EPRINT("About to be Flushing output port\n");
@@ -3890,7 +3891,6 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 
             {
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: UTIL: IUALG_WARN_PLAYCOMPLETED/USN_ERR_WARNING event received\n", __LINE__);
-                pComponentPrivate->first_output_buf_rcv = 0;
 #ifndef UNDER_CE
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
