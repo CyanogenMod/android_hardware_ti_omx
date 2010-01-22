@@ -2291,7 +2291,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
             }
 
-#if 1
                 pMyLCML = dlopen("libLCML.so", RTLD_LAZY);
                 if (!pMyLCML) {
                     OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -2323,7 +2322,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 /*(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML = (LCML_DSP_INTERFACE*)hLCML;*/
                 pComponentPrivate->pLCML = (LCML_DSP_INTERFACE*)hLCML;
                 pComponentPrivate->pLCML->pComponentPrivate = pComponentPrivate;
-#endif
 
 #ifdef __PERF_INSTRUMENTATION__
                 pComponentPrivate->lcml_nCntOpReceived = 0;
@@ -2402,7 +2400,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 OMX_PRINT1(pComponentPrivate->dbg, "INPUT width=%lu height=%lu\n", pComponentPrivate->pInPortDef->format.video.nFrameWidth, pComponentPrivate->pInPortDef->format.video.nFrameHeight);   
 
 
-#if 1
 #ifdef RESOURCE_MANAGER_ENABLED
                 pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) VIDDEC_ResourceManagerCallback;
                 if(pComponentPrivate->eRMProxyState != VidDec_RMPROXY_State_Unload){
@@ -2451,7 +2448,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
                     pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Registered;
                 }
-#endif
 #endif
                 /* Send command to USN to do the propagation of the EOS flag */
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
@@ -2554,7 +2550,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
                 VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
 
-#if 1
 #ifdef RESOURCE_MANAGER_ENABLED
             if(pComponentPrivate->eRMProxyState != VidDec_RMPROXY_State_Unload){
                 OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 2 %d : %d bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
@@ -2579,7 +2574,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
 #endif
             }
-#endif
 #endif
                 OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pUalgParams,OMX_PTR);
 
@@ -2871,7 +2865,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
 
                 /* Start existing code */
-#if 1
 #ifdef RESOURCE_MANAGER_ENABLED
             if(pComponentPrivate->eRMProxyState != VidDec_RMPROXY_State_Unload){
                 OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 3 %d : %d bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
@@ -2918,7 +2911,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                      break;
                 }
             }
-#endif
 #endif
 
                 eError = OMX_ErrorNone;
@@ -7503,7 +7495,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
 
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)argsCb[6])->pComponentPrivate;
 
-#if 0
+#ifdef DEBUG
     switch(event) {
         case EMMCodecDspError:
             OMX_PRDSP2(pComponentPrivate->dbg, "[LCML CALLBACK EVENT]  EMMCodecDspError (int)argsCb [0] %x (int)argsCb [4] %x (int)argsCb [5] %x\n",(int)argsCb [0],(int)argsCb [4],(int)argsCb [5]);

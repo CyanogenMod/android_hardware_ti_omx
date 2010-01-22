@@ -326,11 +326,9 @@ typedef struct H264VDEC_SNCreatePhArg {
 
 typedef struct {
     OMX_S32 lBuffCount;
-#if 1
     OMX_U32 ulNumOfNALU;
     OMX_U32 pNALUSizeArray[H264VDEC_SN_MAX_NALUNITS];
 /*     OMX_U32 *pNALUSizeArray;*/
-#endif
     OMX_U32 ulFrameIndex;
 } H264VDEC_UALGInputParam;
 
@@ -341,11 +339,9 @@ typedef struct {
     OMX_U32 ulBytesConsumed;
     OMX_S32 iErrorCode;
     OMX_U32 ulDecodedFrameType;
-#if 1
     OMX_U32 ulNumOfNALUDecoded;
     OMX_S32 lMBErrStatFlag;
     OMX_U8  pMBErrStatOutBuf[H264VDEC_SN_MAX_MB_NUMBER];
-#endif
 } H264VDEC_UALGOutputParam;
 #ifdef VIDDEC_SPARK_CODE 
 typedef struct SPARKVD_GPP_SN_Obj_CreatePhase {
@@ -624,4 +620,3 @@ typedef struct MP2VDEC_UALGDynamicParams
 } MP2VDEC_UALGDynamicParams;
 
 #endif
-
