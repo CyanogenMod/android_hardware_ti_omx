@@ -1175,6 +1175,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->bDynamicConfigurationInProgress  = OMX_FALSE;
             pComponentPrivate->nInternalConfigBufferFilledAVC = 0;
             pComponentPrivate->eMBErrorReport.bEnabled            = OMX_FALSE;
+            pComponentPrivate->bFlushing                          = OMX_FALSE;
         break;
 
 case VIDDEC_INIT_IDLEEXECUTING:
@@ -2106,6 +2107,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
 
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p nParam1 0x%lx\n",pComponentPrivate, nParam1);
+    pComponentPrivate->bFlushing = OMX_TRUE;
 
     if ( nParam1 == VIDDEC_INPUT_PORT || nParam1 == OMX_ALL){
         if(bPass) {
@@ -2183,6 +2185,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
         }
     }
 EXIT:
+    pComponentPrivate->bFlushing = OMX_FALSE;
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 
@@ -7623,7 +7626,10 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                pBuffHead->nFilledLen,
                                                PERF_ModuleCommonLayer);
 #endif
-
+                            if( pComponentPrivate->bFlushing) {
+                                pBuffHead->nFilledLen = 0;
+                                pBuffHead->nTimeStamp = 0;
+                            }
                             nRetVal = write(pComponentPrivate->filled_outBuf_Q[1],&pBuffHead,sizeof(pBuffHead));
                             if(nRetVal == -1){
                                 DecrementCount (&(pComponentPrivate->nCountOutputBFromDsp), &(pComponentPrivate->mutexOutputBFromDSP));
@@ -7778,7 +7784,10 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                pBuffHead->nFilledLen,
                                                PERF_ModuleCommonLayer);
 #endif
-
+                            if( pComponentPrivate->bFlushing) {
+                                pBuffHead->nFilledLen = 0;
+                                pBuffHead->nTimeStamp = 0;
+                            }
                             nRetVal = write(pComponentPrivate->filled_outBuf_Q[1],&pBuffHead,sizeof(pBuffHead));
                             if(nRetVal == -1){
                                 DecrementCount (&(pComponentPrivate->nCountOutputBFromDsp), &(pComponentPrivate->mutexOutputBFromDSP));

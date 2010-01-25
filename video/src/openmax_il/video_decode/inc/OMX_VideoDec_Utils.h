@@ -1001,7 +1001,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U32 nPendingStateChangeRequests;
     pthread_mutex_t mutexStateChangeRequest;
     pthread_cond_t StateChangeCondition;
-
+    OMX_BOOL bFlushing;
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/
