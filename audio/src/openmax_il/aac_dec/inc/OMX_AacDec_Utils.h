@@ -921,6 +921,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
 
       /** Indicate when first output buffer received from DSP **/
     OMX_U32 first_output_buf_rcv;
+    OMX_BOOL bFlushing;
 
 } AACDEC_COMPONENT_PRIVATE;
 

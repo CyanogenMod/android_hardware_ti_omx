@@ -1733,6 +1733,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
     }
     else if (command == OMX_CommandFlush) {
+        pComponentPrivate->bFlushing = OMX_TRUE;
         if(commandData == 0x0 || commandData == -1) {
             OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n", pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
@@ -1826,6 +1827,13 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                           PERF_ModuleHLMM);
 #endif  
 
+                        if( pComponentPrivate->bFlushing) {
+                            OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
+                            pBuffHead = pComponentPrivate->pOutputBufHdrPending[i];
+                            pBuffHead->nFilledLen = 0;
+                            pBuffHead->nTimeStamp = 0;
+                        }
+
                         pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
                                                                   pComponentPrivate->pOutputBufHdrPending[i]
@@ -1850,8 +1858,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_TRUE;
             }
         }
+        pComponentPrivate->bFlushing = OMX_FALSE;
     }
  EXIT:
+    pComponentPrivate->bFlushing = OMX_FALSE;
     /* @NOTE: EXIT_COMPONENT_THRD is not REALLY an error, but a signal to ComponentThread.c */
     return eError;
 }
@@ -2647,6 +2657,12 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                   pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->nInvalidFrameCount]->nFilledLen,
                                   PERF_ModuleHLMM);
 #endif
+                if( pComponentPrivate->bFlushing) {
+                    OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
+                    pBuffHead = pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->nInvalidFrameCount];
+                    pBuffHead->nFilledLen = 0;
+                    pBuffHead->nTimeStamp = 0;
+                }
                 pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                           pComponentPrivate->pHandle->pApplicationPrivate,
                                                           pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->nInvalidFrameCount++]
@@ -2928,6 +2944,12 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                           PREF(pComponentPrivate->pOutputBufHdrPending[i],nFilledLen),
                                           PERF_ModuleHLMM);
 #endif
+                        if( pComponentPrivate->bFlushing) {
+                            OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
+                            pBuffHead = pComponentPrivate->pOutputBufHdrPending[i];
+                            pBuffHead->nFilledLen = 0;
+                            pBuffHead->nTimeStamp = 0;
+                        }
 
                         pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
