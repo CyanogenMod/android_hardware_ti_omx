@@ -37,7 +37,7 @@ int rm_set_vdd1_constraint(int MHz)
 #ifdef DVFS_ENABLED
     
     char command[100];
-    int vdd2_opp = 0;
+    int vdd2_opp = 1;
     /* for any MM case, set c-state to 2, unless no mm is active */
     int c_state = 2;
     
