@@ -30,7 +30,7 @@
  *  nodes.
 */
 
-#undef RAM_DEBUG
+#define RAM_DEBUG
 
 #ifdef RAM_DEBUG
   #include <utils/Log.h>
@@ -88,6 +88,8 @@ int rm_get_vdd1_constraint();
 int dsp_mhz_to_vdd1_opp(int MHz);
 
 int get_omap_version();
+int get_curr_cpu_mhz(int omapVersion);
+int get_dsp_max_freq();
 
 void rm_request_boost(int level);
 void rm_release_boost();

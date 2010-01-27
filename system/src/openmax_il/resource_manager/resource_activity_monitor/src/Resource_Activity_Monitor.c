@@ -168,11 +168,8 @@ int get_omap_version()
     int cpu_variant = 0;
     int dsp_max_freq = 0;
 
-    FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
-    if (fp == NULL) RAM_DPRINT("open file failed\n");
-    fscanf(fp, "%d",&dsp_max_freq);
-    fclose(fp);
-    dsp_max_freq /= 1000000;
+    dsp_max_freq = get_dsp_max_freq();
+
     if (dsp_max_freq == vdd1_dsp_mhz_3420[OPERATING_POINT_5]){
         cpu_variant = OMAP3420_CPU;
     }
@@ -193,6 +190,140 @@ int get_omap_version()
 
     return cpu_variant;
 
+}
+
+
+int get_dsp_max_freq()
+{
+    int dsp_max_freq = 0;
+
+    FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
+    if (fp == NULL) RAM_DPRINT("open file failed\n");
+    fscanf(fp, "%d",&dsp_max_freq);
+    fclose(fp);
+    dsp_max_freq /= 1000000;
+
+    return dsp_max_freq;
+}
+
+int get_curr_cpu_mhz(int omapVersion){
+
+    int maxMhz = 0;
+    int cur_freq = 0;
+    int cpu_variant = 0;
+
+#ifdef DVFS_ENABLED
+
+    cpu_variant = get_omap_version();
+    FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
+    if (fp == NULL) {
+       RAM_DPRINT("open file cpuinfo_cur_freq failed\n");
+       return -1;
+    }
+    fscanf(fp, "%d",&cur_freq);
+    fclose(fp);
+    cur_freq /= 1000;
+
+    if (cpu_variant == OMAP3420_CPU){
+        if (cur_freq == vdd1_mpu_mhz_3420[OPERATING_POINT_1]) {
+            maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_1];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3420[OPERATING_POINT_2]) {
+            maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_2];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3420[OPERATING_POINT_3]) {
+            maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_3];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3420[OPERATING_POINT_4]) {
+            maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_4];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3420[OPERATING_POINT_5]) {
+            maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_5];
+        }
+        else {
+            RAM_DPRINT("Read incorrect frequency from sysfs 3430\n");
+            return NULL;
+        }
+    }
+    else if (cpu_variant == OMAP3430_CPU){
+        if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_1]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_1];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_2]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_2];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_3]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_3];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_4]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_4];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_5]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_5];
+        }
+        else {
+            RAM_DPRINT("Read incorrect frequency from sysfs 3430\n");
+            return NULL;
+        }
+    }
+    else if (cpu_variant == OMAP3440_CPU){
+        if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_1]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_1];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_2]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_2];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_3]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_3];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_4]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_4];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_5]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_5];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3440[OPERATING_POINT_6]) {
+            maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_6];
+        }
+        else {
+            RAM_DPRINT("Read incorrect frequency from sysfs 3430\n");
+            return NULL;
+        }
+    }
+    else if (cpu_variant == OMAP3630_CPU){
+        if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_1]) {
+            maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_1];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_2]) {
+            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_2];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_3]) {
+            maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_3];
+        }
+        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_4]) {
+            maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_4];
+        }
+        else {
+            RAM_DPRINT("Read incorrect frequency from sysfs 3430\n");
+            return NULL;
+        }
+    }
+#else
+    // if DVFS is not available, use opp4 constraints
+    if (cpu_variant == OMAP3420_CPU){
+        maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_4];
+    }
+    else if (cpu_variant == OMAP3430_CPU){
+        maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_4];
+    }
+    else if (cpu_variant == OMAP3440_CPU){
+        maxMhz = vdd1_dsp_mhz_3440[OPERATING_POINT_4];
+    }
+    else if (cpu_variant == OMAP3630_CPU){
+        maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_3];
+    }
+#endif
+    return maxMhz;
 }
 
 int rm_get_vdd1_constraint()

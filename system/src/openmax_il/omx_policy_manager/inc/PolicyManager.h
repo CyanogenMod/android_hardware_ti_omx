@@ -165,9 +165,6 @@ typedef struct OMX_POLICY_MANAGER_COMPONENTS_TYPE {
 } OMX_POLICY_MANAGER_COMPONENTS_TYPE;
 
 // internal functions
-void FreeQos();
-void RegisterQos(); 
-void InitializeQos();
 void HandleRequestPolicy(POLICYMANAGER_COMMANDDATATYPE cmd);
 void HandleWaitForPolicy(POLICYMANAGER_COMMANDDATATYPE cmd);
 void HandleFreePolicy(POLICYMANAGER_COMMANDDATATYPE cmd);

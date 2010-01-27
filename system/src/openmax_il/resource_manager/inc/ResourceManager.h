@@ -131,6 +131,8 @@ struct QOSREGISTRY *registry;
 struct QOSRESOURCE_MEMORY *m;
 struct QOSRESOURCE_PROCESSOR *p;
 struct QOSDATA **results = NULL;
+struct DSP_PROCESSORINFO dspInfo;
+DSP_HPROCESSOR hProc;
 RM_CPULoadStruct cpuStruct;
 
 /* defining the DSP opp points for vdd1 */
@@ -143,10 +145,15 @@ RM_CPULoadStruct cpuStruct;
 /* for 3440 only */
 #define RM_OPERATING_POINT_6 5
 
+#define QOS_OK 1
+#define QOS_DENY 0
+
 // internal functions
 void FreeQos();
 void RegisterQos(); 
 OMX_ERRORTYPE InitializeQos();
+int RM_GetQos();
+
 void HandleRequestResource(RESOURCEMANAGER_COMMANDDATATYPE cmd);
 void HandleWaitForResource(RESOURCEMANAGER_COMMANDDATATYPE cmd);
 void HandleFreeResource(RESOURCEMANAGER_COMMANDDATATYPE cmd);
@@ -161,8 +168,8 @@ void RM_itoa(int n, char s[]);
 void RM_reverse(char s[]);
 int RM_SetStatus(OMX_HANDLETYPE hComponent, OMX_U32 aPid,RM_COMPONENTSTATUS status);
 int RM_GetListIndex(OMX_HANDLETYPE hComponent,OMX_U32 aPid);
- int RM_SetReason(OMX_HANDLETYPE hComponent, RM_DENYREASON reason);
-void *RM_CPULoadThread(int pipeToWatch);
+int RM_SetReason(OMX_HANDLETYPE hComponent, RM_DENYREASON reason);
+
 int Install_Bridge();
 int Uninstall_Bridge();
 int LoadBaseimage();

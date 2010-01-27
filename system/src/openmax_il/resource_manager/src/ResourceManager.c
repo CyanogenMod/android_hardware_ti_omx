@@ -139,10 +139,8 @@ int main()
     OMX_BOOL Exitflag = OMX_FALSE;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int reuse_pipe = -1;
-
-#ifndef __ENABLE_RMPM_STUB__
-    int MemoryIsPresent = FALSE;
-#endif    
+    cpuStruct.snapshotsCaptured = 0;
+    cpuStruct.averageCpuLoad = 0;
 
     RM_DPRINT("[Resource Manager] - going to create the read & write pipe\n");
     unlink(RM_SERVER_IN);
@@ -162,16 +160,6 @@ int main()
     }
 
 #ifndef __ENABLE_RMPM_STUB__
-    /* if already set stub mode, we don't need to check for QoS */
-    if (!stub_mode){
-        /* try initialize Qos, if fail fallback to stub mode */
-        eError = InitializeQos();
-        if (eError != OMX_ErrorNone)
-        {
-            RM_EPRINT ("InitializeQos failed, fallback to stub mode\n");
-            stub_mode = 1;
-        }
-    }
     /* after here, we know for sure if we are in stub_mode or not. */
     if (!stub_mode) 
     {
@@ -312,25 +300,20 @@ int main()
 
                 case PM_GRANTPOLICY:
                     /* if policy request is granted then check to see if resource is available */
-                    m= (struct QOSRESOURCE_MEMORY *)DSPData_Create(QOSDataType_Memory_DynAlloc);
-                    if (m) {
-                        m->align = 4;
-                        m->heapId = KAllHeaps;
-                        m->size = cmd_data.param3;
-                        MemoryIsPresent = DSPQos_TypeSpecific((struct QOSDATA *)registry,
-							QOS_FN_HasAvailableResource, (unsigned int)(struct QOSDATA *)m);
-                        status = DSPData_Delete((struct QOSDATA *) m);
-                    }
 
-                    /* if memory is available and DSP cycles are available grant request */
-                    if (MemoryIsPresent && (cpuStruct.cyclesAvailable >= cmd_data.param2)) {
+                    if (RM_GetQos() == QOS_OK)
+                    {
                         globalrequest_cmd_data.rm_status = RM_GRANT;
                         RM_SetStatus(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid,RM_ComponentActive);
-                        if(write(RM_GetPipe(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid), &globalrequest_cmd_data, sizeof(globalrequest_cmd_data)) < 0)
+                        if(write(RM_GetPipe(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid),
+                                 &globalrequest_cmd_data, sizeof(globalrequest_cmd_data)) < 0)
+                        {
                             RM_DPRINT ("[Resource Manager] - failure write data back to component\n");
+                        }
                         else
+                        {
                             RM_DPRINT ("[Resource Manager] - Granted by policy, ok to write data back to component\n");
-                            
+                        }
                     }
                     else {
                         policy_data.PM_Cmd = PM_FreeResources;
@@ -361,8 +344,6 @@ int main()
         }
     }
 
-    FreeQos();
-
     close(fdread);
     close(fdwrite);
 
@@ -392,9 +373,7 @@ OMX_ERRORTYPE InitializeQos()
     DSP_STATUS status = DSP_SOK;
     unsigned int uProcId = 0;	/* default proc ID is 0. */
     unsigned int index = 0;
-    struct DSP_PROCESSORINFO dspInfo;
     unsigned int numProcs;
-    DSP_HPROCESSOR hProc;
     char *qosdllname;
 
     qosdllname = getenv ("QOSDYN_FILE");
@@ -461,38 +440,9 @@ OMX_ERRORTYPE InitializeQos()
         return eError;
     }
 
-    pthread_t thread_id;
-    pthread_create(&thread_id, NULL, (void*)RM_CPULoadThread, NULL);
 #endif
 
     return eError;
-}
- 
-
-/*
-   Description : This function will free Qos
-   
-   Parameter   : 
-   
-   Return      : 
-   
-*/
-void FreeQos()
-{
-        RM_DPRINT ("[Resource Manager] - FreeQos() function call\n");
-}
-
-/*
-   Description : This function will register Qos
-   
-   Parameter   : 
-   
-   Return      : 
-   
-*/
-void RegisterQos()
-{
-        RM_DPRINT ("[Resource Manager] - RegisterQos() function call\n");
 }
 
 /*
@@ -509,7 +459,6 @@ void HandleRequestResource(RESOURCEMANAGER_COMMANDDATATYPE cmd)
     if (!stub_mode)
     {
         RM_DPRINT ("[Resource Manager] - HandleRequestResource() function call\n");
-
         policy_data.PM_Cmd = PM_RequestPolicy;
         policy_data.param1 = cmd.param1;
         policy_data.hComponent=cmd.hComponent;
@@ -975,7 +924,8 @@ int RM_RemoveComponentFromList(OMX_HANDLETYPE hComponent,OMX_U32 aPid)
     return 0;
 }
 
-/* Install_Bridge not being used in Android releases
+/* @deprecate
+   Install_Bridge not being used in Android releases
    since it is easier to build this module into the kernel */
 int Install_Bridge()
 {
@@ -997,7 +947,8 @@ int Install_Bridge()
     return 0;
 }
 
-/* Uninstall_Bridge not being used in Android releases
+/* @deprecate
+   Uninstall_Bridge not being used in Android releases
    since it is easier to build this module into the kernel */
 int Uninstall_Bridge()
 {
@@ -1009,8 +960,10 @@ int Uninstall_Bridge()
 }
 
 
-/* Load_Baseimage not being used in Android releases
-   since it is easier to use a service in init.rc */
+/* @deprecate
+   Load_Baseimage is provided as reference only
+   since it is usually easier to load using a 
+   service in init.rc stage */
 int LoadBaseimage()
 {
     int fd;
@@ -1076,286 +1029,181 @@ int LoadBaseimage()
     return 0;
 }
 
-void ReloadBaseimage()
+
+/*
+   Description : This function will free Qos
+   
+   Parameter   : 
+   
+   Return      : 
+   
+*/
+void FreeQos()
 {
+    RM_DPRINT ("[Resource Manager] - FreeQos() function call\n");
+
+    DSPRegistry_Delete(registry);
+    RM_DPRINT ("[Resource Manager] - FreeQos() registry deleted\n");
+
+    QosTI_Delete();
+    RM_DPRINT ("[Resource Manager] - FreeQos() Qos deleted\n");
 }
 
-
-void *RM_CPULoadThread(int pipeToWatch)
+/*
+   Description : This function will register Qos
+   
+   Parameter   : 
+   
+   Return      : 
+   
+*/
+void RegisterQos()
 {
-#ifndef __ENABLE_RMPM_STUB__
+        RM_DPRINT ("[Resource Manager] - RegisterQos() function call\n");
+}
+
+/*
+   Description : This function will get the current iva load using Qos
+   
+   Parameter   : 
+   
+   Return      : current IVA load in MHz
+   
+*/
+int RM_GetQos()
+{
     unsigned long NumFound;
     int i=0;
     int sum=0;
     DSP_STATUS status = DSP_SOK;
     int currentOverallUtilization=0;
-    struct timespec tv;
     unsigned int dsp_currload=0, dsp_predload=0, dsp_currfreq=0, dsp_predfreq=0;
-    cpuStruct.snapshotsCaptured = 0;
-    cpuStruct.averageCpuLoad = 0;
     int maxMhz=0;
-    int cur_freq=0;
     int op=0;
-    int mpu_max_freq = 0;
     int dsp_max_freq = 0;
     int cpu_variant = 0;
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+    int memoryAvailable = QOS_DENY;
 
-    RM_DPRINT("starting CPULoadThread\n");
+    /* if already set stub mode, we don't need to check for QoS */
+    if (!stub_mode){
+        /* try initialize Qos, if fail fallback to stub mode */
+        eError = InitializeQos();
+        if (eError != OMX_ErrorNone)
+        {
+            RM_EPRINT ("InitializeQos failed, fallback to stub mode\n");
+            stub_mode = 1;
+        }
+    }
+
     if (!stub_mode)
     {
-        RM_DPRINT("in load thread:: stub mode is %d\n", stub_mode);
+
+        /* check available memory */
+        m= (struct QOSRESOURCE_MEMORY *)DSPData_Create(QOSDataType_Memory_DynAlloc);
+        if (m) {
+            m->align = 4;
+            m->heapId = KAllHeaps;
+            m->size = cmd_data.param3;
+            memoryAvailable = DSPQos_TypeSpecific((struct QOSDATA *)registry,
+	                                       QOS_FN_HasAvailableResource, (unsigned int)(struct QOSDATA *)m);
+            status = DSPData_Delete((struct QOSDATA *) m);
+        }
+
+        RM_DPRINT("getting iva load: stub mode is %d\n", stub_mode);
         /* initialize array */
         for (i=0; i < RM_CPUAVGDEPTH; i++) {
             cpuStruct.cpuLoadSnapshots[i] = 0;
         }
 
-        tv.tv_nsec = 100000000;
-        tv.tv_sec = 0;
-
 #ifdef DVFS_ENABLED
-            FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
-            if (fp == NULL) {
-                RM_DPRINT("open file max_dsp_frequency failed\n");
-                return NULL;
-            }
-            fscanf(fp, "%d",&dsp_max_freq);
-            fclose(fp);
-            dsp_max_freq /= 1000000;
-            if (dsp_max_freq == vdd1_dsp_mhz_3420[RM_OPERATING_POINT_5]){
-                cpu_variant = OMAP3420_CPU;
-            }
-            else if (dsp_max_freq == vdd1_dsp_mhz_3430[RM_OPERATING_POINT_5]){
-                cpu_variant = OMAP3430_CPU;
-            }
-            else if (dsp_max_freq == vdd1_dsp_mhz_3440[RM_OPERATING_POINT_6]){
-            /* 3440 has 6 OPPs */
-                cpu_variant = OMAP3440_CPU;
-            }
-            else if (dsp_max_freq == vdd1_dsp_mhz_3630[RM_OPERATING_POINT_4]){
-            /* 3440 has 6 OPPs */
-                cpu_variant = OMAP3630_CPU;
-            }
-            fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq","r");
-            if (fp == NULL) {
-                RM_DPRINT("open file cpuinfo_cur_freq failed\n");
-                return NULL;
-            }
-            fscanf(fp, "%d",&cur_freq);
-            fclose(fp);
-            cur_freq /= 1000;
-
-            if (cpu_variant == OMAP3420_CPU){
-                if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_1])
-                {
-                    op = RM_OPERATING_POINT_1;
-                    maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_1];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_2])
-                {
-                    op = RM_OPERATING_POINT_2;
-                    maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_2];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_3])
-                {
-                    op = RM_OPERATING_POINT_3;
-                    maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_3];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_4])
-                {
-                    op = RM_OPERATING_POINT_4;
-                    maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_4];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3420[RM_OPERATING_POINT_5])
-                {
-                    op = RM_OPERATING_POINT_5;
-                    maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_5];
-                }
-                else
-                {
-                    RM_DPRINT("Read incorrect frequency from sysfs 3420\n");
-                    return NULL;
-                }
-            }
-            else if (cpu_variant == OMAP3430_CPU){
-                if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_1])
-                {
-                    op = RM_OPERATING_POINT_1;
-                    maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_1];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_2])
-                {
-                    op = RM_OPERATING_POINT_2;
-                    maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_2];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_3])
-                {
-                    op = RM_OPERATING_POINT_3;
-                    maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_3];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_4])
-                {
-                    op = RM_OPERATING_POINT_4;
-                    maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_4];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3430[RM_OPERATING_POINT_5])
-                {
-                    op = RM_OPERATING_POINT_5;
-                    maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_5];
-                }
-                else
-                {
-                    RM_DPRINT("Read incorrect frequency from sysfs 3430\n");
-                    return NULL;
-                }
-            }
-            else if (cpu_variant == OMAP3440_CPU){
-                if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_1])
-                {
-                    op = RM_OPERATING_POINT_1;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_1];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_2])
-                {
-                    op = RM_OPERATING_POINT_2;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_2];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_3])
-                {
-                    op = RM_OPERATING_POINT_3;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_3];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_4])
-                {
-                    op = RM_OPERATING_POINT_4;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_4];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_5])
-                {
-                    op = RM_OPERATING_POINT_5;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_5];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3440[RM_OPERATING_POINT_6])
-                {
-                    op = RM_OPERATING_POINT_6;
-                    maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_6];
-                }
-                else
-                {
-                    RM_DPRINT("Read incorrect frequency from sysfs 3440\n");
-                    return NULL;
-                }
-            }
-            else if (cpu_variant == OMAP3630_CPU){
-                if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_1])
-                {
-                    op = RM_OPERATING_POINT_1;
-                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_1];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_2])
-                {
-                    op = RM_OPERATING_POINT_2;
-                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_2];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_3])
-                {
-                    op = RM_OPERATING_POINT_3;
-                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_3];
-                }
-                else if (cur_freq == vdd1_mpu_mhz_3630[RM_OPERATING_POINT_4])
-                {
-                    op = RM_OPERATING_POINT_4;
-                    maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_4];
-                }
-                else
-                {
-                    RM_DPRINT("Read incorrect frequency from sysfs 3630\n");
-                    return NULL;
-                }
-            }
-#else
-            // if DVFS is not available, use opp4 constraints
-            if (cpu_variant == OMAP3420_CPU){
-                maxMhz = vdd1_dsp_mhz_3420[RM_OPERATING_POINT_4];
-            }
-            else if (cpu_variant == OMAP3430_CPU){
-                maxMhz = vdd1_dsp_mhz_3430[RM_OPERATING_POINT_4];
-            }
-            else if (cpu_variant == OMAP3440_CPU){
-                maxMhz = vdd1_dsp_mhz_3440[RM_OPERATING_POINT_4];
-            }
-            else if (cpu_variant == OMAP3630_CPU){
-                maxMhz = vdd1_dsp_mhz_3630[RM_OPERATING_POINT_3];
-            }
+        cpu_variant = get_omap_version();
+        maxMhz = get_curr_cpu_mhz(cpu_variant);
+        dsp_max_freq = get_dsp_max_freq();
+        op = rm_get_vdd1_constraint();
 #endif
-
-        while (1) {
-            results = NULL;
-            NumFound = 0;
-
-            status = QosTI_GetProcLoadStat (&dsp_currload, &dsp_predload, &dsp_currfreq, &dsp_predfreq);
-            if (DSP_SUCCEEDED(status)) 
-            {
-                /* get the dsp load from the Qos call without a DSP wake up*/
-                currentOverallUtilization = dsp_currload * maxMhz / dsp_max_freq;
-            }
-            else 
-            {
-                /* get the dsp load from the Registry call by a DSP wake up*/
-                status = DSPRegistry_Find(QOSDataType_Processor_C6X, registry, results, &NumFound);
-                if ( !DSP_SUCCEEDED(status) && status != DSP_ESIZE) {
-                    RM_DPRINT("None.\n\n");
-                }
-
-                results = malloc(NumFound * sizeof (struct QOSDATA *));
-                if (!results) {
-                    RM_DPRINT("FAILED (out of memory)\n\n");
-                }
-
-                /* Get processor usage */
-                status = DSPRegistry_Find(QOSDataType_Processor_C6X, registry, results, &NumFound);
-                if (DSP_SUCCEEDED(status)) {
-                } 
-                else {
-                    NumFound = 0;
-                }
-                p = (struct  QOSRESOURCE_PROCESSOR *) results[0];
-                currentOverallUtilization = p->currentLoad * maxMhz / dsp_max_freq;
+        
+        results = NULL;
+        NumFound = 0;
+        status = QosTI_GetProcLoadStat (&dsp_currload, &dsp_predload, &dsp_currfreq, &dsp_predfreq);
+        if (DSP_SUCCEEDED(status)) 
+        {
+            /* get the dsp load from the Qos call without a DSP wake up*/
+            currentOverallUtilization = dsp_currload * maxMhz / dsp_max_freq;
+            RM_DPRINT("GetProcLoadStat API used.\n\n");
+        }
+        else 
+        {
+            RM_DPRINT("DSPRegistrey lookup used.\n\n");
+            /* get the dsp load from the Registry call by a DSP wake up*/
+            status = DSPRegistry_Find(QOSDataType_Processor_C6X, registry, results, &NumFound);
+            if ( !DSP_SUCCEEDED(status) && status != DSP_ESIZE) {
+                RM_DPRINT("None.\n\n");
             }
 
-            /* If we have not yet captured RM_CPUAVGDEPTH samples add this to the next slot in the array */
-            if (cpuStruct.snapshotsCaptured < RM_CPUAVGDEPTH) {
-                cpuStruct.cpuLoadSnapshots[cpuStruct.snapshotsCaptured++] = currentOverallUtilization;
+            results = malloc(NumFound * sizeof (struct QOSDATA *));
+            if (!results) {
+                RM_DPRINT("FAILED (out of memory)\n\n");
             }
+
+            /* Get processor usage */
+            status = DSPRegistry_Find(QOSDataType_Processor_C6X, registry, results, &NumFound);
+            if (DSP_SUCCEEDED(status)) {
+            } 
             else {
-                /* If the array is now full, shift the existing entries of the array */
-                for (i=0; i < RM_CPUAVGDEPTH-1; i++) {
-                    cpuStruct.cpuLoadSnapshots[i] = cpuStruct.cpuLoadSnapshots[i+1];
-                }
-                /* ...and then put the most recent value in the last slot in the array */            
-                cpuStruct.cpuLoadSnapshots[RM_CPUAVGDEPTH-1] = currentOverallUtilization;
+                NumFound = 0;
             }
+            p = (struct  QOSRESOURCE_PROCESSOR *) results[0];
+            currentOverallUtilization = p->currentLoad * maxMhz / dsp_max_freq;
+        }
+        /* we are done with the bridge handle, let's free it */
+        FreeQos();
 
-            /* Calculate the average */
-            sum = 0;
-            for (i=0; i < cpuStruct.snapshotsCaptured; i++) {
-                sum += cpuStruct.cpuLoadSnapshots[i];
+        /* If we have not yet captured RM_CPUAVGDEPTH samples add this to the next slot in the array */
+        if (cpuStruct.snapshotsCaptured < RM_CPUAVGDEPTH) {
+            cpuStruct.cpuLoadSnapshots[cpuStruct.snapshotsCaptured++] = currentOverallUtilization;
+        }
+        else {
+            /* If the array is now full, shift the existing entries of the array */
+            for (i=0; i < RM_CPUAVGDEPTH-1; i++) {
+                cpuStruct.cpuLoadSnapshots[i] = cpuStruct.cpuLoadSnapshots[i+1];
             }
-            cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
-            cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * dsp_max_freq) / 100);
-            cpuStruct.cyclesAvailable = dsp_max_freq - cpuStruct.cyclesInUse;
+            /* ...and then put the most recent value in the last slot in the array */            
+            cpuStruct.cpuLoadSnapshots[RM_CPUAVGDEPTH-1] = currentOverallUtilization;
+        }
 
-            /* wait for RM_CPUAVERAGEDELAY seconds */
-            nanosleep(&tv, NULL);
-            free(results);
+        /* Calculate the average */
+        sum = 0;
+        for (i=0; i < cpuStruct.snapshotsCaptured; i++) {
+            sum += cpuStruct.cpuLoadSnapshots[i];
+        }
+        cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
+        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * dsp_max_freq) / 100);
+        cpuStruct.cyclesAvailable = dsp_max_freq - cpuStruct.cyclesInUse;
+        RM_EPRINT("Calculating QoS: \n\tdsp_max_freq = %d\n\tcyclesInUse = %d\n\n", dsp_max_freq, cpuStruct.cyclesInUse);
+
+        RM_EPRINT("QoS Results: \n\tmemoryAvailable = %d\n\tcyclesAvailable = %d\n\trequestedCycles = %d\n\n", 
+                   memoryAvailable, cpuStruct.cyclesAvailable, cmd_data.param2);
+
+        /* if memory is available and DSP cycles are available grant request */
+        if (memoryAvailable && (cpuStruct.cyclesAvailable >= cmd_data.param2)) {                        
+            return QOS_OK;                        
+        }
+        else {
+            return QOS_DENY;
         }
     } //end not stub mode
-#endif /*  __ENABLE_RMPM_STUB__  */
 
-    return NULL;
+    else
+    {    /* in stub mode, we always grant requests */
+        return QOS_OK;
+    }
+
 }
 
-/* RM_FatalErrorWatch not being used because a new bridge
-   daemon is in use, deprecate */
+/* @deprecated
+   RM_FatalErrorWatch not being used because a new bridge
+   recovery daemon is in use, deprecate */
 void *RM_FatalErrorWatchThread()
 {
 
@@ -1418,7 +1266,6 @@ void *RM_FatalErrorWatchThread()
             DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
             status = DspManager_Close(0, NULL);
             DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
-//            FreeQos();
             while (componentList.numRegisteredComponents != 0) {
                 sleep(1);
             }
@@ -1435,4 +1282,8 @@ EXIT:
     return NULL;
 }
 
+/* @deprecate */
+void ReloadBaseimage()
+{
+}
 
