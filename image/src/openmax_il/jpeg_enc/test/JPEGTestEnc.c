@@ -655,10 +655,6 @@ OMX_BOOL bError = OMX_FALSE;
 inline int maxint(int a, int b);
 OMX_ERRORTYPE SetMarkers(OMX_HANDLETYPE pHandle, IMAGE_INFO *imageinfo, OMX_CONFIG_RECTTYPE sCrop, int nWidth, int nHeight);
 
-#ifdef DSP_MMU_FAULT_HANDLING
-int LoadBaseImage();
-#endif
-
 /*Routine to get the maximum of 2 integers */
 inline int maxint(int a, int b)
 {
@@ -1322,12 +1318,6 @@ do
 
 	for (multiload = 0; multiload < STRESSMULTILOAD; multiload ++) {
 	    printf("Stress Test: Iteration %d\n", multiload + 1);
-#endif
-
-
-#ifdef DSP_MMU_FAULT_HANDLING
-/* LOAD BASE IMAGE FIRST TIME */
-        LoadBaseImage();
 #endif
 
 	error = TIOMX_Init();
@@ -2035,14 +2025,6 @@ EXIT:
 	    printf ("Error in Free Handle function\n");
 	}
 
-#ifdef DSP_MMU_FAULT_HANDLING
-
-        if(bError) {
-            LoadBaseImage();
-        }
-
-#endif
-    
 	error = TIOMX_Deinit();
 	if ( error != OMX_ErrorNone ) {
 	    printf("Error returned by OMX_DeInit()\n");
@@ -2060,59 +2042,3 @@ EXIT:
     PRINT ("Free Handle returned Successfully = %x\n",error);
     return error;
 }
-
-#ifdef DSP_MMU_FAULT_HANDLING
-
-int LoadBaseImage() {
-    unsigned int uProcId = 0;	/* default proc ID is 0. */
-    unsigned int index = 0;
-    
-    struct DSP_PROCESSORINFO dspInfo;
-    DSP_HPROCESSOR hProc;
-    DSP_STATUS status = DSP_SOK;
-    unsigned int numProcs;
-    char* argv[2];
-   
-    argv[0] = "/lib/dsp/baseimage.dof";
-    
-    status = (DBAPI)DspManager_Open(0, NULL);
-    if (DSP_FAILED(status)) {
-        printf("DSPManager_Open failed \n");
-        return -1;
-    } 
-    while (DSP_SUCCEEDED(DSPManager_EnumProcessorInfo(index,&dspInfo,
-        (unsigned int)sizeof(struct DSP_PROCESSORINFO),&numProcs))) {
-        if ((dspInfo.uProcessorType == DSPTYPE_55) || 
-            (dspInfo.uProcessorType == DSPTYPE_64)) {
-            uProcId = index;
-            status = DSP_SOK;
-            break;
-        }
-        index++;
-    }
-    status = DSPProcessor_Attach(uProcId, NULL, &hProc);
-    if (DSP_SUCCEEDED(status)) {
-        status = DSPProcessor_Stop(hProc);
-        if (DSP_SUCCEEDED(status)) {
-            status = DSPProcessor_Load(hProc,1,(const char **)argv,NULL);
-            if (DSP_SUCCEEDED(status)) {
-                status = DSPProcessor_Start(hProc);
-                if (DSP_SUCCEEDED(status)) {
-                } 
-                else {
-                }
-            } 
-			else {
-            }
-            DSPProcessor_Detach(hProc);
-        }
-        else {
-        }
-    }
-    else {
-    }
-    fprintf(stderr,"Baseimage Loaded\n");
-
-    return 0;		
-}
-#endif

@@ -81,10 +81,6 @@ inline int maxint(int a, int b)
 
  /*Define prototypes*/
  
-#ifdef DSP_MMU_FAULT_HANDLING
-int LoadBaseImage();
-#endif
-
  static OMX_ERRORTYPE WaitForEvent_JPEG(OMX_HANDLETYPE* pHandle,
                                   OMX_EVENTTYPE DesiredEvent,
                                   OMX_U32 data,
@@ -767,11 +763,6 @@ int main(int argc, char** argv)
     /* save off the "max" of the handles for the selct statement */
     nFdmax = maxint(IpBuf_Pipe[0], OpBuf_Pipe[0]);
     nFdmax = maxint(Event_Pipe[0], nFdmax);
-
-#ifdef DSP_MMU_FAULT_HANDLING
-    /* LOAD BASE IMAGE FIRST TIME */
-    LoadBaseImage();
-#endif
 
     eError = TIOMX_Init();
     if ( eError != OMX_ErrorNone ) {
@@ -1534,12 +1525,6 @@ EXIT:
         }
     }
 
-#ifdef DSP_MMU_FAULT_HANDLING
-    if(bError) {
-        LoadBaseImage();
-    }
-#endif
-
     eError = TIOMX_Deinit();
     if ( eError != OMX_ErrorNone ) {
         PRINT("Error returned by OMX_Init()\n");
@@ -1550,59 +1535,4 @@ EXIT:
 }
 
 
-#ifdef DSP_MMU_FAULT_HANDLING
-
-int LoadBaseImage() {
-    unsigned int uProcId = 0;	/* default proc ID is 0. */
-    unsigned int index = 0;
-    
-    struct DSP_PROCESSORINFO dspInfo;
-    DSP_HPROCESSOR hProc;
-    DSP_STATUS status = DSP_SOK;
-    unsigned int numProcs;
-    char* argv[2];
-   
-    argv[0] = "/lib/dsp/baseimage.dof";
-    
-    status = (DBAPI)DspManager_Open(0, NULL);
-    if (DSP_FAILED(status)) {
-        printf("DSPManager_Open failed \n");
-        return -1;
-    } 
-    while (DSP_SUCCEEDED(DSPManager_EnumProcessorInfo(index,&dspInfo,
-        (unsigned int)sizeof(struct DSP_PROCESSORINFO),&numProcs))) {
-        if ((dspInfo.uProcessorType == DSPTYPE_55) || 
-            (dspInfo.uProcessorType == DSPTYPE_64)) {
-            uProcId = index;
-            status = DSP_SOK;
-            break;
-        }
-        index++;
-    }
-    status = DSPProcessor_Attach(uProcId, NULL, &hProc);
-    if (DSP_SUCCEEDED(status)) {
-        status = DSPProcessor_Stop(hProc);
-        if (DSP_SUCCEEDED(status)) {
-            status = DSPProcessor_Load(hProc,1,(const char **)argv,NULL);
-            if (DSP_SUCCEEDED(status)) {
-                status = DSPProcessor_Start(hProc);
-                if (DSP_SUCCEEDED(status)) {
-                } 
-                else {
-                }
-            } 
-			else {
-            }
-            DSPProcessor_Detach(hProc);
-        }
-        else {
-        }
-    }
-    else {
-    }
-    fprintf(stderr,"Baseimage Loaded\n");
-
-    return 0;		
-}
-#endif
 
