@@ -1687,6 +1687,10 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p nParam1 0x%lx\n",pComponentPrivate, nParam1);
 
+    /* Flush is performed before Unload Codec to avoid issues during free
+     * buffer as LCML would already be destroyed */
+    eError = VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
+
     /* Protect VIDDEC_UnloadCodec() to be called twice while doing Dynamic port configuration*/
     if(pComponentPrivate->bDynamicConfigurationInProgress && bFirstTimeToUnLoadCodec){
         OMX_PRINT1(pComponentPrivate->dbg, "VIDDEC_UnloadCodec\n");
@@ -1696,10 +1700,6 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
         }
         bFirstTimeToUnLoadCodec = OMX_FALSE;
     }
-
-    eError = VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
-
-
 
     if (nParam1 == VIDDEC_INPUT_PORT) {
         if((!(pComponentPrivate->eState == OMX_StateLoaded) && pComponentPrivate->pInPortDef->bPopulated) ||
