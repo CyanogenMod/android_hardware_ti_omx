@@ -303,7 +303,7 @@ typedef struct MYDATATYPE {
     int nHeight;
     OMX_U8 eColorFormat;
     OMX_U32 nBitrate;
-    OMX_U8 nFramerate;
+    float nFramerate;
     OMX_U8 eCompressionFormat;
     OMX_U8 eLevel;
     OMX_U32 nOutBuffSize;
@@ -2310,7 +2310,7 @@ OMX_ERRORTYPE VIDENCTEST_CheckArgs(int argc, char** argv, MYDATATYPE** pAppDataT
             printf("**Warning: Input argument BITRATE outside of tested range, behavior of component unknown.\n");
         }
 
-        pAppData->nFramerate = atoi(argv[7]);
+        pAppData->nFramerate = atof(argv[7]);
         if(pAppData->nFramerate < 7 || pAppData->nFramerate > 30) {
             printf("**Warning: Input argument FRAMERATE outside of tested range, behavior of component unknown.\n");
         }
