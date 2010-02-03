@@ -82,10 +82,17 @@ static const int vdd1_mpu_mhz_3440[6] = {125, 250, 500, 550, 600, 720};
 static const int vdd1_dsp_mhz_3630[4] = {260, 520, 660, 875};
 static const int vdd1_mpu_mhz_3630[4] = {300, 600, 800, 1000};
 
+/*old for opp based constraints*/
 int rm_set_vdd1_constraint(int MHz);
 int rm_get_vdd1_constraint();
 
 int dsp_mhz_to_vdd1_opp(int MHz);
+
+/*new for frequency based constraints */
+int rm_set_min_scaling_freq(int MHz);
+int rm_get_min_scaling_freq();
+
+int dsp_mhz_to_min_scaling_freq(int MHz);
 
 int get_omap_version();
 int get_curr_cpu_mhz(int omapVersion);
