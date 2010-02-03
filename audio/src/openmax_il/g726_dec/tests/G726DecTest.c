@@ -980,8 +980,11 @@ int main(int argc, char* argv[])
                                 fprintf (stderr,"Error from SendCommand-Idle(Stop) State function\n");
                                 goto EXIT;
                             }
-                            /*pBuffer->nFilledLen = 0;
-                              pComponent->EmptyThisBuffer(*pHandle, pBuffer);*/
+                            error = WaitForState(pHandle, OMX_StateIdle);
+                            if(error != OMX_ErrorNone) {
+                                fprintf(stderr, "Error:  hPcmDecoder->WaitForState reports an error %X\n", error);
+                                goto EXIT;
+                            }
                         } else {
                             error = send_input_buffer (*pHandle, pBuffer, fIn);
                             if (error != OMX_ErrorNone) {
