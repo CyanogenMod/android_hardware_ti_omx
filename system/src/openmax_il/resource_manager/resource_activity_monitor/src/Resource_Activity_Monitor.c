@@ -409,6 +409,23 @@ void rm_release_boost()
    
 }
 
+/*new implementations frequency based constraints */
+int rm_set_min_scaling_freq(int MHz)
+{
+    return OMAP_NOT_SUPPORTED;
+}
+
+int rm_get_min_scaling_freq()
+{
+    return OMAP_NOT_SUPPORTED;
+}
+
+int dsp_mhz_to_min_scaling_freq(int MHz)
+{
+    return OMAP_NOT_SUPPORTED;
+}
+
+
 
 char * ram_itoa(int a)
 {
