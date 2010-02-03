@@ -138,8 +138,6 @@ int dsp_mhz_to_vdd1_opp(int MHz)
         break;
         
         case OMAP3430_CPU:
-        default:
-        /* intentionally fall through */
         if (MHz <= vdd1_dsp_mhz_3430[OPERATING_POINT_2]) {
             /* MM should never use opp1, so skip to opp2 */
             vdd1_opp = OPERATING_POINT_2;
@@ -153,6 +151,28 @@ int dsp_mhz_to_vdd1_opp(int MHz)
         else {
             vdd1_opp = OPERATING_POINT_5;
         }
+        break;
+
+        case OMAP3630_CPU:
+        if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_1]) {
+            /* MM should never use opp1, so skip to opp2 */
+            vdd1_opp = OPERATING_POINT_1;
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_2]) {
+            /* MM should never use opp1, so skip to opp2 */
+            vdd1_opp = OPERATING_POINT_2;
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_3]) {
+            vdd1_opp = OPERATING_POINT_3;
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_4]) {
+            vdd1_opp = OPERATING_POINT_4;
+        }
+        break;
+
+        default:
+            RAM_DPRINT("this omap is not currently supported\n");	
+            return OMAP_NOT_SUPPORTED;
         break;
     } /* end switch */
     return vdd1_opp;
@@ -428,7 +448,82 @@ int rm_get_min_scaling_freq()
 
 int dsp_mhz_to_min_scaling_freq(int MHz)
 {
-    return OMAP_NOT_SUPPORTED;
+    /* initialize both vdd1 & vdd2 at 2
+     idea is to prohobit vdd1=1 during MM use cases */
+    unsigned int vdd1_opp = OPERATING_POINT_2;
+    int freq = 0;
+    int cpu_variant = get_omap_version();
+    
+    switch (cpu_variant) {
+    case OMAP3420_CPU:
+        if (MHz <= vdd1_dsp_mhz_3420[OPERATING_POINT_2]) {
+            /* MM should never use opp1, so skip to opp2 */
+            freq = vdd1_dsp_mhz_3420[OPERATING_POINT_2];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3420[OPERATING_POINT_3]) {
+            freq = vdd1_dsp_mhz_3420[OPERATING_POINT_3];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3420[OPERATING_POINT_4]) {
+            freq = vdd1_dsp_mhz_3420[OPERATING_POINT_4];
+        }
+        else {
+            freq = vdd1_dsp_mhz_3420[OPERATING_POINT_5];
+        }
+        break;
+        
+        case OMAP3440_CPU:
+        if (MHz <= vdd1_dsp_mhz_3440[OPERATING_POINT_2]) {
+            /* MM should never use opp1, so skip to opp2 */
+            freq = vdd1_dsp_mhz_3440[OPERATING_POINT_2];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3440[OPERATING_POINT_3]) {
+            freq = vdd1_dsp_mhz_3440[OPERATING_POINT_3];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3440[OPERATING_POINT_4]) {
+            freq = vdd1_dsp_mhz_3440[OPERATING_POINT_4];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3440[OPERATING_POINT_5]) {
+            freq = vdd1_dsp_mhz_3440[OPERATING_POINT_5];
+        }
+        else {
+            freq = vdd1_dsp_mhz_3440[OPERATING_POINT_6];
+        }
+        break;
+        
+        case OMAP3430_CPU:
+        if (MHz <= vdd1_dsp_mhz_3430[OPERATING_POINT_2]) {
+            /* MM should never use opp1, so skip to opp2 */
+            freq = vdd1_dsp_mhz_3430[OPERATING_POINT_2];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3430[OPERATING_POINT_3]) {
+            freq = vdd1_dsp_mhz_3430[OPERATING_POINT_3];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3430[OPERATING_POINT_4]) {
+            freq = vdd1_dsp_mhz_3430[OPERATING_POINT_4];
+        }
+        else {
+            freq = vdd1_dsp_mhz_3430[OPERATING_POINT_5];
+        }
+        break;
+
+        case OMAP3630_CPU:
+        if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_1]) {
+            /* 3630 should be able to run MM cases at OPP1
+               since the clock is much faster compared to 3430 */
+            freq = vdd1_dsp_mhz_3630[OPERATING_POINT_1];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_2]) {
+            freq = vdd1_dsp_mhz_3630[OPERATING_POINT_2];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_3]) {
+            freq = vdd1_dsp_mhz_3630[OPERATING_POINT_3];
+        }
+        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_4]) {
+            freq = vdd1_dsp_mhz_3630[OPERATING_POINT_4];
+        }
+        break;
+    } /* end switch */
+    return freq;
 }
 
 
