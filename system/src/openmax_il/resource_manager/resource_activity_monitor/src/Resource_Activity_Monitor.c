@@ -417,7 +417,13 @@ int rm_set_min_scaling_freq(int MHz)
 
 int rm_get_min_scaling_freq()
 {
-    return OMAP_NOT_SUPPORTED;
+    int min_scaling_freq = 0;
+    FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq","r");
+    if (fp == NULL) RAM_DPRINT("open file failed\n");
+    fscanf(fp, "%d",&min_scaling_freq);
+    fclose(fp);
+    RAM_DPRINT("[rm_get_min_scaling_freq] = %d \n",min_scaling_freq);
+    return min_scaling_freq;
 }
 
 int dsp_mhz_to_min_scaling_freq(int MHz)
