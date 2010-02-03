@@ -28,8 +28,19 @@
 #define LOG_TAG "OMXRM DVFS MONITOR"
 
 
+/* global to keep the current constraint across requests
+   this will be used to reset constraints if no MM is active */
 int currentMHzConstraint = 0;
 
+/*
+   Description : This function will determine the correct opp 
+                 and write it to the vdd1_opp sysfs
+   
+   Parameter   : MHz is the sum of MM requested MHz
+   
+   Return      : the integer value of the opp that was set
+   
+*/
 int rm_set_vdd1_constraint(int MHz)
 {
     int vdd1_opp = 0;
@@ -93,6 +104,14 @@ int rm_set_vdd1_constraint(int MHz)
     return vdd1_opp;
 }
 
+/*
+   Description : This function will convert a MHz value to an opp value
+   
+   Parameter   : MHz to base the conversion on
+   
+   Return      : the appropriate OPP based on the supplied MHz
+   
+*/
 int dsp_mhz_to_vdd1_opp(int MHz)
 {
     /* initialize both vdd1 & vdd2 at 2
@@ -179,10 +198,19 @@ int dsp_mhz_to_vdd1_opp(int MHz)
 }
 
 
-/*===================================================================
-/* returns OMAP_NOT_SUPPORTED if not supported by this version of RM, otherwise returns
-/* the enum value for the correct omap
-=====================================================================*/
+
+
+
+/*
+   Description : This function will determine the current OMAP that is
+                 running
+   
+   Parameter   : n/a
+   
+   Return      : integer enum representing the version of OMAP;
+                 returns OMAP_NOT_SUPPORTED if not supported by this version of RM,
+                 otherwise returns the enum value for the correct omap
+*/
 int get_omap_version()
 {
     int cpu_variant = 0;
@@ -213,6 +241,15 @@ int get_omap_version()
 }
 
 
+
+/*
+   Description : This function will get the max frequency of IVA
+   
+   Parameter   : n/a
+   
+   Return      : the max frequency (in MHz) of IVA according to /sys/power/max_dsp_frequency
+   
+*/
 int get_dsp_max_freq()
 {
     int dsp_max_freq = 0;
@@ -226,6 +263,15 @@ int get_dsp_max_freq()
     return dsp_max_freq;
 }
 
+/*
+   Description : This function will get the current ARM frequency
+   
+   Parameter   : integer enum for OMAP_VERSION
+   
+   Return      : the nearest opp (in MHz) to the current MHz
+                 that ARM is actually operating at
+   
+*/
 int get_curr_cpu_mhz(int omapVersion){
 
     int maxMhz = 0;
@@ -346,6 +392,14 @@ int get_curr_cpu_mhz(int omapVersion){
     return maxMhz;
 }
 
+/*
+   Description : This function will get the vdd1_opp
+   
+   Parameter   : n/a
+   
+   Return      : vdd1 OPP 1 -- 6 
+   
+*/
 int rm_get_vdd1_constraint()
 {
     int vdd1_opp = 0;
@@ -358,6 +412,15 @@ int rm_get_vdd1_constraint()
     
 }
 
+/*
+   Description : This function will boost vdd1_opp to either nominal or max opp
+                 There MUSt be a 1:1 correspondence with rm_release_boost()
+   
+   Parameter   : level, either MAX_BOOST or NOMINAL_BOOST
+   
+   Return      : void
+   
+*/
 void rm_request_boost(int level)
 {
     int vdd1_opp = rm_get_vdd1_constraint();
@@ -416,7 +479,15 @@ void rm_request_boost(int level)
     }
 }
 
-
+/*
+   Description : This function will reset vdd1_opp after a boost request.
+                 This MUST be called after each use of rm_request_boost()
+   
+   Parameter   : n/a
+   
+   Return      : n/a
+   
+*/
 void rm_release_boost()
 {
     int vdd1_opp = rm_get_vdd1_constraint();
@@ -429,7 +500,16 @@ void rm_release_boost()
    
 }
 
-/*new implementations frequency based constraints */
+/* below are the new implementations frequency based constraints */
+
+/*
+   Description : This function will set the minimum cpu scaling frequency
+   
+   Parameter   : total requested MHz for the current MM use case
+   
+   Return      : the correct min scaling freqeuncy in MHz that was set through sysfs
+   
+*/
 int rm_set_min_scaling_freq(int MHz)
 {
     int freq = 0;
@@ -472,6 +552,14 @@ int rm_set_min_scaling_freq(int MHz)
     return freq;
 }
 
+/*
+   Description : This function will get the min scaling freq
+   
+   Parameter   : n/a
+   
+   Return      : the currently set min scaling freq in MHz
+   
+*/
 int rm_get_min_scaling_freq()
 {
     int min_scaling_freq = 0;
@@ -483,6 +571,15 @@ int rm_get_min_scaling_freq()
     return min_scaling_freq;
 }
 
+/*
+   Description : This function will determine the the new scaling frequency to set
+                 based on the current total MHZ requested from MM
+   
+   Parameter   : MHz - current total MHZ requested from MM
+   
+   Return      : new min scaling frequency in MHz
+   
+*/
 int dsp_mhz_to_min_scaling_freq(int MHz)
 {
     unsigned int vdd1_opp = OPERATING_POINT_2;
@@ -562,7 +659,14 @@ int dsp_mhz_to_min_scaling_freq(int MHz)
 }
 
 
-
+/*
+   Description : This function will convert integer to char.
+   
+   Parameter   : integer to convert
+   
+   Return      : char for the integer parameter
+   
+*/
 char * ram_itoa(int a)
 {
     static char str[50];
