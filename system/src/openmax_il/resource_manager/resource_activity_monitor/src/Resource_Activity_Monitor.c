@@ -432,7 +432,44 @@ void rm_release_boost()
 /*new implementations frequency based constraints */
 int rm_set_min_scaling_freq(int MHz)
 {
-    return OMAP_NOT_SUPPORTED;
+    int freq = 0;
+    
+#ifdef DVFS_ENABLED
+    
+    char command[100];
+    /* for any MM case, set c-state to 2, unless no mm is active */
+    int c_state = 2;
+    freq = rm_get_min_scaling_freq();
+    
+    if(MHz == 0)
+    {
+        /* clear constraints for idle MM case */
+        /* set c-state back if no active MM */
+        c_state = 6;
+    }
+    freq = dsp_mhz_to_min_scaling_freq(MHz);
+
+    /* decide if we need to adjust the min scaling freq up or down */
+    if (freq != rm_get_min_scaling_freq())
+    {
+        /* actually set the sysfs for cpufreq */
+        RAM_DPRINT("[setting min scaling freq] requested MHz = %d new min scaling freq = %d\n",MHz,freq);
+        strcpy(command,"echo ");
+        strcat(command,ram_itoa(freq));
+        strcat(command," > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
+        system(command);
+
+        /* actually set the sysfs for cpuidle/max_state */
+        RAM_DPRINT("[setting c-state] c-state %d\n",c_state);
+        strcpy(command,"echo ");
+        strcat(command,ram_itoa(c_state));
+        strcat(command," > /sys/devices/system/cpu/cpu0/cpuidle/max_state");
+        system(command);
+    }
+
+#endif
+
+    return freq;
 }
 
 int rm_get_min_scaling_freq()
@@ -448,8 +485,6 @@ int rm_get_min_scaling_freq()
 
 int dsp_mhz_to_min_scaling_freq(int MHz)
 {
-    /* initialize both vdd1 & vdd2 at 2
-     idea is to prohobit vdd1=1 during MM use cases */
     unsigned int vdd1_opp = OPERATING_POINT_2;
     int freq = 0;
     int cpu_variant = get_omap_version();
