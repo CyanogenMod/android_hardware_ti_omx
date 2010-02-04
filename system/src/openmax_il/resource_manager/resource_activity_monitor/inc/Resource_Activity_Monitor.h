@@ -30,7 +30,7 @@
  *  nodes.
 */
 
-#define RAM_DEBUG
+#undef RAM_DEBUG
 
 #ifdef RAM_DEBUG
   #include <utils/Log.h>
