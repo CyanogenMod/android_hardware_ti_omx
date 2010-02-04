@@ -293,7 +293,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
     pComponentPrivate->nUnhandledFillThisBuffers=0;
+    pComponentPrivate->nHandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
+    pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bPreempted = OMX_FALSE;
@@ -1408,14 +1410,17 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->pMarkData = pBuffer->pMarkData;
     pComponentPrivate->hMarkTargetComponent = pBuffer->hMarkTargetComponent;
-    pComponentPrivate->nUnhandledEmptyThisBuffers++;
+
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer,
                  sizeof(OMX_BUFFERHEADERTYPE*));
     if (ret == -1) {
         G726D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
+        return OMX_ErrorHardware;
     }
-
-    pComponentPrivate->nEmptyThisBufferCount++;
+    else {
+        pComponentPrivate->nUnhandledEmptyThisBuffers++;
+        pComponentPrivate->nEmptyThisBufferCount++;
+    }
 
  EXIT:
     G726DEC_DPRINT (":: Exiting EmptyThisBuffer, eError = %d\n",eError);
@@ -1517,14 +1522,17 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
         pBuffer->pMarkData = pComponentPrivate->pMarkData;
         pComponentPrivate->pMarkData = NULL;
     }
-    pComponentPrivate->nUnhandledFillThisBuffers++;
+
     nRet = write (pComponentPrivate->dataPipe[1], &pBuffer,
                   sizeof (OMX_BUFFERHEADERTYPE*));
     if (nRet == -1) {
         G726D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
+        return OMX_ErrorHardware;
     }
-
-    pComponentPrivate->nFillThisBufferCount++;
+    else {
+        pComponentPrivate->nUnhandledFillThisBuffers++;
+        pComponentPrivate->nFillThisBufferCount++;
+    }
 
  EXIT:
     G726DEC_DPRINT (":: Exiting FillThisBuffer\n");

@@ -1237,7 +1237,9 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandFlush) {
         OMX_U32 aParam[3] = {0};
         if(commandData == 0x0 || commandData == -1) {
-            if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
+            G726DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+                       pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
+            if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x0; 
@@ -1255,7 +1257,9 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
         if(commandData == 0x1 || commandData == -1){
-            if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
+            G726DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+                       pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
+            if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x1; 
@@ -1322,7 +1326,7 @@ OMX_ERRORTYPE G726DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     if (eDir == OMX_DirInput) {
         LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
         G726D_LCML_BUFHEADERTYPE *pLcmlHdr;
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        pComponentPrivate->nHandledEmptyThisBuffers++;
         eError = G726DEC_GetCorresponding_LCMLHeader(pComponentPrivate,
                                                      pBufHeader->pBuffer, OMX_DirInput, &pLcmlHdr);
         if (eError != OMX_ErrorNone) {
@@ -1420,7 +1424,7 @@ OMX_ERRORTYPE G726DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     else if (eDir == OMX_DirOutput) {
         LCML_DSP_INTERFACE *pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
         G726D_LCML_BUFHEADERTYPE *pLcmlHdr;
-        pComponentPrivate->nUnhandledFillThisBuffers--;
+        pComponentPrivate->nHandledFillThisBuffers++;
         G726DEC_DPRINT(": pComponentPrivate->lcml_nOpBuf = %ld\n",
                        pComponentPrivate->lcml_nOpBuf);
         G726DEC_DPRINT(": pComponentPrivate->lcml_nIpBuf = %ld\n",
