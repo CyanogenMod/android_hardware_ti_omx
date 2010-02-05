@@ -644,20 +644,8 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     ptCreateString[4] = JPGENC_SNTEST_OUTSTRMID;/* Stream ID   */
     ptCreateString[5] = 0;                      /* Stream based input stream   */
     ptCreateString[6] = JPGENC_SNTEST_OUTBUFCNT;/* Number of buffers on input stream   */
-	
-	if (pPortDefOut->format.image.nFrameWidth == 0)
-		ptCreateString[7]=JPGENC_SNTEST_MAX_WIDTH;
-	else if (pPortDefOut->format.image.nFrameWidth < 320)
-		ptCreateString[7] = 322;
-	else
-		ptCreateString[7] = pPortDefOut->format.image.nFrameWidth ;
-
-        if (pPortDefOut->format.image.nFrameHeight == 0)
-                ptCreateString[8]=JPGENC_SNTEST_MAX_HEIGHT;
-        else if (pPortDefOut->format.image.nFrameHeight < 240)
-		ptCreateString[8] = 242;
-	else
-        	ptCreateString[8] = pPortDefOut->format.image.nFrameHeight;
+    ptCreateString[7] = (pPortDefOut->format.image.nFrameWidth > 0) ? pPortDefOut->format.image.nFrameWidth : JPGENC_SNTEST_MAX_WIDTH;
+    ptCreateString[8] = (pPortDefOut->format.image.nFrameHeight > 0) ? pPortDefOut->format.image.nFrameHeight : JPGENC_SNTEST_MAX_HEIGHT;
 
     /*
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar ) {
@@ -670,12 +658,12 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     */
     ptCreateString[9] = 1;
 
-    ptCreateString[10] = 320; /* Maximum Horizontal Size of the Thumbnail for App0 marker */
-    ptCreateString[11] = 240; /* Maximum Vertical Size of the Thumbnail for App0 marker */
-    ptCreateString[12] = 320; /* Maximum Horizontal Size of the Thumbnail for App1 marker */
-    ptCreateString[13] = 240; /* Maximum Vertical Size of the Thumbnail for App1 marker */
-    ptCreateString[14] = 320; /* Maximum Horizontal Size of the Thumbnail for App13 marker */
-    ptCreateString[15] = 240; /* Maximum Vertical Size of the Thumbnail for App13 marker */
+    ptCreateString[10] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App0 marker */
+    ptCreateString[11] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App0 marker */
+    ptCreateString[12] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App1 marker */
+    ptCreateString[13] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App1 marker */
+    ptCreateString[14] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App13 marker */
+    ptCreateString[15] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App13 marker */
     ptCreateString[16] = 0; /* Number of scans is always 0 */
 
 /*
@@ -709,8 +697,8 @@ this option supportsonly up to 3 mega pixels
 		}
 	}
 
-    ptCreateString[18] = 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
-    ptCreateString[19] = 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */
+    ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
+    ptCreateString[19] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */	
 	
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
 
@@ -2150,7 +2138,7 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
 
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
 
-    eError = SendDynamicPPLibParam(pComponentPrivate,&pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam[sizeof(OMX_U32)]);
+    eError = SendDynamicPPLibParam(pComponentPrivate,&pBuffPrivate->pUalgParam[sizeof(OMX_U32)]);
        if (eError != OMX_ErrorNone ) {
            goto EXIT;
        }
@@ -2161,7 +2149,7 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                                  pBuffHead->pBuffer,
                                  pPortDefOut->nBufferSize,
                                  0,
-				 (OMX_U8 *)pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam,
+				(OMX_U8 *)pBuffPrivate->pUalgParam,
                                  sizeof(JPEGENC_UALGOutputParams),
                                  (OMX_U8 *)  pBuffHead);
 
@@ -2171,7 +2159,7 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                               pBuffHead->pBuffer,
                               pPortDefOut->nBufferSize,
                               0,
-                              (OMX_U8 *)pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam,
+			      (OMX_U8 *)pBuffPrivate->pUalgParam,
                               sizeof(JPEGENC_UALGOutputParams),
                               (OMX_U8 *)  pBuffHead);
 #endif

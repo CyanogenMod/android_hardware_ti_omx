@@ -224,7 +224,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         }
     }
 
-    if (pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam) {
+	if (pBuffPrivate->pUalgParam){
             pTemp = (OMX_U8*)(pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam);
             pTemp -= 128;
             pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam = (JPEGENC_UALGOutputParams *)pTemp;
