@@ -607,7 +607,6 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 #endif
 
     ((JPEGDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
-    pComponentPrivate->nCurState = OMX_StateLoaded;
     pComponentPrivate->ComponentVersion.s.nVersionMajor = 0x01;
     pComponentPrivate->ComponentVersion.s.nVersionMinor = 0x00;
     pComponentPrivate->ComponentVersion.s.nRevision = 0x00;
@@ -837,7 +836,23 @@ EXIT:
         /* LinkedList_DisplayAll (&AllocList); */
         OMX_FREEALL();
         LinkedList_Destroy(&AllocList);
+        if (pthread_mutex_destroy(&(pComponentPrivate->mJpegDecMutex)) != 0)
+        {
+            if (pComponentPrivate != NULL){
+                OMX_TRACE4(pComponentPrivate->dbg, "Error with pthread_mutex_destroy");
+            }
+        }
+        if(pthread_cond_destroy(&(pComponentPrivate->sStop_cond)) != 0)
+        {
+            if (pComponentPrivate != NULL){
+                OMX_TRACE4(pComponentPrivate->dbg, "Error with pthread_cond_desroy");
+            }
+        }
     }
+    else{
+        pComponentPrivate->nCurState = OMX_StateLoaded;
+    }
+
     return eError;
 }   /* End of OMX_ComponentInit */
 /* ========================================================================== */
