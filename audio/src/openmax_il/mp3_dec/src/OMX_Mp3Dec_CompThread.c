@@ -52,12 +52,6 @@
 
 
 
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <wchar.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -69,7 +63,6 @@
 #include <memory.h>
 #include <fcntl.h>
 #include <signal.h>
-#endif
 
 #include <dbapi.h>
 #include <string.h>
@@ -125,14 +118,10 @@ void* MP3DEC_ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0;
 
-#ifndef UNDER_CE
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (pComponentPrivate->bExitCompThrd == 1) {
             OMX_PRINT1(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
