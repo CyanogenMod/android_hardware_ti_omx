@@ -2712,6 +2712,7 @@ OMX_ERRORTYPE HandleJpegEncDataBuf_FromDsp(JPEGENC_COMPONENT_PRIVATE *pComponent
     JPEGENC_BUFFER_PRIVATE* pBufferPrivate = NULL;
 
     OMX_CHECK_PARAM(pComponentPrivate);
+    OMX_CHECK_PARAM(pBuffHead);
 
     pInpBuf = pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pBufferPrivate[0]->pBufferHdr;
     

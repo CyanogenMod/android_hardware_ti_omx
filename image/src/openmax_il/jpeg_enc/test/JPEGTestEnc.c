@@ -1159,6 +1159,13 @@ int main(int argc, char** argv)
     MALLOC(pOutPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
     MALLOC(imageinfo, IMAGE_INFO);
     
+    OMX_CONF_INIT_STRUCT(pPortParamType, OMX_PORT_PARAM_TYPE);
+    OMX_CONF_INIT_STRUCT(pQfactorType, OMX_IMAGE_PARAM_QFACTORTYPE);
+    OMX_CONF_INIT_STRUCT(pQuantizationTable,OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE);
+    OMX_CONF_INIT_STRUCT(pHuffmanTable, JPEGENC_CUSTOM_HUFFMANTTABLETYPE);
+    OMX_CONF_INIT_STRUCT(pInPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_CONF_INIT_STRUCT(pOutPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
+
     /* Setting up default parameters */
     szOutFile="output.jpg";
     nWidth=176;
@@ -1383,7 +1390,6 @@ do
 	}
 	PRINT(" File %s opened \n" , szInFile);    
 #endif  
-
 
 	error = OMX_GetParameter(pHandle, OMX_IndexParamImageInit, pPortParamType);
 	if ( error != OMX_ErrorNone ) {

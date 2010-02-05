@@ -147,6 +147,25 @@ void LinkedList_Destroy(LinkedList *LinkedList);
     (_s_)->nVersion.s.nRevision = 0x0;      \
     (_s_)->nVersion.s.nStep = 0x0
 
+#define OMX_PARAM_SIZE_CHECK(_p_, _s_)\
+{\
+    if(((_p_)->nSize != _s_)){\
+        eError = OMX_ErrorBadParameter;\
+        goto EXIT;\
+    }\
+}
+
+#define OMX_PARAM_PORTDEFINITIONTYPE_CHECK(_p_) \
+{\
+    if(((_p_)->eDir == OMX_DirMax) ||\
+    ((_p_)->nBufferCountMin == 0) ||\
+    ((_p_)->nBufferCountActual < (_p_)->nBufferCountMin) ||\
+    ((_p_)->eDomain != OMX_PortDomainImage)){ \
+        eError = OMX_ErrorUnsupportedSetting;\
+        goto EXIT;\
+    }\
+}
+
 #define OMX_CHECK_PARAM(_ptr_)  \
 {   \
     if(!_ptr_) {    \

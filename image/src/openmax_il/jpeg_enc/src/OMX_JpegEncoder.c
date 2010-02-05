@@ -212,7 +212,7 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     } 
     else {
             eError = OMX_ErrorBadPortIndex;
-            goto PRINT_EXIT;
+            goto EXIT;
     }
 
     if (pBuffPrivate->bAllocByComponent == OMX_TRUE) {
@@ -280,9 +280,10 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         }
     }
 
-PRINT_EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exit from FreeBuffer\n");
 EXIT:
+    if (pComponentPrivate != NULL) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Exit from FreeBuffer\n");
+    }
     return eError;
 }
 
@@ -784,8 +785,8 @@ static OMX_ERRORTYPE JPEGENC_SetCallbacks (OMX_HANDLETYPE pComponent,
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     
     /*Copy the callbacks of the application to the component private  */
-    memcpy (&(pComponentPrivate->cbInfo), pCallBacks, sizeof(OMX_CALLBACKTYPE));
     OMX_MEMCPY_CHECK(&(pComponentPrivate->cbInfo));
+    memcpy (&(pComponentPrivate->cbInfo), pCallBacks, sizeof(OMX_CALLBACKTYPE));
 
     /*Copy the application private data to component memory  */
     pHandle->pApplicationPrivate = pAppData;
@@ -1040,33 +1041,45 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
     if ( pComponentPrivate->nCurState == OMX_StateInvalid ) {
         eError = OMX_ErrorInvalidState;
-        goto PRINT_EXIT;
+        goto EXIT;
     }
     pInpPortType = pComponentPrivate->pCompPort[JPEGENC_INP_PORT];
     pOutPortType = pComponentPrivate->pCompPort[JPEGENC_OUT_PORT];
 
     switch ( nParamIndex ) {
     case OMX_IndexParamImageInit:
+        OMX_PARAM_SIZE_CHECK((OMX_PORT_PARAM_TYPE*)pComponentParameterStructure, sizeof(OMX_PORT_PARAM_TYPE));
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPortParamType);
         memcpy(pComponentParameterStructure, pComponentPrivate->pPortParamType, sizeof(OMX_PORT_PARAM_TYPE));
-        OMX_MEMCPY_CHECK(pComponentParameterStructure);
         break;
+
     case OMX_IndexParamAudioInit:
+        OMX_PARAM_SIZE_CHECK((OMX_PORT_PARAM_TYPE*) pComponentParameterStructure, sizeof(OMX_PORT_PARAM_TYPE));
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPortParamTypeAudio);
         memcpy(pComponentParameterStructure, pComponentPrivate->pPortParamTypeAudio, sizeof(OMX_PORT_PARAM_TYPE));
-        OMX_MEMCPY_CHECK(pComponentParameterStructure);
         break;
+
     case OMX_IndexParamVideoInit:
+        OMX_PARAM_SIZE_CHECK((OMX_PORT_PARAM_TYPE*) pComponentParameterStructure, sizeof(OMX_PORT_PARAM_TYPE));
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPortParamTypeVideo);
         memcpy(pComponentParameterStructure, pComponentPrivate->pPortParamTypeVideo, sizeof(OMX_PORT_PARAM_TYPE));
-        OMX_MEMCPY_CHECK(pComponentParameterStructure);
         break;
+
     case OMX_IndexParamOtherInit:
+        OMX_PARAM_SIZE_CHECK((OMX_PORT_PARAM_TYPE*) pComponentParameterStructure, sizeof(OMX_PORT_PARAM_TYPE));
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPortParamTypeOthers);
         memcpy(pComponentParameterStructure, pComponentPrivate->pPortParamTypeOthers, sizeof(OMX_PORT_PARAM_TYPE));
-        OMX_MEMCPY_CHECK(pComponentParameterStructure);
         break;
+
     case OMX_IndexParamPortDefinition:
     {
        OMX_PARAM_PORTDEFINITIONTYPE *pParamPortDef  = NULL;
 
        pParamPortDef = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParameterStructure;
+       OMX_PARAM_SIZE_CHECK(pParamPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+
+       OMX_MEMCPY_CHECK(pInpPortType->pPortDef);
+       OMX_MEMCPY_CHECK(pOutPortType->pPortDef);
        OMX_PRINT2(pComponentPrivate->dbg, "index is %d (%d) (%d)\n", 
 		  (int)(pParamPortDef->nPortIndex),
 		  (int)(pInpPortType->pPortDef->nPortIndex),
@@ -1076,13 +1089,11 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 	    OMX_PRBUFFER2(pComponentPrivate->dbg, "nBufferCountActual %d (0) \n", (int)(pInpPortType->pPortDef->nBufferCountActual));
             /* pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->bPopulated = OMX_FALSE; */
             memcpy(pComponentParameterStructure, pInpPortType->pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-            OMX_MEMCPY_CHECK(pComponentParameterStructure);
         } else if (pParamPortDef->nPortIndex == pOutPortType->pPortDef->nPortIndex)
         {
 	    OMX_PRBUFFER2(pComponentPrivate->dbg, "nBufferCountActual %d (1)\n", (int)(pOutPortType->pPortDef->nBufferCountActual));
             /* pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortDef->bPopulated = OMX_FALSE; */
             memcpy(pComponentParameterStructure, pOutPortType->pPortDef, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-            OMX_MEMCPY_CHECK(pComponentParameterStructure);
         } else {
             eError = OMX_ErrorBadPortIndex;
         }
@@ -1094,13 +1105,16 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         OMX_IMAGE_PARAM_PORTFORMATTYPE *pParamImagePortFormat = NULL;
 
         pParamImagePortFormat = (OMX_IMAGE_PARAM_PORTFORMATTYPE *)pComponentParameterStructure;
+        OMX_PARAM_SIZE_CHECK(pParamImagePortFormat, sizeof(OMX_IMAGE_PARAM_PORTFORMATTYPE));
+ 
+        OMX_MEMCPY_CHECK(pInpPortType->pPortFormat);
+        OMX_MEMCPY_CHECK(pOutPortType->pPortFormat);
         if ( pParamImagePortFormat->nPortIndex == pInpPortType->pPortFormat->nPortIndex )
         {
             if (pParamImagePortFormat->nIndex > pInpPortType->pPortFormat->nIndex ) {
                 eError = OMX_ErrorNoMore;
             } else {
                 memcpy(pComponentParameterStructure, pInpPortType->pPortFormat, sizeof(OMX_IMAGE_PARAM_PORTFORMATTYPE));
-                OMX_MEMCPY_CHECK(pComponentParameterStructure);
             }
         } else if (pParamImagePortFormat->nPortIndex == pOutPortType->pPortFormat->nPortIndex )
         {
@@ -1108,7 +1122,6 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 eError = OMX_ErrorNoMore;
             } else {
                 memcpy(pComponentParameterStructure, pOutPortType->pPortFormat, sizeof(OMX_IMAGE_PARAM_PORTFORMATTYPE));
-                OMX_MEMCPY_CHECK(pComponentParameterStructure);
             }
         } else {
             eError = OMX_ErrorBadPortIndex;
@@ -1117,8 +1130,10 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         break;
 
     case OMX_IndexParamPriorityMgmt:
+        OMX_PARAM_SIZE_CHECK((OMX_PRIORITYMGMTTYPE*) pComponentParameterStructure, sizeof(OMX_PRIORITYMGMTTYPE));
+
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPriorityMgmt);
         memcpy(pComponentParameterStructure, pComponentPrivate->pPriorityMgmt, sizeof(OMX_PRIORITYMGMTTYPE));
-        OMX_MEMCPY_CHECK(pComponentParameterStructure);
         break;
 
     case OMX_IndexParamCompBufferSupplier:
@@ -1141,10 +1156,13 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     case OMX_IndexParamQuantizationTable:
         {
         OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pQuantTable = (OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *)pComponentParameterStructure;
+        OMX_PARAM_SIZE_CHECK(pQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
         if (pQuantTable->eQuantizationTable == OMX_IMAGE_QuantizationTableLuma) {
+            OMX_MEMCPY_CHECK(pComponentPrivate->pCustomLumaQuantTable);
             memcpy(pQuantTable, pComponentPrivate->pCustomLumaQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
         } 
         else if (pQuantTable->eQuantizationTable == OMX_IMAGE_QuantizationTableChroma) {
+            OMX_MEMCPY_CHECK(pComponentPrivate->pCustomChromaQuantTable);
             memcpy(pQuantTable, pComponentPrivate->pCustomChromaQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
         }
         else { /* wrong eQuantizationTable, return error */
@@ -1154,17 +1172,20 @@ static OMX_ERRORTYPE JPEGENC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         }    
     case OMX_IndexCustomHuffmanTable:
         {
-        JPEGENC_CUSTOM_HUFFMANTTABLETYPE *pHuffmanTable = (JPEGENC_CUSTOM_HUFFMANTTABLETYPE *)pComponentParameterStructure;
-        memcpy(pHuffmanTable, pComponentPrivate->pHuffmanTable, sizeof(JPEGENC_CUSTOM_HUFFMANTTABLETYPE));
+            JPEGENC_CUSTOM_HUFFMANTTABLETYPE *pHuffmanTable = (JPEGENC_CUSTOM_HUFFMANTTABLETYPE *)pComponentParameterStructure;
+            OMX_PARAM_SIZE_CHECK(pHuffmanTable, sizeof(JPEGENC_CUSTOM_HUFFMANTTABLETYPE));
+            OMX_MEMCPY_CHECK(pComponentPrivate->pHuffmanTable);
+            memcpy(pHuffmanTable, pComponentPrivate->pHuffmanTable, sizeof(JPEGENC_CUSTOM_HUFFMANTTABLETYPE));
         break;
         }
     default:
         eError = OMX_ErrorUnsupportedIndex;
         break;
     }
-PRINT_EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exit function eError = %x\n", eError);
 EXIT:
+    if (pComponentPrivate != NULL) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Exit function eError = %x\n", eError);
+    }
     return eError;
 
 }
@@ -1241,6 +1262,7 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
     case OMX_IndexParamPortDefinition:
     {
         OMX_PARAM_PORTDEFINITIONTYPE* pComponentParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pCompParam;
+        OMX_PARAM_PORTDEFINITIONTYPE_CHECK((OMX_PARAM_PORTDEFINITIONTYPE*)pComponentParam);
         OMX_MEMCPY_CHECK(pInpPortType->pPortDef);
         OMX_MEMCPY_CHECK(pOutPortType->pPortDef);
         if ( pComponentParam->nPortIndex == pInpPortType->pPortDef->nPortIndex ) {
@@ -1262,8 +1284,14 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
     }
     case OMX_IndexParamQFactor:
     {           
+        OMX_IMAGE_PARAM_QFACTORTYPE* pComponentParam = (OMX_IMAGE_PARAM_QFACTORTYPE*)pCompParam;
+        if( (pComponentParam->nQFactor < 1) || (pComponentParam->nQFactor > 100) ){
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+
         OMX_MEMCPY_CHECK(pComponentPrivate->pQualityfactor);
-        memcpy(pComponentPrivate->pQualityfactor, (OMX_IMAGE_PARAM_QFACTORTYPE*)pCompParam, sizeof(OMX_IMAGE_PARAM_QFACTORTYPE));
+        memcpy(pComponentPrivate->pQualityfactor, pComponentParam, sizeof(OMX_IMAGE_PARAM_QFACTORTYPE));
         break;
     }
     case OMX_IndexParamCompBufferSupplier:
@@ -1297,11 +1325,13 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
     {
         OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pQuantTable = (OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *)pCompParam;
         if (pQuantTable->eQuantizationTable == OMX_IMAGE_QuantizationTableLuma) {
+            OMX_MEMCPY_CHECK(pComponentPrivate->pCustomLumaQuantTable);
             memcpy(pComponentPrivate->pCustomLumaQuantTable, pQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
             pComponentPrivate->bSetLumaQuantizationTable = OMX_TRUE;
             eError = SetJpegEncInParams(pComponentPrivate);
         } 
         else if (pQuantTable->eQuantizationTable == OMX_IMAGE_QuantizationTableChroma) {
+            OMX_MEMCPY_CHECK(pComponentPrivate->pCustomChromaQuantTable);
             memcpy(pComponentPrivate->pCustomChromaQuantTable, pQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
             pComponentPrivate->bSetChromaQuantizationTable = OMX_TRUE;   
             eError = SetJpegEncInParams(pComponentPrivate);            
@@ -1315,6 +1345,7 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
     {
         JPEGENC_CUSTOM_HUFFMANTTABLETYPE *pHuffmanTable = (JPEGENC_CUSTOM_HUFFMANTTABLETYPE *)pCompParam;
         if (pHuffmanTable->nPortIndex == pOutPortType->pPortDef->nPortIndex) {
+            OMX_MEMCPY_CHECK(pComponentPrivate->pHuffmanTable);
             memcpy(pComponentPrivate->pHuffmanTable, pHuffmanTable, sizeof(JPEGENC_CUSTOM_HUFFMANTTABLETYPE));
             pComponentPrivate->bSetHuffmanTable = OMX_TRUE;
             eError = SetJpegEncInParams(pComponentPrivate);            
@@ -1396,6 +1427,7 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     
     OMX_CHECK_PARAM(hComp);
+    OMX_CHECK_PARAM(ComponentConfigStructure);
 
     pHandle = (OMX_COMPONENTTYPE *)hComp;
 
@@ -1422,12 +1454,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 					OMX_FREE(pComponentPrivate->sAPP0.pMarkerBuffer);
 			}
 
-			memcpy (&pComponentPrivate->sAPP0, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP0);
+			memcpy (&pComponentPrivate->sAPP0, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
 				OMX_MALLOC(pComponentPrivate->sAPP0.pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				memcpy (pComponentPrivate->sAPP0.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
-				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP0.pMarkerBuffer);
 			}
 
 			eError = SetJpegEncInParams(pComponentPrivate); 
@@ -1442,12 +1473,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				OMX_FREE(pComponentPrivate->sAPP1.pMarkerBuffer);
 			}
 			
-			memcpy (&pComponentPrivate->sAPP1, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP1);
+			memcpy (&pComponentPrivate->sAPP1, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
 				OMX_MALLOC(pComponentPrivate->sAPP1.pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				memcpy (pComponentPrivate->sAPP1.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
-				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP1.pMarkerBuffer);
 			}
 			
 			eError = SetJpegEncInParams(pComponentPrivate); 
@@ -1462,12 +1492,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				OMX_FREE(pComponentPrivate->sAPP5.pMarkerBuffer);
 			}
 			
-			memcpy (&pComponentPrivate->sAPP5, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP5);
+			memcpy (&pComponentPrivate->sAPP5, pMarkerInfo, sizeof(JPEG_APPTHUMB_MARKER));
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
 				OMX_MALLOC(pComponentPrivate->sAPP5.pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				memcpy (pComponentPrivate->sAPP5.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
-				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP5.pMarkerBuffer);
 			}
 			eError = SetJpegEncInParams(pComponentPrivate); 
 			break;
@@ -1480,12 +1509,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 				OMX_FREE(pComponentPrivate->sAPP13.pMarkerBuffer);
 			}			
 
-			memcpy (&pComponentPrivate->sAPP13, pMarkerInfo, sizeof(JPEG_APP13_MARKER));
 			OMX_MEMCPY_CHECK(&pComponentPrivate->sAPP13);
+			memcpy (&pComponentPrivate->sAPP13, pMarkerInfo, sizeof(JPEG_APP13_MARKER));
 			if (pMarkerInfo->pMarkerBuffer != NULL) {
 				OMX_MALLOC(pComponentPrivate->sAPP13.pMarkerBuffer, pMarkerInfo->nMarkerSize);
 				memcpy (pComponentPrivate->sAPP13.pMarkerBuffer, pMarkerInfo->pMarkerBuffer, pMarkerInfo->nMarkerSize);
-				OMX_MEMCPY_CHECK(pComponentPrivate->sAPP13.pMarkerBuffer);
 			}
 			
 			eError = SetJpegEncInParams(pComponentPrivate); 
@@ -1510,6 +1538,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
         OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
         int *nWidth= (int*)ComponentConfigStructure;
 
+        if(*nWidth > JPGENC_SNTEST_MAX_WIDTH){
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+
         pPortDefIn = ((JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pCompPort[JPEGENC_INP_PORT]->pPortDef;
         OMX_PRINT1(pComponentPrivate->dbg, "INIT nFrameHeight = %d\n", (int)(pPortDefIn->format.image.nFrameHeight));
         OMX_PRINT1(pComponentPrivate->dbg, "INIT nFrameWidth = %d\n", (int)(pPortDefIn->format.image.nFrameWidth));
@@ -1529,6 +1562,11 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
         OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
         int *nHeight = (int*)ComponentConfigStructure;
 
+        if(*nHeight > JPGENC_SNTEST_MAX_HEIGHT){
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+
         pPortDefIn = ((JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pCompPort[JPEGENC_INP_PORT]->pPortDef;
         pPortDefIn->format.image.nFrameHeight = *nHeight;
         OMX_PRINT1(pComponentPrivate->dbg, "nFrameHeight = %d\n", (int)(pPortDefIn->format.image.nFrameHeight));
@@ -1543,8 +1581,15 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
     }
     case OMX_IndexCustomQFactor:
     {           
+        OMX_IMAGE_PARAM_QFACTORTYPE* pCompParam = (OMX_IMAGE_PARAM_QFACTORTYPE*)ComponentConfigStructure;
+
+        if( (pCompParam->nQFactor < 1) || (pCompParam->nQFactor > 100) ){
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+
         OMX_MEMCPY_CHECK(pComponentPrivate->pQualityfactor);
-        memcpy(pComponentPrivate->pQualityfactor, (OMX_IMAGE_PARAM_QFACTORTYPE*)ComponentConfigStructure, sizeof(OMX_IMAGE_PARAM_QFACTORTYPE));
+        memcpy(pComponentPrivate->pQualityfactor, pCompParam, sizeof(OMX_IMAGE_PARAM_QFACTORTYPE));
         break;
     }
     case OMX_IndexConfigCommonInputCrop :
