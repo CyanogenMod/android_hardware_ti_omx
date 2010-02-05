@@ -188,6 +188,14 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PRBUFFER1(pComponentPrivate->dbg, "In AllocateBuffer_JPEGDec %d %lu %lu\n", 
 	    nBufferCount, pPortDef->nBufferCountActual, nPortIndex);
 
+    if (pComponentPrivate->nCurState != OMX_StateLoaded &&
+        pComponentPrivate->nCurState != OMX_StateWaitForResources &&
+        pPortDef->bEnabled != OMX_FALSE){
+        eError = OMX_ErrorIncorrectStateTransition;
+        OMX_PRBUFFER4(pComponentPrivate->dbg, " trying to allocate buffers in incorrect state\n");
+        goto EXIT;
+    }
+
     if (nBufferCount >= pPortDef->nBufferCountActual) {
         eError = OMX_ErrorInsufficientResources;
         OMX_PRBUFFER4(pComponentPrivate->dbg, " try to allocate more buffers that the port supports\n");
@@ -491,6 +499,13 @@ static OMX_ERRORTYPE UseBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
                        PERF_ModuleHLMM);
 #endif
 
+    if (pComponentPrivate->nCurState != OMX_StateLoaded &&
+        pComponentPrivate->nCurState != OMX_StateWaitForResources &&
+        pPortDef->bEnabled != OMX_FALSE){
+        eError = OMX_ErrorIncorrectStateTransition;
+        OMX_PRBUFFER4(pComponentPrivate->dbg, " trying to allocate buffers in incorrect state\n");
+        goto EXIT;
+    }
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
         OMX_MALLOC(pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr, sizeof(OMX_BUFFERHEADERTYPE));
