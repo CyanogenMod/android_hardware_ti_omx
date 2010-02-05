@@ -1090,6 +1090,7 @@ OMX_ERRORTYPE SendDynamicParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
     pTmpDynParams->DRI_Interval  = pComponentPrivate->nDRI_Interval;
     pTmpDynParams->huffmanTable = NULL;
     pTmpDynParams->quantTable     = NULL;
+    pTmpDynParams->pfResize       = NULL;
 
     cmdValues[0] = IUALG_CMD_SETSTATUS;
     cmdValues[1] = (OMX_U32)(pTmpDynParams);

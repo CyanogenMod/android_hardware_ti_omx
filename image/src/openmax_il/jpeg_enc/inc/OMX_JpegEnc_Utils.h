@@ -265,6 +265,14 @@ typedef struct IDMJPGE_TIGEM_DynamicParams {
     OMX_U32 DRI_Interval ;
     JPEGENC_CUSTOM_HUFFMAN_TABLE *huffmanTable;
     IDMJPGE_TIGEM_CustomQuantTables *quantTable;
+    OMX_U32 (*pfResize)(OMX_U32,
+			OMX_U32,
+			OMX_U32,
+			OMX_U32,
+			OMX_U32,
+			OMX_U32,
+			OMX_U8*,
+			OMX_U8*);
 } IDMJPGE_TIGEM_DynamicParams;
 
 
