@@ -111,7 +111,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U32 aParam[4];
     OMX_BOOL bFlag = OMX_FALSE;
-    /*OMX_U32 timeout = 0;*/
 
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pThreadData;
 
@@ -190,12 +189,8 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     if ((OMX_S32)nParam1 != -1 && (OMX_S32)nParam1 != -2) {
                         eError = VIDDEC_HandleCommand(pComponentPrivate, nParam1);
                         if (eError != OMX_ErrorNone) {
-                            /*pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   OMX_EventError,
-                                                                   eError, 
-                                                                   0,
-                                                                   "Error in HadleCommand function");*/
+                         /* Do nothing
+                          */
                         }
                     } 
                     else if ((OMX_S32)nParam1 == -1) {

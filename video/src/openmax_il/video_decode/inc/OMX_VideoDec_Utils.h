@@ -1028,7 +1028,6 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
             eError = OMX_ErrorInsufficientResources;                \
                 goto EXIT;                                          \
     }                                                               \
-    /*(_memusage_) += sizeof(_sName_);                               */ \
     memset((_pStruct_), 0x0, sizeof(_sName_));
 
 
@@ -1038,16 +1037,8 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
             eError = OMX_ErrorInsufficientResources;                        \
                 goto EXIT;                                                  \
     }                                                                       \
-    /*(_memusage_) += _nSize_;                                               */ \
     memset((_pStruct_), 0x0, _nSize_);
-
-#define VIDDEC_MEMUSAGE 0 /*\
-    pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0] + \
-    pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1] + \
-    pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel2] + \
-    pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel3] + \
-    pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel4]*/
-
+#define VIDDEC_MEMUSAGE 0
 
 /*----------------------------------------------------------------------------*/
 /**
@@ -1161,13 +1152,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
         goto EXIT;                              \
     }                                           \
 }
-
-#define OMX_PARSER_CHECKLIMIT(_total, _actual, _step) /*  \
-    if(((_actual + _step) >> 3) >= _total){                \
-    printf("_total %d _actual %d\n",_total,((_actual + _step)>>3)); \
-        eError = OMX_ErrorStreamCorrupt;                \
-        goto EXIT;                                      \
-    }*/
+#define OMX_PARSER_CHECKLIMIT(_total, _actual, _step)
 
 /*sMutex*/
 #define VIDDEC_PTHREAD_MUTEX_INIT(_mutex_)    \
@@ -1205,21 +1190,16 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
 
 #define VIDDEC_PTHREAD_MUTEX_SIGNAL(_mutex_)  \
     VIDDEC_PTHREAD_MUTEX_INIT ((_mutex_));      \
-    /*if( (_mutex_).bEnabled) {  */              \
     (_mutex_).nErrorExist = 0; \
-    (_mutex_).nErrorExist = pthread_cond_signal (&(_mutex_).condition); \
-        /*(__mutex.bSignaled = OMX_TRUE;*/  \
-    /*}*/
+    (_mutex_).nErrorExist = pthread_cond_signal (&(_mutex_).condition);
 
 #define VIDDEC_PTHREAD_MUTEX_WAIT(_mutex_)    \
     VIDDEC_PTHREAD_MUTEX_INIT ((_mutex_));      \
     (_mutex_).bEnabled = OMX_TRUE;           \
-    /*if (!(__mutex.bSignaled){               */\
     (_mutex_).nErrorExist = 0; \
     (_mutex_).nErrorExist = pthread_cond_wait (&(_mutex_).condition, &(_mutex_).mutex);  \
         (_mutex_).bSignaled = OMX_FALSE;     \
-        (_mutex_).bEnabled = OMX_FALSE;      \
-    /*}*/
+        (_mutex_).bEnabled = OMX_FALSE;
 
 #define VIDDEC_PTHREAD_SEMAPHORE_INIT(_semaphore_)    \
     if(!((_semaphore_).bInitialized)) {            \
@@ -1236,15 +1216,6 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
         (_semaphore_).bSignaled = OMX_FALSE;     \
         (_semaphore_).bEnabled = OMX_FALSE;      \
     }
-    /*
-    printf("post signal %d Enable %d\n",(_semaphore_).bSignaled,(_semaphore_).bEnabled); \
-    \
-    printf("post out signal %d Enable %d\n",(_semaphore_).bSignaled,(_semaphore_).bEnabled); \
-    \
-    printf("wait out signal %d Enable %d\n",(_semaphore_).bSignaled,(_semaphore_).bEnabled); \
-    printf("wait signal %d Enable %d\n",(_semaphore_).bSignaled,(_semaphore_).bEnabled); \
-
-    */
 #define VIDDEC_PTHREAD_SEMAPHORE_POST(_semaphore_)    \
     VIDDEC_PTHREAD_SEMAPHORE_INIT ((_semaphore_));     \
     if((_semaphore_).bEnabled) {     \

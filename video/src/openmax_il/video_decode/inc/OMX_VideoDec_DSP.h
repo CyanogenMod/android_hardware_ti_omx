@@ -328,7 +328,6 @@ typedef struct {
     OMX_S32 lBuffCount;
     OMX_U32 ulNumOfNALU;
     OMX_U32 pNALUSizeArray[H264VDEC_SN_MAX_NALUNITS];
-/*     OMX_U32 *pNALUSizeArray;*/
     OMX_U32 ulFrameIndex;
 } H264VDEC_UALGInputParam;
 
@@ -493,7 +492,6 @@ typedef enum {
 } VIDDEC_XDM_ErrorBit;
 
 #define VIDDEC_ISFLAGSET(x,y)         (((x)>>(y)) & 0x1) 
-/*#define VIDDEC_ISFLAGSET(x,y)         ((((OMX_S32*)(x))>>((OMX_S32*)(y))) & 0x1) */
 
 /** @enum M4H3DEC_TI_ERROR */
 typedef enum {
