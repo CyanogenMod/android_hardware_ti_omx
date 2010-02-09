@@ -302,6 +302,33 @@ do {					       \
 
 #define OMX_CustomCommandStopThread (OMX_CommandMax - 1)
 
+#define OMX_PARAM_SIZE_CHECK(_p_, _s_)\
+{\
+    if(((_p_)->nSize != _s_)){\
+        eError = OMX_ErrorUnsupportedSetting;\
+        goto EXIT;\
+    }\
+}
+
+#define OMX_PARAM_PORTDEFINITIONTYPE_CHECK(_p_) \
+{\
+    if(((_p_)->eDir == OMX_DirMax) ||\
+    ((_p_)->nBufferCountMin == 0) ||\
+    ((_p_)->nBufferCountActual < (_p_)->nBufferCountMin) ||\
+    ((_p_)->eDomain != OMX_PortDomainImage)){ \
+        eError = OMX_ErrorUnsupportedSetting;\
+        goto EXIT;\
+    }\
+}
+
+#define OMX_IMAGE_CUSTOM_INT_CHECK(_p_) \
+{\
+    if(((_p_) < 0)){\
+        eError = OMX_ErrorUnsupportedSetting;\
+        goto EXIT;\
+    }\
+}
+
 typedef OMX_ERRORTYPE (*jpegdec_fpo)(OMX_HANDLETYPE);
 
 static const struct DSP_UUID JPEGDSOCKET_TI_UUID = {
