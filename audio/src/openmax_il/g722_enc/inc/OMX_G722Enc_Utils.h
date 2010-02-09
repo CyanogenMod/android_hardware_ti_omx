@@ -137,21 +137,15 @@
  * @def    USN_DLL_NAME   Path to the USN
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define USN_DLL_NAME "usn.dll64P"
-#endif
+
 /* ======================================================================= */
 /**
  * @def    G722ENC_DLL_NAME   Path to the G722ENC SN
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define G722ENC_DLL_NAME "\\windows\\g722enc_sn.dll64P"
-#else
 #define G722ENC_DLL_NAME "g722enc_sn.dll64P"
-#endif
+
 /* ======================================================================= */
 /**
  * @def    DONT_CARE   Don't care value for the LCML initialization params
@@ -182,7 +176,6 @@
  */
 /* ======================================================================= */
 
-#ifndef UNDER_CE /* Linux definitions */
 #ifdef  G722ENC_DEBUG
 #define G722ENC_DPRINT(...)    fprintf(stdout,__VA_ARGS__)
 #else
@@ -194,40 +187,6 @@
 #else
 #define G722ENC_MEMPRINT(...)
 #endif
-
-#else 
-#ifdef  G722ENC_DEBUG
-#define G722ENC_DPRINT(STR, ARG...) printf()
-#else
-#endif
-
-/* ======================================================================= */
-/**
- * @def    G722ENC_MEMCHECK   Memory print macro
- */
-/* ======================================================================= */
-#ifdef G722ENC_MEMCHECK
-#define G722ENC_MEMPRINT(STR, ARG...) printf()
-#else
-#endif
-#define G722ENC_DPRINT   printf
-#define G722ENC_MEMPRINT   printf
-
-#endif
-
-#ifdef UNDER_CE
-
-#ifdef DEBUG
-#define G722ENC_DPRINT   printf
-#define G722ENC_MEMPRINT   printf
-
-#else
-#define G722ENC_DPRINT
-#define G722ENC_MEMPRINT
-#endif
-
-#endif  
-
 
 /* ======================================================================= */
 /**
@@ -591,7 +550,6 @@ typedef struct G722ENC_COMPONENT_PRIVATE
     TI_OMX_DSP_DEFINITION tiOmxDspDefinition;
 
     /* Removing sleep() calls. Definition. */
-#ifndef UNDER_CE    
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -603,16 +561,6 @@ typedef struct G722ENC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded;    
-#endif  
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_OBJHANDLE pPERF, pPERFcomp;
@@ -646,13 +594,7 @@ typedef struct G722ENC_COMPONENT_PRIVATE
  *
  */
 /*================================================================== */
-#ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
 
 /* ===========================================================  */
 /**
