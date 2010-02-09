@@ -707,13 +707,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pthread_cond_init(&pComponentPrivate->populate_cond, NULL);
     pthread_cond_init(&pComponentPrivate->unpopulate_cond, NULL);
 
-    if(pthread_mutex_init(&pComponentPrivate->mutexStateChangeRequest, NULL)) {
-       return OMX_ErrorUndefined;
-    }
+    pthread_mutex_init(&pComponentPrivate->mutexStateChangeRequest, NULL);
+    pthread_cond_init(&pComponentPrivate->StateChangeCondition, NULL); 
 
-    if(pthread_cond_init (&pComponentPrivate->StateChangeCondition, NULL)) {
-       return OMX_ErrorUndefined;
-    }
     pComponentPrivate->nPendingStateChangeRequests = 0;
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -734,9 +730,25 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     OMX_PRBUFFER2(pComponentPrivate->dbg, "JPEG-ENC: actual buffer %d\n", (int)(pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef->nBufferCountActual));
  EXIT:
     if(eError != OMX_ErrorNone){
-        /* LinkedList_DisplayAll (&AllocList); */
-        OMX_FREEALL();
-        LinkedList_Destroy(&AllocList);
+        if (pHandle != NULL) {
+            /* LinkedList_DisplayAll (&AllocList); */
+            OMX_FREEALL();
+            LinkedList_Destroy(&AllocList);
+            if (pComponentPrivate != NULL) {
+                pthread_mutex_destroy(&pComponentPrivate->jpege_mutex);
+                pthread_cond_destroy(&pComponentPrivate->stop_cond);
+                pthread_cond_destroy(&pComponentPrivate->flush_cond);
+                /* pthread_cond_destroy(&pComponentPrivate->control_cond, NULL); */
+
+                pthread_mutex_destroy(&pComponentPrivate->jpege_mutex_app);
+                pthread_cond_destroy(&pComponentPrivate->populate_cond);
+                pthread_cond_destroy(&pComponentPrivate->unpopulate_cond);
+
+                pthread_mutex_destroy(&pComponentPrivate->mutexStateChangeRequest);
+                pthread_cond_destroy(&pComponentPrivate->StateChangeCondition); 
+            }
+        }
+
     }
     return eError;
 }
