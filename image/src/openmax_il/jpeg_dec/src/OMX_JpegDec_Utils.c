@@ -964,7 +964,7 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         OMX_PRDSP2(pComponentPrivate->dbg, "eError %x\n", eError); 
         if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
 #ifdef UNDER_CE
     nTimeOut = 0;
@@ -1027,7 +1027,7 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
 	OMX_PRDSP2(pComponentPrivate->dbg, "eError %x\n", eError); 
        if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
 #ifdef UNDER_CE
         nTimeOut = 0;
@@ -1086,9 +1086,10 @@ OMX_U32 HandleCommandFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                        JPEGDEC_OUTPUT_PORT,
                                        NULL);
     }
-PRINT_EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand nFlush Function\n");
 EXIT:
+    if (pComponentPrivate != NULL) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand nFlush Function\n");
+    }
     return eError;
 
 }   /* End of HandleCommandFlush */
@@ -1183,14 +1184,14 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                 }
                 if(eError != OMX_ErrorNone){
                     OMX_PRBUFFER4(pComponentPrivate->dbg, "Port population time out\n");
-                    goto PRINT_EXIT;
+                    goto EXIT;
                 }
             }
 
             eError =  GetLCMLHandleJpegDec(pHandle);
             if (eError != OMX_ErrorNone) {
 		OMX_PRDSP5(pComponentPrivate->dbg, "GetLCMLHandle failed...\n");
-                goto PRINT_EXIT;
+                goto EXIT;
             }
 
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
@@ -1208,7 +1209,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, NULL, &pLcmlHandle, NULL, &cb);
             if (eError != OMX_ErrorNone) {
 	        OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed...\n");
-                goto PRINT_EXIT;
+                goto EXIT;
             }
             else {
                 pComponentPrivate->nIsLCMLActive = 1;
@@ -1217,7 +1218,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlUsnEos, NULL);
             if (eError != OMX_ErrorNone) {
                 OMX_PRDSP4(pComponentPrivate->dbg, "Enable EOS at LCML failed...\n");
-                goto PRINT_EXIT;
+                goto EXIT;
             }
             /* need check the resource with RM */
 
@@ -1541,7 +1542,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                 }
             }
             if (eError != OMX_ErrorNone){ /*Verify if UnPopulation compleate*/
-                goto PRINT_EXIT;
+                goto EXIT;
             }
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -1633,9 +1634,10 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
         break;
     } /* End of Switch */
 
-PRINT_EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand Function %x\n", eError);
 EXIT:
+    if ( pComponentPrivate != NULL) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand Function %x\n", eError);
+    }
     return eError;
 } 
   /* End of HandleCommandJpegDec */
