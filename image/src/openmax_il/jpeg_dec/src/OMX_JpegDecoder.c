@@ -2244,6 +2244,13 @@ static OMX_ERRORTYPE VerifyTunnelConnection_JPEGDec(JPEGDEC_PORT_TYPE *pPort,
         pPort->nTunnelPort = 0;
         return OMX_ErrorPortsNotCompatible; /* Our current port is not set up correctly */
     }
+    /* check the buffer size of the input/sink port of the tunnel is greater than or equal to
+       the buffer size of the output/source port of the tunnel channel. */
+    if (pPortDef->nBufferSize < sPortDef.nBufferSize) {
+        OMX_PRINT1(pComponentPrivate->dbg, " Tunnel ports buffer size mismatch error.\n");
+        eError = OMX_ErrorPortsNotCompatible;
+    }
+
 EXIT:
     return eError;
 }   /* End of VerifyTunnelConnection_JPEGDec */
