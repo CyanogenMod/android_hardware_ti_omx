@@ -501,6 +501,14 @@ static OMX_ERRORTYPE VIDDEC_SetCallbacks (OMX_HANDLETYPE pComponent,
 
     OMX_CONF_CHECK_CMD(pComponent, pCallBacks, OMX_TRUE);
 
+    /* The following validates none of the callbacks is null.
+     * There are 3 call backs defined by Open Max; in case
+     * more are added, this code would need to be modified.
+     * */
+    OMX_CONF_CHECK_CMD(pCallBacks->EmptyBufferDone, pCallBacks->EventHandler,
+                       pCallBacks->FillBufferDone);
+
+
     pHandle = (OMX_COMPONENTTYPE*)pComponent;
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
