@@ -3308,7 +3308,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     pCreatePhaseArgs->ucMVRange               = (pMotionVector->sXSearchRange > pMotionVector->sYSearchRange ? pMotionVector->sXSearchRange : pMotionVector->sYSearchRange);
     pCreatePhaseArgs->ucQPIFrame              = 28;
     pCreatePhaseArgs->ucProfile               = 66;
-    pCreatePhaseArgs->ulIntraFramePeriod      = pCreatePhaseArgs->ulFrameRate > 15000 ? 29 : 14;
+    pCreatePhaseArgs->ulIntraFramePeriod      = 15;
 
     if (pH264->eLevel == OMX_VIDEO_AVCLevel1b)
     {
@@ -3366,11 +3366,13 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     {
         pComponentPrivate->maxMVperMB = 1;
         pComponentPrivate->intra4x4EnableIdc = INTRA4x4_NONE;
-        pComponentPrivate->nIntraFrameInterval = 30;
         pComponentPrivate->nAIRRate = 0;
-        /* Encoding preset = 4 enables DSP side optimizations for high resolutions */
-        pComponentPrivate->nEncodingPreset = 4;
-        pCreatePhaseArgs->ulIntraFramePeriod = 0;
+        if(pCreatePhaseArgs->ulTargetBitRate >= 4000000) {
+            pComponentPrivate->nIntraFrameInterval = 30;
+            /* Encoding preset = 4 enables DSP side optimizations for high resolutions */
+            pComponentPrivate->nEncodingPreset = 4;
+            pCreatePhaseArgs->ulIntraFramePeriod = 0;
+        }
         /* Constant bit rate control enabled */
         pCreatePhaseArgs->ucRateControlAlgorithm = 1;
         /* Disable deblocking */
