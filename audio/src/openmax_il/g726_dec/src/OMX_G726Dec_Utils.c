@@ -50,12 +50,6 @@
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
 
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -63,7 +57,6 @@
 #include <malloc.h>
 #include <memory.h>
 #include <fcntl.h>
-#endif
 
 #include <pthread.h>
 #include <dbapi.h>
@@ -79,16 +72,9 @@
 #include <ResourceManagerProxyAPI.h>
 #endif
 
-
-#ifdef UNDER_CE
-#define HASHINGENABLE 1
-#endif
-
-#ifndef UNDER_CE
 #define G726DEC_DPRINT_ON(...)  fprintf(stdout, "%s %d::  ",__FUNCTION__, __LINE__); \
     fprintf(stdout, __VA_ARGS__);                                       \
     fprintf(stdout, "\n");
-#endif
 
 /* ================================================================================= * */
 /**
@@ -368,12 +354,6 @@ OMX_ERRORTYPE G726Dec_StartCompThread(OMX_HANDLETYPE pComponent)
     G726DEC_COMPONENT_PRIVATE *pComponentPrivate =
         (G726DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     int nRet = 0;
-#ifdef UNDER_CE
-    pthread_attr_t attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.__inheritsched = PTHREAD_EXPLICIT_SCHED;
-    attr.__schedparam.__sched_priority = OMX_AUDIO_DECODER_THREAD_PRIORITY;
-#endif
 
     G726DEC_DPRINT (":: Enetering  G726Dec_StartCompThread()\n");
 
@@ -403,13 +383,8 @@ OMX_ERRORTYPE G726Dec_StartCompThread(OMX_HANDLETYPE pComponent)
                              "Pipe Creation Failed");
     }
 
-#ifdef UNDER_CE
-    nRet = pthread_create (&(pComponentPrivate->ComponentThread), &attr,
-                           G726DEC_ComponentThread, pComponentPrivate);
-#else
     nRet = pthread_create (&(pComponentPrivate->ComponentThread), NULL,
                            G726DEC_ComponentThread, pComponentPrivate);
-#endif
     if ((0 != nRet) || (!pComponentPrivate->ComponentThread)) {
         G726D_OMX_ERROR_EXIT(eError, OMX_ErrorInsufficientResources,
                              "Thread Creation Failed");
@@ -506,7 +481,6 @@ OMX_ERRORTYPE G726DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     pComponentPrivate->bPortDefsAllocated = 0;
 
-#ifndef UNDER_CE
     G726DEC_DPRINT("\n\n FreeCompResources: Destroying mutexes.\n\n");
     pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
     pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -516,11 +490,6 @@ OMX_ERRORTYPE G726DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#else
-    OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-    OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-    OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
 
     return eError;
 }
@@ -642,14 +611,10 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                     if (!(inputPortFlag && outputPortFlag)) {
                         pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE        
                         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
                         pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, 
                                           &pComponentPrivate->InLoaded_mutex);
                         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                        OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
                     }
 
                     pLcmlHandle = (OMX_HANDLETYPE) G726DEC_GetLCMLHandle(pComponentPrivate);
@@ -676,7 +641,6 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
                     cb.LCML_Callback = (void *) G726DEC_LCML_Callback;
 
-#ifndef UNDER_CE
 
                     eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE *)pLcmlHandle)->pCodecinterfacehandle,
                                                 p,&pLcmlHandle,(void *)p,
@@ -686,26 +650,7 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         goto EXIT;
                     }
 
-#else
 
-                    eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE *)pLcmlHandle)->pCodecinterfacehandle,
-                                              p,&pLcmlHandle,(void *)p,&cb);
-
-                    if (eError != OMX_ErrorNone){
-                        G726DEC_EPRINT("%d :: Error : InitMMCodec failed...>>>>>> \n",__LINE__);
-                        goto EXIT;
-                    }
-#endif
-
-#ifdef HASHINGENABLE
-                    /* Enable the Hashing Code */
-                    eError = LCML_SetHashingState(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
-                                                  OMX_TRUE);
-                    if (eError != OMX_ErrorNone) {
-                        G726DEC_EPRINT("Failed to set Mapping State\n");
-                        goto EXIT;
-                    }
-#endif
 
 #ifdef RESOURCE_MANAGER_ENABLED
                     /* need check the resource with RM */
@@ -755,16 +700,6 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     G726DEC_DPRINT("G726DEC: State has been Set to Idle\n");
 
                 } else if (pComponentPrivate->curState == OMX_StateExecuting) {
-#ifdef HASHINGENABLE
-                    /*Hashing Change*/
-                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle;
-                    /* clear out any mappings that might have accumulated */
-                    eError = LCML_FlushHashes(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
-                    if (eError != OMX_ErrorNone) {
-                        G726DEC_EPRINT("Error occurred in Codec mapping flush!\n");
-                        break;
-                    }
-#endif
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;                    
                     G726DEC_DPRINT(":: In HandleCommand: Stopping the codec\n");
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
@@ -778,16 +713,6 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                 } else if(pComponentPrivate->curState == OMX_StatePause) {
                     char *pArgs = "damedesuStr";
-#ifdef HASHINGENABLE
-                    /*Hashing Change*/
-                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle;
-                    /* clear out any mappings that might have accumulated */
-                    eError = LCML_FlushHashes(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
-                    if (eError != OMX_ErrorNone) {
-                        G726DEC_EPRINT("Error occurred in Codec mapping flush!\n");
-                        break;
-                    }
-#endif
                     G726DEC_DPRINT(":: Comp: Stop Command Received\n");
                     G726DEC_DPRINT(": G726DECUTILS::About to call LCML_ControlCodec\n");
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
@@ -969,15 +894,11 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (pComponentPrivate->pInputBufferList->numBuffers ||
                     pComponentPrivate->pOutputBufferList->numBuffers) {
                     pComponentPrivate->InIdle_goingtoloaded = 1;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
                     pthread_cond_wait(&pComponentPrivate->InIdle_threshold, 
                                       &pComponentPrivate->InIdle_mutex);
                     pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
 
-#else
-                    OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
                     pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
                 }
                 /* Now Deinitialize the component No error should be returned from
@@ -1138,11 +1059,7 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bDisableCommandPending = 1;
                 pComponentPrivate->bDisableCommandParam = commandData;
             }
-#ifndef UNDER_CE
             sched_yield();
-#else
-            Sleep(0);
-#endif
         }
     }
     else if (command == OMX_CommandPortEnable) {
@@ -1155,13 +1072,9 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
 
             if(pComponentPrivate->AlloBuf_waitingsignal){
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
             }
         }
         if(commandData == 0x1 || commandData == -1){
@@ -1171,13 +1084,9 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
             pComponentPrivate->pPortDef[G726D_OUTPUT_PORT]->bEnabled = OMX_TRUE;
             if(pComponentPrivate->AlloBuf_waitingsignal){
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE             
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif            
             }
             if(pComponentPrivate->curState == OMX_StateExecuting){
                 pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
@@ -1227,11 +1136,7 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 G726DECFill_LCMLInitParamsEx(pComponentPrivate->pHandle);
                 break;
             }
-#ifndef UNDER_CE
             sched_yield();
-#else
-            Sleep(0);
-#endif
         }
     }
     else if (command == OMX_CommandFlush) {
@@ -1915,11 +1820,7 @@ OMX_ERRORTYPE G726DEC_GetCorresponding_LCMLHeader(G726DEC_COMPONENT_PRIVATE *pCo
     G726DEC_DPRINT (":: eDir = %d\n",eDir);
 
     while (!pComponentPrivate->bInitParamsInitialized) {
-#ifndef UNDER_CE
         sched_yield();
-#else
-        Sleep(0);
-#endif
     }
 
     if(eDir == OMX_DirInput) {
@@ -2109,7 +2010,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
  *  @see         None
  */
 /* ================================================================================ * */
-#ifndef UNDER_CE
 OMX_HANDLETYPE G726DEC_GetLCMLHandle(G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
     /* This must be taken care by WinCE */
@@ -2142,44 +2042,6 @@ OMX_HANDLETYPE G726DEC_GetLCMLHandle(G726DEC_COMPONENT_PRIVATE *pComponentPrivat
  EXIT:
     return pHandle;
 }
-#else
-/* WINDOWS Explicit dll load procedure */
-OMX_HANDLETYPE G726DEC_GetLCMLHandle(G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
-{
-    typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-    OMX_HANDLETYPE pHandle = NULL;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    HINSTANCE hDLL;               /* Handle to DLL */
-    LPFNDLLFUNC1 fpGetHandle1;
-
-    hDLL = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL,0);
-    if (hDLL == NULL)
-    {
-        /*fputs(dlerror(), stderr); */
-        G726DEC_DPRINT("BML Load Failed!!!\n");
-        return pHandle;
-    }
-
-    fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(hDLL,TEXT("GetHandle"));
-    if (!fpGetHandle1)
-    {
-        /* handle the error */
-        FreeLibrary(hDLL);
-        return pHandle;
-    }
-
-    /* call the function */
-    eError = fpGetHandle1(&pHandle);
-    if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        G726DEC_EPRINT("eError != OMX_ErrorNone...\n");
-        pHandle = NULL;
-        return pHandle;
-    }
-    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
-    return pHandle;
-}
-#endif
 
 void G726DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 {
@@ -2410,17 +2272,22 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     OMX_U32 nIpBuf = 0,nIpBufSize = 0,nOpBuf = 0,nOpBufSize = 0;
     OMX_U32 i = 0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
-    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    G726DEC_COMPONENT_PRIVATE *pComponentPrivate =
-        (G726DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     G726D_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
+    G726DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_U32 size_lcml = 0;
     OMX_U8 *ptr = NULL;
+    
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
+    G726D_OMX_CONF_CHECK_CMD(pHandle, 1, 1);
+
+    pComponentPrivate =
+        (G726DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+        
+    G726D_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
 
     G726DEC_DPRINT(":: Entered Fill_LCMLInitParams");
-
-
+    
     nIpBuf = pComponentPrivate->pInputBufferList->numBuffers;
     nOpBuf = pComponentPrivate->pPortDef[G726D_OUTPUT_PORT]->nBufferCountActual;                   /* pComponentPrivate->pOutputBufferList->numBuffers; */
     nIpBufSize = pComponentPrivate->pPortDef[G726D_INPUT_PORT]->nBufferSize;

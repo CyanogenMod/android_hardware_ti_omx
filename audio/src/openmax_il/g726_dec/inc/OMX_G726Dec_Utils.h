@@ -47,16 +47,9 @@
 #include "OMX_TI_Common.h"
 #include "LCML_DspCodec.h"
 
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <pthread.h>
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
-#endif
 #endif
 
 
@@ -96,36 +89,15 @@
 #define SID_FRAME_TYPE 2    /* SID frame flag */
 #define NODATA_FRAME 3    /* Erasure frame flag */
 
-#ifdef UNDER_CE
-#define USN_DLL_NAME "\\windows\\usn.dll64P" /* Path of USN DLL */
-#define G726DEC_DLL_NAME "\\windows\\g726dec_sn.dll64P" /* Path of G726 SN DLL */
-#else
 #define USN_DLL_NAME "usn.dll64P" /* Path of USN DLL */
 #define G726DEC_DLL_NAME "g726dec_sn.dll64P" /* Path of G726 SN DLL */
-#endif
 
 #define DONT_CARE 0 /* Value unused or ignored */
 #define G726DEC_BUFDETAILS
 /** Default timeout used to come out of blocking calls*/
 #define G726D_TIMEOUT 1 /* seconds */
 
-#ifdef UNDER_CE
-
-#ifdef DEBUG
-#define G726DEC_DPRINT   printf
-#define G726DEC_EPRINT   printf
-#define G726DEC_MEMPRINT   printf
-#define G726DEC_STATEPRINT   printf
-#define G726DEC_BUFPRINT   printf
-#else
-#define G726DEC_DPRINT
-#define G726DEC_EPRINT
-#define G726DEC_MEMPRINT
-#define G726DEC_STATEPRINT
-#define G726DEC_BUFPRINT
-#endif
-
-#else /* for Linux */
+ /* for Linux */
 
 #ifdef  G726DEC_DEBUG
 
@@ -166,7 +138,6 @@
     fprintf(stdout, __VA_ARGS__);                                       \
     fprintf(stdout, "\n");
 
-#endif /*for UNDER_CE*/
 
 #define G726D_OMX_ERROR_EXIT(_e_, _c_, _s_)                             \
     _e_ = _c_;                                                          \
@@ -325,18 +296,6 @@ struct _G726D_BUFFERLIST{
 
 typedef struct _G726D_BUFFERLIST G726D_BUFFERLIST;
 
-#ifdef UNDER_CE
-#ifndef _OMX_EVENT_
-#define _OMX_EVENT_
-typedef struct OMX_Event {
-    HANDLE event;
-} OMX_Event;
-#endif
-int OMX_CreateEvent(OMX_Event *event);
-int OMX_SignalEvent(OMX_Event *event);
-int OMX_WaitForEvent(OMX_Event *event);
-int OMX_DestroyEvent(OMX_Event *event);
-#endif
 
 /* ======================================================================= */
 /** G726DEC_COMPONENT_PRIVATE: This is the major and main structure of the
@@ -609,7 +568,6 @@ typedef struct G726DEC_COMPONENT_PRIVATE
     /* flag if the flush command is pending in Output Port */
     OMX_BOOL bFlushInputPortCommandPending;
     
-#ifndef UNDER_CE
     /** Tells whether mutex have been initialized or not */
     OMX_U32 bMutexInit;
     /* mutex for allocating buffers */
@@ -626,16 +584,6 @@ typedef struct G726DEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded; 
-#endif    
 
     /* flag if transition to loaded is pending */
     OMX_BOOL bLoadedCommandPending;
@@ -693,13 +641,7 @@ typedef struct G726DEC_COMPONENT_PRIVATE
  *  @see          G726Dec_StartCompThread()
  */
 /* ================================================================================ * */
-#ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
 
 /* ================================================================================= * */
 /**
