@@ -2079,7 +2079,7 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     OMX_U32 nParam1 = -1;
     OMX_U32 buffcount = 0;
     OMX_U32 i = 0;
-    OMX_U32 iCount = 0;
+    OMX_U32 count = 0;
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
 
@@ -2127,32 +2127,32 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     if (pComponentPrivate->pInternalConfigBufferAVC != NULL){
       free(pComponentPrivate->pInternalConfigBufferAVC);
     }
-    for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-        if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr != NULL) {
+    for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+        if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr != NULL) {
             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
-            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr;
+            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
             if(pBuffHead != NULL){
-                if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->bAllocByComponent == OMX_TRUE){
+                if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
                         OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
                 }
                 free(pBuffHead);
                 pBuffHead = NULL;
-                pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr = NULL;
+                pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
         }
     }
 
-    for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-        if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr != NULL) {
+    for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+        if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr != NULL) {
             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
-            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr;
+            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
             if(pBuffHead != NULL){
-	         if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->bAllocByComponent == OMX_TRUE){
+	         if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
                         OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
 	         }
                 free(pBuffHead);
                 pBuffHead = NULL;
-                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr = NULL;
+                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
         }
     }

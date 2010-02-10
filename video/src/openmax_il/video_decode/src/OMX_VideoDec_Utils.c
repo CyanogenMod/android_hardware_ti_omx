@@ -813,7 +813,7 @@ EXIT:
 
 OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing)
 {
-    OMX_U32 iCount = 0;
+    OMX_U32 count = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     switch(nPassing){
@@ -918,14 +918,14 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 #ifdef KHRONOS_1_1
             pComponentPrivate->pOutPortDef->format.video.pNativeWindow           = 0;
 #endif
-            for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-                OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount], VIDDEC_BUFFER_PRIVATE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
-                pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr = NULL;
+            for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+                OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count], VIDDEC_BUFFER_PRIVATE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
+                pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
 
-            for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-                OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount], VIDDEC_BUFFER_PRIVATE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
-                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr = NULL;
+            for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+                OMX_MALLOC_STRUCT(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count], VIDDEC_BUFFER_PRIVATE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
+                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
 
             /* Set pInPortFormat defaults */
@@ -973,10 +973,10 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->eMBErrorReport.bEnabled    = OMX_FALSE;
             /*MBError Reporting code       */
             /* Set eMBErrorMapType defaults */
-            for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-                OMX_CONF_INIT_STRUCT(&pComponentPrivate->eMBErrorMapType[iCount], OMX_CONFIG_MACROBLOCKERRORMAPTYPE_TI , pComponentPrivate->dbg);
-                pComponentPrivate->eMBErrorMapType[iCount].nPortIndex  = VIDDEC_OUTPUT_PORT;
-                pComponentPrivate->eMBErrorMapType[iCount].nErrMapSize = (VIDDEC_DEFAULT_WIDTH * VIDDEC_DEFAULT_HEIGHT) / 256;
+            for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+                OMX_CONF_INIT_STRUCT(&pComponentPrivate->eMBErrorMapType[count], OMX_CONFIG_MACROBLOCKERRORMAPTYPE_TI , pComponentPrivate->dbg);
+                pComponentPrivate->eMBErrorMapType[count].nPortIndex  = VIDDEC_OUTPUT_PORT;
+                pComponentPrivate->eMBErrorMapType[count].nErrMapSize = (VIDDEC_DEFAULT_WIDTH * VIDDEC_DEFAULT_HEIGHT) / 256;
             }
             pComponentPrivate->cMBErrorIndexIn = 0;
             pComponentPrivate->cMBErrorIndexOut = 0;
@@ -1074,11 +1074,11 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             VIDDEC_PTHREAD_MUTEX_INIT(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sInSemaphore);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sOutSemaphore);
-            for (iCount = 0; iCount < CBUFFER_SIZE; iCount++) {
-                pComponentPrivate->aBufferFlags[iCount].nTimeStamp = 0;
-                pComponentPrivate->aBufferFlags[iCount].nFlags = 0;
-                pComponentPrivate->aBufferFlags[iCount].pMarkData = NULL;
-                pComponentPrivate->aBufferFlags[iCount].hMarkTargetComponent = NULL;
+            for (count = 0; count < CBUFFER_SIZE; count++) {
+                pComponentPrivate->aBufferFlags[count].nTimeStamp = 0;
+                pComponentPrivate->aBufferFlags[count].nFlags = 0;
+                pComponentPrivate->aBufferFlags[count].pMarkData = NULL;
+                pComponentPrivate->aBufferFlags[count].hMarkTargetComponent = NULL;
             }
             pComponentPrivate->pBufferRCV.sStructRCV.nNumFrames = 0xFFFFFF; /*Infinite frame number*/
             pComponentPrivate->pBufferRCV.sStructRCV.nFrameType = 0x85;
@@ -2224,7 +2224,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandMarkBuffer(VIDDEC_COMPONENT_PRIVATE *pComponen
 OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 {
     OMX_U32 message[4];
-    OMX_U32 iCount = 0;
+    OMX_U32 count = 0;
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)phandle;
     LCML_DSP_INTERFACE *pLcmlHandle = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = pComponentPrivate->pInPortDef;
@@ -3339,21 +3339,21 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
                     }
                 }
-                for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-                    if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->bAllocByComponent == OMX_TRUE){
-                        if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr != NULL) {
+                for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+                    if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
+                        if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr != NULL) {
                             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
-                            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr;
+                            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
                             OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
                         }
                     }
                 }
 
-                for (iCount = 0; iCount < MAX_PRIVATE_BUFFERS; iCount++) {
-                    if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->bAllocByComponent == OMX_TRUE){
-                        if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr != NULL) {
+                for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
+                    if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
+                        if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr != NULL) {
                             OMX_BUFFERHEADERTYPE* pBuffHead = NULL;
-                            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[iCount]->pBufferHdr;
+                            pBuffHead = pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
                             OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
                         }
                     }
