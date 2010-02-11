@@ -579,6 +579,7 @@ typedef struct G722ENC_COMPONENT_PRIVATE
     
 
     OMX_BOOL bPreempted;
+    OMX_BOOL bMutexInitDone;
 
 } G722ENC_COMPONENT_PRIVATE;
 

@@ -52,12 +52,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE 
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/types.h>
@@ -69,7 +63,6 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include <sys/time.h>
-#endif
 
 #include <pthread.h>
 #include <dbapi.h>
@@ -83,10 +76,6 @@
 #include "g722encsocket_ti.h"
 #include <encode_common_ti.h>
 #include "usn.h"
-
-#ifdef UNDER_CE
-#define HASHINGENABLE 1
-#endif
 
 int FillBufferDoneCount = 0;
 static int gLcmlPipeWr = 0;
@@ -128,14 +117,10 @@ void* ComponentThread (void* pThreadData)
         tv.tv_sec = 1;
         tv.tv_nsec = 0; /*usec = 0;*/
 
-#ifndef UNDER_CE
         sigset_t set;
         sigemptyset (&set);
         sigaddset (&set, SIGALRM);
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
-#else
-        status = select (fdmax+1, &rfds, NULL, NULL, &tv);
-#endif
 
         if (0 == status) {
             G722ENC_DPRINT("%d : bIsStopping = %ld\n",__LINE__,
@@ -157,9 +142,7 @@ void* ComponentThread (void* pThreadData)
                 }
             }
         } else if (-1 == status) {
-#ifndef UNDER_CE
             G722ENC_DPRINT ("%d :: Error in Select - errno = %d\n", __LINE__,errno);
-#endif
             pComponentPrivate->cbInfo.EventHandler (
                                                     pHandle,pHandle->pApplicationPrivate,
                                                     OMX_EventError,OMX_ErrorInsufficientResources, 0,
@@ -547,12 +530,6 @@ OMX_ERRORTYPE G722Enc_StartCompThread(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G722ENC_COMPONENT_PRIVATE *pComponentPrivate =
         (G722ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-#ifdef UNDER_CE
-    pthread_attr_t attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.__inheritsched = PTHREAD_EXPLICIT_SCHED;
-    attr.__schedparam.__sched_priority = OMX_AUDIO_ENCODER_THREAD_PRIORITY;
-#endif
 
     G722ENC_DPRINT ("%d :: Enetering  G722Enc_StartCompThread\n", __LINE__);
     /* initialize values */
@@ -594,13 +571,8 @@ OMX_ERRORTYPE G722Enc_StartCompThread(OMX_HANDLETYPE pComponent)
     gLcmlPipeWr = pComponentPrivate->lcml_Pipe[1];
 
     /* Create the Component Thread */
-#ifdef UNDER_CE
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr,
-                             ComponentThread, pComponentPrivate);
-#else
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL,
                              ComponentThread, pComponentPrivate);
-#endif
     G722ENC_DPRINT ("%d :: G722Enc_StartCompThread() - error = %d\n", __LINE__,eError);
     if (eError || !pComponentPrivate->ComponentThread) {
         eError = OMX_ErrorInsufficientResources;
@@ -758,21 +730,18 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
     } 
     pComponentPrivate->bPortDefsAllocated = 0;
 
-#ifndef UNDER_CE
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
-    
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-    
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#else
-    OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-    OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-    OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif 
-    
+    if (pComponentPrivate->bMutexInitDone) {
+
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+    }
+
     /*eError = G722ENC_FreeLCMLHandle();*/
     G722ENC_DPRINT ("Exiting Successfully G722ENC_FreeCompResources()\n");
     return eError;
@@ -1051,14 +1020,10 @@ OMX_U32 G722ENC_HandleCommand (G722ENC_COMPONENT_PRIVATE *pComponentPrivate)
             if(pComponentPrivate->AlloBuf_waitingsignal)
             {
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE                 
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 /* Sending signal to Allocate Buffer Task. */ 
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);   
-#else
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));   
-#endif
             }
             G722ENC_DPRINT("pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]->bEnabled = %d\n",pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]->bEnabled);
         }
@@ -1067,14 +1032,10 @@ OMX_U32 G722ENC_HandleCommand (G722ENC_COMPONENT_PRIVATE *pComponentPrivate)
             if(pComponentPrivate->AlloBuf_waitingsignal)
             {
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE                 
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 /* Sending signal to Allocate Buffer Task. */ 
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else                 
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));   
-#endif
             }
             
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1742,8 +1703,6 @@ OMX_ERRORTYPE G722ENC_GetCorresponding_LCMLHeader(OMX_U8 *pBuffer,
  *
  -------------------------------------------------------------------*/
 
-#ifndef UNDER_CE
-
 OMX_HANDLETYPE G722ENC_GetLCMLHandle()
 {
     void *handle = NULL;
@@ -1755,8 +1714,8 @@ OMX_HANDLETYPE G722ENC_GetLCMLHandle()
     if (!handle) {
         if ((error = dlerror()) != NULL) {
             fputs(error, stderr);
-            return pHandle;
         }
+        return pHandle;
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
@@ -1765,13 +1724,18 @@ OMX_HANDLETYPE G722ENC_GetLCMLHandle()
         dlclose(handle);
         return pHandle;
     }
-    eError = (*fpGetHandle)(&pHandle);
-    if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        G722ENC_DPRINT("eError != OMX_ErrorNone...\n");
-        pHandle = NULL;
-        dlclose(handle);
-        return pHandle;
+
+    if (NULL != fpGetHandle) {
+        eError = (*fpGetHandle)(&pHandle);
+
+        if(eError != OMX_ErrorNone) {
+            eError = OMX_ErrorUndefined;
+            G722ENC_DPRINT("eError != OMX_ErrorNone...\n");
+            pHandle = NULL;
+            dlclose(handle);
+            return pHandle;
+        }
+
     }
 
     pComponentPrivate_CC->lcml_handle = handle;
@@ -1779,50 +1743,7 @@ OMX_HANDLETYPE G722ENC_GetLCMLHandle()
 
     return pHandle;
 }
-#else
 
-//WINDOWS Explicit dll load procedure
-
-OMX_HANDLETYPE G722ENC_GetLCMLHandle()
-{
-    typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-    OMX_HANDLETYPE pHandle = NULL;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    HINSTANCE hDLL;               // Handle to DLL
-    LPFNDLLFUNC1 fpGetHandle1;
-
-
-
-    hDLL = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL,0);
-    if (hDLL == NULL)
-    {
-        //fputs(dlerror(), stderr);
-        G722ENC_DPRINT("BML Load Failed!!!\n");
-        return pHandle;
-    }
-
-    fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(hDLL,TEXT("GetHandle"));
-    if (!fpGetHandle1)
-    {
-        // handle the error
-        FreeLibrary(hDLL);
-        return pHandle;
-    }
-
-    // call the function
-    eError = fpGetHandle1(&pHandle);
-    if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        AMRDEC_DPRINT("eError != OMX_ErrorNone...\n");
-        pHandle = NULL;
-        return pHandle;
-    }
-    return pHandle;
-}
-#endif
-
-
-#ifndef UNDER_CE
 OMX_ERRORTYPE G722ENC_FreeLCMLHandle()
 {
 
@@ -1838,26 +1759,6 @@ OMX_ERRORTYPE G722ENC_FreeLCMLHandle()
     }
     return eError;
 }
-#else
-OMX_ERRORTYPE G722ENC_FreeLCMLHandle()
-{
-
-    int retValue = 0;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate_CC->bLcmlHandleOpened) {
-
-        retValue = FreeLibrary(pComponentPrivate_CC->pLcmlHandle);
-        if (retValue == 0) {          /* Zero Indicates failure */
-            eError = OMX_ErrorUndefined;
-        }
-        pComponentPrivate_CC->bLcmlHandleOpened = 0;
-    }
-    return eError;
-}
-#endif
-
-
 
 /* ================================================================================= */
 /**
@@ -1922,14 +1823,10 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
                 && !(pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]->bPopulated))
             {
                 pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
                 pthread_cond_wait(&pComponentPrivate->InLoaded_threshold,
                                   &pComponentPrivate->InLoaded_mutex);
                 pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
             }
         }
 
@@ -1954,16 +1851,10 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
         pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
         cb.LCML_Callback = (void *) G722ENC_LCML_Callback;
 
-#ifndef UNDER_CE
         eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                     p, &pLcmlHandle, (void *)p,
                                     &cb, (OMX_STRING)pComponentPrivate->sDeviceString);
 
-#else
-        eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                  p, &pLcmlHandle, (void *)p, 
-                                  &cb);
-#endif
         if(eError != OMX_ErrorNone)
         {
             G722ENC_DPRINT("from LCML_Init().\n");
@@ -2114,13 +2005,9 @@ OMX_ERRORTYPE G722ENC_CommandToLoaded(G722ENC_COMPONENT_PRIVATE *pComponentPriva
     if (pComponentPrivate->pInputBufferList->numBuffers ||
         pComponentPrivate->pOutputBufferList->numBuffers){
         pComponentPrivate->InIdle_goingtoloaded = 1;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
         pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
         pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
     }
 

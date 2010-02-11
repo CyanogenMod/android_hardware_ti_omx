@@ -52,11 +52,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE 
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -64,7 +59,6 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -233,9 +227,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-#ifdef UNDER_CE
-    memset (pHandle->pComponentPrivate,0,sizeof(G722ENC_COMPONENT_PRIVATE));
-#endif
 
     ((G722ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     ((G722ENC_COMPONENT_PRIVATE *)
@@ -250,12 +241,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pcm_ip = (OMX_AUDIO_PARAM_ADPCMTYPE *)malloc(sizeof(OMX_AUDIO_PARAM_ADPCMTYPE));
     G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pcm_ip);
     if(NULL == pcm_ip) {
-        /* Free previously allocated memory before bailing */
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
-        }
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
@@ -263,12 +248,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pcm_op = (OMX_AUDIO_PARAM_ADPCMTYPE *)malloc(sizeof(OMX_AUDIO_PARAM_ADPCMTYPE));
     G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pcm_op);
     if(NULL == pcm_op) {
-        /* Free previously allocated memory before bailing */
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
-        }
 
         if (pcm_ip) {
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pcm_ip);
@@ -321,12 +300,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
       G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pComponentPrivate->pInputBufferList);*/
     OMX_G722MALLOC_STRUCT (pComponentPrivate->pInputBufferList, G722ENC_BUFFERLIST);
     if (pComponentPrivate->pInputBufferList == NULL) {
-        /* Free previously allocated memory before bailing */
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
-        }
 
         if (pcm_ip) {
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pcm_ip);
@@ -364,11 +337,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 	    pComponentPrivate->pInputBufferList = NULL;
 	}
 
-	if (pHandle->pComponentPrivate) {
-	    G722ENC_MEMPRINT("%d:::[FREE] %p\n", __LINE__, pHandle->pComponentPrivate);
-	    free(pHandle->pComponentPrivate);
-	    pHandle->pComponentPrivate = NULL;
-	}
 	eError = OMX_ErrorInsufficientResources;
 	goto EXIT;
     }
@@ -380,12 +348,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_G722MALLOC_STRUCT (pComponentPrivate->pOutputBufferList, G722ENC_BUFFERLIST);
 
     if (pComponentPrivate->pOutputBufferList == NULL) {
-        /* Free previously allocated memory before bailing */
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
-        }
 
         if (pcm_ip) {
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pcm_ip);
@@ -440,29 +402,24 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bStreamCtrlCalled = 0;
     pComponentPrivate->pParams = NULL;
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
-    pComponentPrivate->bPreempted = OMX_FALSE; 
+    pComponentPrivate->bPreempted = OMX_FALSE;
+    pComponentPrivate->bMutexInitDone = OMX_FALSE;
 
+    if (!pComponentPrivate->bMutexInitDone) {
+        pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
+        pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
+        pComponentPrivate->AlloBuf_waitingsignal = 0;
 
-#ifndef UNDER_CE
-    pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
+        pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
+        pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
+        pComponentPrivate->InLoaded_readytoidle = 0;
 
-    pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    
-    pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;    
-#endif
+        pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
+        pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
+        pComponentPrivate->InIdle_goingtoloaded = 0;
+
+        pComponentPrivate->bMutexInitDone = OMX_TRUE;
+    }
 
     /*pPortDef_ip = (OMX_PARAM_PORTDEFINITIONTYPE *) malloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
       G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pPortDef_ip);*/
@@ -493,12 +450,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pOutputBufferList);
             free(pComponentPrivate->pOutputBufferList);
             pComponentPrivate->pOutputBufferList = NULL;
-        }
-
-        if (pHandle->pComponentPrivate) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pHandle->pComponentPrivate);
-            free(pHandle->pComponentPrivate);
-            pHandle->pComponentPrivate = NULL;
         }
 
         eError = OMX_ErrorInsufficientResources;
@@ -535,12 +486,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
             free(pComponentPrivate->pOutputBufferList);
             pComponentPrivate->pOutputBufferList = NULL;
         }
-
-	if (pHandle->pComponentPrivate) {
-	    G722ENC_MEMPRINT("%d:::[FREE] %p\n", __LINE__, pHandle->pComponentPrivate);
-	    free(pHandle->pComponentPrivate);
-	    pHandle->pComponentPrivate = NULL;
-	}
 
         if (pPortDef_ip) {
             G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pPortDef_ip);
@@ -628,13 +573,24 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
  EXIT:
     G722ENC_DPRINT("Leaving OMX_ComponentInit\n");
 
-    if (OMX_ErrorNone != eError){
-        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    if (OMX_ErrorNone != eError) {
+        if ((NULL != pHandle) && (pComponentPrivate->bMutexInitDone == OMX_TRUE)) {
+            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+            pComponentPrivate->bMutexInitDone = OMX_FALSE;
+
+            if (pHandle->pComponentPrivate) {
+                G722ENC_MEMPRINT("%d:::[FREE] %p\n", __LINE__, pHandle->pComponentPrivate);
+                free(pHandle->pComponentPrivate);
+                pHandle->pComponentPrivate = NULL;
+            }
+        }
+
     }
 
     return eError;
@@ -1681,15 +1637,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if(!(pPortDef->bEnabled))
     {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE        
         G722ENC_DPRINT("\n\n AllocateBuffer: Waiting for signal.\n\n\n");
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);      
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
         G722ENC_DPRINT("\n\n AllocateBuffer: Signal received!!!\n\n\n");
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     }
     /*pBufferHeader = (OMX_BUFFERHEADERTYPE*)malloc(sizeof(OMX_BUFFERHEADERTYPE));
       G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pBufferHeader);*/
@@ -1759,17 +1711,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;  
-#ifndef UNDER_CE                  
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         G722ENC_DPRINT("\n\n WAKE UP!! Allocate Buffer: buffers populated.\n\n");
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         /* Sending signal. */ 
         G722ENC_DPRINT("\n\n WAKE UP!! Allocate Buffer: Sending signal from Loaded to Ilde state!\n\n");
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));                   
-
-#endif
     }
     
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -1910,16 +1857,12 @@ static OMX_ERRORTYPE FreeBuffer(
         pComponentPrivate->InIdle_goingtoloaded)
     {
         pComponentPrivate->InIdle_goingtoloaded = 0;                  
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         G722ENC_DPRINT("\n\n WAKE UP!! Free Buffer: No allocated buffers.\n\n");
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         /* Sending signal. */ 
         G722ENC_DPRINT("\n\n WAKE UP!! Free Buffer: Sending signal from Idle to Loaded state!\n\n");
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif
     }
         
     if (pComponentPrivate->bDisableCommandPending) {
@@ -2027,13 +1970,9 @@ static OMX_ERRORTYPE UseBuffer (
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE    
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));               
-#endif
     }
     G722ENC_DPRINT("Line %d\n",__LINE__); 
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -2113,71 +2052,3 @@ static OMX_ERRORTYPE ComponentRoleEnum(
 
     return eError;
 }
-
-#ifdef UNDER_CE
-/* ================================================================================= */
-/**
- * @fns Sleep replace for WIN CE
- */
-/* ================================================================================ */
-int OMX_CreateEvent(OMX_Event *event){
-    int ret = OMX_ErrorNone;
-    HANDLE createdEvent = NULL;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    event->event  = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if(event->event == NULL)
-    {
-        ret = (int)GetLastError();
-    }
- EXIT:
-    return ret;
-}
-
-int OMX_SignalEvent(OMX_Event *event){
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    SetEvent(event->event);
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_WaitForEvent(OMX_Event *event)
-{
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    WaitForSingleObject(event->event, INFINITE);
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_DestroyEvent(OMX_Event *event)
-{
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }  
-    CloseHandle(event->event);
- EXIT:    
-    return ret;
-}
-#endif
