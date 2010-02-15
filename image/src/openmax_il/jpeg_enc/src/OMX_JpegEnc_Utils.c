@@ -785,7 +785,7 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
 
         pthread_mutex_lock(&pComponentPrivate->jpege_mutex);
@@ -807,7 +807,7 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
 
         pthread_mutex_lock(&pComponentPrivate->jpege_mutex);
@@ -821,9 +821,10 @@ static OMX_ERRORTYPE HandleJpegEncInternalFlush(JPEGENC_COMPONENT_PRIVATE *pComp
         pComponentPrivate->bFlushComplete = OMX_FALSE;
     }
 
-    PRINT_EXIT:
-        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     EXIT:
+        if (pComponentPrivate != NULL) {
+            OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
+        }
     return eError;
 
 }
@@ -848,7 +849,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
        OMX_PRDSP2(pComponentPrivate->dbg, "sent EMMCodecControlStrmCtrl command\n");
 
@@ -930,7 +931,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
         if (eError != OMX_ErrorNone) {
-            goto PRINT_EXIT;
+            goto EXIT;
         }
         OMX_PRDSP2(pComponentPrivate->dbg, "(1) sent EMMCodecControlStrmCtrl command\n");
 
@@ -979,7 +980,7 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
             ret = read(pComponentPrivate->free_outBuf_Q[0], &pBuffHead, sizeof(pBuffHead));
             if ( ret == -1 ) {
                 OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from the pipe\n");
-                goto PRINT_EXIT;
+                goto EXIT;
             }
             OMX_PRCOMM1(pComponentPrivate->dbg, "after read\n");
             if (pBuffHead != NULL) {
@@ -1014,9 +1015,10 @@ OMX_ERRORTYPE HandleJpegEncCommandFlush(JPEGENC_COMPONENT_PRIVATE *pComponentPri
                                                NULL);
     }
 
-    PRINT_EXIT:
-        OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
     EXIT:
+        if (pComponentPrivate != NULL) {
+            OMX_PRINT1(pComponentPrivate->dbg, "Exiting HandleCommand FLush Function JEPG Encoder\n");
+        }
     return eError;
 
 }
@@ -3005,7 +3007,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
             eError = HandleJpegEncFreeDataBuf(pComponentPrivate, pBuffHead);
         }
     }
-    goto PRINT_EXIT;
+    goto EXIT;
     } /* end     if ( event == EMMCodecBufferProcessed ) */
 
     if ( event == EMMCodecProcessingStoped ) {
@@ -3031,7 +3033,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
 
         OMX_TRACE1(pComponentPrivate->dbg, "after stop signal\n");
 
-        goto PRINT_EXIT;
+        goto EXIT;
     }
 
     if ( event == EMMCodecDspError ) {
@@ -3046,7 +3048,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                      OMX_ErrorInsufficientResources,
                                      OMX_TI_ErrorCritical,
                                      "The allocated output buffer length is insufficient");
-           goto PRINT_EXIT;
+           goto EXIT;
        }
        if ((int)argsCb[4] != 0x1 || (int)argsCb[5] != 0x500) {
 	   OMX_PRDSP4(pComponentPrivate->dbg, "DSP Error %x %x\n", (int)(argsCb[4]), (int)(argsCb[5]));
@@ -3064,7 +3066,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                    OMX_ErrorInvalidState,
                                                    OMX_TI_ErrorCritical,
                                                    "DSP Hardware Error");
-           goto PRINT_EXIT;
+           goto EXIT;
        }
 #ifdef DSP_MMU_FAULT_HANDLING
         /* Cheking for MMU_fault */
@@ -3089,7 +3091,7 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                                OMX_ErrorHardware, 
                                                OMX_TI_ErrorCritical,
                                                NULL);
-        goto PRINT_EXIT;
+        goto EXIT;
     }
     if ( event == EMMCodecProcessingPaused ) {
         OMX_PRDSP2(pComponentPrivate->dbg, "ENTERING TO EMMCodecProcessingPaused JPEG Encoder\n");
@@ -3123,9 +3125,10 @@ OMX_ERRORTYPE JpegEncLCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         pthread_mutex_unlock(&pComponentPrivate->jpege_mutex);
         */
     }
-PRINT_EXIT:
-    OMX_PRDSP1(pComponentPrivate->dbg, "Exiting the LCML_Callback function\n");
 EXIT:
+    if ( pComponentPrivate != NULL) {
+        OMX_PRDSP1(pComponentPrivate->dbg, "Exiting the LCML_Callback function\n");
+    }
     return eError;
 }
 /*-------------------------------------------------------------------*/

@@ -38,6 +38,7 @@
 #include <time.h> 
 #include <OMX_Component.h>
 #include "JPEGTest.h"
+#include "OMX_JpegDec_Utils.h"
 
 /* DSP recovery includes */
 #include <qosregistry.h>
@@ -732,6 +733,15 @@ int main(int argc, char** argv)
     pSubRegionDecode = (OMX_CUSTOM_IMAGE_DECODE_SUBREGION*)malloc(sizeof(OMX_CUSTOM_IMAGE_DECODE_SUBREGION));
 	pMaxResolution = (OMX_CUSTOM_RESOLUTION *)malloc(sizeof(OMX_CUSTOM_RESOLUTION ));
 
+    OMX_CONF_INIT_STRUCT(pPortParamType, OMX_PORT_PARAM_TYPE);
+    OMX_CONF_INIT_STRUCT(pParamPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_CONF_INIT_STRUCT(pInPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_CONF_INIT_STRUCT(pOutPortDef, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_CONF_INIT_STRUCT(pScaleFactor, OMX_CONFIG_SCALEFACTORTYPE);
+    OMX_CONF_INIT_STRUCT(pPortType, OMX_PORT_PARAM_TYPE);
+    OMX_CONF_INIT_STRUCT(pSectionDecode, OMX_CUSTOM_IMAGE_DECODE_SECTION);
+    OMX_CONF_INIT_STRUCT(pSubRegionDecode, OMX_CUSTOM_IMAGE_DECODE_SUBREGION);
+
 
     printf("\n------------------------------------------------\n");
     printf("OMX JPEG Decoder Test App built on " __DATE__ ":" __TIME__ "\n");
@@ -917,7 +927,6 @@ int main(int argc, char** argv)
         goto EXIT;
     }
     
-    memset(pOutPortDef, 0x0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));    
     eError = OMX_GetParameter (pHandle, OMX_IndexParamPortDefinition, pOutPortDef);
     if ( eError != OMX_ErrorNone ) {
         eError = OMX_ErrorBadParameter;
