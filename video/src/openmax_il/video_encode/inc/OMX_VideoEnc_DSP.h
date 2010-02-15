@@ -171,6 +171,22 @@ typedef enum
 
 } IH264VENC_SliceGroupChangeDirection ;
 
+typedef enum
+{
+   H264_IVIDEO_I_FRAME = 1,
+   H264_IVIDEO_P_FRAME,
+   H264_IVIDEO_B_FRAME,
+   H264_IVIDEO_IDR_FRAME
+} H264_IVIDEO_FrameType;
+
+typedef enum
+{
+   MPEG4_IVIDEO_I_FRAME = 1,
+   MPEG4_IVIDEO_P_FRAME,
+   MPEG4_IVIDEO_B_FRAME,
+   MPEG4_IVIDEO_IDR_FRAME
+} MPEG4_IVIDEO_FrameType;
+
 /* H264 Encoder DSP s/n create phase arguments */
 typedef struct H264VE_GPP_SN_Obj_CreatePhase {
     unsigned short usNumStreams;
