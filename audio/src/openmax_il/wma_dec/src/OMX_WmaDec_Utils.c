@@ -155,21 +155,26 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     plcml_Init->DeviceInfo.TypeofDevice =0;
     
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pDynParams, sizeof(WMADEC_UALGParams), WMADEC_UALGParams);
-
+    if(NULL==(pComponentPrivate->pDynParams))
+    {
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->first_buffer=1;
     
     if(pComponentPrivate_CC->dasfmode == 1)
     {
         OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(WMADEC_AudioCodecParams), WMADEC_AudioCodecParams);
-    
+        if(NULL==(pComponentPrivate->pParams))
+        {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pDynParams,WMADEC_UALGParams);
+            return OMX_ErrorInsufficientResources;
+        }
         OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,strmAttr);
-
         if (strmAttr == NULL)
         {
-            OMX_ERROR4(pComponentPrivate->dbg, "strmAttr - failed to malloc");
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pDynParams,WMADEC_UALGParams);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams,WMADEC_AudioCodecParams)
+            return OMX_ErrorInsufficientResources;
         }
         pComponentPrivate_CC->strmAttr = strmAttr;
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,strmAttr);
@@ -255,14 +260,11 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
     size_lcml = nIpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
-    OMX_PRDSP2(pComponentPrivate->dbg, "Line %d::pTemp_lcml = %p",__LINE__,pTemp_lcml);
     if(pTemp_lcml == NULL)
     {
         /* Free previously allocated memory before bailing */
-        OMX_MEMFREE_STRUCT(strmAttr);
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        WMADEC_CleanupInitParams((OMX_HANDLETYPE) pComponent);
+        return OMX_ErrorInsufficientResources;
     }
     pComponentPrivate_CC->pLcmlBufHeader[INPUT_PORT] = pTemp_lcml;
 
@@ -289,13 +291,11 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, 
                              sizeof(WMADEC_UAlgInBufParamStruct),
                              WMADEC_UAlgInBufParamStruct);
-        if (pTemp_lcml->pIpParam == NULL)
+        if (NULL==(pTemp_lcml->pIpParam))
         {
             /* Free previously allocated memory before bailing */
-            OMX_MEMFREE_STRUCT(strmAttr);
-            OMX_MEMFREE_STRUCT(pTemp_lcml );
-
-            goto EXIT;
+            WMADEC_CleanupInitParams((OMX_HANDLETYPE) pComponent);
+            return OMX_ErrorInsufficientResources;
         }
         pTemp_lcml->pIpParam->bLastBuffer = 0;
 
@@ -310,13 +310,11 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
      * This memory pointer will be sent to LCML */
     size_lcml = pComponentPrivate_CC->pOutputBufferList->numBuffers * sizeof(LCML_WMADEC_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
-    OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
     if(pTemp_lcml == NULL)
     {
         /* Free previously allocated memory before bailing */
-        OMX_MEMFREE_STRUCT(strmAttr);
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        WMADEC_CleanupInitParams((OMX_HANDLETYPE) pComponent);
+        return OMX_ErrorInsufficientResources;
     }
     pComponentPrivate_CC->pLcmlBufHeader[OUTPUT_PORT] = pTemp_lcml;
     for (i=0; i<nOpBuf; i++)
@@ -351,6 +349,10 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
 
     pComponentPrivate_CC->bInitParamsInitialized = 1;   
  EXIT:
+    if(eError != OMX_ErrorNone) {
+        WMADEC_CleanupInitParams((OMX_HANDLETYPE)pComponent);
+        return eError;
+    }
     return eError;
 }
 
@@ -390,24 +392,50 @@ OMX_ERRORTYPE WMADEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     eError = pipe (pComponentPrivate->cmdDataPipe);
     if (eError)
     {
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: cmdDataPipe open returned error : %x\n",__LINE__,eError);
+        return OMX_ErrorInsufficientResources;
     }
 
     /* create the pipe used to send buffers to the thread */
     eError = pipe (pComponentPrivate->dataPipe);
     if (eError)
     {
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        /* Close previously allocated Pipes */
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: dataPipe open returned error : %x\n",__LINE__,eError);
+        return OMX_ErrorInsufficientResources;
     }
 
     /* create the pipe used to send commands to the thread */
     eError = pipe (pComponentPrivate->cmdPipe);
     if (eError)
     {
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: cmdPipe open returned error : %x\n",__LINE__,eError);
+        /* Close previously allocated Pipes */
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        close (pComponentPrivate->dataPipe[0]);
+        close (pComponentPrivate->dataPipe[1]);
+        return OMX_ErrorInsufficientResources;
     }
 
     /* Create the Component Thread */
@@ -415,25 +443,30 @@ OMX_ERRORTYPE WMADEC_StartComponentThread(OMX_HANDLETYPE pComponent)
                              WMADEC_ComponentThread, pComponentPrivate);
     if (eError || !pComponentPrivate->ComponentThread)
     {
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    pComponentPrivate->bCompThreadStarted = 1;
- EXIT:
-    if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,
                                                eError,
                                                OMX_TI_ErrorSevere,
                                                NULL);
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: pthread_create returned error : %x\n",__LINE__,eError);
+        /* Close previously allocated Pipes */
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        close (pComponentPrivate->dataPipe[0]);
+        close (pComponentPrivate->dataPipe[1]);
+        close (pComponentPrivate->cmdPipe[0]);
+        close (pComponentPrivate->cmdPipe[1]);
+        return OMX_ErrorInsufficientResources;
     }
+    pComponentPrivate->bCompThreadStarted = 1;
+
     return eError;
 }
 
 /* ========================================================================== */
 /**
- * @Mp3Dec_FreeCompResources() This function is called by the component during
+ * @WMADEC_FreeCompResources() This function is called by the component during
  * de-init to close component thread, Command pipe, data pipe & LCML pipe.
  *
  * @param pComponent  handle for this instance of the component
@@ -454,18 +487,11 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_ERRORTYPE err = OMX_ErrorNone;
-    OMX_U32 nIpBuf = 0;
-    OMX_U32 nOpBuf = 0;
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: WMADEC_FreeCompResources", __LINE__);
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "%d:::pComponentPrivate->bPortDefsAllocated = %ld",
                   __LINE__,pComponentPrivate->bPortDefsAllocated);
-    if (pComponentPrivate->bPortDefsAllocated)
-    {
-        nIpBuf = pComponentPrivate->pPortDef[INPUT_PORT]->nBufferCountActual;
-        nOpBuf = pComponentPrivate->pPortDef[OUTPUT_PORT]->nBufferCountActual;
-    }
 
     if (pComponentPrivate->bCompThreadStarted)
     {
@@ -516,35 +542,32 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
  
     }
 
-    if (pComponentPrivate->bPortDefsAllocated) 
-    {
-        OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
 
-        OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
-        OMX_PRCOMM2(pComponentPrivate->dbg, "freeing pComponentPrivate->pPortDef[INPUT_PORT] = \
-                          %p",pComponentPrivate->pPortDef[INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "freeing pComponentPrivate->pPortDef[INPUT_PORT] = \
+                      %p",pComponentPrivate->pPortDef[INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
 
-        OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
 
-        OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
-        OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->pPortDef[OUTPUT_PORT] = %p",
-                          pComponentPrivate->pPortDef[OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
+    OMX_PRINT1(pComponentPrivate->dbg, "%d:::[WMADEC_FreeCompResources] ", __LINE__);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->pPortDef[OUTPUT_PORT] = %p",
+                      pComponentPrivate->pPortDef[OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
 
-	 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->wmaParams[INPUT_PORT] = %p",
+    OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->wmaParams[INPUT_PORT] = %p",
                           pComponentPrivate->wmaParams[INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[INPUT_PORT]);
 
-	 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->wmaParams[OUTPUT_PORT] = %p",
+    OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->wmaParams[OUTPUT_PORT] = %p",
                           pComponentPrivate->wmaParams[OUTPUT_PORT]);
-        OMX_PRCOMM2(pComponentPrivate->dbg, "wmaParams[OUTPUT_PORT]->nPortIndex = %ld",
+    OMX_PRCOMM2(pComponentPrivate->dbg, "wmaParams[OUTPUT_PORT]->nPortIndex = %ld",
                           pComponentPrivate->wmaParams[OUTPUT_PORT]->nPortIndex);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[OUTPUT_PORT]);
-        OMX_PRCOMM2(pComponentPrivate->dbg, "after pComponentPrivate->wmaParams[OUTPUT_PORT] = \
+    OMX_MEMFREE_STRUCT(pComponentPrivate->wmaParams[OUTPUT_PORT]);
+    OMX_PRCOMM2(pComponentPrivate->dbg, "after pComponentPrivate->wmaParams[OUTPUT_PORT] = \
                           %p",pComponentPrivate->wmaParams[OUTPUT_PORT]);
 
-    }
     pComponentPrivate->bPortDefsAllocated = 0;
 
     OMX_PRDSP2(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n");
@@ -557,7 +580,22 @@ OMX_ERRORTYPE WMADEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 
+    pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+    pthread_cond_destroy (&pComponentPrivate->codecStop_threshold);
+
+    pthread_mutex_destroy(&pComponentPrivate->codecFlush_mutex);
+    pthread_cond_destroy (&pComponentPrivate->codecFlush_threshold);
+
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pHeaderInfo);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pDspDefinition);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->rcaheader);
+
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting Successfully WMADEC_FreeCompResources()");
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
+
     return eError;
 }
 
@@ -1063,9 +1101,14 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       NULL);                            
                             if (eError != OMX_ErrorNone)
                             {
-                                OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN QUEUEBUFFER");
-                                eError = OMX_ErrorHardware;
-                                goto EXIT;
+                                OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN QUEUEBUFFER  :%x",eError);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorHardware,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                 return OMX_ErrorHardware;
                             }                                           
                             pComponentPrivate->lcml_nCntIp++;                   
 
@@ -1141,7 +1184,14 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
                 }
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN LCML_ControlCodec :%x",eError);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return eError;
                 }
             }else {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
@@ -1173,7 +1223,14 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
                 }
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN LCML_ControlCodec :%x",eError);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return eError;
                 }
             } else {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_TRUE; 
@@ -1181,7 +1238,6 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         } 
 
     }
- EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECHandleCommand Function",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning %d",__LINE__,eError);
     if (eError != OMX_ErrorNone ) {
@@ -1237,7 +1293,13 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     if (eError != OMX_ErrorNone)
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: The PBufHeader is not found in the list", __LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
 
     if (eDir == OMX_DirInput)
@@ -1248,7 +1310,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        pBufHeader);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers", __LINE__, __FUNCTION__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
+
         }
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ( (pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags & OMX_BUFFERFLAG_EOS))
@@ -1261,7 +1330,13 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             if (eError != OMX_ErrorNone)
             {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Invalid Buffer Came ...",__LINE__);
-                goto EXIT;
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                return eError;
             }
 
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d Comp:: Sending Filled Input buffer = %p, %p to LCML",
@@ -1313,7 +1388,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..",
                                       __LINE__);
-                        goto EXIT;
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        return eError;
+
                     }
                 }                               
 #ifdef ANDROID //this is used to separate changes made for integration with opencore 2.1 or later versions
@@ -1328,7 +1410,13 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     if (eError != OMX_ErrorNone)
                     {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Parsing invalid ...",__LINE__);
-                        goto EXIT;
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        return eError;
                     }                                   
                     /*******************Updating if needed*********************/
                     OMX_ERROR2(pComponentPrivate->dbg, "OLD: pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate=%ld ",pComponentPrivate->wmaParams[OUTPUT_PORT]->nSamplingRate);
@@ -1361,7 +1449,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                     // }
                     pComponentPrivate->bConfigData = 0;
-                    goto EXIT;
+                    return eError;
                 }
 #endif
                 if( pComponentPrivate->dasfmode )
@@ -1383,7 +1471,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                            EMMCodecControlAlgCtrl, (void *)p);
                 if(eError != OMX_ErrorNone){
                     OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec algctrl..", __LINE__);
-                    goto EXIT;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return eError;
+
                 }
                 pComponentPrivate->bBypassDSP = 0;
 
@@ -1392,7 +1487,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                 if(eError != OMX_ErrorNone){
                     OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Start..", __LINE__);
-                    goto EXIT;
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return eError;
+
                 }
                 pComponentPrivate->SendAfterEOS = 0;                            
             }
@@ -1460,7 +1562,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 OMX_ERROR4(pComponentPrivate->dbg, "%d ::IssuingDSP IP: Error Occurred",
                                                __LINE__);
                                 eError = OMX_ErrorHardware;
-                                goto EXIT;
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                return eError;
+
                             }                                           
                             pComponentPrivate->lcml_nCntIp++;
                         }
@@ -1548,7 +1657,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                       pComponentPrivate->pHandle->pApplicationPrivate,
                                                       pBufHeader);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers", __LINE__, __FUNCTION__);
-            goto EXIT;
+            return eError;
         }
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending output buffer to LCML ");
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d Comp:: Sending Emptied Output buffer=%p to LCML",
@@ -1582,7 +1691,14 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
                                                    __LINE__);
                                     eError = OMX_ErrorHardware;
-                                    goto EXIT;
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                    return eError;
+
                                 }
                             pComponentPrivate->lcml_nOpBuf++;
                             }
@@ -1605,7 +1721,6 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                       __LINE__,pBufHeader, pBufHeader->pBuffer);
         eError = OMX_ErrorBadParameter;
     }
- EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d : Exiting from  WMADECHandleDataBuf_FromApp ",__LINE__);
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -1633,11 +1748,10 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
 OMX_ERRORTYPE WMADECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIRTYPE *eDir)
 {
-    OMX_ERRORTYPE eError                                            = OMX_ErrorNone;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate = pBufHeader->pPlatformPrivate;
     OMX_U16 nBuf;
     OMX_BUFFERHEADERTYPE *pBuf                              = NULL;
-    int flag = 1, i;
+    int i;
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering WMADECGetBufferDirection Function",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: pComponentPrivate = %p",__LINE__,pComponentPrivate);
@@ -1657,8 +1771,7 @@ OMX_ERRORTYPE WMADECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIR
         {
             *eDir = OMX_DirInput;
             OMX_ERROR2(pComponentPrivate->dbg, "%d :: Buffer %p is INPUT BUFFER",__LINE__, pBufHeader);
-            flag = 0;
-            goto EXIT;
+            return OMX_ErrorNone;
         }
     }
 
@@ -1673,29 +1786,19 @@ OMX_ERRORTYPE WMADECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIR
             *eDir = OMX_DirOutput;
             OMX_ERROR2(pComponentPrivate->dbg, "%d :: Buffer %p is OUTPUT BUFFER",__LINE__,
                            pBufHeader);
-            flag = 0;
-            goto EXIT;
+            return OMX_ErrorNone;
         }
     }
-
-    if (flag == 1)
-    {
-        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Buffer %p is Not Found in the List",__LINE__,
+    /* If execution reached here means the buffer is not found in Input and Output direction so this is an error */
+    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Buffer %p is Not Found in the List",__LINE__,
                        pBufHeader);
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
- EXIT:
-    OMX_ERROR1(pComponentPrivate->dbg, "%d :: Exiting WMADECGetBufferDirection Function",__LINE__);
-    if (eError != OMX_ErrorNone ) {
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,
-                                               eError,
+                                               OMX_ErrorUndefined,
                                                OMX_TI_ErrorSevere,
                                                NULL);
-    }
-    return eError;
+    return OMX_ErrorUndefined;
 }
 
 /*-------------------------------------------------------------------*/
@@ -1712,7 +1815,6 @@ OMX_ERRORTYPE WMADECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader, OMX_DIR
 /*-------------------------------------------------------------------*/
 OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentPrivate, LCML_WMADEC_BUFHEADERTYPE* msgBuffer)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     int ret = 0;
 
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)pComponentPrivate->pHandle;
@@ -1723,8 +1825,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
     if (ret == -1)
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error While reading from the LCML Pipe",__LINE__);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        return OMX_ErrorHardware;
     }
 
     OMX_PRINT2(pComponentPrivate->dbg, "%d :: Entering WMADECHandleDataBuf_FromLCML Function",__LINE__);
@@ -1778,8 +1879,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
         {
             OMX_PRINT2(pComponentPrivate->dbg, "%d :: Wrong Direction dir = %d", __LINE__,msgBuffer->eDir);
             OMX_PRDSP2(pComponentPrivate->dbg, "%d: Component Got buffer %p From LCML", __LINE__,msgBuffer->buffer);
-            eError = OMX_ErrorBadParameter;
-            goto EXIT;
+            return OMX_ErrorBadParameter;
         }
     }
     else
@@ -1824,10 +1924,8 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
             OMX_PRCOMM2(pComponentPrivate->dbg, "nOutstandingFillDones = %ld\n", pComponentPrivate->nOutStandingFillDones);
         }
     }
- EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECHandleDataBuf_FromLCML Function",
-                   __LINE__);
-    return eError;
+    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECHandleDataBuf_FromLCML Function: OMX_ErrorNone", __LINE__);
+    return OMX_ErrorNone;
 }
 
 /* -------------------------------------------------------------------*/
@@ -1939,7 +2037,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
             if (eError != OMX_ErrorNone)
             {
                 OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: Error: Invalid Buffer Came ...",__LINE__);
-                goto EXIT;
+                return eError;
             }
 
             WMADECHandleDataBuf_FromLCML(pComponentPrivate_CC, pLcmlHdr);
@@ -1974,7 +2072,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                 {
                     OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: Error: Invalid Buffer Came ...",
                                   __LINE__);
-                    goto EXIT;
+                    return eError;
                 }
                 pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
             
@@ -2047,7 +2145,8 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                 }
                 else
                 {
-                    goto EXIT;                            
+                    OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Exiting the WMADECLCML_Callback Function",__LINE__);
+                    return eError;
                 }
             }
             else if ( args[2] == (void *)EMMCodecOuputBuffer)
@@ -2085,8 +2184,9 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                                               NULL);
                 }
                 else
-                {               
-                    goto EXIT;                            
+                {
+                    OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Exiting the WMADECLCML_Callback Function",__LINE__);
+                    return eError;
                 }
             }
             
@@ -2240,7 +2340,6 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     }
 #endif
 
- EXIT:
     OMX_PRINT1(pComponentPrivate_CC->dbg, "%d :: Exiting the WMADECLCML_Callback Function",__LINE__);
     return eError;
 }
@@ -2261,8 +2360,6 @@ OMX_ERRORTYPE WMADECGetCorresponding_LCMLHeader(WMADEC_COMPONENT_PRIVATE *pCompo
                                                 OMX_DIRTYPE eDir,
                                                 LCML_WMADEC_BUFHEADERTYPE **ppLcmlHdr)
 {
-
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     LCML_WMADEC_BUFHEADERTYPE *pLcmlBufHeader;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate_CC;
     
@@ -2299,7 +2396,7 @@ OMX_ERRORTYPE WMADECGetCorresponding_LCMLHeader(WMADEC_COMPONENT_PRIVATE *pCompo
             {
                 *ppLcmlHdr = pLcmlBufHeader;
                 OMX_ERROR2(pComponentPrivate->dbg, "%d::Corresponding LCML Header Found",__LINE__);
-                goto EXIT;
+                return OMX_ErrorNone;
             }
             pLcmlBufHeader++;
         }
@@ -2323,7 +2420,7 @@ OMX_ERRORTYPE WMADECGetCorresponding_LCMLHeader(WMADEC_COMPONENT_PRIVATE *pCompo
                               pLcmlBufHeader->buffer->pBuffer);
                 *ppLcmlHdr = pLcmlBufHeader;
                 OMX_ERROR2(pComponentPrivate->dbg, "%d::Corresponding LCML Header Found",__LINE__);
-                goto EXIT;
+                return OMX_ErrorNone;
             }
             pLcmlBufHeader++;
         }
@@ -2333,8 +2430,7 @@ OMX_ERRORTYPE WMADECGetCorresponding_LCMLHeader(WMADEC_COMPONENT_PRIVATE *pCompo
         OMX_PRINT1(pComponentPrivate->dbg, "%d:: Invalid Buffer Type :: exiting...",__LINE__);
     }
 
- EXIT:
-    return eError;
+    return OMX_ErrorUndefined;
 }
 
 
@@ -2360,7 +2456,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     {
         if ((error = dlerror()) != NULL)
 	     fputs(error, stderr);
-        goto EXIT;
+        return pHandle;
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
@@ -2368,7 +2464,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     {
         fputs(error, stderr);
         dlclose(handle);
-        goto EXIT;
+        return pHandle;
     }
     
     eError = (*fpGetHandle)(&pHandle);
@@ -2378,13 +2474,10 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         OMX_ERROR4(pComponentPrivate->dbg, "eError != OMX_ErrorNone...");
         dlclose(handle);
         pHandle = NULL;
-        dlclose(handle);
-        goto EXIT;
+        return pHandle;
     }
     
     ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
-
- EXIT:
 
     return pHandle;
 }
@@ -2474,10 +2567,10 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                        pHandle->pApplicationPrivate,
                                                        OMX_EventError, 
-                                                       OMX_ErrorInvalidState,
+                                                       eError,
                                                        OMX_TI_ErrorSevere, 
                                                        NULL);
-                goto EXIT;
+                return eError;
             }
         }         
         while (1)
@@ -2536,7 +2629,13 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         if (pLcmlHandle == NULL)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d :: LCML Handle is NULL........exiting..",__LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
 
         /* Got handle of dsp via phandle filling information about DSP   specific things */
@@ -2546,7 +2645,13 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from WMADECFill_LCMLInitParams()",
                           __LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
         
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
@@ -2583,7 +2688,7 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 eError,
                                                 OMX_TI_ErrorSevere,
                                                 NULL);
-            goto EXIT;
+            return eError;
         }
 
 #ifdef HASHINGENABLE
@@ -2591,7 +2696,13 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         eError = LCML_SetHashingState(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, OMX_TRUE);
         if (eError != OMX_ErrorNone) {
             OMX_ERROR4(pComponentPrivate->dbg, "Failed to set Mapping State");
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
 #endif
 
@@ -2688,7 +2799,13 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         if(eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..", __LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
         else{
             OMX_PRSTATE2(pComponentPrivate->dbg, "%d: Codec has been stopped", __LINE__);
@@ -2732,7 +2849,13 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         if(rm_error != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d :: ERROR: Send Comman Failed", __LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
 #endif        
         
@@ -2755,7 +2878,6 @@ OMX_ERRORTYPE WMADEC_CommandToIdle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                NULL);
     }
 
- EXIT:
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2799,7 +2921,13 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
                                                 OMX_TI_ErrorMinor,
                                                 NULL);
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Same State Given by Application",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "%d: pComponentPrivate->pInputBufferList->numBuffers = %d",
                   __LINE__,pComponentPrivate->pInputBufferList->numBuffers);
@@ -2824,7 +2952,7 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
                                                 OMX_CommandStateSet,
                                                 pComponentPrivate->curState,
                                                 NULL);
-        goto EXIT;
+        return eError;
     }
     OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: In side OMX_StateLoaded State: ",__LINE__);
     if (pComponentPrivate->curState != OMX_StateIdle &&
@@ -2838,7 +2966,13 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
                                                 OMX_TI_ErrorMinor, 
                                                 NULL);
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Invalid State Given by Application",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundaryCleanup);
@@ -2872,7 +3006,13 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
     if (eError != OMX_ErrorNone)
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d : Error: in Destroying the codec: no.  %x",__LINE__, eError);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
     OMX_PRDSP1(pComponentPrivate->dbg, "%d: WMADECHandleCommand: Cmd Loaded",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
@@ -2883,8 +3023,6 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
     /* Send StateChangeNotification to application */
     pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
 
-    
- EXIT:
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2936,7 +3074,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                                 OMX_TI_ErrorMinor,
                                                 NULL);
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Same State Given by Application",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
     else if (pComponentPrivate->curState == OMX_StateIdle)
     {
@@ -2980,7 +3124,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
             {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec StreamControl..",
                               __LINE__);
-                goto EXIT;
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                return eError;
             }
 	     OMX_PRDSP2(pComponentPrivate->dbg, "Setting WMA_IAUDIO_BLOCK");
             pComponentPrivate->pDynParams->iOutputFormat = WMA_IAUDIO_BLOCK; /* EAUDIO_BLOCKED */
@@ -3003,7 +3153,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
         if(eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec algctrl..", __LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
         pComponentPrivate->bBypassDSP = 0;
 
@@ -3013,7 +3169,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
         if(eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Start..", __LINE__);
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
         OMX_PRSTATE2(pComponentPrivate->dbg, ": Codec Has Been Started ");
                     
@@ -3027,7 +3189,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
         if (eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "Error While Resuming the codec");
-            goto EXIT;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            return eError;
         }
         if (pComponentPrivate->nNumInputBufPending < 
             pComponentPrivate->pInputBufferList->numBuffers)
@@ -3113,7 +3281,13 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                                 OMX_TI_ErrorMinor,
                                                 NULL);
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Invalid State Given by Application",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
 #ifdef RESOURCE_MANAGER_ENABLED    
     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, 
@@ -3132,7 +3306,7 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
     pComponentPrivate->cbInfo.EventHandler( pHandle, pHandle->pApplicationPrivate,
                                             OMX_EventCmdComplete, OMX_CommandStateSet,
                                             pComponentPrivate->curState, NULL);
- EXIT:
+
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3177,7 +3351,13 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 OMX_TI_ErrorMinor, NULL);
                                                 
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Same State Given by Application",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
     if (pComponentPrivate->curState != OMX_StateExecuting &&
         pComponentPrivate->curState != OMX_StateIdle) 
@@ -3192,7 +3372,7 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 NULL);
                                                 
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Invalid State Given by Application",__LINE__);
-        goto EXIT;
+        return OMX_ErrorIncorrectStateTransition;
     }
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
@@ -3204,7 +3384,13 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     if (eError != OMX_ErrorNone) 
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d : Error: in Pausing the codec",__LINE__);
-        goto EXIT;
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -3218,7 +3404,7 @@ OMX_ERRORTYPE WMADEC_CommandToPause(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c\n",__LINE__);
- EXIT:
+
     if (eError != OMX_ErrorNone ) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3492,7 +3678,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf,nIpBufSize,nOpBuf,nOpBufSize;
-    OMX_U16 i;
+    OMX_U16 i,j;
     OMX_BUFFERHEADERTYPE *pTemp;
     int size_lcml;
     LCML_WMADEC_BUFHEADERTYPE *pTemp_lcml = NULL;
@@ -3518,16 +3704,10 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
         size_lcml = nIpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
         OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
-        OMX_PRDSP1(pComponentPrivate->dbg, "Line %d::pTemp_lcml = %p",__LINE__,pTemp_lcml);
-    
         if(pTemp_lcml == NULL)
         {
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Memory Allocation Failed",__LINE__);
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
+            return OMX_ErrorInsufficientResources;
         }
-    
         pComponentPrivate->pLcmlBufHeader[INPUT_PORT] = pTemp_lcml;
 
         OMX_PRBUFFER1(pComponentPrivate->dbg, "nIpBuf = %ld",nIpBuf);
@@ -3549,12 +3729,11 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
                                  sizeof(WMADEC_UAlgInBufParamStruct),
                                  WMADEC_UAlgInBufParamStruct);
                              
-            if (pTemp_lcml->pIpParam == NULL)
+            if (NULL==(pTemp_lcml->pIpParam))
             {
                 /* Free previously allocated memory before bailing */
-                OMX_MEMFREE_STRUCT(pTemp_lcml);
-                OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Malloc Failed...Exiting..",__LINE__);
-                goto EXIT;
+                WMADEC_CleanupInitParams(pComponent);
+                return OMX_ErrorInsufficientResources;
             }
             pTemp_lcml->pIpParam->bLastBuffer = 0;
 
@@ -3569,13 +3748,11 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
          * This memory pointer will be sent to LCML */
         size_lcml = nOpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
         OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[ALLOC] %p",__LINE__,pTemp_lcml);
-    
         if(pTemp_lcml == NULL)
         {
-            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Memory Allocation Failed",__LINE__);
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
+            /* Free Previously allocated pIpParam, by looping "nIpBuf" times */
+            WMADEC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
         }
     
         pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = pTemp_lcml;
@@ -3607,6 +3784,10 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
+    if(eError != OMX_ErrorNone) {
+        WMADEC_CleanupInitParams(pComponent);
+        return eError;
+    }
     return eError;
 }
 /*  =========================================================================*/
