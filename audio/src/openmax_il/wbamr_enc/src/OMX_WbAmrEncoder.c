@@ -1008,7 +1008,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 
     pComponentPrivate = (WBAMRENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
 
-
     OMX_PRINT1(pComponentPrivate->dbg, "Entering");
 
     if (pCompParam == NULL) {
@@ -1323,9 +1322,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     AM_COMMANDDATATYPE cmd_data;
 #endif
 
-    /* OMX_PRINT1(pComponentPrivate->dbg, "Entering"); */
+    OMXDBG_PRINT(stderr, PRINT, 1, 0, "SetConfig() Entering");
     if (pHandle == NULL) {
-        /* OMX_ERROR4(pComponentPrivate->dbg, "Invalid HANDLE OMX_ErrorBadParameter"); */
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "Invalid HANDLE OMX_ErrorBadParameter");
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -1622,6 +1621,7 @@ EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting Returning = 0x%x", eError);
     return eError;
 }
+
 /*-------------------------------------------------------------------*/
 /**
  *  FillThisBuffer() This callback is used to send the output buffer to
@@ -1736,6 +1736,7 @@ EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting Returning = 0x%x", eError);
     return eError;
 }
+
 /*-------------------------------------------------------------------*/
 /**
  * OMX_ComponentDeinit() this methold will de init the component
@@ -1902,20 +1903,14 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
-    OMX_MALLOC_SIZE(pBufferHeader->pBuffer, nSizeBytes + 256, OMX_U8);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
 
     if (pBufferHeader->pBuffer == NULL) {
         /* Free previously allocated memory before bailing */
-        if (pBufferHeader) {
-            newfree(pBufferHeader);
-            pBufferHeader = NULL;
-        }
-
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-
-    pBufferHeader->pBuffer += 128;
 
     if (nPortIndex == WBAMRENC_INPUT_PORT) {
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -2054,13 +2049,7 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
 
     if (inputIndex != -1) {
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
-            tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-
-            if (tempBuff != 0) {
-                tempBuff -= 128;
-            }
-
-            OMX_MEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
         }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -2093,13 +2082,7 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         }
     } else if (outputIndex != -1) {
         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
-            tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-
-            if (tempBuff != 0) {
-                tempBuff -= 128;
-            }
-
-            OMX_MEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
         }
 
 #ifdef __PERF_INSTRUMENTATION__
