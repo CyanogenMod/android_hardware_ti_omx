@@ -79,7 +79,7 @@ static const int vdd1_dsp_mhz_3440[6] = {90, 180, 360, 430, 430, 520};
 static const int vdd1_mpu_mhz_3440[6] = {125, 250, 500, 550, 600, 720};
 
 /* for 3630 family */
-static const int vdd1_dsp_mhz_3630[4] = {260, 520, 660, 875};
+static const int vdd1_dsp_mhz_3630[4] = {260, 520, 660, 800};
 static const int vdd1_mpu_mhz_3630[4] = {300, 600, 800, 1000};
 
 /*old for opp based constraints*/
