@@ -111,8 +111,11 @@ void* AACENC_ComponentThread (void* pThreadData)
         status = pselect (fdmax+1, &rfds, NULL, NULL, &tv, &set);
 
         if (pComponentPrivate->bIsThreadstop == 1) {
+#ifdef __PERF_INSTRUMENTATION__
+            PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
             OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
-            goto EXIT;
+            return (void*)eError;
         }
 
         if (status == 0) 
@@ -137,8 +140,11 @@ void* AACENC_ComponentThread (void* pThreadData)
                 OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AACENC_ComponentThread \n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateIdle) 
                 {
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
                     OMX_PRINT1(pComponentPrivate->dbg, "%d ::OMX_AACENC_ComponentThread \n",__LINE__);
-                    goto EXIT;
+                    return (void*)eError;
                 }
              }
              OMX_PRINT2(pComponentPrivate->dbg, "%d :: Component Time Out !!!!! \n",__LINE__);
@@ -165,9 +171,12 @@ void* AACENC_ComponentThread (void* pThreadData)
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) 
             {
+#ifdef __PERF_INSTRUMENTATION__
+                PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error while reading from the pipe\n",__LINE__);
                 eError = OMX_ErrorHardware;
-                goto EXIT;
+                return (void*)eError;
             }
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: pBufHeader:%p \n",__LINE__, pBufHeader);
             eError = AACENCHandleDataBuf_FromApp(pBufHeader,pComponentPrivate);
@@ -194,8 +203,11 @@ void* AACENC_ComponentThread (void* pThreadData)
                 AACENC_CleanupInitParams(pHandle);
                 if(eError != OMX_ErrorNone) 
                 {
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: AACENC_CleanupInitParams returned error\n",__LINE__);
-                    goto EXIT;
+                    return (void*)eError;
                 }
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: ARM Side Resources Have Been Freed\n",__LINE__);
 

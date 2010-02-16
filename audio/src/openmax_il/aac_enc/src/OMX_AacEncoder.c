@@ -416,15 +416,19 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) 
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from loading ResourceManagerProxy thread\n",__LINE__);
-        goto EXIT;
+        AACENC_FreeCompResources(pHandle);
+        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
+        return eError;
     }
     pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *) AACENC_ResourceManagerCallback;
     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_AAC_Encoder_COMPONENT,AACENC_CPU_USAGE, 3456, &(pComponentPrivate->rmproxyCallback));
     if (rm_error != OMX_ErrorNone) {
         RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_AAC_Encoder_COMPONENT, 0, 3456, NULL);
         RMProxy_Deinitalize();
+        AACENC_FreeCompResources(pHandle);
+        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return eError;
     }
 #endif
 #ifdef DSP_RENDERING_ON
@@ -445,7 +449,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) 
     {
       OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from the Component\n",__LINE__);
-      goto EXIT;
+      AACENC_FreeCompResources(pHandle);
+      OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
+      return eError;
     }
 
 
@@ -456,32 +462,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 EXIT:
    if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
-
-        if (pComponentPrivate->bMutexInit) {
-            OMX_PRINT1(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
-
-            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
-
-            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-
-            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-            pComponentPrivate->bMutexInit = 0;
-        }
-        OMX_PRINT1(pComponentPrivate->dbg, "%d :: Freeing memory\n", __LINE__);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParam[OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParam[INPUT_PORT]);
-
-        OMX_MEMFREE_STRUCT(pComponentPrivate->aacParams[OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->aacParams[INPUT_PORT]);
-
+        AACENC_FreeCompResources(pHandle);
         OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
     }
     return eError;
@@ -521,7 +502,7 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
         eError = OMX_ErrorBadParameter;
         OMX_ERROR2(pComponentPrivate->dbg, "%d :: Received the empty callbacks from the application\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
 
     /*Copy the callbacks of the application to the component private*/
@@ -571,7 +552,8 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting GetComponentVersion\n", __LINE__);
+        return eError;
     }   
 #endif
 
@@ -585,8 +567,6 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     {
         eError = OMX_ErrorBadParameter;
     }
-
-EXIT:
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting GetComponentVersion\n", __LINE__);
     return eError;
@@ -622,7 +602,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
     if (pCompPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #else
     OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Entering SendCommand()\n", __LINE__);
@@ -636,7 +616,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                              OMX_ErrorInvalidState,
                                              OMX_TI_ErrorMinor,
                                              "Invalid State");
-           goto EXIT;
+           return eError;
     }
 #endif
 
@@ -666,7 +646,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                                           OMX_ErrorIncorrectStateTransition,
                                                           OMX_TI_ErrorMinor,
                                                           NULL);
-                        goto EXIT;
+                        return eError;
                     }
 
                     if(nParam == OMX_StateInvalid) 
@@ -680,7 +660,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                                           OMX_ErrorInvalidState,
                                                           OMX_TI_ErrorMinor,
                                                           NULL);
-                        goto EXIT;
+                        return eError;
                     }
                 }
                 break;
@@ -690,7 +670,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                 if(nParam > 1 && nParam != -1) 
                 {
                     eError = OMX_ErrorBadPortIndex;
-                    goto EXIT;
+                    return eError;
                 }
                 break;
             
@@ -707,7 +687,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                 if (nParam > 0) 
                 {
                     eError = OMX_ErrorBadPortIndex;
-                    goto EXIT;
+                    return eError;
                 }
                 break;
         
@@ -732,7 +712,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
     {
         OMX_PRINT1(pCompPrivate->dbg, "%d :: AACENC: Inside SendCommand\n",__LINE__);
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return eError;
     }
 
     if (Cmd == OMX_CommandMarkBuffer) 
@@ -782,15 +762,14 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: OMX_ErrorBadParameter Inside the GetParameter Line\n",__LINE__);
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
-
+        return eError;
     }
 
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #else
     if(pComponentPrivate->curState == OMX_StateInvalid) 
@@ -942,7 +921,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
         {
             OMX_ERROR4(pComponentPrivate->dbg, "%d :: ERROR PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
             eError =  OMX_ErrorBadParameter;
-            goto EXIT;
+            return eError;
         }
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: Copying PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n", __LINE__);
         memcpy(pCap_flags, &(pComponentPrivate->iPVCapabilityFlags), sizeof(PV_OMXComponentCapabilityFlagsType));
@@ -1005,14 +984,14 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
     {
         eError = OMX_ErrorBadParameter;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter \n",__LINE__);
-        goto EXIT;
+        return eError;
     }
 
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #endif
     
@@ -1038,7 +1017,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Wrong Port Index Parameter\n", __LINE__);
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
                     eError = OMX_ErrorBadParameter;
-                    goto EXIT;
+                    return eError;
                }
                break;
             }
@@ -1120,7 +1099,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nParamInd
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: Wrong Port Index Parameter\n", __LINE__);
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
                 eError = OMX_ErrorBadPortIndex;
-                goto EXIT;
+                return eError;
             }
             break;
 
@@ -1211,7 +1190,8 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        OMX_MEMFREE_STRUCT(streamInfo);
+        return eError;
     }   
 #endif
 
@@ -1264,16 +1244,24 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     {
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: AACENC: Invalid HANDLE OMX_ErrorBadParameter \n",__LINE__);
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
 
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
+    if (pComponentPrivate == NULL)
+    {
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: AACENC: Invalid parameter pComponentPrivate \n",__LINE__);
+        eError = OMX_ErrorBadParameter;
+        return eError;
+    }
+
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
+        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: AACENC: Invalid state \n",__LINE__);
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #endif
 
@@ -1286,7 +1274,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             {
                 eError = OMX_ErrorBadParameter;
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: OMX_ErrorBadParameter from SetConfig\n",__LINE__);
-                goto EXIT;
+                return eError;
             }            
             pComponentPrivate->dasfmode = pDspDefinition->dasfMode;
             OMX_PRDSP2(pComponentPrivate->dbg, "AACENC: pComponentPrivate->dasfmode = %d\n",(int)pComponentPrivate->dasfmode);
@@ -1303,7 +1291,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             {
                 eError = OMX_ErrorBadParameter;
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: OMX_ErrorBadParameter from SetConfig\n",__LINE__);
-		goto EXIT;
+                return eError;
             }
             FramesPerOutBuf = *ptrFramesPerOutBuf;
             pComponentPrivate->FramesPer_OutputBuffer= FramesPerOutBuf;
@@ -1340,7 +1328,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             if (customFlag == NULL) 
             {
                 eError = OMX_ErrorBadParameter;
-                goto EXIT;
+                return eError;
             }
 /*
             dataPath = *customFlag;
@@ -1368,7 +1356,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
 /*          eError = OMX_ErrorUnsupportedIndex; */
         break;
     }
-EXIT:
     if (pComponentPrivate != NULL) {
 	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting SetConfig\n", __LINE__);
 	OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Returning = 0x%x\n", __LINE__, eError);
@@ -1444,7 +1431,7 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #endif
 
@@ -1460,33 +1447,33 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     {
         eError = OMX_ErrorIncorrectStateOperation;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
     if (pBuffer == NULL) 
     {
         eError = OMX_ErrorBadParameter;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
     if (pBuffer->nSize != sizeof(OMX_BUFFERHEADERTYPE)) 
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
 
 
     if (pBuffer->nVersion.nVersion != pComponentPrivate->nVersion) 
     {
         eError = OMX_ErrorVersionMismatch;
-        goto EXIT;
+        return eError;
     }
 
     if (pBuffer->nInputPortIndex != INPUT_PORT) 
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadPortIndex\n",__LINE__);
         eError  = OMX_ErrorBadPortIndex;
-        goto EXIT;
+        return eError;
     }
     OMX_PRBUFFER2(pComponentPrivate->dbg, "\n------------------------------------------\n\n");
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: AACENC: Component Sending Filled ip buff %p  to Component Thread\n", __LINE__,pBuffer);
@@ -1502,7 +1489,7 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error in Writing to the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
     pComponentPrivate->EmptythisbufferCount++;
 
@@ -1549,7 +1536,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #endif
 
@@ -1560,30 +1547,30 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     if(!pPortDef->bEnabled) 
     {
         eError = OMX_ErrorIncorrectStateOperation;
-        goto EXIT;
+        return eError;
     }
     if (pBuffer == NULL) 
     {
         eError = OMX_ErrorBadParameter;
         OMX_ERROR4(pComponentPrivate->dbg, " %d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
     if (pBuffer->nSize != sizeof(OMX_BUFFERHEADERTYPE)) 
     {
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
 
     if (pBuffer->nVersion.nVersion != pComponentPrivate->nVersion) 
     {
         eError = OMX_ErrorVersionMismatch;
-        goto EXIT;
+        return eError;
     }
 
     if (pBuffer->nOutputPortIndex != OUTPUT_PORT) 
     {
         eError  = OMX_ErrorBadPortIndex;
-        goto EXIT;
+        return eError;
     }
     pBuffer->nFilledLen = 0;
     /*Filling the Output buffer with zero */
@@ -1612,7 +1599,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error in Writing to the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
     pComponentPrivate->FillthisbufferCount++;
 
@@ -1689,37 +1676,14 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     AACENC_FreeCompResources(pHandle);
 
 #ifdef __PERF_INSTRUMENTATION__
-        PERF_Boundary(pComponentPrivate->pPERF,
+     PERF_Boundary(pComponentPrivate->pPERF,
                       PERF_BoundaryComplete | PERF_BoundaryCleanup);
-        PERF_Done(pComponentPrivate->pPERF);
+     PERF_Done(pComponentPrivate->pPERF);
 #endif
-    
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-    OMX_PRBUFFER2(dbg, "%d :: AACENC: After AACENC_FreeCompResources\n",__LINE__);
-    OMX_PRBUFFER2(dbg, "%d :: AACENC: [FREE] %p\n",__LINE__,pComponentPrivate);
 
-    if (pComponentPrivate->sDeviceString != NULL) 
-    {
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-    }
-    
-    /* CLose LCML .      - Note:  Need to handle better - */ 
-    if ((pComponentPrivate->ptrLibLCML != NULL && pComponentPrivate->bGotLCML) &&
-        (pComponentPrivate->bCodecDestroyed))
-    {
-        OMX_PRDSP2(dbg, "AACENC: About to Close LCML %p \n",pComponentPrivate->ptrLibLCML);
-        dlclose( pComponentPrivate->ptrLibLCML  );   
-        pComponentPrivate->ptrLibLCML = NULL;
-        OMX_PRDSP2(dbg, "AACENC: Closed LCML \n");  
-
-        pComponentPrivate->bCodecDestroyed = OMX_FALSE;     /* restoring flags */
-        pComponentPrivate->bGotLCML        = OMX_FALSE;
-    }
-    
     OMX_MEMFREE_STRUCT(pComponentPrivate);
     pComponentPrivate = NULL;
-    
+
 EXIT:
     OMX_DBG_CLOSE(dbg);
     return eError;
@@ -1780,6 +1744,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)
             (((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_CONF_CHECK_CMD(pComponentPrivate,1,1);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Entering AllocateBuffer\n", __LINE__);
 
     pPortDef = ((AACENC_COMPONENT_PRIVATE*)
@@ -1789,7 +1754,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        return eError;
     }   
 #endif
 
@@ -1855,8 +1820,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     else 
     {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         eError = OMX_ErrorBadPortIndex;
-        goto EXIT;
+        return eError;
     }
 
   if((pComponentPrivate->pPortDef[OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled)&&
@@ -1885,6 +1852,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #ifdef __PERF_INSTRUMENTATION__
         PERF_ReceivedBuffer(pComponentPrivate->pPERF,(*pBuffer)->pBuffer, nSizeBytes,PERF_ModuleMemory);
 #endif
+    return eError;
 
 EXIT:
     if (pComponentPrivate != NULL) {
@@ -1893,7 +1861,9 @@ EXIT:
 	OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader = %p\n", pBufferHeader);
 	if (pBufferHeader != NULL) {
 	    OMX_PRBUFFER2(pComponentPrivate->dbg, "AACENC: pBufferHeader->pBuffer = %p\n", pBufferHeader->pBuffer);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
 	}
+        OMX_MEMFREE_STRUCT(pBufferHeader);
     }
     return eError;
 }
@@ -2058,7 +2028,8 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if (pComponentPrivate->curState == OMX_StateInvalid)
     {
         eError = OMX_ErrorInvalidState;
-        goto EXIT;
+        OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: AACENC: state Invalid\n", __LINE__);
+        return eError;
     }
     
 #endif
@@ -2077,7 +2048,7 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: In AllocateBuffer\n", __LINE__);
         eError = OMX_ErrorIncorrectStateOperation;
-        goto EXIT;
+        return eError;
     }
 
     OMX_PRINT2(pComponentPrivate->dbg, "AACENC: nSizeBytes = %ld\n",nSizeBytes);
@@ -2088,7 +2059,7 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         OMX_ERROR2(pComponentPrivate->dbg, "%d :: Error: In AllocateBuffer\n", __LINE__);
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter\n",__LINE__);
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -2230,7 +2201,7 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     else 
     {
       eError = OMX_ErrorNoMore;
-      goto EXIT;
+      return eError;
     }
 
 EXIT:  
