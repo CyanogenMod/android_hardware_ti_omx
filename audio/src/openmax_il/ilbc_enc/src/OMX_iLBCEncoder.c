@@ -106,18 +106,6 @@
 
 /*--------function prototypes ---------------------------------*/
 #define AMRNB_DEC_ROLE "audio_encoder.amrnb"
-
-#ifdef ILBCENC_DEBUGMEM
-extern void * mymalloc(int line, char *s, int size);
-extern int myfree(void *dp, int line, char *s);
-
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
 static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE hComp,
         OMX_CALLBACKTYPE* pCallBacks, OMX_PTR pAppData);
 static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
@@ -230,7 +218,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 
     /*Allocate the memory for Component private data area */
-    ILBCENC_OMX_MALLOC(pHandle->pComponentPrivate, ILBCENC_COMPONENT_PRIVATE);
+    OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, ILBCENC_COMPONENT_PRIVATE);
 
     ((ILBCENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     pComponentPrivate = pHandle->pComponentPrivate;
@@ -240,13 +228,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleLLMM | PERF_ModuleAudioDecode);
 #endif
 
-    ILBCENC_OMX_MALLOC(pCompPort, ILBCENC_PORT_TYPE);
+    OMX_MALLOC_GENERIC(pCompPort, ILBCENC_PORT_TYPE);
     pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT] = pCompPort;
 
-    ILBCENC_OMX_MALLOC(pCompPort, ILBCENC_PORT_TYPE);
+    OMX_MALLOC_GENERIC(pCompPort, ILBCENC_PORT_TYPE);
     pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT] = pCompPort;
 
-    ILBCENC_OMX_MALLOC(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
     OMX_ILBCCONF_INIT_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
 
     /* Initialize sPortParam data structures to default values */
@@ -254,29 +242,29 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->sPortParam->nStartPortNumber = 0x0;
 
     /* Malloc and Set pPriorityMgmt defaults */
-    ILBCENC_OMX_MALLOC(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
     OMX_ILBCCONF_INIT_STRUCT(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
 
     /* Initialize sPriorityMgmt data structures to default values */
     pComponentPrivate->sPriorityMgmt->nGroupPriority = -1;
     pComponentPrivate->sPriorityMgmt->nGroupID = -1;
 
-    ILBCENC_OMX_MALLOC(ilbc_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(ilbc_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
     OMX_ILBCCONF_INIT_STRUCT(ilbc_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
     pComponentPrivate->pcmParams = ilbc_ip;
     ilbc_ip->nPortIndex = ILBCENC_INPUT_PORT;
 
-    ILBCENC_OMX_MALLOC(ilbc_op, OMX_AUDIO_PARAM_GSMEFRTYPE);
+    OMX_MALLOC_GENERIC(ilbc_op, OMX_AUDIO_PARAM_GSMEFRTYPE);
     OMX_ILBCCONF_INIT_STRUCT(ilbc_op, OMX_AUDIO_PARAM_GSMEFRTYPE);
     pComponentPrivate->ilbcParams = ilbc_op;
     ilbc_op->nPortIndex = ILBCENC_OUTPUT_PORT;
 
     /* newmalloc and initialize number of input buffers */
-    ILBCENC_OMX_MALLOC(pComponentPrivate->pInputBufferList, ILBCENC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, ILBCENC_BUFFERLIST);
     pComponentPrivate->pInputBufferList->numBuffers = 0;
 
     /* newmalloc and initialize number of output buffers */
-    ILBCENC_OMX_MALLOC(pComponentPrivate->pOutputBufferList, ILBCENC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, ILBCENC_BUFFERLIST);
     pComponentPrivate->pOutputBufferList->numBuffers = 0;
 
     for (i=0; i < ILBCENC_MAX_NUM_OF_BUFS; i++) {
@@ -285,7 +273,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     }
 
     /* Set input port defaults */
-    ILBCENC_OMX_MALLOC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_ILBCCONF_INIT_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT] = pPortDef_ip;
     pComponentPrivate->bPreempted = OMX_FALSE; 
@@ -304,7 +292,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->format.audio.bFlagErrorConcealment = OMX_FALSE;
 
     /* Set output port defaults */
-    ILBCENC_OMX_MALLOC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_ILBCCONF_INIT_STRUCT(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT] = pPortDef_op;
 
@@ -321,7 +309,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->format.audio.pNativeRender         = NULL;
     pPortDef_op->format.audio.bFlagErrorConcealment = OMX_FALSE;
 
-    ILBCENC_OMX_MALLOC(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_ILBCCONF_INIT_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set input port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat;
@@ -348,7 +336,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     ilbc_op->bDTX = FALSE;
     ilbc_op->bHiPassFilter = FALSE;   
     
-    ILBCENC_OMX_MALLOC(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_ILBCCONF_INIT_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set output port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat;
@@ -404,7 +392,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = 0;
     pComponentPrivate->bBypassDSP = OMX_FALSE;
     
-    ILBCENC_OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING),OMX_STRING);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING),OMX_STRING);
 
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,":srcul/codec\0");
@@ -458,6 +446,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
 
 #ifndef UNDER_CE
+#ifdef DSP_RENDERING_ON
     /* start Audio Manager to get streamId */
     if((pComponentPrivate->fdwrite=open(FIFO1,O_WRONLY))<0) {
         ILBCENC_EPRINT("%d [ILBC Encoder Component] - failure to open WRITE pipe\n",__LINE__);
@@ -468,7 +457,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     }    
         
 #endif
-
+#endif
  EXIT:
     ILBCENC_DPRINT("%d Exiting OMX_ComponentInit\n", __LINE__);
     ILBCENC_DPRINT("%d Returning = 0x%x\n",__LINE__,eError);
@@ -1073,7 +1062,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
         (ILBCENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     TI_OMX_STREAM_INFO *streamInfo = NULL;
-    ILBCENC_OMX_MALLOC(streamInfo, TI_OMX_STREAM_INFO);
+    OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
     if(streamInfo == NULL){
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
@@ -1089,7 +1078,7 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
         streamInfo->streamId = pComponentPrivate->streamID;
         memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
     }
-    OMX_ILBCMEMFREE_STRUCT(streamInfo);
+    OMX_MEMFREE_STRUCT(streamInfo);
  EXIT:
     ILBCENC_DPRINT("%d Exiting GetConfig. Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1507,11 +1496,9 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     PERF_Done(pComponentPrivate->pPERF);
 #endif
 
-    if (pComponentPrivate->sDeviceString != NULL) {
-        newfree(pComponentPrivate->sDeviceString);
-    }
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate);
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
 
  EXIT:
     ILBCENC_DPRINT("%d Exiting ComponentDeInit\n", __LINE__);
@@ -1599,13 +1586,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
     }
 
-    ILBCENC_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     
-    ILBCENC_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, nSizeBytes + 256,OMX_U8);   
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes,OMX_U8);   
 
-    ILBCENC_MEMPRINT("%d [ALLOC]  %p\n",__LINE__,pBufferHeader->pBuffer);
-    pBufferHeader->pBuffer += 128;
-            
     if (nPortIndex == ILBCENC_INPUT_PORT) {        
         pBufferHeader->nInputPortIndex = nPortIndex;
         pBufferHeader->nOutputPortIndex = -1;
@@ -1623,7 +1607,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 1;
-        ILBCENC_OMX_MALLOC(pBufferHeader->pOutputPortPrivate, ILBCENC_BUFDATA);
+        OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, ILBCENC_BUFDATA);
         if (pComponentPrivate->pOutputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
             ILBCENC_DPRINT("%d pPortDef->bPopulated = %d\n", __LINE__, pPortDef->bPopulated);
@@ -1703,7 +1687,6 @@ static OMX_ERRORTYPE FreeBuffer(
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     ILBCENC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_BUFFERHEADERTYPE* buff = NULL;
-    OMX_U8* tempBuff = NULL;
     int i = 0;
     int inputIndex = -1;
     int outputIndex = -1;
@@ -1750,10 +1733,7 @@ static OMX_ERRORTYPE FreeBuffer(
 
     if (inputIndex != -1) {
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
-            tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-            if (tempBuff != 0)
-               tempBuff -= 128;
-            OMX_ILBCMEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
         }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -1763,7 +1743,7 @@ static OMX_ERRORTYPE FreeBuffer(
                        PERF_ModuleMemory );
 #endif
         
-        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
 
             pComponentPrivate->pInputBufferList->numBuffers--;
         if (pComponentPrivate->pInputBufferList->numBuffers <
@@ -1786,10 +1766,7 @@ static OMX_ERRORTYPE FreeBuffer(
     }
     else if (outputIndex != -1) {
          if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
-            tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-            if (tempBuff != 0)
-               tempBuff -= 128;
-            OMX_ILBCMEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
         }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -1799,8 +1776,8 @@ static OMX_ERRORTYPE FreeBuffer(
                        PERF_ModuleMemory );
 #endif
 
-        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pOutputPortPrivate);
-        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pOutputPortPrivate);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
 
         pComponentPrivate->pOutputBufferList->numBuffers--;
         if (pComponentPrivate->pOutputBufferList->numBuffers <
@@ -1911,7 +1888,7 @@ static OMX_ERRORTYPE UseBuffer (
         goto EXIT;
     }
 
-    ILBCENC_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     
     if (nPortIndex == ILBCENC_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;
@@ -1919,7 +1896,7 @@ static OMX_ERRORTYPE UseBuffer (
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 0;
-        ILBCENC_OMX_MALLOC(pBufferHeader->pOutputPortPrivate, ILBCENC_BUFDATA);
+        OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, ILBCENC_BUFDATA);
         if (pComponentPrivate->pOutputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
         }

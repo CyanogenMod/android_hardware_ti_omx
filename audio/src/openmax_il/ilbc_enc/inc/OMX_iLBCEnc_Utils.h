@@ -50,10 +50,9 @@
 
 #include <pthread.h>
 #include "LCML_DspCodec.h"
-#include <OMX_Component.h>
-#include <OMX_TI_Common.h>
 #include <TIDspOmx.h>
 #include "usn.h"
+#include <OMX_TI_Common.h>
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
 #endif
@@ -87,14 +86,6 @@
 /* ======================================================================= */
 #undef ILBCENC_MEMCHECK
 
-/* ======================================================================= */
-/**
- * @def    ILBCENC_DEBUGMEM   Turns memory leaks messaging on and off.
- *         APP_DEBUGMEM must be defined in Test App in order to get
- *         this functionality On.
- */
-/* ======================================================================= */
-#undef ILBCENC_DEBUGMEM
 /* ======================================================================= */
 /**
  * @def    ILBCENC_EPRINT   Error print macro
@@ -154,14 +145,6 @@
     (_s_)->nVersion.s.nRevision = 0x0;      \
     (_s_)->nVersion.s.nStep = 0x0
 
-#define OMX_ILBCMEMFREE_STRUCT(_pStruct_)\
-    if(_pStruct_ != NULL){\
-    ILBCENC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);\
-        newfree(_pStruct_);\
-        _pStruct_ = NULL;\
-    }
-
-
 #define OMX_ILBCCLOSE_PIPE(_pStruct_,err)\
     ILBCENC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);\
     err = close (_pStruct_);\
@@ -171,47 +154,12 @@
         goto EXIT;\
     }
 
-#define ILBCENC_OMX_MALLOC(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));      \
-    if(_pStruct_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_pStruct_,0,sizeof(_sName_));\
-    ILBCENC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-
-#define ILBCENC_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
-    _ptr_ = (_name_ *)newmalloc(_size_);      \
-    if(_ptr_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_ptr_,0,_size_); \
-    ILBCENC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
-
 #define ILBCENC_OMX_ERROR_EXIT(_e_, _c_, _s_)\
     _e_ = _c_;\
     printf("\n**************** OMX ERROR ************************\n");\
     printf("%d : Error Name: %s : Error Num = %x",__LINE__, _s_, _e_);\
     printf("\n**************** OMX ERROR ************************\n");\
     goto EXIT;
-
-#define ILBCENC_OMX_FREE(ptr) \
-    if(NULL != ptr) { \
-        ILBCENC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr); \
-        newfree(ptr); \
-        ptr = NULL; \
-    }
-
-
 
 /* ======================================================================= */
 /**

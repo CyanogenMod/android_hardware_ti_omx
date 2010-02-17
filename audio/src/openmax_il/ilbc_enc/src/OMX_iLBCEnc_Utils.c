@@ -80,66 +80,6 @@
     #include <ResourceManagerProxyAPI.h>
 #endif
 
-#ifdef ILBCENC_DEBUGMEM
-extern void *arr[500] = {NULL};
-extern int lines[500] = {0};
-extern int bytes[500] = {0};
-extern char file[500][50] = {""};
-
-
-void * mymalloc(int line, char *s, int size);
-int mynewfree(void *dp, int line, char *s);
-
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-
-void * mymalloc(int line, char *s, int size)
-{
-   void *p = NULL;    
-   int e=0;
-/*   p = malloc(size);*/
-   p = calloc(1,size);
-   if(p==NULL){
-       printf("Memory not available\n");
-       exit(1);
-       }
-   else{
-         while((lines[e]!=0)&& (e<500) ){
-              e++;
-         }
-         arr[e]=p;
-         lines[e]=line;
-         bytes[e]=size;
-         strcpy(file[e],s);
-         printf("Allocating %d bytes on address %p, line %d file %s\n", size, p, line, s);
-         return p;
-   }
-}
-
-int myfree(void *dp, int line, char *s){
-    int q = 0;
-    if(dp==NULL){
-                 printf("NULL can't be deleted\n");
-                 return 0;
-    }
-    for(q=0;q<500;q++){
-        if(arr[q]==dp){
-           printf("Deleting %d bytes on address %p, line %d file %s\n", bytes[q],dp, line, s);
-           free(dp);
-           dp = NULL;
-           lines[q]=0;
-           strcpy(file[q],"");
-           break;
-        }            
-     }    
-     if(500==q)
-         printf("\n\nPointer not found. Line:%d    File%s!!\n\n",line, s);
-}
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
 /* ========================================================================== */
 /**
 * @ILBCENC_FillLCMLInitParams () This function is used by the component thread to
@@ -213,7 +153,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
 
     if(pComponentPrivate->dasfMode == 1) {
         ILBCENC_DPRINT("%d Codec is configuring to DASF mode\n",__LINE__);
-        ILBCENC_OMX_MALLOC(pComponentPrivate->strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_GENERIC(pComponentPrivate->strmAttr, LCML_STRMATTR);
         pComponentPrivate->strmAttr->uSegid = ILBCENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = ILBCENC_SN_TIMEOUT;
@@ -279,7 +219,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(ILBCENC_LCML_BUFHEADERTYPE);
     
-    ILBCENC_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
 
     pComponentPrivate->pLcmlBufHeader[ILBCENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++) {
@@ -296,13 +236,13 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct) ,ILBCENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct), ILBCENC_ParamStruct);
 
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -314,7 +254,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
      * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(ILBCENC_LCML_BUFHEADERTYPE);
 
-    ILBCENC_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
     ILBCENC_MEMPRINT("%d [ALLOC] %p\n",__LINE__,pTemp_lcml);
 
     pComponentPrivate->pLcmlBufHeader[ILBCENC_OUTPUT_PORT] = pTemp_lcml;
@@ -333,12 +273,12 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
         
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
 
         pTemp->nFlags = ILBCENC_NORMAL_BUFFER;
         pTemp_lcml++;
@@ -455,7 +395,6 @@ OMX_ERRORTYPE ILBCENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     ILBCENC_COMPONENT_PRIVATE *pComponentPrivate = (ILBCENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
-    OMX_U8* pParmsTemp = NULL;
     ILBCENC_DPRINT("%d Entering ILBCENC_FreeCompResources\n",__LINE__);
 
     if (pComponentPrivate->bCompThreadStarted) {
@@ -467,29 +406,22 @@ OMX_ERRORTYPE ILBCENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_ILBCCLOSE_PIPE(pComponentPrivate->cmdDataPipe[1],err);
     }
 
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pcmParams);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->ilbcParams);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParams);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->ilbcParams);
 
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]->pPortFormat);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]->pPortFormat);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[ILBCENC_OUTPUT_PORT]);
 
-    if(pComponentPrivate->pParams != NULL){
-        pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
-        if (pParmsTemp != NULL){
-            pParmsTemp -= 128;
-        }
-        pComponentPrivate->pParams = (ILBCENC_AudioCodecParams*)pParmsTemp;
-        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pParams);
-    }
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, ILBCENC_AudioCodecParams);
 
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->sPortParam);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
 
  EXIT:
     ILBCENC_DPRINT("%d Exiting ILBCENC_FreeCompResources()\n",__LINE__);
@@ -519,7 +451,6 @@ OMX_ERRORTYPE ILBCENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_U32 nOpBuf = 0;
     OMX_U16 i = 0;
     ILBCENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
-    OMX_U8* pBufParmsTemp = NULL;
     LCML_DSP_INTERFACE *pLcmlHandle = NULL;
     LCML_DSP_INTERFACE *pLcmlHandleAux = NULL;
 
@@ -529,13 +460,13 @@ OMX_ERRORTYPE ILBCENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     ILBCENC_DPRINT("%d Entering ILBCENC_CleanupInitParams()\n", __LINE__);
 
     if(pComponentPrivate->dasfMode == 1) {
-        OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
     }
 
     pComponentPrivate->nHoldLength = 0;
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->iHoldBuffer);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->iHoldBuffer);
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[ILBCENC_INPUT_PORT];
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
@@ -548,20 +479,12 @@ OMX_ERRORTYPE ILBCENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
                          (void*)pTemp_lcml->pBufferParam->pParamElem,
                          pTemp_lcml->pDmmBuf->pReserved);
 
-            pBufParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam;
-            pBufParmsTemp -= 128;
-            ILBCENC_OMX_FREE(pBufParmsTemp);
-            pTemp_lcml->pFrameParam = NULL;
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, ILBCENC_FrameStruct);
         }
 
-        if(pTemp_lcml->pBufferParam!=NULL){
-            pBufParmsTemp = (OMX_U8*)pTemp_lcml->pBufferParam;
-            pBufParmsTemp -= 128;
-            ILBCENC_OMX_FREE(pBufParmsTemp);
-            pTemp_lcml->pBufferParam = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
 
-        ILBCENC_OMX_FREE(pTemp_lcml->pDmmBuf);
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
 
         pTemp_lcml++;
     }
@@ -580,21 +503,18 @@ OMX_ERRORTYPE ILBCENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
                          pTemp_lcml->pDmmBuf->pReserved);
 #endif
               
-            pBufParmsTemp = (OMX_U8*)pTemp_lcml->pFrameParam;
-            pBufParmsTemp -= 128;
-            ILBCENC_OMX_FREE(pBufParmsTemp);
-            pTemp_lcml->pFrameParam = NULL;              
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, ILBCENC_FrameStruct);
         }
 
-        ILBCENC_OMX_FREE(pTemp_lcml->pBufferParam);                           
-        ILBCENC_OMX_FREE(pTemp_lcml->pDmmBuf);
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);                           
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
 
         pTemp_lcml++;
     }
 
 
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[ILBCENC_INPUT_PORT]);
-    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[ILBCENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[ILBCENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[ILBCENC_OUTPUT_PORT]);
 
     ILBCENC_DPRINT("%d Exiting ILBCENC_CleanupInitParams()\n",__LINE__);
     ILBCENC_DPRINT("%d Returning = 0x%x\n",__LINE__,eError);
@@ -676,7 +596,6 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U32 commandData = 0;
     OMX_U16 arr[100] = {0};
     char *p = "damedesuStr";
-    OMX_U8* pParmsTemp = NULL;
     OMX_U16 i = 0;
     OMX_U32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
@@ -882,12 +801,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)p);
         
-                    pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
-                    if (pParmsTemp != NULL){
-                        pParmsTemp -= 128;
-                    }
-                    pComponentPrivate->pParams = (ILBCENC_AudioCodecParams*)pParmsTemp;
-                    OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pParams);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, ILBCENC_AudioCodecParams);
 
                     if(eError != OMX_ErrorNone) {
                         ILBCENC_EPRINT("%d Error from LCML_ControlCodec MMCodecControlStop..\n",__LINE__);
@@ -936,10 +850,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                     if(pComponentPrivate->dasfMode == 1) {
                         ILBCENC_DPRINT("%d ---- Comp: DASF Functionality is ON ---\n",__LINE__);
 
-                        ILBCENC_OMX_MALLOC_SIZE(pParmsTemp, sizeof(ILBCENC_AudioCodecParams) + 256,OMX_U8);
-
-                        pComponentPrivate->pParams = (ILBCENC_AudioCodecParams*)(pParmsTemp + 128);
-                        ILBCENC_MEMPRINT("%d [ALLOC] %p\n",__LINE__,pComponentPrivate->pParams);
+                        OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(ILBCENC_AudioCodecParams), ILBCENC_AudioCodecParams);
 
                         pComponentPrivate->pParams->iAudioFormat = 1;
                         pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
@@ -1479,12 +1390,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 if ( nFrames>=1 ) { /*At least there is 1 frame in the buffer*/
                     pComponentPrivate->nHoldLength = pBufHeader->nFilledLen - frameLength*nFrames;
                     if (pComponentPrivate->nHoldLength > 0) {/* something need to be hold in pHoldBuffer */
-                        if (pComponentPrivate->pHoldBuffer == NULL) {
-                            ILBCENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, pComponentPrivate->inputFrameSize,OMX_U8);/*glen*/
-
-                        }
-
-                        memset(pComponentPrivate->pHoldBuffer, 0, pComponentPrivate->inputFrameSize );
+                        OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, pComponentPrivate->inputFrameSize,OMX_U8);/*glen*/
                         /* Copy the extra data into pHoldBuffer. Size will be nHoldLength. */
                         pExtraData = pBufHeader->pBuffer + frameLength*nFrames;
                         memcpy(pComponentPrivate->pHoldBuffer, pExtraData,  pComponentPrivate->nHoldLength);
@@ -1496,13 +1402,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         /* received buffer with less than 1 GSM FR frame length. Save the data in pHoldBuffer.*/
                         pComponentPrivate->nHoldLength = pBufHeader->nFilledLen;
                         /* save the data into pHoldBuffer */
-                        if (pComponentPrivate->pHoldBuffer == NULL) {
-                            ILBCENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, pComponentPrivate->inputFrameSize,OMX_U8);
-                            
-                        }
-                        /* Not enough data to be sent. Copy all received data into pHoldBuffer.*/
-                        /* Size to be copied will be iHoldLen == mmData->BufferSize() */
-                        memset(pComponentPrivate->pHoldBuffer, 0, pComponentPrivate->inputFrameSize);
+                        OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, pComponentPrivate->inputFrameSize,OMX_U8);
                         memcpy(pComponentPrivate->pHoldBuffer, pBufHeader->pBuffer, pComponentPrivate->nHoldLength);
                     }
 
@@ -1535,10 +1435,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     /*means that a second Acumulator must be used to insert holdbuffer to pbuffer and save remaining bytes
                       into hold buffer*/
                     remainingBytes = pComponentPrivate->nHoldLength+pBufHeader->nFilledLen-pBufHeader->nAllocLen;
-                    if (pComponentPrivate->pHoldBuffer2 == NULL) {
-                        ILBCENC_OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer2, pComponentPrivate->inputFrameSize,OMX_U8);                     
-
-                    }
+                    OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer2, pComponentPrivate->inputFrameSize,OMX_U8);
                     pExtraData = (pBufHeader->pBuffer)+(pBufHeader->nFilledLen-remainingBytes);
                     memcpy(pComponentPrivate->pHoldBuffer2,pExtraData,remainingBytes);
                     pBufHeader->nFilledLen-=remainingBytes;
@@ -1624,7 +1521,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
             if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
-                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam,ILBCENC_FrameStruct);
+                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, ILBCENC_FrameStruct);
                 OMX_DmmUnMap(phandle->dspCodec->hProc, /*Unmap DSP memory used*/
                              (void*)pLcmlHdr->pBufferParam->pParamElem,
                              pLcmlHdr->pDmmBuf->pReserved);
@@ -1632,7 +1529,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             }
 
             if(pLcmlHdr->pFrameParam==NULL ){
-                OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames),ILBCENC_FrameStruct)
+                OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames), ILBCENC_FrameStruct);
                 eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                     nFrames*sizeof(ILBCENC_FrameStruct),
                                     (void*)pLcmlHdr->pFrameParam,
@@ -1729,8 +1626,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
         if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
-            OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam,ILBCENC_FrameStruct);
-
+            OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, ILBCENC_FrameStruct);
 #ifndef UNDER_CE
             OMX_DmmUnMap(phandle->dspCodec->hProc,
                          (void*)pLcmlHdr->pBufferParam->pParamElem,
@@ -1741,7 +1637,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         }
 
         if(pLcmlHdr->pFrameParam==NULL ){
-            OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames),ILBCENC_FrameStruct)
+            OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames ), ILBCENC_FrameStruct);
             pLcmlHdr->pBufferParam->pParamElem = NULL;
 #ifndef UNDER_CE
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
@@ -2037,13 +1933,6 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
 
             ILBCENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirInput,__LINE__);
 
-            /*for(i=0;i<pLcmlHdr->pBufferParam->usNbFrames;i++){
-                if (((pLcmlHdr->pFrameParam+i)->usLastFrame) == OMX_BUFFERFLAG_EOS){
-                    (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
-                    pLcmlHdr->buffer->nFlags = 0;
-                }
-            }*/
-
             ILBCENC_DPRINT("%d Calling EmptyBufferDone\n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
@@ -2091,19 +1980,6 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             if(!pLcmlHdr->pBufferParam->usNbFrames){
                 pLcmlHdr->pBufferParam->usNbFrames++;
             }
-            /*
-#ifndef UNDER_CE
-            if ( !pComponentPrivate->dasfMode){
-                for(i=0;i<pLcmlHdr->pBufferParam->usNbFrames;i++){
-                    if (((pLcmlHdr->pFrameParam+i)->usLastFrame) == OMX_BUFFERFLAG_EOS){
-                        (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
-                        pLcmlHdr->buffer->nFlags = OMX_BUFFERFLAG_EOS;
-                        ILBCENC_DPRINT("%d On Component receiving OMX_BUFFERFLAG_EOS on output\n", __LINE__);
-                    }
-                }
-            }
-#endif
-*/
             if(pComponentPrivate->InBuf_Eos_alreadysent) {
                 pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
@@ -2249,7 +2125,7 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pComponentPrivate->nHoldLength = 0;
             pComponentPrivate->InBuf_Eos_alreadysent =0;
        
-            OMX_ILBCMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
        
             pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -2680,7 +2556,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(ILBCENC_LCML_BUFHEADERTYPE);
     
-    ILBCENC_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
 
     pComponentPrivate->pLcmlBufHeader[ILBCENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++) {
@@ -2697,13 +2573,13 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct) ,ILBCENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct), ILBCENC_ParamStruct);
         
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
 
         pTemp->nFlags = ILBCENC_NORMAL_BUFFER;
         pTemp_lcml++;
@@ -2712,7 +2588,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     /* Allocate memory for all output buffer headers..
      * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(ILBCENC_LCML_BUFHEADERTYPE);
-    ILBCENC_OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,ILBCENC_LCML_BUFHEADERTYPE);
     
     pComponentPrivate->pLcmlBufHeader[ILBCENC_OUTPUT_PORT] = pTemp_lcml;
     for (i=0; i<nOpBuf; i++) {
@@ -2730,12 +2606,12 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
 
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         
-        ILBCENC_OMX_MALLOC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
 
         pTemp->nFlags = ILBCENC_NORMAL_BUFFER;
         pTemp_lcml++;
