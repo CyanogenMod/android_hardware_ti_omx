@@ -108,16 +108,6 @@
 
 /* ======================================================================= */
 /**
- * @def    G726ENC_DEBUGMEM   Turns memory leaks messaging on and off.
- *         APP_DEBUGMEM must be defined in Test App in order to get
- *         this functionality On.
- */
-/* ======================================================================= */
-#undef G726ENC_DEBUGMEM
-/*#define G726ENC_DEBUGMEM*/
-
-/* ======================================================================= */
-/**
  *  M A C R O S FOR MALLOC and MEMORY FREE and CLOSING PIPES
  */
 /* ======================================================================= */

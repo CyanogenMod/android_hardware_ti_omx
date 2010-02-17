@@ -75,61 +75,6 @@
 #include "usn.h"
 
 
-#ifdef G726ENC_DEBUGMEM
-extern void *arr[500] = {NULL};
-extern int lines[500] = {0};
-extern int bytes[500] = {0};
-extern char file[500][50] ={""};
-
-void * DebugMalloc(int line, char *s, int size);
-int DebugFree(void *dp, int line, char *s);
-
-#define SafeMalloc(x) DebugMalloc(__LINE__,__FILE__,x)
-#define SafeFree(z) DebugFree(z,__LINE__,__FILE__)
-
-void * DebugMalloc(int line, char *s, int size)
-{
-   void *p = NULL;    
-   int e=0;
-   p = calloc(1,size);
-   if(p==NULL){
-       printf("__ Memory not available\n");
-       exit(1);
-       }
-   else{
-         while((lines[e]!=0)&& (e<500) ){
-              e++;
-         }
-         arr[e]=p;
-         lines[e]=line;
-         bytes[e]=size;
-         strcpy(file[e],s);
-         printf("__ Allocating %d bytes on address %p, line %d file %s\n", size, p, line, s);
-         return p;
-   }
-}
-
-int DebugFree(void *dp, int line, char *s){
-    int q = 0;
-    if(dp==NULL){
-                 printf("__ NULL can't be deleted\n");
-                 return 0;
-    }
-    for(q=0;q<500;q++){
-        if(arr[q]==dp){
-           printf("__ Deleting %d bytes on address %p, line %d file %s\n", bytes[q],dp, line, s);
-           lines[q]=0;
-           strcpy(file[q],"");           
-           free(dp);
-           dp = NULL;
-           break;
-        }            
-     }    
-     if(500==q)
-         printf("\n\n__ Pointer not found. Line:%d    File%s!!\n\n",line, s);
-}
-#endif
-
 /* ========================================================================== */
 /**
 * @G726ENC_FillLCMLInitParams () This function is used by the component thread to
@@ -205,7 +150,7 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
 
     if(pComponentPrivate->dasfMode == 1) {
         G726ENC_DPRINT("%d :: Codec is configuring to DASF mode\n",__LINE__);
-	OMX_MALLOC_GENERIC(pComponentPrivate->strmAttr, LCML_STRMATTR);
+        OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->strmAttr, sizeof(LCML_STRMATTR), LCML_STRMATTR);
         pComponentPrivate->strmAttr->uSegid = G726ENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = G726ENC_SN_TIMEOUT;
@@ -489,7 +434,6 @@ OMX_ERRORTYPE G726ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 i = 0;
-    OMX_U8 *pTemp = NULL;
     G726ENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G726ENC_COMPONENT_PRIVATE *pComponentPrivate = (G726ENC_COMPONENT_PRIVATE *)
@@ -497,14 +441,13 @@ OMX_ERRORTYPE G726ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     G726ENC_DPRINT("%d :: Entering G726ENC_CleanupInitParams()\n", __LINE__);
 
     if(pComponentPrivate->dasfMode == 1) {
-        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->strmAttr, OMX_U8);
     }
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726ENC_INPUT_PORT];
          
     for(i=0; i<pComponentPrivate->nRuntimeInputBuffers; i++) {
-	  OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, OMX_U8);
-          pTemp_lcml->pIpParam = NULL;
+          OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, OMX_U8);
           pTemp_lcml++;
     }
 
@@ -512,8 +455,6 @@ OMX_ERRORTYPE G726ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726ENC_OUTPUT_PORT];
 
     for(i=0; i<pComponentPrivate->nRuntimeOutputBuffers; i++) {
-/*        OMX_MEMFREE_STRUCT(pTemp_lcml->pOpParam);*/ /* according to the SN guide, the params on the */
-                                                        /* output buffer shoul not be needed                 */
         pTemp_lcml++;
     }
 
@@ -751,13 +692,8 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G726ENC_AudioCodecParams);
                 }
 
-                if(pComponentPrivate->ptempBuffer!=NULL){
                       OMX_MEMFREE_STRUCT(pComponentPrivate->ptempBuffer);
-                }
-
-                if(pComponentPrivate->pHoldBuffer!=NULL){
                       OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-                }
 
                 pComponentPrivate->nHoldLength = 0;
                 pComponentPrivate->lastOutBufArrived=NULL;
@@ -805,8 +741,7 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 if(pComponentPrivate->dasfMode == 1) {
                     G726ENC_DPRINT("%d :: ---- Comp: DASF Functionality is ON ---\n",__LINE__);
-                    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(G726ENC_AudioCodecParams), OMX_U8);
-
+                    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(G726ENC_AudioCodecParams), G726ENC_AudioCodecParams);
                     pComponentPrivate->pParams->iAudioFormat = 1;
                     pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
                     pComponentPrivate->pParams->iSamplingRate = G726ENC_SAMPLING_FREQUENCY;
@@ -2101,8 +2036,6 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         G726ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
-/*      OMX_MALLOC_GENERIC(pTemp_lcml->pOpParam, G726ENC_ParamStruct);*//*According SN guide this variable should be neede*/
-/*        memset(pTemp_lcml->pOpParam,0,sizeof(G726ENC_ParamStruct));*/
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
