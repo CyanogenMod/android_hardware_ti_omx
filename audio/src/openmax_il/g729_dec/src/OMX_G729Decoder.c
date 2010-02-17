@@ -330,7 +330,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
     pComponentPrivate->nUnhandledFillThisBuffers=0;
+    pComponentPrivate->nHandledFillThisBuffers=0;
     pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
+    pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;    
     pComponentPrivate->bFlushEventPending = 0;
@@ -1372,15 +1374,18 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->app_nBuf--;
     pComponentPrivate->pMarkData = pBuffer->pMarkData;
     pComponentPrivate->hMarkTargetComponent = pBuffer->hMarkTargetComponent;
-    pComponentPrivate->nUnhandledEmptyThisBuffers++;    
+
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer,
                  sizeof(OMX_BUFFERHEADERTYPE*));       
     if (ret == -1) {
         G729DEC_DPRINT ("%d :: Error in Writing to the Data pipe\n", __LINE__);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        return OMX_ErrorHardware;
     }
-    pComponentPrivate->nEmptyThisBufferCount++;
+    else {
+        pComponentPrivate->nUnhandledEmptyThisBuffers++;
+        pComponentPrivate->nEmptyThisBufferCount++;
+    }
+
  EXIT:
     G729DEC_DPRINT("Exiting EmptyThisBuffer()\n");
     return eError;
@@ -1407,6 +1412,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     G729DEC_COMPONENT_PRIVATE *pComponentPrivate =
         (G729DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = NULL;
+    ssize_t ret = 0;
     
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -1469,10 +1475,17 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
         pBuffer->pMarkData = pComponentPrivate->pMarkData;
         pComponentPrivate->pMarkData = NULL;
     }
-    pComponentPrivate->nUnhandledFillThisBuffers++;    
-    write (pComponentPrivate->dataPipe[1], &pBuffer,
+
+    ret = write (pComponentPrivate->dataPipe[1], &pBuffer,
            sizeof (OMX_BUFFERHEADERTYPE*));
-    pComponentPrivate->nFillThisBufferCount++;
+    if (ret == -1) {
+        G729DEC_DPRINT ("%d :: Error in Writing to the Data pipe\n", __LINE__);
+        return OMX_ErrorHardware;
+    }
+    else {
+        pComponentPrivate->nUnhandledFillThisBuffers++;
+        pComponentPrivate->nFillThisBufferCount++;
+    }
 
  EXIT:
     G729DEC_DPRINT("Exiting FillThisBuffer()\n");

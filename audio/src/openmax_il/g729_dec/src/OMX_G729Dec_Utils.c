@@ -1373,7 +1373,9 @@ OMX_U32 G729DECHandleCommand (G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
         OMX_U32 aParam[3] = {0};
         if(commandData == 0x0 || commandData == -1)
         {
-            if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0) {
+            G729DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+                       pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
+            if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x0; 
                 aParam[2] = 0x0; 
@@ -1392,7 +1394,9 @@ OMX_U32 G729DECHandleCommand (G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
         if(commandData == 0x1 || commandData == -1)
         {
-            if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
+            G729DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+                       pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
+            if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers)  {
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x1; 
                 aParam[2] = 0x0; 
@@ -1451,7 +1455,7 @@ OMX_ERRORTYPE G729DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         goto EXIT;
     }
     if (eDir == OMX_DirInput) {
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        pComponentPrivate->nHandledEmptyThisBuffers++;
         /*   bufParamsArray = malloc((10 * sizeof(unsigned long int)) + 256);
              bufParamsArray += 128;
              memset(bufParamsArray, 0, 9 * sizeof(unsigned long int)); */
@@ -1556,7 +1560,7 @@ OMX_ERRORTYPE G729DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         /* Make sure that output buffer is issued to output stream only when
          * there is an outstanding input buffer already issued on input stream
          */
-        pComponentPrivate->nUnhandledFillThisBuffers--;
+        pComponentPrivate->nHandledFillThisBuffers++;
         if (!(pComponentPrivate->bIsStopping)) {
             G729DEC_DPRINT ("%d: Sending Empty OUTPUT BUFFER to Codec = %p\n",__LINE__,pBufHeader->pBuffer);
             if (pComponentPrivate->curState == OMX_StateExecuting) 
