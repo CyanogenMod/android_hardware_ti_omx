@@ -1550,9 +1550,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     PERF_Done(pComponentPrivate->pPERF);
 #endif    
 
-    if (pComponentPrivate->sDeviceString != NULL) {
-        free(pComponentPrivate->sDeviceString);
-    }
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
     OMX_MEMFREE_STRUCT(pComponentPrivate);
  EXIT:
