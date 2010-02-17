@@ -45,9 +45,8 @@
  *!
  * ================================================================================= */
 
-
-#include <OMX_Component.h>
 #include "LCML_DspCodec.h"
+#include <OMX_TI_Common.h>
 #include "OMX_G722Encoder.h"
 #include "usn.h"
 #define NEWSENDCOMMAND_MEMORY 123
@@ -107,22 +106,6 @@
  */
 /* ======================================================================= */
 #define G722ENC_TIMEOUT_MILLISECONDS (1000)
-
-/* ======================================================================= */
-/**
- * @def    G722ENC_CACHE_ALIGN_MALLOC   Value to add to the size needed to 
- *                                     malloc to ensure cache alignment
- */
-/* ======================================================================= */
-#define G722ENC_CACHE_ALIGN_MALLOC 256
-
-/* ======================================================================= */
-/**
- * @def    G722ENC_CACHE_ALIGN_OFFSET   Value to add to the pointer returned 
- *                                     by malloc to ensure cache alignment
- */
-/* ======================================================================= */
-#define G722ENC_CACHE_ALIGN_OFFSET 128
 
 /* ======================================================================= */
 /**
@@ -238,14 +221,6 @@
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
-#define OMX_G722MEMFREE_STRUCT(_pStruct_)                           \
-    if(_pStruct_ != NULL)                                           \
-    {                                                               \
-        G722ENC_MEMPRINT("%d :: [FREE] %p\n", __LINE__, _pStruct_); \
-        free(_pStruct_);                                            \
-        _pStruct_ = NULL;                                           \
-    }
-
 #define OMX_G722CLOSE_PIPE(_pStruct_,err)                       \
     G722ENC_DPRINT("%d :: CLOSING PIPE \n", __LINE__);          \
     err = close (_pStruct_);                                    \
@@ -256,18 +231,6 @@
         goto EXIT;                                              \
     }
 
-#define OMX_G722MALLOC_STRUCT(_pStruct_, _sName_)                   \
-    _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
-    if(_pStruct_ == NULL)                                           \
-    {                                                               \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n", __LINE__);                  \
-        printf("***********************************\n");            \
-        eError = OMX_ErrorInsufficientResources;                    \
-        goto EXIT;                                                  \
-    }                                                               \
-    memset(_pStruct_,0,sizeof(_sName_));                            \
-    G722ENC_MEMPRINT("%d :: [ALLOC] %p\n", __LINE__, _pStruct_);
 /* ======================================================================= */
 /** G722ENC_STREAM_TYPE  Values for create phase params
  *

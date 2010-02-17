@@ -234,7 +234,6 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     OMX_U16 *arr = NULL;
     G722ENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     G722ENC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate;
-    OMX_U8* pParmsTemp = NULL;
 
     G722ENC_DPRINT("%d :: Entered G722ENC_Fill_LCMLInitParams",__LINE__);
 
@@ -275,26 +274,13 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     if(pComponentPrivate->dasfmode == 1) {
         G722ENC_DPRINT("%d :: G722 ENCODER IS RUNNING UNDER DASF MODE \n",__LINE__);
         
-         
-        pParmsTemp = (OMX_U8*)malloc(sizeof(G722ENC_AudioCodecParams) + 256);
-        
-        G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pComponentPrivate->pParams);        
-        if(NULL == pParmsTemp) {
-            G722ENC_DPRINT("%d :: Malloc Failed\n",__LINE__);
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
+        OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(G722ENC_AudioCodecParams), G722ENC_AudioCodecParams);
+        if(pComponentPrivate->pParams == NULL) {
+            G722ENC_DPRINT("%d :: %s OMX_ErrorInsufficientResources\n",__LINE__,__FUNCTION__);
+            G722ENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
         }
-        memset (pParmsTemp, 0, sizeof (G722ENC_AudioCodecParams) + 256);
-        pComponentPrivate->pParams = (G722ENC_AudioCodecParams*)(pParmsTemp + 128);
-        /*strmAttr = malloc(sizeof(LCML_STRMATTR));
-          G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,strmAttr);*/
-        OMX_G722MALLOC_STRUCT (strmAttr, LCML_STRMATTR);
-
-        if (strmAttr == NULL) {
-            G722ENC_DPRINT("strmAttr - failed to malloc\n");
-            eError = OMX_ErrorInsufficientResources;
-            goto EXIT;
-        }
+        OMX_MALLOC_GENERIC (strmAttr, LCML_STRMATTR);
         pComponentPrivate->strmAttr = strmAttr;
         G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,strmAttr);
         strmAttr->uSegid = 0;
@@ -315,21 +301,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         plcml_Init->DeviceInfo.DspStream = strmAttr;
     }
     
-
-    arr = malloc (10 * sizeof(OMX_U16));    
-    G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,arr);
-
-    if (arr == NULL) {
-        /* Free previously allocated memory before bailing */
-        if (strmAttr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-            free(strmAttr);
-            strmAttr = NULL;
-        }
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    memset (arr, 0, 10 * sizeof (OMX_U16));
+    OMX_MALLOC_SIZE(arr, 10 * sizeof(OMX_U16), OMX_U16);
     pComponentPrivate->pCreatePhaseArgs = arr;
     if (pComponentPrivate->dasfmode == 1){
         G722ENC_DPRINT("%d :: G722 ENCODER CREATE PHASE UNDER DASF MODE \n",__LINE__);
@@ -371,25 +343,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
      * This memory pointer will be sent to LCML */
 
     size_lcml = nIpBuf * sizeof(G722ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G722ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
-    G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL) {
-        /* Free previously allocated memory before bailing */
-        if (strmAttr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-            free(strmAttr);
-            strmAttr = NULL;
-        }
-
-        if (arr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,arr);
-            free(arr);
-            arr = NULL;
-        }
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    memset (pTemp_lcml, 0, size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G722ENC_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nIpBuf; i++) {
@@ -405,33 +359,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
-        /*pTemp_lcml->pIpParam = (G722ENC_UAlgInBufParamStruct *)malloc(sizeof(G722ENC_UAlgInBufParamStruct));
-
-          G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pTemp_lcml->pIpParam);*/
-        OMX_G722MALLOC_STRUCT (pTemp_lcml->pIpParam, G722ENC_UAlgInBufParamStruct);
-        if (pTemp_lcml->pIpParam == NULL) {
-            /* Free previously allocated memory before bailing */
-            if (strmAttr) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-                free(strmAttr);
-                strmAttr = NULL;
-            }
-    
-            if (arr) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,arr);
-                free(arr);
-                arr = NULL;
-            }
-    
-            if (pTemp_lcml) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml);
-                free(pTemp_lcml);
-                pTemp_lcml = NULL;
-            }
-
-            G722ENC_DPRINT("%d :: Error: Malloc Failed...Exiting..\n",__LINE__);
-            goto EXIT;
-        }
+        OMX_MALLOC_GENERIC (pTemp_lcml->pIpParam, G722ENC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->bLastBuffer = 0;     
              
         pTemp->nFlags = NORMAL_BUFFER;
@@ -446,27 +374,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     pTemp = pComponentPrivate->pBufHeader[G722ENC_OUTPUT_PORT];
     size_lcml = nOpBuf * sizeof(G722ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G722ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
-    G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL) {
-        G722ENC_DPRINT("%d :: Memory Allocation Failed\n",__LINE__);
-        /* Free previously allocated memory before bailing */
-        if (strmAttr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-            free(strmAttr);
-            strmAttr = NULL;
-        }
-
-        if (arr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,arr);
-            free(arr);
-            arr = NULL;
-        }
-    
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    memset (pTemp_lcml, 0, size_lcml);
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G722ENC_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT] = pTemp_lcml;
 
 
@@ -502,10 +410,14 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
-    if (eError != OMX_ErrorNone && NULL != pParmsTemp){
-        free(pParmsTemp);
-        pParmsTemp = NULL;
+
+    if(eError != OMX_ErrorNone)
+    {
+        OMX_MEMFREE_STRUCT(strmAttr);
+        OMX_MEMFREE_STRUCT(arr);
+        OMX_MEMFREE_STRUCT(pTemp_lcml);
     }
+
     return eError;
 }
 
@@ -614,12 +526,7 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_ERRORTYPE err = OMX_ErrorNone;
 
     G722ENC_DPRINT ("%d :: G722Enc_FreeCompResources()\n", __LINE__);
-    if (pComponentPrivate->pCreatePhaseArgs != NULL) {
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pCreatePhaseArgs);
-        /*      free(pComponentPrivate->pCreatePhaseArgs);*/
-        pComponentPrivate->pCreatePhaseArgs = NULL;
-    }
-
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCreatePhaseArgs);
     if (pComponentPrivate->bCompThreadStarted) {
         err = close (pComponentPrivate->dataPipe[0]);
         if (0 != err && OMX_ErrorNone == eError) {
@@ -668,65 +575,16 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
     }
 
     if (pComponentPrivate->bPortDefsAllocated != 0 /*NULL*/) {
-        if (pComponentPrivate->pPortDef[G722ENC_INPUT_PORT] != NULL) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]);
-            free(pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]);
-            pComponentPrivate->pPortDef[G722ENC_INPUT_PORT] = NULL;
-        }
-        
-        if (pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]);
-            free (pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]);
-            pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT] = NULL;
-        }
-
-        if (pComponentPrivate->pcmParams) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pcmParams);
-            free(pComponentPrivate->pcmParams);
-            pComponentPrivate->pcmParams = NULL;
-        }
-
-        if (pComponentPrivate->g722Params) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->g722Params);
-            free (pComponentPrivate->g722Params);
-            pComponentPrivate->g722Params = NULL;
-        }
-
-        if (pComponentPrivate->pOutputBufferList) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pOutputBufferList);
-            free (pComponentPrivate->pOutputBufferList);
-            pComponentPrivate->pOutputBufferList = NULL;
-        }
-
-        if (pComponentPrivate->pInputBufferList) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pInputBufferList);
-            free (pComponentPrivate->pInputBufferList);
-            pComponentPrivate->pInputBufferList = NULL;
-        }
-
-        if (pComponentPrivate->sDeviceString) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->sDeviceString);
-            free (pComponentPrivate->sDeviceString);
-            pComponentPrivate->sDeviceString = NULL;
-        }
-
-        if (pComponentPrivate->pOutPortFormat) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pOutPortFormat);
-            free (pComponentPrivate->pOutPortFormat);
-            pComponentPrivate->pOutPortFormat = NULL;
-        }
-
-        if (pComponentPrivate->pInPortFormat) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pInPortFormat);
-            free (pComponentPrivate->pInPortFormat);
-            pComponentPrivate->pInPortFormat = NULL;
-        }        
-
-        if (pComponentPrivate->sPriorityMgmt) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->sPriorityMgmt);
-            free (pComponentPrivate->sPriorityMgmt);
-            pComponentPrivate->sPriorityMgmt = NULL;
-        }        
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParams);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->g722Params);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
     } 
     pComponentPrivate->bPortDefsAllocated = 0;
 
@@ -764,7 +622,6 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
 /* ================================================================================ */
 OMX_ERRORTYPE G722ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 {
-    OMX_U8* pParmsTemp =  NULL;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G722ENC_COMPONENT_PRIVATE *pComponentPrivate = (G722ENC_COMPONENT_PRIVATE *)
         pHandle->pComponentPrivate;
@@ -775,25 +632,10 @@ OMX_ERRORTYPE G722ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     G722ENC_DPRINT ("%d :: pComponentPrivate->strmAttr = %p\n", __LINE__,pComponentPrivate->strmAttr);
     
     if ((pComponentPrivate->dasfmode == 1) && (pComponentPrivate->pParams)) {
-        pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
-        if (pParmsTemp != NULL){
-            pParmsTemp -= 128;
-        }
-        pComponentPrivate->pParams = (G722ENC_AudioCodecParams *)pParmsTemp;
-        G722ENC_MEMPRINT(":: Freeing: pComponentPrivate->pParams = %p\n",pComponentPrivate->pParams);
-        /*free(pComponentPrivate->pParams);
-          pComponentPrivate->pParams = NULL;*/
-        OMX_G722MEMFREE_STRUCT(pComponentPrivate->pParams);
-        
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G722ENC_AudioCodecParams);
     }    
 
-    if (pComponentPrivate->strmAttr) {
-        G722ENC_DPRINT ("%d :: G722ENC_CleanupInitParams()\n", __LINE__);
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->strmAttr);
-        free(pComponentPrivate->strmAttr);
-        G722ENC_DPRINT ("%d :: G722ENC_CleanupInitParams()\n", __LINE__);
-        pComponentPrivate->strmAttr = NULL;
-    }
+    OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
     G722ENC_DPRINT ("%d :: G722ENC_CleanupInitParams()\n", __LINE__);
     G722ENC_DPRINT ("Exiting Successfully G722ENC_CleanupInitParams()\n");
     return eError;
@@ -2026,46 +1868,23 @@ OMX_ERRORTYPE G722ENC_CommandToLoaded(G722ENC_COMPONENT_PRIVATE *pComponentPriva
         goto EXIT;
     }
 
-    if (pComponentPrivate->pCreatePhaseArgs == NULL) {
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pCreatePhaseArgs);
-        free(pComponentPrivate->pCreatePhaseArgs);
-        pComponentPrivate->pCreatePhaseArgs = NULL;
-    }
-
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pCreatePhaseArgs);
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT];
     for(i=0; i<pComponentPrivate->noInitInputBuf; i++) {
-        if (pTemp_lcml->pIpParam) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pTemp_lcml->pIpParam);
-            free(pTemp_lcml->pIpParam);
-            pTemp_lcml->pIpParam = NULL;
-        }
+        OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
         pTemp_lcml++;
     }
     G722ENC_DPRINT ("%d :: G722ENC_CleanupInitParams()\n", __LINE__);
 
 
     G722ENC_DPRINT("pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT] = %p\n",pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT]);
-    if (pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT]) {
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT]);
-        free(pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT]);
-        pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT] = NULL;
-    }
-
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT]);
     G722ENC_DPRINT("freeing pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT] = 0x%x\n",pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]);
 
     G722ENC_DPRINT("pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT] = %p\n",pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]);
 
-    if (pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]) {
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]);
-        free(pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]);
-        pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT] = NULL;
-    }
-
-    if (pComponentPrivate->strmAttr) {
-        G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,pComponentPrivate->strmAttr);
-        free(pComponentPrivate->strmAttr);
-        pComponentPrivate->strmAttr = NULL;
-    }
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
     eError = EXIT_COMPONENT_THRD;
     pComponentPrivate->bInitParamsInitialized = 0;
     
@@ -2498,13 +2317,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     /* Allocate memory for all input buffer headers..
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(G722ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G722ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
-    G722ENC_MEMPRINT("%d :: [ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL) {
-        G722ENC_DPRINT("%d :: Memory Allocation Failed\n",__LINE__);
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G722ENC_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[G722ENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++) {
         G722ENC_DPRINT("%d :: INPUT--------- Inside Ip Loop\n",__LINE__);
@@ -2520,20 +2333,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         G722ENC_DPRINT("%d :: pTemp_lcml->pBufHdr->pBuffer = %p \n",__LINE__,pTemp_lcml->pBufHdr->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
-        pTemp_lcml->pIpParam = (G722ENC_UAlgInBufParamStruct *)malloc(sizeof(G722ENC_UAlgInBufParamStruct));
-
-        G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pTemp_lcml->pIpParam);
-        if (pTemp_lcml->pIpParam == NULL) {
-            /* Free previously allocated memory before bailing */
-            if (strmAttr) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-                free(strmAttr);
-                strmAttr = NULL;
-            }
-
-            G722ENC_DPRINT("%d :: Error: Malloc Failed...Exiting..\n",__LINE__);
-            goto EXIT;
-        }
+        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G722ENC_UAlgInBufParamStruct);
         pTemp_lcml->pIpParam->bLastBuffer = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
@@ -2548,20 +2348,7 @@ OMX_ERRORTYPE G722ENC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
     pTemp = pComponentPrivate->pBufHeader[G722ENC_OUTPUT_PORT];
     size_lcml = nOpBuf * sizeof(G722ENC_LCML_BUFHEADERTYPE);
-    pTemp_lcml = (G722ENC_LCML_BUFHEADERTYPE *)malloc(size_lcml);
-    G722ENC_MEMPRINT("%d:::[ALLOC] %p\n",__LINE__,pTemp_lcml);
-    if(pTemp_lcml == NULL) {
-        G722ENC_DPRINT("%d :: Memory Allocation Failed\n",__LINE__);
-        /* Free previously allocated memory before bailing */
-        if (strmAttr) {
-            G722ENC_MEMPRINT("%d:::[FREE] %p\n",__LINE__,strmAttr);
-            free(strmAttr);
-            strmAttr = NULL;
-        }
-
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, G722ENC_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[G722ENC_OUTPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nOpBuf; i++) {
