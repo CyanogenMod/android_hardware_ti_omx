@@ -68,21 +68,6 @@
 #include <TIDspOmx.h>
 #include "OMX_G711Dec_Utils.h"
 
-#ifdef G711DEC_MEMDEBUG
-extern void *arr[500] = {NULL};
-extern int lines[500] = {0};
-extern int bytes[500] = {0};
-extern char file[500][50] = {""};
-/*extern int ind=0;*/
-#define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-void * mymalloc(int line, char *s, int size);
-#define newfree(z) myfree(z,__LINE__,__FILE__)
-void myfree(void *dp, int line, char *s);
-#else
-#define newmalloc(x) malloc(x)
-#define newfree(z) free(z)
-#endif
-
 /****************************************************************
  *  EXTERNAL REFERENCES NOTE : only use if not found in header file
  ****************************************************************/
@@ -227,7 +212,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pHandle->ComponentRoleEnum = ComponentRoleEnum;  
     
     /*Allocate the memory for Component private data area */
-    G711D_OMX_MALLOC(pHandle->pComponentPrivate, G711DEC_COMPONENT_PRIVATE);
+    OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, G711DEC_COMPONENT_PRIVATE);
 
     ((G711DEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
 
@@ -238,8 +223,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     eError = OMX_ErrorNone;
 
-    G711D_OMX_MALLOC(g711_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
-    G711D_OMX_MALLOC(g711_op, OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(g711_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
+    OMX_MALLOC_GENERIC(g711_op, OMX_AUDIO_PARAM_PCMMODETYPE);
 
     G711DEC_DPRINT ("%d ::LINE \n", __LINE__);
 
@@ -258,13 +243,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 
     pComponentPrivate = pHandle->pComponentPrivate;
-    G711D_OMX_MALLOC(pComponentPrivate->pInputBufferList, G711DEC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, G711DEC_BUFFERLIST);
     pComponentPrivate->pInputBufferList->numBuffers = 0; /* initialize number of buffers */
-    G711D_OMX_MALLOC(pComponentPrivate->pOutputBufferList, G711DEC_BUFFERLIST);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, G711DEC_BUFFERLIST);
 
-    G711D_OMX_MALLOC(pCompPort, G711DEC_PORT_TYPE);
+    OMX_MALLOC_GENERIC(pCompPort, G711DEC_PORT_TYPE);
     pComponentPrivate->pCompPort[G711DEC_INPUT_PORT] = pCompPort;
-    G711D_OMX_MALLOC(pCompPort, G711DEC_PORT_TYPE);
+    OMX_MALLOC_GENERIC(pCompPort, G711DEC_PORT_TYPE);
     pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT] = pCompPort;
 
     pComponentPrivate->pOutputBufferList->numBuffers = 0; /* initialize number of buffers */
@@ -312,7 +297,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;  
     pComponentPrivate->bPreempted = OMX_FALSE; 
 
-    G711D_OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), OMX_STRING);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), OMX_STRING);
     /* initialize role name */
     strcpy((char*)pComponentPrivate->componentRole.cRole,G711_DEC_ROLE);
     /* Initialize device string to the default value */
@@ -331,8 +316,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
     /* Removing sleep() calls. Initialization.*/    
-    G711D_OMX_MALLOC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
-    G711D_OMX_MALLOC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+    OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
 
     G711DEC_DPRINT ("%d ::pPortDef_ip = 0x%x\n", __LINE__,(unsigned int)pPortDef_ip);
     G711DEC_DPRINT ("%d ::pPortDef_op = 0x%x\n", __LINE__,(unsigned int)pPortDef_op);
@@ -377,7 +362,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->sOutPortFormat.nIndex        = OMX_IndexParamAudioPcm;
     pComponentPrivate->sOutPortFormat.eEncoding     = OMX_AUDIO_CodingPCM;   
 
-    G711D_OMX_MALLOC(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set input port format defaults */
     pInPortFormatArr = pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat;
@@ -386,7 +371,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pInPortFormatArr->nIndex             = OMX_IndexParamAudioPcm;
     pInPortFormatArr->eEncoding          = OMX_AUDIO_CodingG711;
 
-    G711D_OMX_MALLOC(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set output port format defaults */
     pOutPortFormatArr = pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat;
@@ -433,16 +418,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
  EXIT:
     if(eError != OMX_ErrorNone)
     {
-        OMX_G711DECMEMFREE_STRUCT(g711_ip);
-        OMX_G711DECMEMFREE_STRUCT(g711_op);
+        OMX_MEMFREE_STRUCT(g711_ip);
+        OMX_MEMFREE_STRUCT(g711_op);
 	 if (pComponentPrivate != NULL) {
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]);
-	     OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]->pPortFormat);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]->pPortFormat);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_INPUT_PORT]);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711DEC_OUTPUT_PORT]);
+	     OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
              pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
              pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
@@ -1488,7 +1473,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     close(pComponentPrivate->fdread);
 #endif
 
-    OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
 #ifdef RESOURCE_MANAGER_ENABLED
     RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, 
@@ -1515,7 +1500,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     /* close the pipe handles */
     G711DEC_FreeCompResources(pHandle);
     G711DEC_DPRINT ("%d ::After G711DEC_FreeCompResources\n",__LINE__);
-    OMX_G711DECMEMFREE_STRUCT(pComponentPrivate);
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
     G711DEC_DPRINT ("%d ::After free(pComponentPrivate)\n",__LINE__);
 
     return eError;
@@ -1591,10 +1576,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
     }
     
-    G711D_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
-    G711D_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, (nSizeBytes + EXTRA_BUFFBYTES), OMX_U8 );
-
-    pBufferHeader->pBuffer += CACHE_ALIGNMENT;
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
 
     if (nPortIndex == G711DEC_INPUT_PORT) {
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1683,7 +1666,6 @@ static OMX_ERRORTYPE FreeBuffer(
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     G711DEC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
     OMX_BUFFERHEADERTYPE* buff = NULL;
-    OMX_U8* tempBuff = NULL;
     OMX_S16 i = 0;
     OMX_S16 inputIndex = -1;
     OMX_S16 outputIndex = -1;
@@ -1728,11 +1710,9 @@ static OMX_ERRORTYPE FreeBuffer(
 
     if (inputIndex != -1) {
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
-            tempBuff = pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer;
-            tempBuff -= CACHE_ALIGNMENT;
-            OMX_G711DECMEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
         }
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
         pComponentPrivate->pInputBufferList->numBuffers--;
         G711DEC_DPRINT("INPUT :: numBuffers %d, nBufferCountActual %d\n",
                        (int)pComponentPrivate->pInputBufferList->numBuffers,
@@ -1757,12 +1737,10 @@ static OMX_ERRORTYPE FreeBuffer(
     }
     else if (outputIndex != -1) {
         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
-            tempBuff = pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer;
-            tempBuff -= CACHE_ALIGNMENT;
-            OMX_G711DECMEMFREE_STRUCT(tempBuff);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
         }
             
-        OMX_G711DECMEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
         pComponentPrivate->pOutputBufferList->numBuffers--;
         G711DEC_DPRINT("OUTPUT :: numBuffers %d, nBufferCountActual %d\n",
                        (int)pComponentPrivate->pInputBufferList->numBuffers,
@@ -1855,7 +1833,7 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
 
-    G711D_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     
     if (nPortIndex == G711DEC_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;

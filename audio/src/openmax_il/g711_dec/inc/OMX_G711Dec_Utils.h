@@ -43,7 +43,6 @@
 #define OMX_G711DEC_UTILS__H
 
 #include "LCML_DspCodec.h"
-#include <OMX_Component.h>
 #include "OMX_TI_Common.h"
 #include <pthread.h>
 
@@ -123,13 +122,6 @@
  */
 /* ======================================================================= */
 #define G711DEC_DLL_NAME "g711dec_sn.dll64P"
-
-/* ======================================================================= */
-/**
- * @def    EXTRA_BUFFBYTES                Num of Extra Bytes to be allocated
- */
-/* ======================================================================= */
-#define EXTRA_BUFFBYTES (256)
 
 /* ======================================================================= */
 /**
@@ -248,20 +240,6 @@ void* ComponentThread (void* pThreadData);
 
 /* ======================================================================= */
 /**
- * @def    WMADEC_MEMDEBUG   Enable memory leaks debuf info
- */
-/* ======================================================================= */
-#undef G711DEC_MEMDEBUG 
-
-/* ======================================================================= */
-/**
- * @def  CACHE_ALIGNMENT                           Buffer Cache Alignment
- */
-/* ======================================================================= */
-#define CACHE_ALIGNMENT 128
-
-/* ======================================================================= */
-/**
  * @def    NUM_OF_PORTS                       Number of Comunication Port
  */
 /* ======================================================================= */
@@ -270,7 +248,7 @@ void* ComponentThread (void* pThreadData);
 
 /* ======================================================================= */
 /**
- *  M A C R O S FOR MALLOC and MEMORY FREE and CLOSING PIPES
+ *  M A C R O S FOR MEMORY and CLOSING PIPES
  */
 /* ======================================================================= */
 
@@ -281,37 +259,6 @@ void* ComponentThread (void* pThreadData);
     (_s_)->nVersion.s.nVersionMinor = 0x0;      \
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
-
-#define G711D_OMX_MALLOC(_pStruct_, _sName_)                        \
-    _pStruct_ = (_sName_*)newmalloc(sizeof(_sName_));               \
-    if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
-        eError = OMX_ErrorInsufficientResources;                    \
-        goto EXIT;                                                  \
-    }                                                               \
-    memset(_pStruct_,0,sizeof(_sName_));                            \
-    G711DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
-    
-#define G711D_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)             \
-    _ptr_ = (_name_ *)newmalloc(_size_);                        \
-    if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
-        eError = OMX_ErrorInsufficientResources;                \
-        goto EXIT;                                              \
-    }                                                           \
-    memset(_ptr_,0,_size_);                                     \
-    G711DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
-
-#define OMX_G711DECMEMFREE_STRUCT(_pStruct_)                    \
-    if(_pStruct_ != NULL){                                      \
-    G711DEC_MEMPRINT("%d :: [FREE] %p\n",__LINE__,_pStruct_);   \
-        newfree(_pStruct_);                                     \
-        _pStruct_ = NULL;                                       \
-    }
 
 #define OMX_NBCLOSE_PIPE(_pStruct_,err)                         \
     G711DEC_DPRINT("%d :: CLOSING PIPE \n",__LINE__);           \
