@@ -2056,12 +2056,8 @@ void G726DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     G726DEC_MEMPRINT(":: Freeing:  pComponentPrivate->strmAttr = %p\n", pComponentPrivate->strmAttr);
 
     OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
-    /*pComponentPrivate->strmAttr = NULL;*/
-
-    /*if (pComponentPrivate->dasfmode == 1) {*/
     G726DEC_MEMPRINT(":: Freeing: pComponentPrivate->pParams = %p\n",pComponentPrivate->pParams);
     OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G726D_USN_AudioCodecParams);
-    /*}*/
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT];
     for(i=0; i<nIpBuf; i++) {
@@ -2332,11 +2328,6 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer, nIpBufSize, OMX_U8);
         } else {
             G726DEC_DPRINT(":: IpBuffer %p is already there\n",pTemp->pBuffer);
-        }
-
-        if (pTemp->pBuffer == NULL) {
-            G726DEC_EPRINT(":: Malloc Failed...\n");
-            goto EXIT;
         }
 
         pTemp_lcml->pBufHdr = pTemp;

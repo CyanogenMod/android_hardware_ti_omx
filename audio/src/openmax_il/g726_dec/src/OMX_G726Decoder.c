@@ -1604,10 +1604,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
         }
     }
 
-    if (pComponentPrivate->sDeviceString != NULL) {
         OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-    }
-
     G726DEC_MEMPRINT(":: Freeing: pComponentPrivate = %p\n", pComponentPrivate);
     OMX_MEMFREE_STRUCT(pComponentPrivate);
     G726DEC_DPRINT("::*********** ComponentDeinit is Done************** \n");
