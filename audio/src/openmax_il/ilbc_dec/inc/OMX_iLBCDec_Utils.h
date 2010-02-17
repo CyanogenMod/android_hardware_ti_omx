@@ -41,12 +41,10 @@
 #ifndef OMX_iLBCDEC_UTILS__H
 #define OMX_iLBCDEC_UTILS__H
 
-#include <OMX_Component.h>
 #include "LCML_DspCodec.h"
 #include <pthread.h>
 #include "TIDspOmx.h"
 #include "OMX_TI_Common.h"
-
 #ifdef RESOURCE_MANAGER_ENABLED
     #include <ResourceManagerProxyAPI.h>
 #endif
@@ -74,19 +72,7 @@
 #define FIFO1 "/dev/fifo.1"
 #define FIFO2 "/dev/fifo.2"
 /******************************************************************************/
-#ifdef APP_DEBUGMEM
-    #define newmalloc(x) mymalloc(__LINE__,__FILE__,x)
-    #define newfree(z) myfree(z,__LINE__,__FILE__)
 
-    void * mymalloc(int line, char *s, int size);
-    int myfree(void *dp, int line, char *s);
-
-#else
-
-    #define newmalloc(x) malloc(x)
-    #define newfree(z) free(z)
-
-#endif
 /* ========================================================================== */
 /**
  * @def    iLBC_MAJOR_VER              Define value for "major" version
@@ -142,13 +128,6 @@
  */
 /* ========================================================================== */
 #define OMX_iLBC_NUM_DLLS (2)   /* non iLBC */
-
-/* ========================================================================== */
-/**
- * @def    EXTRA_BUFFBYTES                Num of Extra Bytes to be allocated
- */
-/* ========================================================================== */
-#define EXTRA_BUFFBYTES (256)
 
 /* ========================================================================== */
 /**
@@ -261,13 +240,6 @@
  */
 /* ========================================================================== */
 #define iLBCDEC_DLL_NAME "/ilbcdec_sn.dll64P" /* "/lib/dsp/iLBCdec_sn.dll64P" * Path of iLBC SN DLL */
-
-/* ========================================================================== */
-/**
-  * @def  CACHE_ALIGNMENT                           Buffer Cache Alignment
- */
-/* ========================================================================== */
-#define CACHE_ALIGNMENT 128 /* 0j0 non iLBC */
 
 /* ========================================================================== */
 /**
@@ -545,53 +517,6 @@ typedef struct iLBCDEC_BUFDATA {
 #define iLBCDEC_EPRINT(...)  fprintf(stdout, "%s %s %d::  ", __FILE__,__FUNCTION__, __LINE__);\
                             fprintf(stdout, __VA_ARGS__);\
                             fprintf(stdout, "\n");
-
-/* ========================================================================== */
-/**
- * @def    iLBCD_OMX_MALLOC   Macro to allocate Memory
- */
-/* ========================================================================== */
-#define iLBCD_OMX_MALLOC(_pStruct_, _sName_)   \
-    _pStruct_ = (_sName_*)malloc(sizeof(_sName_));      \
-    if(_pStruct_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_pStruct_,0,sizeof(_sName_));\
-    iLBCDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-/* ========================================================================== */
-/**
- * @def    iLBCDEC_OMX_MALLOC_SIZE   Macro to allocate Memory
- */
-/* ========================================================================== */
-#define iLBCD_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)   \
-    _ptr_ = (_name_ *)malloc(_size_);      \
-    if(_ptr_ == NULL){      \
-        printf("***********************************\n"); \
-        printf("%d :: Malloc Failed\n",__LINE__); \
-        printf("***********************************\n"); \
-        eError = OMX_ErrorInsufficientResources; \
-        goto EXIT;      \
-    } \
-    memset(_ptr_,0,_size_); \
-    iLBCDEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
-
-/* ========================================================================== */
-/**
- *  M A C R O FOR MEMORY FREE 
- */
-/* ========================================================================== */
-
-#define iLBCD_OMX_FREE(ptr) \
-    iLBCDEC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr); \
-    if(NULL != ptr) { \
-        free(ptr); \
-        ptr = NULL; \
-    }
 
 /* ======================================================================= */
 /**
