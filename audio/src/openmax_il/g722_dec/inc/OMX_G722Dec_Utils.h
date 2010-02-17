@@ -41,7 +41,6 @@
 #ifndef OMX_G722DEC_UTILS__H
 #define OMX_G722DEC_UTILS__H
 
-#include <OMX_Component.h>
 #include "OMX_TI_Common.h"
 
 #include "LCML_DspCodec.h"
@@ -118,32 +117,6 @@
 
 #endif
 
-#define G722D_OMX_MALLOC(_pStruct_, _sName_)                        \
-    _pStruct_ = (_sName_*)malloc(sizeof(_sName_));                  \
-    if(_pStruct_ == NULL){                                          \
-        printf("***********************************\n");            \
-        printf("%d :: Malloc Failed\n",__LINE__);                   \
-        printf("***********************************\n");            \
-        eError = OMX_ErrorInsufficientResources;                    \
-        goto EXIT;                                                  \
-    }                                                               \
-    memset(_pStruct_,0,sizeof(_sName_));                            \
-    G722DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_pStruct_);
-
-
-
-#define G722D_OMX_MALLOC_SIZE(_ptr_, _size_,_name_)             \
-    _ptr_ = (_name_ *)malloc(_size_);                           \
-    if(_ptr_ == NULL){                                          \
-        printf("***********************************\n");        \
-        printf("%d :: Malloc Failed\n",__LINE__);               \
-        printf("***********************************\n");        \
-        eError = OMX_ErrorInsufficientResources;                \
-        goto EXIT;                                              \
-    }                                                           \
-    memset(_ptr_,0,_size_);                                     \
-    G722DEC_MEMPRINT("%d :: Malloced = %p\n",__LINE__,_ptr_);
-
 #define G722D_OMX_ERROR_EXIT(_e_, _c_, _s_)                             \
     _e_ = _c_;                                                          \
     printf("\n**************** OMX ERROR ************************\n");  \
@@ -158,13 +131,6 @@
             eError = OMX_ErrorBadParameter;             \
             goto EXIT;                                  \
         }                                               \
-    }
-
-#define G722D_OMX_FREE(ptr)                                             \
-    if(NULL != ptr) {                                                   \
-        G722DEC_MEMPRINT("%d :: Freeing Address = %p\n",__LINE__,ptr);  \
-        free(ptr);                                                      \
-        ptr = NULL;                                                     \
     }
 
 #define OMX_CONF_INIT_STRUCT(_s_, _name_)       \
