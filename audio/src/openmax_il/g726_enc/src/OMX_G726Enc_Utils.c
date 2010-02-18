@@ -469,11 +469,26 @@ OMX_ERRORTYPE G726ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
  /*   }*/
     pComponentPrivate->bPortDefsAllocated = 0;
+
+    if (pComponentPrivate->bMutexInit) {
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pComponentPrivate->bMutexInit = 0;
+    }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+
 EXIT:
-    G726ENC_DPRINT("%d :: Exiting G726ENC_FreeCompResources()\n",__LINE__);
-    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
-    return eError;
-}
+        G726ENC_DPRINT("%d :: Exiting G726ENC_FreeCompResources()\n",__LINE__);
+        G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+        return eError;
+    }
 
 /* ========================================================================== */
 /**

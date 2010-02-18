@@ -374,12 +374,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->InIdle_goingtoloaded = 0;
     pComponentPrivate->bMutexInit = 1;
 #endif
-
     eError = G726ENC_StartComponentThread(pHandle);
     G726ENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
     if (eError != OMX_ErrorNone) {
    	  G726ENC_DPRINT("%d :: Error returned from the Component\n",__LINE__);
-   	  goto EXIT;
+          G726ENC_FreeCompResources(pHandle);
+          return eError;
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -387,46 +387,15 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     G726ENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
 	if (eError != OMX_ErrorNone) {
 		G726ENC_DPRINT("%d :: Error returned from loading ResourceManagerProxy thread\n",__LINE__);
-		goto EXIT;
+                G726ENC_FreeCompResources(pHandle);
+                return eError;
 	}
 #endif
 
 EXIT:
     G726ENC_DPRINT("%d :: Exiting OMX_ComponentInit\n", __LINE__);
     if ((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
-
-#ifndef UNDER_CE
-        if (pComponentPrivate->bMutexInit) {
-            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
-
-            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-
-            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-            pComponentPrivate->bMutexInit = 0;
-        }
-#endif
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]->pPortFormat);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]->pPortFormat);
-
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G726ENC_INPUT_PORT]);
-
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-
-	OMX_MEMFREE_STRUCT(pComponentPrivate->G726Params[G726ENC_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->G726Params[G726ENC_OUTPUT_PORT]);
-
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G726ENC_INPUT_PORT]);
-	OMX_MEMFREE_STRUCT(pComponentPrivate);
-
+        G726ENC_FreeCompResources(pHandle);
     }
     G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -464,7 +433,7 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
     if (pCallBacks == NULL) {
         eError = OMX_ErrorBadParameter;
         G726ENC_DPRINT("%d :: Received the empty callbacks from the application\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
 
     /*Copy the callbacks of the application to the component private*/
@@ -475,9 +444,8 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->curState = OMX_StateLoaded;
 
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting SetCallbacks\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting SetCallbacks\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -548,80 +516,80 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
     G726ENC_COMPONENT_PRIVATE *pCompPrivate =
              (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     int nRet = 0;
-	G726ENC_DPRINT("%d :: Entering SendCommand()\n", __LINE__);
+    G726ENC_DPRINT("%d :: Entering SendCommand()\n", __LINE__);
     if(pCompPrivate->curState == OMX_StateInvalid) {
-	    eError = OMX_ErrorInvalidState;
-	    G726ENC_DPRINT("%d :: Error OMX_ErrorInvalidState Sent to App\n",__LINE__);
-        goto EXIT;
+        eError = OMX_ErrorInvalidState;
+        G726ENC_DPRINT("%d :: Error OMX_ErrorInvalidState Sent to App\n",__LINE__);
+	return eError;
     }
 
     switch(Cmd) {
         case OMX_CommandStateSet:
-   			G726ENC_DPRINT("%d :: OMX_CommandStateSet SendCommand\n",__LINE__);
+            G726ENC_DPRINT("%d :: OMX_CommandStateSet SendCommand\n",__LINE__);
             if(pCompPrivate->curState == OMX_StateLoaded) {
                 if((nParam == OMX_StateExecuting) || (nParam == OMX_StatePause)) {
                     pCompPrivate->cbInfo.EventHandler ( pHandle,
-														pHandle->pApplicationPrivate,
-														OMX_EventError,
-														OMX_ErrorIncorrectStateTransition,
-														0,
-														NULL);
-                    goto EXIT;
+                                                        pHandle->pApplicationPrivate,
+                                                        OMX_EventError,
+                                                        OMX_ErrorIncorrectStateTransition,
+                                                        0,
+                                                        NULL);
+                    return eError;
                 }
 
                 if(nParam == OMX_StateInvalid) {
-   					G726ENC_DPRINT("%d :: OMX_CommandStateSet SendCommand\n",__LINE__);
+                    G726ENC_DPRINT("%d :: OMX_CommandStateSet SendCommand\n",__LINE__);
                     pCompPrivate->curState = OMX_StateInvalid;
                     pCompPrivate->cbInfo.EventHandler ( pHandle,
-														pHandle->pApplicationPrivate,
-														OMX_EventError,
-														OMX_ErrorInvalidState,
-														0,
-														NULL);
-                    goto EXIT;
+                                                        pHandle->pApplicationPrivate,
+                                                        OMX_EventError,
+                                                        OMX_ErrorInvalidState,
+                                                        0,
+                                                        NULL);
+                    return eError;
                 }
             }
             break;
         case OMX_CommandFlush:
-   			G726ENC_DPRINT("%d :: OMX_CommandFlush SendCommand\n",__LINE__);
-			if(nParam > 1 && nParam != -1) {
-				eError = OMX_ErrorBadPortIndex;
-				G726ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
-				goto EXIT;
-			}
-	        break;
+            G726ENC_DPRINT("%d :: OMX_CommandFlush SendCommand\n",__LINE__);
+            if(nParam > 1 && nParam != -1) {
+                eError = OMX_ErrorBadPortIndex;
+                G726ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
+                return eError;
+            }
+	    break;
         case OMX_CommandPortDisable:
-   			G726ENC_DPRINT("%d :: OMX_CommandPortDisable SendCommand\n",__LINE__);
+            G726ENC_DPRINT("%d :: OMX_CommandPortDisable SendCommand\n",__LINE__);
             break;
         case OMX_CommandPortEnable:
-   			G726ENC_DPRINT("%d :: OMX_CommandPortEnable SendCommand\n",__LINE__);
+            G726ENC_DPRINT("%d :: OMX_CommandPortEnable SendCommand\n",__LINE__);
             break;
         case OMX_CommandMarkBuffer:
-   			G726ENC_DPRINT("%d :: OMX_CommandMarkBuffer SendCommand\n",__LINE__);
+            G726ENC_DPRINT("%d :: OMX_CommandMarkBuffer SendCommand\n",__LINE__);
             if (nParam > 0) {
                 eError = OMX_ErrorBadPortIndex;
-       		    G726ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
-                goto EXIT;
+                G726ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
+                return eError;
             }
             break;
         default:
             G726ENC_DPRINT("%d :: Command Received Default eError\n",__LINE__);
             pCompPrivate->cbInfo.EventHandler ( pHandle,
-            								    pHandle->pApplicationPrivate,
-            				                    OMX_EventError,
-            			                        OMX_ErrorUndefined,
-            			                        0,
-            				                    "Invalid Command");
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventError,
+                                                OMX_ErrorUndefined,
+                                                0,
+                                                "Invalid Command");
             break;
 
     }
 
     nRet = write (pCompPrivate->cmdPipe[1], &Cmd, sizeof(Cmd));
-	if (nRet == -1) {
-	   eError = OMX_ErrorInsufficientResources;
-       G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources from SendCommand",__LINE__);
-	   goto EXIT;
-	}
+    if (nRet == -1) {
+        eError = OMX_ErrorInsufficientResources;
+        G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources from SendCommand",__LINE__);
+        return eError;
+    }
 
     if (Cmd == OMX_CommandMarkBuffer) {
         nRet = write(pCompPrivate->cmdDataPipe[1], &pCmdData,
@@ -631,14 +599,13 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                             sizeof(OMX_U32));
     }
     if (nRet == -1) {
-		G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources from SendCommand",__LINE__);
+        G726ENC_DPRINT("%d :: OMX_ErrorInsufficientResources from SendCommand",__LINE__);
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return eError;
     }
 
-EXIT:
- 	G726ENC_DPRINT("%d :: Exiting SendCommand()\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting SendCommand()\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -668,13 +635,13 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
 	if (pParameterStructure == NULL) {
 		eError = OMX_ErrorBadParameter;
 		G726ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from GetParameter",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
     if(pComponentPrivate->curState == OMX_StateInvalid) {
 		eError = OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: OMX_ErrorIncorrectStateOperation from GetParameter",__LINE__);
-		goto EXIT;
+                return eError;
     }
 
     switch(nParamIndex){
@@ -767,9 +734,8 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
             eError = OMX_ErrorUnsupportedIndex;
 			break;
     }
-EXIT:
     G726ENC_DPRINT("%d :: Exiting GetParameter\n",__LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -803,12 +769,12 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 	if (pCompParam == NULL) {
 		eError = OMX_ErrorBadParameter;
 		G726ENC_DPRINT("%d :: OMX_ErrorBadParameter from SetParameter",__LINE__);
-		goto EXIT;
+		return eError;
 	}
 	if (pComponentPrivate->curState != OMX_StateLoaded) {
 		eError = OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: OMX_ErrorIncorrectStateOperation from SetParameter",__LINE__);
-		goto EXIT;
+		return eError;
 	}
 
     switch(nParamIndex) {
@@ -889,9 +855,8 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
 				eError = OMX_ErrorUnsupportedIndex;
             break;
     }
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting SetParameter\n",__LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting SetParameter\n",__LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -919,19 +884,19 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
                          (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     if(nConfigIndex == (OMX_G726ENC_INDEXAUDIOTYPE)OMX_IndexCustomG726ENCStreamIDConfig){
-	    OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
+        OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
         if(streamInfo == NULL){
-		    eError = OMX_ErrorBadParameter;
-		    goto EXIT;
-	    }
-		streamInfo->streamId = pComponentPrivate->streamID;
-		memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
-                OMX_MEMFREE_STRUCT(streamInfo);
+            eError = OMX_ErrorBadParameter;
+            return eError;
 	}
+        streamInfo->streamId = pComponentPrivate->streamID;
+        memcpy(ComponentConfigStructure,streamInfo,sizeof(TI_OMX_STREAM_INFO));
+        OMX_MEMFREE_STRUCT(streamInfo);
+    }
 EXIT:
     G726ENC_DPRINT("%d :: Entering GetConfig\n", __LINE__);
     G726ENC_DPRINT("%d :: Exiting GetConfig\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -967,7 +932,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 	if (pHandle == NULL) {
 		G726ENC_DPRINT ("%d :: Invalid HANDLE OMX_ErrorBadParameter \n",__LINE__);
 		eError = OMX_ErrorBadParameter;
-		goto EXIT;
+                return eError;
 	}
 
 	pComponentPrivate = (G726ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -978,7 +943,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 			if (pTiDspDefinition == NULL) {
 				eError = OMX_ErrorBadParameter;
 				G726ENC_DPRINT("%d :: OMX_ErrorBadParameter from SetConfig\n",__LINE__);
-			 	goto EXIT;
+                                return eError;
 			 }			
 			pComponentPrivate->dasfMode = pTiDspDefinition->dasfMode;
 			pComponentPrivate->acdnMode = pTiDspDefinition->acousticMode;
@@ -1034,9 +999,8 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 			eError = OMX_ErrorUnsupportedIndex;
 		break;
 	}
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting SetConfig\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting SetConfig\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -1059,8 +1023,8 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 	G726ENC_DPRINT("%d :: Entering GetState\n", __LINE__);
     if (!pState) {
         eError = OMX_ErrorBadParameter;
-		G726ENC_DPRINT("%d :: OMX_ErrorBadParameter from GetState\n",__LINE__);
-        goto EXIT;
+        G726ENC_DPRINT("%d :: OMX_ErrorBadParameter from GetState\n",__LINE__);
+        return eError;
     }
 
     if (pHandle && pHandle->pComponentPrivate) {
@@ -1071,9 +1035,8 @@ static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
     }
     eError = OMX_ErrorNone;
 
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting GetState\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting GetState\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -1107,38 +1070,38 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
 	G726ENC_DPRINT("%d :: Entering EmptyThisBuffer\n", __LINE__);
     if (pBuffer == NULL) {
         eError = OMX_ErrorBadParameter;
-		G726ENC_DPRINT("%d :: About to return OMX_ErrorBadParameter\n",__LINE__);
-        goto EXIT;
+        G726ENC_DPRINT("%d :: About to return OMX_ErrorBadParameter\n",__LINE__);
+        return eError;
     }
 
 	if (pBuffer->nSize != sizeof(OMX_BUFFERHEADERTYPE)) {
 		eError = OMX_ErrorBadParameter;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorBadParameter\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (!pPortDef->bEnabled) {
 		eError  = OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (pBuffer->nVersion.nVersion != pComponentPrivate->nVersion) {
 		eError = OMX_ErrorVersionMismatch;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorVersionMismatch\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (pBuffer->nInputPortIndex != G726ENC_INPUT_PORT) {
 		eError  = OMX_ErrorBadPortIndex;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorBadPortIndex\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (pComponentPrivate->curState != OMX_StateExecuting && pComponentPrivate->curState != OMX_StatePause) {
 		eError= OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 
@@ -1155,12 +1118,11 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     if (ret == -1) {
         G726ENC_DPRINT("%d :: Error in Writing to the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
-	pComponentPrivate->nEmptyThisBufferCount++;
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting EmptyThisBuffer\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    pComponentPrivate->nEmptyThisBufferCount++;
+    G726ENC_DPRINT("%d :: Exiting EmptyThisBuffer\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1193,38 +1155,38 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     G726ENC_DPRINT("------------------------------------------------------------------\n");
     if (pBuffer == NULL) {
         eError = OMX_ErrorBadParameter;
-		G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadParameter\n",__LINE__);
-        goto EXIT;
+        G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadParameter\n",__LINE__);
+        return eError;
     }
 
 	if (pBuffer->nSize != sizeof(OMX_BUFFERHEADERTYPE)) {
 		eError = OMX_ErrorBadParameter;
 		G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadParameter\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (!pPortDef->bEnabled) {
 		eError  = OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (pBuffer->nVersion.nVersion != pComponentPrivate->nVersion) {
 		eError = OMX_ErrorVersionMismatch;
 		G726ENC_DPRINT(" %d :: About to return OMX_ErrorVersionMismatch\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
 	if (pBuffer->nOutputPortIndex != G726ENC_OUTPUT_PORT) {
 		eError  = OMX_ErrorBadPortIndex;
 		G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadPortIndex\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
     if(pComponentPrivate->curState != OMX_StateExecuting && pComponentPrivate->curState != OMX_StatePause) {
         eError = OMX_ErrorIncorrectStateOperation;
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
-		goto EXIT;
+                return eError;
 	}
 
     pBuffer->nFilledLen = 0;
@@ -1247,12 +1209,11 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     if (ret == -1) {
         G726ENC_DPRINT("%d :: Error in Writing to the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
 	pComponentPrivate->nFillThisBufferCount++;
-EXIT:
-	G726ENC_DPRINT("%d :: Exiting FillThisBuffer\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Exiting FillThisBuffer\n", __LINE__);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 /*-------------------------------------------------------------------*/
@@ -1284,7 +1245,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 	eError = RMProxy_Deinitalize();
 	if (eError != OMX_ErrorNone) {
          G726ENC_DPRINT("%d :: Error from RMProxy_Deinitalize\n",__LINE__);
-         goto EXIT;
+         return eError;
     }
 #endif
 
@@ -1292,31 +1253,18 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     eError = G726ENC_StopComponentThread(pHandle);
 	if (eError != OMX_ErrorNone) {
          G726ENC_DPRINT("%d :: Error from G726ENC_StopComponentThread\n",__LINE__);
-         goto EXIT;
+         return eError;
     }
     /* Wait for thread to exit so we can get the status into "eError" */
     /* close the pipe handles */
     eError = G726ENC_FreeCompResources(pHandle);
 	if (eError != OMX_ErrorNone) {
          G726ENC_DPRINT("%d :: Error from G726ENC_FreeCompResources\n",__LINE__);
-         goto EXIT;
+         return eError;
     }
 
-#ifndef UNDER_CE
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
-
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#endif
-    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
-    OMX_MEMFREE_STRUCT(pComponentPrivate);
-EXIT:
     G726ENC_DPRINT("%d :: Exiting ComponentDeInit\n", __LINE__);
-	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
 
@@ -1420,9 +1368,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 		}
 	}
 	else {
-		eError = OMX_ErrorBadPortIndex;
-		G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadPortIndex\n",__LINE__);
-		goto EXIT;
+            OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+            eError = OMX_ErrorBadPortIndex;
+            G726ENC_DPRINT(" %d :: About to return OMX_ErrorBadPortIndex\n",__LINE__);
+            return eError;
 	}
     if ((!pComponentPrivate->dasfMode                                 &&     /*File Mode*/
          pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT]->bPopulated &&
@@ -1452,7 +1402,13 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 	pComponentPrivate->nVersion = pBufferHeader->nVersion.nVersion;
 	pBufferHeader->nSize = sizeof(OMX_BUFFERHEADERTYPE);
     *pBuffer = pBufferHeader;
+    G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    return eError;
 EXIT:
+    if (pBufferHeader) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+    }
 	G726ENC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
 	G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1632,13 +1588,13 @@ static OMX_ERRORTYPE UseBuffer (
     if(!pPortDef->bEnabled) {
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorIncorrectStateOperation\n",__LINE__);
         eError = OMX_ErrorIncorrectStateOperation;
-        goto EXIT;
+        return eError;
     }
 
     if(nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated) {
 		G726ENC_DPRINT("%d :: About to return OMX_ErrorBadParameter\n",__LINE__);
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
 
 	OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
