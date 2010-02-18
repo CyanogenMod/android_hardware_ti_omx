@@ -1052,8 +1052,8 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
 /*----------------------------------------------------------------------------*/
 
 #define OMX_ALIGN_BUFFER(_pBuffer_, _nBytes_)                  \
-    while((OMX_U8)_pBuffer_ & (_nBytes_-1)){                   \
-       _pBuffer_++;                                            \
+    while((OMX_U8)_pBuffer_ & (OMX_U8)(_nBytes_-1)){                   \
+       (OMX_U8*)_pBuffer_++;                                    \
     }
 
 

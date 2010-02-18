@@ -2692,8 +2692,8 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         OMX_ERROR4(pComponentPrivate->dbg, "Error: Invalid Compression Type\n");
         goto EXIT;
     }
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "bAllocByComponent 0x%x pBuffer 0x%p\n", (int )pBufferPrivate->bAllocByComponent, 
-        pBuffHead->pBuffer);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "bAllocByComponent 0x%x pBuffer 0x%p original %p\n", (int )pBufferPrivate->bAllocByComponent,
+        pBuffHead->pBuffer,pBufferPrivate->pOriginalBuffer);
     if (pBufferPrivate->bAllocByComponent == OMX_TRUE) {
         if(pBuffHead->pBuffer != NULL){
 #ifdef __PERF_INSTRUMENTATION__
@@ -2705,9 +2705,8 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
       /* Freeing the original buffer position were data buffer was allocated */
            if(pBufferPrivate->pOriginalBuffer != NULL){
-              pBuffHead->pBuffer = pBufferPrivate->pOriginalBuffer;
-              pBufferPrivate->pOriginalBuffer = NULL;
-              OMX_FREE(pBuffHead->pBuffer);
+              OMX_FREE(pBufferPrivate->pOriginalBuffer);
+              pBuffHead->pBuffer = NULL;
            } else{
               OMX_FREE(pBuffHead->pBuffer);
            }
@@ -2720,6 +2719,7 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
             free(pCompPort->pBufferPrivate[i]->pBufferHdr);
             pCompPort->pBufferPrivate[i]->pBufferHdr = NULL;
             pBuffHead = NULL;
+            break;
         }
     }
     if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent != NULL){
@@ -2837,6 +2837,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef = NULL;
     VIDDEC_PORT_TYPE* pCompPort = NULL;
+    OMX_U8* pTemp = NULL;
     OMX_U8 pBufferCnt = 0;
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
@@ -2875,12 +2876,12 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
 
-    *pBuffHead = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr;
-    memset(*pBuffHead, 0, sizeof(OMX_BUFFERHEADERTYPE));
+    (*pBuffHead) = (OMX_BUFFERHEADERTYPE*)(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr);
+    memset(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, 0, sizeof(OMX_BUFFERHEADERTYPE));
     OMX_CONF_INIT_STRUCT(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, OMX_BUFFERHEADERTYPE, pComponentPrivate->dbg);
     /* Allocate Video Decoder buffer */
-    OMX_MALLOC_STRUCT_SIZED((*pBuffHead)->pBuffer, OMX_U8, OMX_GET_DATABUFF_SIZE(nSizeBytes), NULL);
-    if (!((*pBuffHead)->pBuffer)) {
+    OMX_MALLOC_STRUCT_SIZED(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, OMX_U8, OMX_GET_DATABUFF_SIZE(nSizeBytes), NULL);
+    if (!(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer)) {
         eError = OMX_ErrorInsufficientResources;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2891,14 +2892,18 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
     /* Align and add padding for data buffer */
-    pCompPort->pBufferPrivate[pBufferCnt]->pOriginalBuffer = (*pBuffHead)->pBuffer;
-    (*pBuffHead)->pBuffer += VIDDEC_PADDING_HALF;
-    OMX_ALIGN_BUFFER((*pBuffHead)->pBuffer, VIDDEC_ALIGNMENT);
+    pCompPort->pBufferPrivate[pBufferCnt]->pOriginalBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
+    pTemp = (OMX_U8*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
+    pTemp += VIDDEC_PADDING_HALF;
 #ifdef VIDDEC_WMVPOINTERFIXED
-    pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = (*pBuffHead)->pBuffer;
-    (*pBuffHead)->nOffset = 0;
+    pTemp += VIDDEC_WMV_BUFFER_OFFSET;
+    pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
+    pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->nOffset = 0;
 #endif
+    OMX_ALIGN_BUFFER(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, (OMX_U8*)VIDDEC_ALIGNMENT);
+    pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer = (OMX_U8*)pTemp;
 
+    (*pBuffHead)->pBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
     (*pBuffHead)->nAllocLen = nSizeBytes;
     (*pBuffHead)->pAppPrivate = pAppPrivate;
     (*pBuffHead)->pPlatformPrivate = NULL;
