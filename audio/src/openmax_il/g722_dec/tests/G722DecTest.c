@@ -1379,6 +1379,11 @@ OMX_ERRORTYPE testCases (OMX_HANDLETYPE *pHandle, fd_set *rfds, int tcID, FILE *
                     fprintf (stderr,"Error from SendCommand-Idle(Stop) State function\n");
                     return (error);
                 }
+                error = WaitForState(pHandle, OMX_StateIdle);
+                    if(error != OMX_ErrorNone) {
+                        fprintf(stderr, "Error:  hPcmDecoder->WaitForState reports an error %X\n", error);
+                        return (error);
+                    }
                 if(tcID == 4) {
                     error = testCase_2_4 (pHandle, gDasfMode, fIn, fOut, nIpBuffs, pInputBufferHeader);
                     if(error != OMX_ErrorNone) {
