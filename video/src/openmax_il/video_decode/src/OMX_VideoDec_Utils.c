@@ -8235,8 +8235,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             }
     pComponentPrivate->eLCMLState = VidDec_LCML_State_Start;
 
-    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC &&
-        pComponentPrivate->eState == OMX_StateIdle) {
+    if ( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
         H264VDEC_UALGDynamicParams* pDynParams = NULL;
         char* pTmp = NULL;
         OMX_U32 cmdValues[3] = {0, 0, 0};
@@ -8290,8 +8289,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             goto EXIT;
         }
     }
-    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2 &&
-        pComponentPrivate->eState == OMX_StateIdle) {
+    else if ( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
         MP2VDEC_UALGDynamicParams* pDynParams = NULL;
         char* pTmp = NULL;
         OMX_U32 cmdValues[3] = {0, 0, 0};
@@ -8383,7 +8381,6 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 #ifdef VIDDEC_SPARK_CODE
     else if (VIDDEC_SPARKCHECK) {
-        if(pComponentPrivate->eState == OMX_StateIdle) {
             SPARKVDEC_UALGDynamicParams* pDynParams = NULL;
             char* pTmp = NULL;
             OMX_U32 cmdValues[3] = {0, 0, 0};
@@ -8437,14 +8434,17 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 OMX_PRDSP4(pComponentPrivate->dbg, "Codec AlgCtrl 0x%x\n",eError);
                 goto EXIT;
             }
-        }
     }
 #endif
-    else {
+    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
         eError = VIDDEC_SetMpeg4_Parameters(pComponentPrivate);
         if (eError != OMX_ErrorNone){
             goto EXIT;
         }
+    }
+    else {
+        eError = OMX_ErrorNotImplemented;
+        goto EXIT;
     }
 
     eError = OMX_ErrorNone;
