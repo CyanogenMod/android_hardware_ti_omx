@@ -64,10 +64,11 @@
 #undef LOG_TAG
 #define LOG_TAG "TI_LCML"
 
-#define LCML_MALLOC(p,s,t) \
+#define LCML_MALLOC(p,s,t,e) \
     p = (t*)malloc(s);                  \
     if (NULL == p){             \
         OMXDBG_PRINT(stderr, ERROR, 4, OMX_DBG_BASEMASK, "LCML:::::::: ERROR(#%d F:%s)!!! Ran out of memory while trying to allocate %d bytes!!!\n",__LINE__,__FUNCTION__,s);    \
+        e = OMX_ErrorInsufficientResources; \
     }else { \
         OMXDBG_PRINT(stderr, PRINT, 2, OMX_DBG_BASEMASK, "LCML:::::::: (#%d F:%s)Success to allocate %d bytes ... pointer %p\n",__LINE__,__FUNCTION__,s,p); \
     }
@@ -134,22 +135,21 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     struct LCML_CODEC_INTERFACE *dspcodecinterface ;
 
     OMXDBG_PRINT(stderr, PRINT, 2, OMX_DBG_BASEMASK, "%d :: GetHandle application\n",__LINE__);
-    LCML_MALLOC(*hInterface,sizeof(LCML_DSP_INTERFACE),LCML_DSP_INTERFACE);
+    LCML_MALLOC(*hInterface,sizeof(LCML_DSP_INTERFACE),LCML_DSP_INTERFACE, err);
 
-    if (hInterface == NULL)
+    if (err == OMX_ErrorInsufficientResources)
     {
-        err = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        return err;
     }
     memset(*hInterface, 0, sizeof(LCML_DSP_INTERFACE));
 
     pHandle = (LCML_DSP_INTERFACE*)*hInterface;
 
-    LCML_MALLOC(dspcodecinterface,sizeof(LCML_CODEC_INTERFACE),LCML_CODEC_INTERFACE);
-    if (dspcodecinterface == NULL)
+    LCML_MALLOC(dspcodecinterface,sizeof(LCML_CODEC_INTERFACE),LCML_CODEC_INTERFACE, err);
+    if (err == OMX_ErrorInsufficientResources)
     {
-        err = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        free(*hInterface);
+        return err;
     }
     memset(dspcodecinterface, 0, sizeof(LCML_CODEC_INTERFACE));
     OMX_DBG_INIT (dspcodecinterface->dbg, "TI_LCML");
@@ -161,11 +161,12 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     dspcodecinterface->QueueBuffer = QueueBuffer;
     dspcodecinterface->ControlCodec = ControlCodec;
 
-    LCML_MALLOC(pHandle->dspCodec,sizeof(LCML_DSP),LCML_DSP);
-    if(pHandle->dspCodec == NULL)
+    LCML_MALLOC(pHandle->dspCodec,sizeof(LCML_DSP),LCML_DSP, err);
+    if (err == OMX_ErrorInsufficientResources)
     {
-        err = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        free(*hInterface);
+        free(dspcodecinterface);
+        return err;
     }
     memset(pHandle->dspCodec, 0, sizeof(LCML_DSP));
 
@@ -409,8 +410,8 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             struct DSP_NOTIFICATION* notification;
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-	        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION)
-            if(notification == NULL)
+	        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError)
+            if(eError)
             {
                 OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
                 goto ERROR;
@@ -425,8 +426,8 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
 
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-            LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
-            if(notification_mmufault == NULL)
+            LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError);
+            if(eError)
             {
                 OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
                 goto ERROR;
@@ -441,8 +442,8 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
 
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-            LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
-            if(notification_syserror == NULL)
+            LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError);
+            if(eError)
             {
                 OMX_ERROR4  (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
                 goto ERROR;
@@ -717,8 +718,8 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         struct DSP_NOTIFICATION* notification;
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
-        if(notification == NULL)
+        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError);
+        if(eError)
         {
             OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
             goto ERROR;
@@ -733,8 +734,8 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
 
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-        LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
-        if(notification_mmufault == NULL)
+        LCML_MALLOC(notification_mmufault,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError);
+        if(eError)
         {
             OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
             goto ERROR;
@@ -749,8 +750,8 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
 
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-        LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION);
-        if(notification_syserror == NULL)
+        LCML_MALLOC(notification_syserror,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError);
+        if(eError)
         {
             OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
             goto ERROR;
@@ -886,11 +887,10 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                        PERF_ModuleSocketNode);
 #endif
     pthread_mutex_lock(&phandle->mutex);
-    LCML_MALLOC(tmp2,sizeof(TArmDspCommunicationStruct) + 256,char);
-    if (tmp2 == NULL)
+    LCML_MALLOC(tmp2,sizeof(TArmDspCommunicationStruct) + 256,char, eError);
+    if (eError)
     {
-            eError = OMX_ErrorInsufficientResources;
-            goto MUTEX_UNLOCK;
+        goto MUTEX_UNLOCK;
     }
     memset(tmp2,0,sizeof(TArmDspCommunicationStruct)+256);
     phandle->commStruct = (TArmDspCommunicationStruct *)(tmp2 + 128);
@@ -1310,10 +1310,9 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                         goto EXIT;
                     }
 
-                    LCML_MALLOC(phandle->pAlgcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
-                    if(phandle->pAlgcntlDmmBuf[i] == NULL)
+                    LCML_MALLOC(phandle->pAlgcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ, eError);
+                    if(eError)
                     {
-                        eError = OMX_ErrorInsufficientResources;
                         pthread_mutex_unlock(&phandle->mutex);
                         goto EXIT;
                     }
@@ -1376,10 +1375,9 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                             goto EXIT;
                         }
 
-                        LCML_MALLOC(phandle->pStrmcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ);
-                        if(phandle->pStrmcntlDmmBuf[i] == NULL)
+                        LCML_MALLOC(phandle->pStrmcntlDmmBuf[i],sizeof(DMM_BUFFER_OBJ),DMM_BUFFER_OBJ, eError);
+                        if(eError)
                         {
-                            eError = OMX_ErrorInsufficientResources;
                             pthread_mutex_unlock(&phandle->mutex);
                             goto EXIT;
                         }
