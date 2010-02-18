@@ -8096,10 +8096,11 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
 
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
-    if ((!pComponentPrivate->pModLCML)&&
-        ((error = dlerror()) != NULL)) {
+    if (!pComponentPrivate->pModLCML) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-        fputs(error, stderr);
+	if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+        }
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
