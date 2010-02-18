@@ -526,6 +526,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nRet;
+    OMX_S32 nParamTemp = (OMX_S32)nParam;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)phandle;
     MP3DEC_COMPONENT_PRIVATE *pCompPrivate = NULL;
 
@@ -585,7 +586,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         }
         break;
     case OMX_CommandFlush:
-        if(nParam > 1 && nParam != -1) {
+        if((abs(nParamTemp)) > 1 ) {
             MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorBadPortIndex,"OMX_ErrorBadPortIndex");
         }
         break;
@@ -1342,6 +1343,8 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     }   
 #endif
 
+    MP3D_OMX_CONF_CHECK_CMD(pComponentName, pComponentVersion, pSpecVersion);
+    MP3D_OMX_CONF_CHECK_CMD(pComponentUUID, 1, 1);
     OMX_PRINT1(pComponentPrivate->dbg, ":: Entering GetComponentVersion\n");
     OMX_PRINT2(pComponentPrivate->dbg, ":: Inside  GetComponentVersion\n");
     OMX_PRINT1(pComponentPrivate->dbg, " :: Exiting GetComponentVersion\n");
@@ -1707,7 +1710,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
     MP3DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     int k=0, k2 = 0;
-    struct OMX_TI_Debug dbg = {0};
+    struct OMX_TI_Debug dbg;
 
     MP3D_OMX_CONF_CHECK_CMD(pComponent,1,1)
         pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *)pComponent->pComponentPrivate;
@@ -1802,8 +1805,11 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMXDBG_PRINT(stderr, PRINT, 1, 0, ":: Entering ComponentTunnelRequest\n");
     OMXDBG_PRINT(stderr, PRINT, 2, 0, " :: Inside   ComponentTunnelRequest\n");
+    MP3D_OMX_CONF_CHECK_CMD(hComp, nPort, hTunneledComp);
+    MP3D_OMX_CONF_CHECK_CMD(nTunneledPort, pTunnelSetup, 1);
     eError = OMX_ErrorNotImplemented;
     OMXDBG_PRINT(stderr, PRINT, 1, 0, " :: Exiting ComponentTunnelRequest\n");
+EXIT:
     return eError;
 }
 
@@ -2006,9 +2012,8 @@ static OMX_ERRORTYPE FreeBuffer(
     int outputIndex = -1;
     OMX_COMPONENTTYPE *pHandle;
 
-    OMXDBG_PRINT(stderr, PRINT, 1, 0, ":: Entering FreeBuffer\n");
-
     pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE *) (((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_PRINT2(pComponentPrivate->dbg, ":: Entering FreeBuffer\n");
 
     pHandle = (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
     OMX_PRINT2(pComponentPrivate->dbg, ":: pComponentPrivate = %p\n",pComponentPrivate);
@@ -2311,6 +2316,7 @@ static OMX_ERRORTYPE GetExtensionIndex(
             OMX_OUT OMX_INDEXTYPE *pIndexType)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    MP3D_OMX_CONF_CHECK_CMD(hComponent, 1, 1);
 
     if(!(strcmp(cParameterName,"OMX.TI.index.config.mp3headerinfo"))) {
         *pIndexType = OMX_IndexCustomMp3DecHeaderInfoConfig;
@@ -2327,6 +2333,7 @@ static OMX_ERRORTYPE GetExtensionIndex(
     else {
         eError = OMX_ErrorBadParameter;
     }
+ EXIT:
     return eError;
 }
 

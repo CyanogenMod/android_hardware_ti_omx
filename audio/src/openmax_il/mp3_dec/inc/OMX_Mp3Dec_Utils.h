@@ -906,7 +906,7 @@ void MP3DEC_CleanupInitParams(OMX_HANDLETYPE pComponent);
 *  @see         None
 */
 /* ================================================================================ * */
-void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
+void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_S32 indexport);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 /* =================================================================================== */
@@ -921,7 +921,7 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
 void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
-OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport);
+OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_S32 indexport);
 void MP3DEC_SetPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber);
 void MP3DEC_ClearPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber) ;
 OMX_U32 MP3DEC_IsPending(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir);
@@ -951,12 +951,12 @@ void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /*  =========================================================================*/
 /*  func    MP3DEC_HandleUSNError
-/*
-/*  desc    Handles error messages returned by the dsp
-/*
-/*@return n/a
-/*
-/*  =========================================================================*/
+*
+*  desc    Handles error messages returned by the dsp
+*
+*@return n/a
+*
+*  =========================================================================*/
 void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
 #endif
