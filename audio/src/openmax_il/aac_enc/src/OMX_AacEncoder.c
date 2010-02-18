@@ -1392,30 +1392,21 @@ EXIT:
 static OMX_ERRORTYPE GetState (OMX_HANDLETYPE pComponent, OMX_STATETYPE* pState)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(pComponent,1,1);
+    AACENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
+    OMX_CONF_CHECK_CMD(pComponent, pState, 1);
+
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
-    AACENC_COMPONENT_PRIVATE *pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
-    OMX_PRINT1 (pComponentPrivate->dbg, "%d :: AACENC: Entering GetState\n", __LINE__);
-    if (!pState) 
-    {
-        eError = OMX_ErrorBadParameter;
-        OMX_ERROR4 (pComponentPrivate->dbg, "%d :: Error: About to return OMX_ErrorBadParameter \n",__LINE__);
-        goto EXIT;
-    }
+    pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    OMX_CONF_CHECK_CMD(pComponentPrivate,1,1);
 
-    if (pHandle && pComponentPrivate)
-    {
-        *pState =  pComponentPrivate->curState;
-    } 
-    else 
-    {
-        *pState = OMX_StateLoaded;
-    }
+    *pState =  pComponentPrivate->curState;
     eError = OMX_ErrorNone;
 
 EXIT:
-    OMX_PRINT1 (pComponentPrivate->dbg, "%d :: AACENC: Exiting GetState\n", __LINE__);
+    if (pComponentPrivate) {
+        OMX_PRINT1 (pComponentPrivate->dbg, "%d :: AACENC: Exiting GetState\n", __LINE__);
+    }
     return eError;
 }
 
@@ -1924,8 +1915,8 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                                 OMX_IN  OMX_BUFFERHEADERTYPE* pBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_CONF_CHECK_CMD(hComponent,1,pBuffer);
     AACENC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
+    OMX_CONF_CHECK_CMD(hComponent,1,pBuffer);
     OMX_BUFFERHEADERTYPE* buffHdr = NULL;
     int i =0;
     int bufferIndex = -1;
@@ -1934,9 +1925,13 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef = NULL;
 
     pComponentPrivate = (AACENC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+    OMX_CONF_CHECK_CMD(pComponentPrivate,1,1);
+
     OMX_PRINT1 (pComponentPrivate->dbg, "%d :: AACENC: FreeBuffer\n", __LINE__);
 
     pHandle = (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
+    OMX_CONF_CHECK_CMD(pHandle,1,1);
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: pComponentPrivate = %p\n", __LINE__,pComponentPrivate);
 
     if (nPortIndex != INPUT_PORT && nPortIndex != OUTPUT_PORT)
@@ -2026,7 +2021,9 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting FreeBuffer\n", __LINE__);
+    if (pComponentPrivate) {
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: AACENC: Exiting FreeBuffer\n", __LINE__);
+    }
     return eError;
 }
 
