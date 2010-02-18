@@ -112,6 +112,8 @@
 //JPEG Encoder Specific DSP Err Codes
 #define IUALG_ERR_INSUFF_BUFFER 0x8401
 
+#define __JPEG_OMX_PPLIB_ENABLED__
+
 /*Linked List */
 
 typedef struct Node {
@@ -231,7 +233,6 @@ typedef struct IDMJPGE_TIGEM_Comment {
   OMX_U16 commentLen;
 } IDMJPGE_TIGEM_Comment;
 
-
 typedef struct IIMGENC_DynamicParams {
     OMX_U32 nSize;             /* nSize of this structure */
     OMX_U32 nNumAU;            /* Number of Access unit to encode,
@@ -275,15 +276,11 @@ typedef struct IDMJPGE_TIGEM_DynamicParams {
 			OMX_U8*);
 } IDMJPGE_TIGEM_DynamicParams;
 
-
-#define __JPEG_OMX_PPLIB_ENABLED__
-
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
 #define OMX_JPEGENC_NUM_DLLS (5)
 #else
 #define OMX_JPEGENC_NUM_DLLS (4)
 #endif
-
 
 #ifdef UNDER_CE
 #define JPEG_ENC_NODE_DLL "/windows/jpegenc_sn.dll64P"
@@ -473,6 +470,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     OMX_STATETYPE   nCurState;
     OMX_STATETYPE   nToState;
     OMX_U8          ExeToIdleFlag;  /* StateCheck */
+    JPE_CONVERSION_FLAG_TYPE         nConversionFlag;
 
     OMX_U32 nInPortIn;
     OMX_U32 nInPortOut;
@@ -483,7 +481,6 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     OMX_BOOL bSetLumaQuantizationTable;
     OMX_BOOL bSetChromaQuantizationTable;
     OMX_BOOL bSetHuffmanTable;
-	OMX_BOOL bConvert420pTo422i;
 	OMX_BOOL bPPLibEnable;
     OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pCustomLumaQuantTable;
     OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE *pCustomChromaQuantTable;
@@ -510,6 +507,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     JPEGE_INPUT_PARAMS InParams;
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
     OMX_U32 *pOutParams;
+    JPGE_PPLIB_DynamicParams* pPPLibDynParams;
 #endif
 #ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE rmproxyCallback;
@@ -625,7 +623,6 @@ typedef enum ThrCmdType
 } ThrCmdType;
 
 typedef enum OMX_JPEGE_INDEXTYPE  {
-
     OMX_IndexCustomCommentFlag = 0xFF000001,
     OMX_IndexCustomCommentString = 0xFF000002,
     OMX_IndexCustomInputFrameWidth,
@@ -638,8 +635,9 @@ typedef enum OMX_JPEGE_INDEXTYPE  {
     OMX_IndexCustomDRI,
     OMX_IndexCustomHuffmanTable,
     OMX_IndexCustomDebug,
-	OMX_IndexCustomColorFormatConvertion_420pTo422i,
-	OMX_IndexCustomPPLibEnable
+	OMX_IndexCustomConversionFlag,
+	OMX_IndexCustomPPLibEnable,
+	OMX_IndexCustomPPLibDynParams
 }OMX_INDEXIMAGETYPE;
 
 typedef struct IUALG_Buf {

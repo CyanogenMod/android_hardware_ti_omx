@@ -678,24 +678,33 @@ this option supportsonly up to 3 mega pixels
     if ( pPortDefIn->format.image.eColorFormat == OMX_COLOR_Format32bitARGB8888){
     	ptCreateString[17] = 1; //Convert flag
     }
-	
 	/*Do an internal conversion from YUV420P to YUV422I and encode so that
 	this JPEG would be viewable using the TI JPEG decoder*/
-	else if (pComponentPrivate->bConvert420pTo422i ){
-		if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar ){
-			ptCreateString[17] = 10;
-			if(pComponentPrivate->bPPLibEnable)
-			{
-				/* memory requirement for having both conversion and pplib is much larger */
-				lcml_dsp->ProfileID +=3;
-			}
-		}
+	else if (pComponentPrivate->nConversionFlag == JPE_CONV_YUV420P_YUV422ILE ){
+		if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYUV420PackedPlanar )
+			ptCreateString[17] = JPE_CONV_YUV420P_YUV422ILE;
 		else{
 			OMX_PRMGR4(pComponentPrivate->dbg, "Error invalid ColorFormat for YUVConvertion\n");
 			eError=-1;
 			goto EXIT;
 		}
 	}
+    else if (pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_90ROT_YUV422I ||
+            pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_270ROT_YUV422I){
+        if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr ||
+                pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatCbYCrY)
+            ptCreateString[17] = pComponentPrivate->nConversionFlag;
+        else{
+            OMX_PRMGR4(pComponentPrivate->dbg, "Error invalid ColorFormat for rotation with conversion algo\n");
+            eError=-1;
+            goto EXIT;
+        }
+    }
+    if(pComponentPrivate->bPPLibEnable && ptCreateString[17])
+    {
+        /* memory requirement for having both conversion and pplib is much larger */
+        lcml_dsp->ProfileID +=3;
+    }
 
     ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
     ptCreateString[19] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */	
@@ -709,7 +718,10 @@ this option supportsonly up to 3 mega pixels
     ptCreateStringPPLIB[11] = 0x00000100;
 
     //MaxInWidth
-    ptCreateStringPPLIB[12] = pPortDefIn->format.image.nFrameWidth;
+    if(pComponentPrivate->pPPLibDynParams->ulPPLIBInWidth)
+        ptCreateStringPPLIB[12] = pComponentPrivate->pPPLibDynParams->ulPPLIBInWidth;
+    else
+        ptCreateStringPPLIB[12] = pPortDefIn->format.image.nFrameWidth;
 
     //MaxOutWidth
     ptCreateStringPPLIB[13] = pPortDefIn->format.image.nFrameWidth;
@@ -1114,30 +1126,12 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut = NULL;
+    JPGE_PPLIB_DynamicParams* pPPLibDynParams = NULL;
 
     OMX_CHECK_PARAM(pComponentPrivate);
     pPortDefIn = pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->pPortDef;
     pPortDefOut = pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortDef;
-
-    // PPLIB hardcoded params
-    OMX_U32 ulOutPitch = 0;
-    OMX_U32 ulPPLIBVideoGain=64;
-    OMX_U32 ulPPLIBEnableCropping=0;
-    OMX_U32 ulPPLIBXstart=0;
-    OMX_U32 ulPPLIBYstart=0;
-    OMX_U32 ulPPLIBXsize=0;
-    OMX_U32 ulPPLIBYsize=0;
-    OMX_U32 ulPPLIBEnableZoom=0;
-    OMX_U32 ulPPLIBZoomFactor=0;
-    OMX_U32 ulPPLIBZoomLimit=0;
-    OMX_U32 ulPPLIBZoomSpeed=0;
-    OMX_U32 ulPPLIBLightChroma=0;
-    OMX_U32 ulPPLIBLockedRatio=1;
-    OMX_U32 ulPPLIBMirroring=0;
-    OMX_U32 ulPPLIBRGBrotation=0;
-    OMX_U32 ulPPLIBYUVRotation=0;
-    OMX_U32 ulPPLIBIORange=1;
-    OMX_U32 ulPPLIBDithering=0;
+    pPPLibDynParams = pComponentPrivate->pPPLibDynParams;
 
     OMX_U32 cOffset = 0;
 
@@ -1147,12 +1141,17 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     ptInputParam[0] = JPEGENC_PPLIB_DYNPARM_SIZE; // 252 bytes
 
     // LgUns ulInWidth; // picture buffer width
-
-    ptInputParam[1] = pPortDefIn->format.image.nFrameWidth;
+    if(pPPLibDynParams->ulPPLIBInWidth)
+        ptInputParam[1] = pPPLibDynParams->ulPPLIBInWidth;
+    else
+        ptInputParam[1] = pPortDefIn->format.image.nFrameWidth;
 
     // LgUns ulInHeight; // picture buffer height
 
-    ptInputParam[2] = pPortDefIn->format.image.nFrameHeight;
+    if(pPPLibDynParams->ulPPLIBInHeight)
+        ptInputParam[2] = pPPLibDynParams->ulPPLIBInHeight;
+    else
+        ptInputParam[2] = pPortDefIn->format.image.nFrameHeight;
 
     // LgUns FrameEnabled[0] (enable instance 1 of VGPOP)
 
@@ -1204,12 +1203,12 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
 
     ptInputParam[14] = 0;
 
-    if (ulOutPitch > 0) {
-        if (ulPPLIBYUVRotation == 0 || ulPPLIBYUVRotation == 180) {
-            cOffset = (pPortDefIn->format.image.nFrameHeight * ulOutPitch);
+    if (pPPLibDynParams->ulOutPitch > 0) {
+        if (pPPLibDynParams->ulPPLIBYUVRotation == 0 || pPPLibDynParams->ulPPLIBYUVRotation == 180) {
+            cOffset = (pPortDefIn->format.image.nFrameHeight * pPPLibDynParams->ulOutPitch);
         }
         else {
-            cOffset = (pPortDefIn->format.image.nFrameWidth * ulOutPitch);
+            cOffset = (pPortDefIn->format.image.nFrameWidth * pPPLibDynParams->ulOutPitch);
         }
     }
     else {
@@ -1241,34 +1240,34 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     ptInputParam[22] = 0;
 
     //Contrast (same as Video Gain)
-    ptInputParam[23] = ulPPLIBVideoGain;
+    ptInputParam[23] = pPPLibDynParams->ulPPLIBVideoGain;
 
     //Contrast (same as Video Gain)
-    ptInputParam[24] = ulPPLIBVideoGain;
+    ptInputParam[24] = pPPLibDynParams->ulPPLIBVideoGain;
 
-    if (ulPPLIBEnableCropping == 1) {
+    if (pPPLibDynParams->ulPPLIBEnableCropping == 1) {
         // Cropping
         // LgUns ulInXstart[0]; // Hin active start
-        ptInputParam[25] = ulPPLIBXstart;
+        ptInputParam[25] = pPPLibDynParams->ulPPLIBXstart;
 
         // Cropping
         // LgUns ulInXstart[1]; // Hin active start
         ptInputParam[26] = 0;
 
         //LgUns ulInYstart[0]; // Vin active start
-        ptInputParam[27] = ulPPLIBYstart;
+        ptInputParam[27] = pPPLibDynParams->ulPPLIBYstart;
 
         //LgUns ulInYstart[1]; // Vin active start
         ptInputParam[28] = 0;
 
         // LgUns ulInXsize[0]; // Hin active width
-        ptInputParam[29] = ulPPLIBXsize;
+        ptInputParam[29] = pPPLibDynParams->ulPPLIBXsize;
 
         // LgUns ulInXsize[1]; // Hin active width
         ptInputParam[30] = 0;
 
         // LgUns ulInYsize; // Vin active height
-        ptInputParam[31] = ulPPLIBYsize;
+        ptInputParam[31] = pPPLibDynParams->ulPPLIBYsize;
 
         // LgUns ulInYsize; // Vin active height
         ptInputParam[32] = 0;
@@ -1301,23 +1300,23 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
         ptInputParam[32] = 0;
     }
 
-    if (ulPPLIBEnableZoom) {
+    if (pPPLibDynParams->ulPPLIBEnableZoom) {
         //Zoom
         //LgUns ulZoomFactor; // zooming ratio (/1024)
-        ptInputParam[33] = ulPPLIBZoomFactor;
+        ptInputParam[33] = pPPLibDynParams->ulPPLIBZoomFactor;
 
         //Zoom
         //LgUns ulZoomFactor; // zooming ratio (/1024)
         ptInputParam[34] = 1024;
 
         // LgUns ulZoomLimit; // zooming ratio limit (/1024)
-        ptInputParam[35] = ulPPLIBZoomLimit;
+        ptInputParam[35] = pPPLibDynParams->ulPPLIBZoomLimit;
 
         // LgUns ulZoomLimit; // zooming ratio limit (/1024)
         ptInputParam[36] = 1024;
 
         // LgInt slZoomSpeed; // speed of ratio change
-        ptInputParam[37] = ulPPLIBZoomSpeed;
+        ptInputParam[37] = pPPLibDynParams->ulPPLIBZoomSpeed;
 
         // LgInt slZoomSpeed; // speed of ratio change
         ptInputParam[38] = 0;
@@ -1345,38 +1344,38 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     }
 
     // LgUns bLightChroma[0]; // Light chrominance process
-    ptInputParam[39] = ulPPLIBLightChroma;
+    ptInputParam[39] = pPPLibDynParams->ulPPLIBLightChroma;
 
     // LgUns bLightChroma[1]; // Light chrominance process
-    ptInputParam[40] = ulPPLIBLightChroma;
+    ptInputParam[40] = pPPLibDynParams->ulPPLIBLightChroma;
 
     //Aspect Ration Locked/unlocked
     // LgUns bLockedRatio; // keep H/V ratio
-    ptInputParam[41] = ulPPLIBLockedRatio;
+    ptInputParam[41] = pPPLibDynParams->ulPPLIBLockedRatio;
 
     //Aspect Ration Locked/unlocked
     // LgUns bLockedRatio; // keep H/V ratio
-    ptInputParam[42] = ulPPLIBLockedRatio;
+    ptInputParam[42] = pPPLibDynParams->ulPPLIBLockedRatio;
 
     //Mirroring and Rotation
     // LgUns bMirror; // to mirror the picture
-    ptInputParam[43] = ulPPLIBMirroring;
+    ptInputParam[43] = pPPLibDynParams->ulPPLIBMirroring;
 
     //Mirroring and Rotation
     // LgUns bMirror; // to mirror the picture
-    ptInputParam[44] = ulPPLIBMirroring;
+    ptInputParam[44] = pPPLibDynParams->ulPPLIBMirroring;
 
     // LgUns eRGBrotation; // 0, 90, 180, 270 deg.
-    ptInputParam[45] = ulPPLIBRGBrotation;
+    ptInputParam[45] = pPPLibDynParams->ulPPLIBRGBrotation;
 
     // LgUns eRGBrotation; // 0, 90, 180, 270 deg.
-    ptInputParam[46] = ulPPLIBRGBrotation;
+    ptInputParam[46] = pPPLibDynParams->ulPPLIBRGBrotation;
 
     // LgUns eYUVrotation; // 0, 90, 180, 270 deg.
-    ptInputParam[47] = ulPPLIBYUVRotation;
+    ptInputParam[47] = pPPLibDynParams->ulPPLIBYUVRotation;
 
     // LgUns eYUVrotation; // 0, 90, 180, 270 deg.
-    ptInputParam[48] = ulPPLIBYUVRotation;
+    ptInputParam[48] = pPPLibDynParams->ulPPLIBYUVRotation;
 
     // IO Range and Dithering
     // LgUns eIORange; // Input/Output video range
@@ -1384,7 +1383,7 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     // 1 = VGPOP_IN_00_255_OUT_00_255 (full range to full range),
     // 2 = VGPOP_IN_00_255_OUT_16_235 (full range to limi range),
     // 3 = VGPOP_IN_16_235_OUT_00_255 (limi range to full range)
-    ptInputParam[49] = ulPPLIBIORange;
+    ptInputParam[49] = pPPLibDynParams->ulPPLIBIORange;
 
     // IO Range and Dithering
     // LgUns eIORange; // Input/Output video range
@@ -1392,19 +1391,19 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     // 1 = VGPOP_IN_00_255_OUT_00_255 (full range to full range),
     // 2 = VGPOP_IN_00_255_OUT_16_235 (full range to limi range),
     // 3 = VGPOP_IN_16_235_OUT_00_255 (limi range to full range)
-    ptInputParam[50] = ulPPLIBIORange;
+    ptInputParam[50] = pPPLibDynParams->ulPPLIBIORange;
 
     // LgUns bDithering; // ON Enables the dithering
-    ptInputParam[51] = ulPPLIBDithering;
+    ptInputParam[51] = pPPLibDynParams->ulPPLIBDithering;
 
     // LgUns bDithering; // ON Enables the dithering
-    ptInputParam[52] = ulPPLIBDithering;
+    ptInputParam[52] = pPPLibDynParams->ulPPLIBDithering;
 
     // LgUns ulFrameOutputPitch; // ON Enables the dithering
-    ptInputParam[53] = ulOutPitch;
+    ptInputParam[53] = pPPLibDynParams->ulOutPitch;
 
     // LgUns bDithering; // ON Enables the dithering
-    ptInputParam[54] = ulOutPitch;
+    ptInputParam[54] = pPPLibDynParams->ulOutPitch;
 
     // LgUns ulAlphaRGB;
     ptInputParam[55] = 0;

@@ -543,7 +543,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->bSetHuffmanTable = OMX_FALSE;
     pComponentPrivate->bSetLumaQuantizationTable = OMX_FALSE;
     pComponentPrivate->bSetChromaQuantizationTable = OMX_FALSE;    
-    pComponentPrivate->bConvert420pTo422i = OMX_FALSE;
+    pComponentPrivate->nConversionFlag = JPE_CONV_NONE;
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
     pComponentPrivate->bPPLibEnable = OMX_TRUE;
 #else
@@ -556,6 +556,32 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
     pComponentPrivate->pOutParams = NULL;
+
+    OMX_MALLOC(pComponentPrivate->pPPLibDynParams, sizeof(JPGE_PPLIB_DynamicParams)+256);
+    if (!pComponentPrivate->pPPLibDynParams) {
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
+    pComponentPrivate->pPPLibDynParams->ulOutPitch = 0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBVideoGain=64;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBEnableCropping=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBXstart=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBYstart=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBXsize=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBYsize=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBEnableZoom=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBZoomFactor=1024;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBZoomLimit=1024;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBZoomSpeed=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBLightChroma=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBLockedRatio=1;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBMirroring=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBRGBrotation=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBYUVRotation=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBIORange=1;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBDithering=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBInHeight=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBInWidth=0;
 #endif
 
 
@@ -1334,7 +1360,7 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
             OMX_MEMCPY_CHECK(pComponentPrivate->pCustomChromaQuantTable);
             memcpy(pComponentPrivate->pCustomChromaQuantTable, pQuantTable, sizeof(OMX_IMAGE_PARAM_QUANTIZATIONTABLETYPE));
             pComponentPrivate->bSetChromaQuantizationTable = OMX_TRUE;   
-            eError = SetJpegEncInParams(pComponentPrivate);            
+            eError = SetJpegEncInParams(pComponentPrivate);
         }
         else { /* wrong eQuantizationTable, return error */
            eError = OMX_ErrorBadParameter;
@@ -1358,7 +1384,6 @@ static OMX_ERRORTYPE JPEGENC_SetParameter (OMX_HANDLETYPE hComponent,
         eError = OMX_ErrorUnsupportedIndex;
         break;
     }
-    
     EXIT:
     return eError;
 }
@@ -1391,8 +1416,18 @@ static OMX_ERRORTYPE JPEGENC_GetConfig (OMX_HANDLETYPE hComp,
     OMX_PRINT1(pComponentPrivate->dbg, "Inside JPEGENC_GetConfig function\n");
     switch ( nConfigIndex ) {
     case OMX_IndexCustomDebug:
-	OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
+        OMX_DBG_GETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
 	break;
+    case OMX_IndexCustomPPLibDynParams:
+        {
+#ifdef __JPEG_OMX_PPLIB_ENABLED__
+            JPGE_PPLIB_DynamicParams *ppPPLibDynParams = (JPGE_PPLIB_DynamicParams *)ComponentConfigStructure;
+            OMX_PARAM_SIZE_CHECK(ppPPLibDynParams, sizeof(JPGE_PPLIB_DynamicParams));
+            OMX_MEMCPY_CHECK(pComponentPrivate->pPPLibDynParams);
+            memcpy(ppPPLibDynParams, pComponentPrivate->pPPLibDynParams, sizeof(JPGE_PPLIB_DynamicParams));
+#endif
+        break;
+        }
     default:
         eError = OMX_ErrorUnsupportedIndex;
         break;
@@ -1609,9 +1644,9 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
         OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
 	break;
 
-	case OMX_IndexCustomColorFormatConvertion_420pTo422i :
+	case OMX_IndexCustomConversionFlag :
 	{
-		pComponentPrivate->bConvert420pTo422i = *((OMX_BOOL*)ComponentConfigStructure);
+		pComponentPrivate->nConversionFlag = *((JPE_CONVERSION_FLAG_TYPE*)ComponentConfigStructure);
 		break;
 	}
 
@@ -1622,6 +1657,15 @@ static OMX_ERRORTYPE JPEGENC_SetConfig (OMX_HANDLETYPE hComp,
 #endif
 		break;
 	}
+   case OMX_IndexCustomPPLibDynParams:
+    {
+#ifdef __JPEG_OMX_PPLIB_ENABLED__
+        JPGE_PPLIB_DynamicParams *ppPPLibDynParams = (JPGE_PPLIB_DynamicParams *)ComponentConfigStructure;
+        OMX_MEMCPY_CHECK(pComponentPrivate->pPPLibDynParams);
+        memcpy(pComponentPrivate->pPPLibDynParams, ppPPLibDynParams, sizeof(JPGE_PPLIB_DynamicParams));
+#endif
+        break;
+    }
 
     default:
         eError = OMX_ErrorUnsupportedIndex;
@@ -2444,8 +2488,9 @@ OMX_ERRORTYPE JPEGENC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN
     {"OMX.TI.JPEG.encoder.Config.QFactor", OMX_IndexCustomQFactor},
     {"OMX.TI.JPEG.encoder.Config.DRI", OMX_IndexCustomDRI},
     {"OMX.TI.JPEG.encoder.Config.Debug", OMX_IndexCustomDebug},
-    {"OMX.TI.JPEG.encoder.Config.ColorFormatConvertion_420pTo422i", OMX_IndexCustomColorFormatConvertion_420pTo422i},
+    {"OMX.TI.JPEG.encoder.Config.ConversionFlag", OMX_IndexCustomConversionFlag},
     {"OMX.TI.JPEG.encoder.Config.PPLibEnable", OMX_IndexCustomPPLibEnable},
+    {"OMX.TI.JPEG.encoder.Config.PPLibDynParams", OMX_IndexCustomPPLibDynParams},
     {"",0x0}
     };
 

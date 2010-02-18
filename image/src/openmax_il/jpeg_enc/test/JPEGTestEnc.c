@@ -1080,6 +1080,7 @@ int main(int argc, char** argv)
     OMX_CONFIG_RECTTYPE sCrop;
 
     OMX_BOOL bConvertion_420pTo422i = OMX_FALSE;
+    JPE_CONVERSION_FLAG_TYPE nConversionFlag = JPE_CONV_NONE;
 
 #ifdef UNDER_CE
     TCHAR* szInFile = NULL;
@@ -1233,6 +1234,7 @@ do
     
         case 'z':
         bConvertion_420pTo422i = OMX_TRUE;
+        nConversionFlag = JPE_CONV_YUV420P_YUV422ILE;
         PRINT("\n ********* bConvertion_420pTo422i is set to TRUE \n");
         break;
 
@@ -1568,7 +1570,7 @@ do
 	   goto EXIT;
 	}
     
-	error = OMX_SetConfig(pHandle, OMX_IndexCustomColorFormatConvertion_420pTo422i, &bConvertion_420pTo422i);
+	error = OMX_SetConfig(pHandle, OMX_IndexCustomConversionFlag, &nConversionFlag);
 	if ( error != OMX_ErrorNone ) {
 	    printf("%d::APP_Error at function call: %x\n", __LINE__, error);
 	   error = OMX_ErrorBadParameter;
