@@ -1798,7 +1798,7 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     struct timespec abs_time = {0,0};
     int nPendingStateChangeRequests = 0;
-    int ret = 0;
+    int errorFromWait = 0;
     /* Set to sufficiently high value */
     int mutex_timeout = 3;
     OMX_CONF_CHECK_CMD(hComponent, pState, OMX_TRUE);
@@ -1826,8 +1826,8 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
            clock_gettime(CLOCK_REALTIME, &abs_time);
            abs_time.tv_sec += mutex_timeout;
            abs_time.tv_nsec = 0;
-          ret = pthread_cond_timedwait(&(pComponentPrivate->StateChangeCondition), &(pComponentPrivate->mutexStateChangeRequest), &abs_time);
-           if (!ret) {
+           errorFromWait = pthread_cond_timedwait(&(pComponentPrivate->StateChangeCondition), &(pComponentPrivate->mutexStateChangeRequest), &abs_time);
+           if (!errorFromWait) {
               /* Component has completed state transitions*/
               *pState = ((VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->eState;
               if(pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest)) {
@@ -1835,7 +1835,7 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
               }
               eError = OMX_ErrorNone;
            }
-           else if(ret == ETIMEDOUT) {
+           else if(errorFromWait == ETIMEDOUT) {
               /* Unlock mutex in case of timeout */
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout;
@@ -1878,7 +1878,8 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     OMX_COMPONENTTYPE *pHandle = NULL;
     VIDDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
-    OMX_S32 ret = 0;
+    ssize_t bytesWritten = 0;
+    VIDDEC_BUFFER_OWNER oldBufferOwner;
 
     OMX_CONF_CHECK_CMD(pComponent, pBuffHead, OMX_TRUE);
 
@@ -1923,7 +1924,7 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
     pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
-    ret = pBufferPrivate->eBufferOwner;
+    oldBufferOwner = pBufferPrivate->eBufferOwner;
     pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_COMPONENT;
     eError = IncrementCount (&(pComponentPrivate->nCountInputBFromApp), &(pComponentPrivate->mutexInputBFromApp));
     if (eError != OMX_ErrorNone) {
@@ -1931,10 +1932,10 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "Writing pBuffer 0x%p OldeBufferOwner %ld nAllocLen %lu nFilledLen %lu eBufferOwner %d\n",
-        pBuffHead, ret,pBuffHead->nAllocLen,pBuffHead->nFilledLen,pBufferPrivate->eBufferOwner);
+        pBuffHead, oldBufferOwner,pBuffHead->nAllocLen,pBuffHead->nFilledLen,pBufferPrivate->eBufferOwner);
 
-    ret = write (pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_WRITE], &(pBuffHead), sizeof(pBuffHead));
-    if (ret == -1) {
+    bytesWritten = write (pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_WRITE], &(pBuffHead), sizeof(pBuffHead));
+    if (bytesWritten == -1) {
         /*like function returns error buffer still with Client IL*/
         pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
         OMX_PRCOMM4(pComponentPrivate->dbg, "Error in Writing to the Data pipe\n");
@@ -1972,7 +1973,8 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     OMX_COMPONENTTYPE *pHandle = NULL;
     VIDDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
-    int ret = 0;
+    ssize_t bytesWritten = 0;
+    VIDDEC_BUFFER_OWNER oldBufferOwner;
     OMX_CONF_CHECK_CMD(pComponent, pBuffHead, OMX_TRUE);
 
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
@@ -2018,7 +2020,7 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     }
 
     pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
-    ret = pBufferPrivate->eBufferOwner;
+    oldBufferOwner = pBufferPrivate->eBufferOwner;
     pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_COMPONENT;
     eError = IncrementCount (&(pComponentPrivate->nCountOutputBFromApp), &(pComponentPrivate->mutexOutputBFromApp));
     if (eError != OMX_ErrorNone) {
@@ -2027,9 +2029,9 @@ static OMX_ERRORTYPE VIDDEC_FillThisBuffer (OMX_HANDLETYPE pComponent,
     pBuffHead->nFilledLen = 0;
     pBuffHead->nFlags = 0;
     OMX_PRBUFFER1(pComponentPrivate->dbg, "Writing pBuffer 0x%p OldeBufferOwner %d eBufferOwner %d nFilledLen %lu\n",
-        pBuffHead, ret,pBufferPrivate->eBufferOwner,pBuffHead->nFilledLen);
-    ret = write (pComponentPrivate->free_outBuf_Q[1], &(pBuffHead), sizeof (pBuffHead));
-    if (ret == -1) {
+        pBuffHead, oldBufferOwner,pBufferPrivate->eBufferOwner,pBuffHead->nFilledLen);
+    bytesWritten = write (pComponentPrivate->free_outBuf_Q[1], &(pBuffHead), sizeof (pBuffHead));
+    if (bytesWritten == -1) {
         /*like function returns error buffer still with Client IL*/
         pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_CLIENT;
         OMX_PRCOMM4(pComponentPrivate->dbg, "Error in Writing to the Data pipe\n");
