@@ -1152,12 +1152,12 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
     DSP_STATUS status;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "%d :: ControlCodec application\n",__LINE__);
     if (hComponent == NULL )
     {
         eError= OMX_ErrorInsufficientResources;
         goto EXIT;
     }
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "%d :: ControlCodec application\n",__LINE__);
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
 
 #ifdef __PERF_INSTRUMENTATION__
