@@ -8082,6 +8082,19 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
    VIDDEC_fpo fpGetHandle;
    char* error;
 
+   if(pComponentPrivate->pModLCML != NULL){
+        eError = VIDDEC_UnloadCodec(pComponentPrivate);
+        if (eError != OMX_ErrorNone) {
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorMinor,
+                                               "VIDDEC_UnloadCodec");
+            goto EXIT;
+        }
+    }
+
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
     if ((!pComponentPrivate->pModLCML)&&
         ((error = dlerror()) != NULL)) {
@@ -8473,6 +8486,9 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     LCML_DSP_INTERFACE *pLcmlHandle = NULL;
     OMX_PRDSP1(pComponentPrivate->dbg, "+++ENTERING\n");
+    if(pComponentPrivate->pModLCML == NULL){
+        goto EXIT;
+    }
     if (!(pComponentPrivate->eState == OMX_StateLoaded) &&
         !(pComponentPrivate->eState == OMX_StateWaitForResources)) {
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
