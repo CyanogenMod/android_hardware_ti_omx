@@ -1838,6 +1838,11 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
      if(pLcmlHdr->pFrameParam==NULL ){
                    OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(NBAMRENC_FrameStruct)*nFrames ),OMX_U8);
+                   if (!pComponentPrivate->bFirstInputBufReceived) {
+                       /* Reset TimeStamp on first input buffer mapped */
+                       pComponentPrivate->TimeStamp = 0;
+                       pComponentPrivate->bFirstInputBufReceived = OMX_TRUE;
+                   }
                    eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                        nFrames*sizeof(NBAMRENC_FrameStruct),
                                        (void*)pLcmlHdr->pFrameParam,
@@ -2291,6 +2296,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             pHandle = pComponentPrivate_CC->pHandle;
             if ( args[2] == (void *)EMMCodecInputBuffer) {
                 if (args[0] == (void *)USN_ERR_NONE ) {
+                    pComponentPrivate_CC->bFirstInputBufReceived = OMX_FALSE;
                     OMX_PRCOMM1(pComponentPrivate_CC->dbg, "Flushing input port %d\n",__LINE__);
 
                     for (i=0; i < pComponentPrivate_CC->nNumInputBufPending; i++) {
