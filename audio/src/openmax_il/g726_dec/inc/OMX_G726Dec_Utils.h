@@ -591,11 +591,17 @@ typedef struct G726DEC_COMPONENT_PRIVATE
     /* number of FillThisBuffer calls pending */
     OMX_U32 nOutStandingFillDones;
 
-    /* coutns the number of unhandled FillThisBuffer() calls */
+    /* counts the number of unhandled FillThisBuffer() calls */
     OMX_U8 nUnhandledFillThisBuffers;
 
-    /* coutns the number of unhandled EmptyThisBuffer() calls */
+    /* counts the number of handled FillThisBuffer() calls */
+    OMX_U8 nHandledFillThisBuffers;
+
+    /* counts the number of unhandled EmptyThisBuffer() calls */
     OMX_U8 nUnhandledEmptyThisBuffers;
+
+    /* counts the number of handled EmptyThisBuffer() calls */
+    OMX_U8 nHandledEmptyThisBuffers;
 
     /* flag if the flush command is pending in Output Port */
     OMX_BOOL bFlushOutputPortCommandPending;
