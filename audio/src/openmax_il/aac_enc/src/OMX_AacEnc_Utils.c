@@ -1378,7 +1378,6 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
         if(!pComponentPrivate->pMarkBuf) 
         {
             OMX_PRDSP1(pComponentPrivate->dbg, "AACENC: command OMX_CommandMarkBuffer received %d\n",__LINE__);
-            /* TODO Need to handle multiple marks */
             pComponentPrivate->pMarkBuf = (OMX_MARKTYPE *)(commandData);
         }
     }
@@ -1598,68 +1597,6 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
     else if (command == OMX_CommandFlush) 
     {
 
-#if 0
-        /*-------------- MANUAL FLUSH ----------------------------*/
-
-        if(commandData == 0x0 || commandData == -1) 
-        {
-            if(pComponentPrivate->nUnhandledEmptyThisBuffers ==0) { 
-
-                 OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: UTIL: Flushing input port \n",__LINE__);
-                 pComponentPrivate->nOutStandingEmptyDones = 0;                              
-                 for (i=0; i < MAX_NUM_OF_BUFS; i++) 
-                 {
-                    pComponentPrivate->pInputBufHdrPending[i] = NULL;
-                 }
-                 pComponentPrivate->nNumInputBufPending=0;                     
-                 for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) 
-                 {
-
-                    pComponentPrivate->cbInfo.EmptyBufferDone (
-                                   pComponentPrivate->pHandle,
-                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                   pComponentPrivate->pInputBufferList->pBufHdr[i]
-                                   );
-                 }
-                 pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                          pHandle->pApplicationPrivate,
-                                                          OMX_EventCmdComplete,
-                                                          OMX_CommandFlush,INPUT_PORT, NULL);
-                }
-            else{
-                pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
-            }   
-        }
-
-        if(commandData == 0x1 || commandData == -1)
-        {
-            if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
-                 OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: UTIL: Flushing output port \n",__LINE__);
-                 pComponentPrivate->nOutStandingFillDones = 0;                               
-                 for (i=0; i < MAX_NUM_OF_BUFS; i++) 
-                 {
-                    pComponentPrivate->pOutputBufHdrPending[i] = NULL;
-                 }
-                 pComponentPrivate->nNumOutputBufPending=0;
-                 for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) 
-                 {
-
-                    pComponentPrivate->cbInfo.FillBufferDone (
-                                   pComponentPrivate->pHandle,
-                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                   pComponentPrivate->pOutputBufferList->pBufHdr[i]
-                                   );
-                 }
-                 pComponentPrivate->cbInfo.EventHandler(
-                                 pHandle, pHandle->pApplicationPrivate,
-                                 OMX_EventCmdComplete, OMX_CommandFlush,OUTPUT_PORT, NULL);
-            }
-            else{
-                pComponentPrivate->bFlushOutputPortCommandPending = OMX_TRUE;
-            }
-        }
-#else
-
         OMX_U32 aParam[3] = {0};
         if (pComponentPrivate->nNumInputBufPending)
         {
@@ -1759,7 +1696,6 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                                                     OMX_EventCmdComplete,
                                                     OMX_CommandFlush,OUTPUT_PORT, NULL);
         }
-#endif
 
     }
 
@@ -3135,7 +3071,6 @@ OMX_ERRORTYPE AACENCWriteConfigHeader(AACENC_COMPONENT_PRIVATE *pComponentPrivat
     tempData = pComponentPrivate->aacParams[OUTPUT_PORT]->nChannels << (16-nPosition);
     nBuf |= tempData;
 
-    //@TODO add the rest of the AudioSpecificConfigData
 
 	nBuf2 =	(nBuf>> 8) | (nBuf << 8); /* Changing Endianess */
 

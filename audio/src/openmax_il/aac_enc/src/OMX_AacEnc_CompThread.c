@@ -81,6 +81,7 @@ void* AACENC_ComponentThread (void* pThreadData)
 
     /* Recover the pointer to my component specific data */
     AACENC_COMPONENT_PRIVATE* pComponentPrivate = (AACENC_COMPONENT_PRIVATE*)pThreadData;
+    OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
 
 
@@ -230,11 +231,13 @@ void* AACENC_ComponentThread (void* pThreadData)
     }
 
 EXIT:
+    if (pComponentPrivate) {
 
 #ifdef __PERF_INSTRUMENTATION__
-    PERF_Done(pComponentPrivate->pPERFcomp);
+        PERF_Done(pComponentPrivate->pPERFcomp);
 #endif
-    OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting ComponentThread\n", __LINE__);
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting ComponentThread\n", __LINE__);
+    }
     return (void*)eError;
 }
 
