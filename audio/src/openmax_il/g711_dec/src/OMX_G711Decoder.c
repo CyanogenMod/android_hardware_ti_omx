@@ -42,11 +42,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -54,7 +49,6 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -325,7 +319,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
     
     /* Removing sleep() calls. Initialization.*/
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -337,16 +330,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-    
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#endif
     /* Removing sleep() calls. Initialization.*/    
     G711D_OMX_MALLOC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     G711D_OMX_MALLOC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
@@ -448,7 +431,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 #endif
  EXIT:
-    if(eError == OMX_ErrorInsufficientResources)
+    if(eError != OMX_ErrorNone)
     {
         OMX_G711DECMEMFREE_STRUCT(g711_ip);
         OMX_G711DECMEMFREE_STRUCT(g711_op);
@@ -1448,11 +1431,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     G711DEC_DPRINT("FillThisBuffer Line %d\n",__LINE__);
     
     /*Filling the Output buffer with zero */
-#ifndef UNDER_CE
     memset (pBuffer->pBuffer,0,OUTPUT_G711DEC_BUFFER_SIZE);
-#else
-    memset (pBuffer->pBuffer,0,pComponentPrivate->pPortDef[G711DEC_OUTPUT_PORT]->nBufferSize);
-#endif
     G711DEC_DPRINT("FillThisBuffer Line %d\n",__LINE__);
     
     pComponentPrivate->app_nBuf--;
@@ -1606,22 +1585,14 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if(!pPortDef->bEnabled){
         G711DEC_DPRINT ("%d :: BLOCK!! AlloBuf_threshold\n", __LINE__);
         pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, 
                           &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     }
     
     G711D_OMX_MALLOC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     G711D_OMX_MALLOC_SIZE(pBufferHeader->pBuffer, (nSizeBytes + EXTRA_BUFFBYTES), OMX_U8 );
-
-#ifdef UNDER_CE
-    memset(pBufferHeader->pBuffer, 0, (nSizeBytes + EXTRA_BUFFBYTES));
-#endif
 
     pBufferHeader->pBuffer += CACHE_ALIGNMENT;
 
@@ -1663,13 +1634,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE                  
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif                   
     }
     
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -1828,13 +1795,9 @@ static OMX_ERRORTYPE FreeBuffer(
         pComponentPrivate->InIdle_goingtoloaded)
     {
         pComponentPrivate->InIdle_goingtoloaded = 0;                  
-#ifndef UNDER_CE           
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif           
     }
     /* Removing sleep() calls.  There are no allocated buffers. */    
         
@@ -1921,13 +1884,9 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE    
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif               
     }
     
     pBufferHeader->pAppPrivate              =   pAppPrivate;

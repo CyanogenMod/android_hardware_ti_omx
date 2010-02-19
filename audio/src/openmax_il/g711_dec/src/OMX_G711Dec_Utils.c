@@ -2378,8 +2378,8 @@ OMX_HANDLETYPE G711DECGetLCMLHandle()
     if (!handle) {
         if ((error = dlerror()) != NULL) {
             fputs(error, stderr);
-            return pHandle;
         }
+        return pHandle;
     }
 
     fpGetHandle = dlsym (handle, "GetHandle");
@@ -2388,13 +2388,17 @@ OMX_HANDLETYPE G711DECGetLCMLHandle()
         dlclose(handle);
         return pHandle;
     }
-    eError = (*fpGetHandle)(&pHandle);
-    if(eError != OMX_ErrorNone) {
-        eError = OMX_ErrorUndefined;
-        G711DEC_DPRINT("eError != OMX_ErrorNone...\n");
-        dlclose(handle);
-        pHandle = NULL;
-        return pHandle;
+    if (NULL != fpGetHandle) {
+        eError = (*fpGetHandle)(&pHandle);
+
+        if(eError != OMX_ErrorNone) {
+            eError = OMX_ErrorUndefined;
+            G711DEC_DPRINT("eError != OMX_ErrorNone...\n");
+            dlclose(handle);
+            pHandle = NULL;
+            return pHandle;
+        }
+
     }
 
     pComponentPrivate_CC->bLcmlHandleOpened = 1;
