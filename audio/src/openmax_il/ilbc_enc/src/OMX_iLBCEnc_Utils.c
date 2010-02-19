@@ -167,7 +167,6 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     ILBCENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_U16 i = 0;
     OMX_U32 size_lcml = 0;
-    OMX_U8 *pBufferParamTemp = NULL;
 
     ILBCENC_DPRINT("%d Entering ILBCENC_FillLCMLInitParams\n",__LINE__);
 
@@ -297,9 +296,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
 
-        ILBCENC_OMX_MALLOC_SIZE(pBufferParamTemp, sizeof(ILBCENC_ParamStruct) + 256,OMX_U8);
-
-        pTemp_lcml->pBufferParam =  (ILBCENC_ParamStruct*)(pBufferParamTemp + 128);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct) ,ILBCENC_ParamStruct);
 
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
@@ -353,6 +350,8 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
+    if(eError != OMX_ErrorNone)
+        ILBCENC_CleanupInitParams(pComponent);
     ILBCENC_DPRINT("%d Exiting ILBCENC_FillLCMLInitParams\n",__LINE__);
     ILBCENC_DPRINT("%d Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1458,7 +1457,6 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U8* pExtraData = NULL;
     OMX_U8 nFrames=0,i = 0;
     LCML_DSP_INTERFACE * phandle = NULL;
-    OMX_U8* pBufParmsTemp = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
     ILBCENC_BUFDATA* OutputFrames = NULL;
     ILBCENC_DPRINT ("%d Entering ILBCENC_HandleDataBufFromApp Function\n",__LINE__);
@@ -1626,10 +1624,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
             if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
-                pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam; /*This means that more memory need to be used*/
-                pBufParmsTemp -=128;
-                ILBCENC_OMX_FREE(pBufParmsTemp);
-                pLcmlHdr->pFrameParam = NULL;
+                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam,ILBCENC_FrameStruct);
                 OMX_DmmUnMap(phandle->dspCodec->hProc, /*Unmap DSP memory used*/
                              (void*)pLcmlHdr->pBufferParam->pParamElem,
                              pLcmlHdr->pDmmBuf->pReserved);
@@ -1637,8 +1632,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             }
 
             if(pLcmlHdr->pFrameParam==NULL ){
-                ILBCENC_OMX_MALLOC_SIZE(pBufParmsTemp, (sizeof(ILBCENC_FrameStruct)*nFrames) + 256,OMX_U8);
-                pLcmlHdr->pFrameParam =  (ILBCENC_FrameStruct*)(pBufParmsTemp + 128);
+                OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames),ILBCENC_FrameStruct)
                 eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                     nFrames*sizeof(ILBCENC_FrameStruct),
                                     (void*)pLcmlHdr->pFrameParam,
@@ -1659,7 +1653,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 pComponentPrivate->InBuf_Eos_alreadysent = 1;
                 pBufHeader->nFlags = 0;
             }
-            pLcmlHdr->pBufferParam->usNbFrames = nFrames;                
+            pLcmlHdr->pBufferParam->usNbFrames = nFrames;
 
             /* Store time stamp information */
             pComponentPrivate->arrBufIndex[pComponentPrivate->IpBufindex] = pBufHeader->nTimeStamp;
@@ -1735,10 +1729,8 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
 
         if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && (pLcmlHdr->pFrameParam!=NULL) ){
-            pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam; /*This means that more memory need to be used*/
-            pBufParmsTemp -=128;
-            ILBCENC_OMX_FREE(pBufParmsTemp);
-            pLcmlHdr->pFrameParam = NULL;
+            OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam,ILBCENC_FrameStruct);
+
 #ifndef UNDER_CE
             OMX_DmmUnMap(phandle->dspCodec->hProc,
                          (void*)pLcmlHdr->pBufferParam->pParamElem,
@@ -1749,8 +1741,7 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         }
 
         if(pLcmlHdr->pFrameParam==NULL ){
-            ILBCENC_OMX_MALLOC_SIZE(pBufParmsTemp, (sizeof(ILBCENC_FrameStruct)*nFrames ) + 256,OMX_U8);
-            pLcmlHdr->pFrameParam =  (ILBCENC_FrameStruct*)(pBufParmsTemp + 128);
+            OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames),ILBCENC_FrameStruct)
             pLcmlHdr->pBufferParam->pParamElem = NULL;
 #ifndef UNDER_CE
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
@@ -1804,6 +1795,15 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
 
  EXIT:
+
+    if(eError!=OMX_ErrorNone)
+    {
+        /* Fress all the memory allocated in this funtion. */
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
+        if(pLcmlHdr!=NULL)
+            OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam,ILBCENC_FrameStruct);
+    }
     ILBCENC_DPRINT("%d Exiting from  ILBCENC_HandleDataBufFromApp \n",__LINE__);
     ILBCENC_DPRINT("%d Returning error %d\n",__LINE__,eError);
 
@@ -2664,7 +2664,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     ILBCENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_U16 i = 0;
     OMX_U32 size_lcml = 0;
-    OMX_U8  *pBufferParamTemp = NULL;
+
     ILBCENC_DPRINT("%d ILBCENC_FillLCMLInitParamsEx\n",__LINE__);
     nIpBuf = pComponentPrivate->pInputBufferList->numBuffers;
     nIpBufSize = pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->nBufferSize;
@@ -2697,8 +2697,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
 
-        ILBCENC_OMX_MALLOC_SIZE(pBufferParamTemp, sizeof(ILBCENC_ParamStruct) + 256,OMX_U8);
-        pTemp_lcml->pBufferParam =  (ILBCENC_ParamStruct*)(pBufferParamTemp + 128);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct) ,ILBCENC_ParamStruct);
         
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
@@ -2744,6 +2743,8 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
+    if(eError != OMX_ErrorNone)
+        ILBCENC_CleanupInitParams(pComponent);
     ILBCENC_DPRINT("%d Exiting ILBCENC_FillLCMLInitParamsEx\n",__LINE__);
     ILBCENC_DPRINT("%d Returning = 0x%x\n",__LINE__,eError);
     return eError;
