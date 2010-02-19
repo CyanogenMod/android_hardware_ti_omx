@@ -1239,25 +1239,34 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
   **/
 /* ========================================================================== */
 
-OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1)
+OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    static OMX_BOOL bFirstTimeToUnLoadCodec = OMX_TRUE; /*Needed when port disable is been call for input & output ports*/
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p nParam1 0x%lx\n",pComponentPrivate, nParam1);
 
     /* Flush is performed before Unload Codec to avoid issues during free
      * buffer as LCML would already be destroyed */
     eError = VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
-
-    /* Protect VIDDEC_UnloadCodec() to be called twice while doing Dynamic port configuration*/
-    if(pComponentPrivate->bDynamicConfigurationInProgress && bFirstTimeToUnLoadCodec){
-        OMX_PRINT1(pComponentPrivate->dbg, "VIDDEC_UnloadCodec\n");
-        eError = VIDDEC_UnloadCodec(pComponentPrivate);
-        if (eError != OMX_ErrorNone) {
-            goto EXIT;
-        }
-        bFirstTimeToUnLoadCodec = OMX_FALSE;
+    if (eError != OMX_ErrorNone) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                     pComponentPrivate->pHandle->pApplicationPrivate,
+                                           OMX_EventError,
+                                           eError,
+                                           OMX_TI_ErrorMinor,
+                                           "VIDDEC_UnloadCodec");
+        goto EXIT;
+    }
+    /* Unloading codec */
+    eError = VIDDEC_UnloadCodec(pComponentPrivate);
+    if (eError != OMX_ErrorNone) {
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                           OMX_EventError,
+                                           eError,
+                                          OMX_TI_ErrorMinor,
+                                           "VIDDEC_UnloadCodec");
+        goto EXIT;
     }
 
     if (nParam1 == VIDDEC_INPUT_PORT) {
@@ -1331,15 +1340,6 @@ OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, O
                                                     OMX_CommandPortDisable,
                                                     VIDDEC_OUTPUT_PORT,
                                                     NULL);
-        }
-    }
-
-        /* Reset values to initial state*/
-    if(pComponentPrivate->bDynamicConfigurationInProgress){
-        if(pComponentPrivate->bOutPortSettingsChanged == OMX_FALSE && pComponentPrivate->bInPortSettingsChanged == OMX_FALSE){
-            pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
-            bFirstTimeToUnLoadCodec = OMX_TRUE;
-            OMX_PRBUFFER1(pComponentPrivate->dbg, "bDynamicConfigurationInProgress = OMX_FALSE;\n");
         }
     }
 
@@ -1442,87 +1442,87 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_VidDec_Return(pComponentPrivate);
     OMX_VidDec_Return(pComponentPrivate);
     if (nParam1 == pComponentPrivate->pInPortFormat->nPortIndex || nParam1 == OMX_ALL) {
-            for (i = 0; i < pComponentPrivate->pInPortDef->nBufferCountActual; i++) {
-                    if((pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
-                        pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
+        for (i = 0; i < pComponentPrivate->pInPortDef->nBufferCountActual; i++) {
+                if((pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
+                    pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                      pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
+                                      pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
+                                      PERF_ModuleHLMM);
+#endif
+
+                    eError = VIDDEC_EmptyBufferDone(pComponentPrivate,
+                                                    pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr);
+                }
+        }
+    }
+    if (nParam1 == pComponentPrivate->pOutPortFormat->nPortIndex || nParam1 == OMX_ALL) {
+        if (pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent != NULL) {
+            for (i = 0; i < pComponentPrivate->pOutPortDef->nBufferCountActual; i++) {
+               OMX_PRBUFFER1(pComponentPrivate->dbg, "tunnelVideoDecBuffer[%x]=%x-%lx\n",i,
+               pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner,pComponentPrivate->pOutPortDef->nBufferCountActual);
+                    OMX_PRBUFFER1(pComponentPrivate->dbg, "enter return %lx\n",pComponentPrivate->pOutPortDef->nBufferCountActual);
+                    if((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
+                           pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner = VIDDEC_BUFFER_WITH_TUNNELEDCOMP;
+                            OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer 0x%x eBufferOwner 0x%x\n",(int)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr
+                            ,pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner);
+                        pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
+
 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                          pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
-                                          pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
-                                          PERF_ModuleHLMM);
+                                          pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
+                                          pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
+                                          PERF_ModuleLLMM);
 #endif
 
-                        eError = VIDDEC_EmptyBufferDone(pComponentPrivate,
-                                                        pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]->pBufferHdr);
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "VideDec->PostProc EmptyThisBuffer\n");
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "wait to return buffer\n");
+                        pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
+                        eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
+                                              pBuffHead,
+                                              VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
+#ifndef VIDDEC_USENALINFRAMEPROP
+                                              pComponentPrivate->ProcessMode);
+#else
+                                              VIDDEC_SETNALFRAMEMODE?0:1);
+#endif
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                        eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent, pBuffHead);
                     }
             }
-       }
-    if (nParam1 == pComponentPrivate->pOutPortFormat->nPortIndex || nParam1 == OMX_ALL) {
-            if (pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent != NULL) {
-                for (i = 0; i < pComponentPrivate->pOutPortDef->nBufferCountActual; i++) {
-                   OMX_PRBUFFER1(pComponentPrivate->dbg, "tunnelVideoDecBuffer[%x]=%x-%lx\n",i,
-                   pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner,pComponentPrivate->pOutPortDef->nBufferCountActual);
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "enter return %lx\n",pComponentPrivate->pOutPortDef->nBufferCountActual);
-                        if((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
-                               pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner = VIDDEC_BUFFER_WITH_TUNNELEDCOMP;
-                                OMX_PRBUFFER1(pComponentPrivate->dbg, "Buffer 0x%x eBufferOwner 0x%x\n",(int)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr
-                                ,pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner);
-                            pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
-
-#ifdef __PERF_INSTRUMENTATION__
-                            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                              pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
-                                              pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
-                                              PERF_ModuleLLMM);
-#endif
-
-                            OMX_PRBUFFER1(pComponentPrivate->dbg, "VideDec->PostProc EmptyThisBuffer\n");
-                            OMX_PRBUFFER1(pComponentPrivate->dbg, "wait to return buffer\n");
-                            pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
-                            eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
-                                                  pBuffHead,
-                                                  VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
-#ifndef VIDDEC_USENALINFRAMEPROP
-                                                  pComponentPrivate->ProcessMode);
-#else
-                                                  VIDDEC_SETNALFRAMEMODE?0:1);
-#endif
-                            if (eError != OMX_ErrorNone) {
-                                goto EXIT;
-                            }
-                                eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent, pBuffHead);
-                            }
-                }
-            }
-            else {
-                OMX_PRINT1(pComponentPrivate->dbg, "non tunneling\n");
-                for (i = 0; i < pComponentPrivate->pOutPortDef->nBufferCountActual; i++) {
-                        if((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
-                            pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
-
-#ifdef __PERF_INSTRUMENTATION__
-                            PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                              pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
-                                              pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
-                                              PERF_ModuleHLMM);
-#endif
-                            pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
-                            eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
-                                                  pBuffHead,
-                                                  VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
-#ifndef VIDDEC_USENALINFRAMEPROP
-                                                  pComponentPrivate->ProcessMode);
-#else
-                                                  VIDDEC_SETNALFRAMEMODE?0:1);
-#endif
-                            if (eError != OMX_ErrorNone) {
-                                goto EXIT;
-                            }
-                            eError = VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
-                       }
-                }
-           }
         }
+        else {
+            OMX_PRINT1(pComponentPrivate->dbg, "non tunneling\n");
+            for (i = 0; i < pComponentPrivate->pOutPortDef->nBufferCountActual; i++) {
+                    if((pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->eBufferOwner == VIDDEC_BUFFER_WITH_DSP) && bRetDSP){
+                        pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen = 0;
+
+#ifdef __PERF_INSTRUMENTATION__
+                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
+                                          pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->pBuffer,
+                                          pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr->nFilledLen,
+                                          PERF_ModuleHLMM);
+#endif
+                        pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
+                        eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
+                                              pBuffHead,
+                                              VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
+#ifndef VIDDEC_USENALINFRAMEPROP
+                                              pComponentPrivate->ProcessMode);
+#else
+                                              VIDDEC_SETNALFRAMEMODE?0:1);
+#endif
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                        eError = VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
+                   }
+            }
+       }
+    }
 EXIT:
     OMX_PRBUFFER1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
@@ -1541,29 +1541,27 @@ EXIT:
   *
   **/
 /* ========================================================================== */
-OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1)
+OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p nParam1 0x%lx\n",pComponentPrivate, nParam1);
 
+    eError = VIDDEC_LoadCodec(pComponentPrivate);
+    if(eError != OMX_ErrorNone){
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                           OMX_EventError,
+                                           eError,
+                                           OMX_TI_ErrorMinor,
+                                           "VIDDEC_LoadCodec error");
+        goto EXIT;
+    }
     if (nParam1 == VIDDEC_INPUT_PORT) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
         if((!(pComponentPrivate->eState == OMX_StateLoaded) && !pComponentPrivate->pInPortDef->bPopulated) ||
             pComponentPrivate->sInSemaphore.bSignaled) {
             VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sInSemaphore);
-        }
-
-
-            if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && 
-                    pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE &&
-                    pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE &&
-                    pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE){
-            OMX_PRBUFFER1(pComponentPrivate->dbg, "BSC VIDDEC_INPUT_PORT\n");
-            eError = VIDDEC_LoadCodec(pComponentPrivate);
-            if(eError != OMX_ErrorNone){
-                goto EXIT;
-            }
         }
         pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
                                                 pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1573,22 +1571,10 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                                                 NULL);
     }
     else if (nParam1 == VIDDEC_OUTPUT_PORT) {
-
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_OUTPUT_PORT OUT 0x%x\n",pComponentPrivate->pOutPortDef->bPopulated);
         if((!(pComponentPrivate->eState == OMX_StateLoaded) && !pComponentPrivate->pOutPortDef->bPopulated) ||
             pComponentPrivate->sOutSemaphore.bSignaled) {
             VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sOutSemaphore);
-        }
-
-        if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload && 
-                pComponentPrivate->bDynamicConfigurationInProgress == OMX_FALSE &&
-                pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE &&
-                pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE){
-            OMX_PRBUFFER1(pComponentPrivate->dbg, "BSC VIDDEC_OUTPUT_PORT\n");
-            eError = VIDDEC_LoadCodec(pComponentPrivate);
-            if(eError != OMX_ErrorNone){
-                goto EXIT;
-            }
         }
         pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
                                                 pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1604,13 +1590,6 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 pComponentPrivate->sInSemaphore.bSignaled) {
                 VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sInSemaphore);
             }
-
-            if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload){
-                eError = VIDDEC_LoadCodec(pComponentPrivate);
-                if(eError != OMX_ErrorNone){
-                    goto EXIT;
-                }
-            }
             pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
                                                     pComponentPrivate->pHandle->pApplicationPrivate,
                                                     OMX_EventCmdComplete,
@@ -1622,13 +1601,6 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             if((!(pComponentPrivate->eState == OMX_StateLoaded) && !pComponentPrivate->pInPortDef->bPopulated) ||
                 pComponentPrivate->sInSemaphore.bSignaled) {
                 VIDDEC_PTHREAD_SEMAPHORE_WAIT(pComponentPrivate->sInSemaphore);
-            }
-            if(pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload){
-                OMX_PRBUFFER1(pComponentPrivate->dbg, "BSC OMX_ALL\n");
-                eError = VIDDEC_LoadCodec(pComponentPrivate);
-                if(eError != OMX_ErrorNone){
-                    goto EXIT;
-                }
             }
             OMX_PRBUFFER2(pComponentPrivate->dbg, "Populated VIDDEC_INPUT_PORT IN 0x%x\n",pComponentPrivate->pInPortDef->bPopulated);
             pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
@@ -1651,6 +1623,22 @@ OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
     }
 EXIT:
+    /* Reset values to initial state*/
+    if(pComponentPrivate->bDynamicConfigurationInProgress){
+        if( nParam1 == VIDDEC_OUTPUT_PORT &&
+            pComponentPrivate->bOutPortSettingsChanged){
+            pComponentPrivate->bOutPortSettingsChanged = OMX_FALSE;
+        }
+        if( nParam1 == VIDDEC_INPUT_PORT &&
+            pComponentPrivate->bInPortSettingsChanged){
+            pComponentPrivate->bInPortSettingsChanged = OMX_FALSE;
+        }
+        if( pComponentPrivate->bOutPortSettingsChanged == OMX_FALSE &&
+            pComponentPrivate->bInPortSettingsChanged == OMX_FALSE){
+            pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
+            OMX_PRBUFFER1(pComponentPrivate->dbg, "bDynamicConfigurationInProgress = OMX_FALSE;\n");
+        }
+    }
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
@@ -2093,7 +2081,9 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
             else if (pComponentPrivate->eState == OMX_StateExecuting || pComponentPrivate->eState == OMX_StatePause) {
                 /*Set the bIsStopping bit*/
                 if (pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE) {
-	            pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
+                    pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
+                    pComponentPrivate->bOutPortSettingsChanged = OMX_FALSE;
+                    pComponentPrivate->bInPortSettingsChanged = OMX_FALSE;
                     OMX_PRSTATE1(pComponentPrivate->dbg, "We were doing DynamicConfiguration, canceling it. %d \n",pComponentPrivate->bDynamicConfigurationInProgress);
                 }
                 pComponentPrivate->bIsStopping = 1;
@@ -4411,8 +4401,8 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingAVC &&
             pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingMPEG4 &&
             pComponentPrivate->pInPortDef->format.video.eCompressionFormat != OMX_VIDEO_CodingH263){
-            if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
-                pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
+            if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nPadWidth ||
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nPadHeight) {
 
                 pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nPadWidth;
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nPadHeight;

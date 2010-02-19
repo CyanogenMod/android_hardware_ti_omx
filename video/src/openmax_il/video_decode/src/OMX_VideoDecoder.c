@@ -651,18 +651,37 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
             break;
         case OMX_CommandPortDisable:
             if (nParam1 == VIDDEC_INPUT_PORT) {
-                pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                if (pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE) {
+                    pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                }
+                else {
+                    eError = OMX_ErrorIncorrectStateOperation;
+                    goto EXIT;
+                }
             }
             else if (nParam1 == VIDDEC_OUTPUT_PORT) {
-                pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
+                if (pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE) {
+                    pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
+                }
+                else {
+                    eError = OMX_ErrorIncorrectStateOperation;
+                    goto EXIT;
+                }
             }
             else if (nParam1 == OMX_ALL) {
-                pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
-                pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling OMX_ALL IN 0x%x OUT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled,
-                    pComponentPrivate->pOutPortDef->bEnabled);
+                if (pComponentPrivate->pInPortDef->bEnabled == OMX_TRUE &&
+                    pComponentPrivate->pOutPortDef->bEnabled == OMX_TRUE) {
+                    pComponentPrivate->pInPortDef->bEnabled = OMX_FALSE;
+                    pComponentPrivate->pOutPortDef->bEnabled = OMX_FALSE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Disabling OMX_ALL IN 0x%x OUT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled,
+                        pComponentPrivate->pOutPortDef->bEnabled);
+                }
+                else {
+                    eError = OMX_ErrorIncorrectStateOperation;
+                    goto EXIT;
+                }
             }
             else {
                 eError = OMX_ErrorBadParameter;
@@ -681,17 +700,36 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
            break;
         case OMX_CommandPortEnable:
             if (nParam1 == VIDDEC_INPUT_PORT) {
-                pComponentPrivate->pInPortDef->bEnabled = OMX_TRUE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                if (pComponentPrivate->pInPortDef->bEnabled == OMX_FALSE) {
+                    pComponentPrivate->pInPortDef->bEnabled = OMX_TRUE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                }
+                else {
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Port already Enabled VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                    goto EXIT;
+                }
             }
             else if (nParam1 == VIDDEC_OUTPUT_PORT) {
-                pComponentPrivate->pOutPortDef->bEnabled = OMX_TRUE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
+                if (pComponentPrivate->pOutPortDef->bEnabled == OMX_FALSE) {
+                    pComponentPrivate->pOutPortDef->bEnabled = OMX_TRUE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
+                }
+                else {
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Port already Enabled VIDDEC_OUTPUT_PORT 0x%x\n",pComponentPrivate->pOutPortDef->bEnabled);
+                    goto EXIT;
+                }
             }
             else if (nParam1 == OMX_ALL) {
-                pComponentPrivate->pInPortDef->bEnabled = OMX_TRUE;
-                pComponentPrivate->pOutPortDef->bEnabled = OMX_TRUE;
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                if (pComponentPrivate->pInPortDef->bEnabled == OMX_FALSE &&
+                    pComponentPrivate->pOutPortDef->bEnabled == OMX_FALSE) {
+                    pComponentPrivate->pInPortDef->bEnabled = OMX_TRUE;
+                    pComponentPrivate->pOutPortDef->bEnabled = OMX_TRUE;
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Enabling VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                }
+                else {
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "Ports already Enabled VIDDEC_INPUT_PORT 0x%x\n",pComponentPrivate->pInPortDef->bEnabled);
+                    goto EXIT;
+                }
             }
             nRet = write(pComponentPrivate->cmdPipe[VIDDEC_PIPE_WRITE], &Cmd, sizeof(Cmd));
             if (nRet == -1) {
@@ -1144,7 +1182,10 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
     pHandle= (OMX_COMPONENTTYPE*)hComp;
     pComponentPrivate = pHandle->pComponentPrivate;
 
-    if (pComponentPrivate->eState != OMX_StateLoaded && pComponentPrivate->eState != OMX_StateWaitForResources) {
+    if (pComponentPrivate->eState != OMX_StateLoaded &&
+        pComponentPrivate->eState != OMX_StateWaitForResources &&
+        !(pComponentPrivate->pInPortDef->bEnabled == OMX_FALSE ||
+        pComponentPrivate->pOutPortDef->bEnabled == OMX_FALSE)) {
         eError = OMX_ErrorIncorrectStateOperation;
         goto EXIT;
     }

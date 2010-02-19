@@ -74,8 +74,8 @@
 
 
 extern OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE pHandle, OMX_U32 nParam1);
-extern OMX_ERRORTYPE VIDDEC_DisablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1);
-extern OMX_ERRORTYPE VIDDEC_EnablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1);
+extern OMX_ERRORTYPE VIDDEC_DisablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1);
+extern OMX_ERRORTYPE VIDDEC_EnablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1);
 extern OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate);
 extern OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate );
 extern OMX_ERRORTYPE VIDDEC_HandleFreeDataBuf( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate );
