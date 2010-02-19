@@ -60,11 +60,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/types.h>
@@ -74,7 +69,6 @@
 #include <memory.h>
 #include <fcntl.h>
 #include <errno.h>
-#endif
 
 #include <dbapi.h>
 #include <string.h>
@@ -89,10 +83,6 @@
 #include "usn.h"
 
 
-#ifdef UNDER_CE         
-#define HASHINGENABLE 1
-HINSTANCE g_hLcmlDllHandle = NULL;
-#endif
 
 #ifdef __PERF_INSTRUMENTATION__
 #include "perf.h"
@@ -330,12 +320,6 @@ OMX_ERRORTYPE G729ENC_StartComponentThread(OMX_HANDLETYPE pComponent)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G729ENC_COMPONENT_PRIVATE *pComponentPrivate =
         (G729ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-#ifdef UNDER_CE         
-    pthread_attr_t attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.__inheritsched = PTHREAD_EXPLICIT_SCHED;
-    attr.__schedparam.__sched_priority = OMX_AUDIO_ENCODER_THREAD_PRIORITY;
-#endif
 
     G729ENC_DPRINT ("Entering\n");
     
@@ -377,11 +361,7 @@ OMX_ERRORTYPE G729ENC_StartComponentThread(OMX_HANDLETYPE pComponent)
 
 
     /* Create the Component Thread */
-#ifdef UNDER_CE         
-    eError = pthread_create (&(pComponentPrivate->ComponentThread), &attr, G729ENC_CompThread, pComponentPrivate);
-#else
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, G729ENC_CompThread, pComponentPrivate);
-#endif  
     if (eError || !pComponentPrivate->ComponentThread)
     {
         eError = OMX_ErrorInsufficientResources;
@@ -684,14 +664,10 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                             && !(pComponentPrivate->pPortDef[G729ENC_OUTPUT_PORT]->bPopulated))
                         {
                             pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE
                             pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
                             pthread_cond_wait(&pComponentPrivate->InLoaded_threshold,
                                               &pComponentPrivate->InLoaded_mutex);
                             pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                            OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
                         }
                     }
                     cb.LCML_Callback = (void *) G729ENC_LCMLCallback;
@@ -711,29 +687,14 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                     pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
                     cb.LCML_Callback = (void *) G729ENC_LCMLCallback;
-#ifndef UNDER_CE
                     eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                 p, &pLcmlHandle, (void *)p,
                                                 &cb, (OMX_STRING)pComponentPrivate->sDeviceString);
-#else
-                    eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                              p, &pLcmlHandle, (void *)p, 
-                                              &cb);
-#endif
                     if(eError != OMX_ErrorNone)
                     {
                         G729ENC_EPRINT("from LCML_Init().\n");
                         goto EXIT;
                     }
-#ifdef HASHINGENABLE
-                    /* Enable the Hashing Code */
-                    eError = LCML_SetHashingState(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, OMX_TRUE);
-                    if (eError != OMX_ErrorNone) {
-                        G729ENC_DPRINT("Failed to set Mapping State\n");
-                        goto EXIT;
-                    }
-#endif                        
-                        
                         
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,
@@ -781,15 +742,6 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 else if (pComponentPrivate->curState == OMX_StateExecuting)
                 {
-#ifdef HASHINGENABLE
-                    /*Hashing Change*/
-                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle;
-                    eError = LCML_FlushHashes(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
-                    if (eError != OMX_ErrorNone) {
-                        G729ENC_DPRINT("Error occurred in Codec mapping flush!\n");
-                        break;
-                    }
-#endif                    
                     G729ENC_DPRINT("Setting Component to OMX_StateIdle\n");
                     G729ENC_DPRINT("About to Call MMCodecControlStop\n");
 #ifdef __PERF_INSTRUMENTATION__
@@ -807,15 +759,6 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 else if(pComponentPrivate->curState == OMX_StatePause)
                 {
-#ifdef HASHINGENABLE
-                    /*Hashing Change*/
-                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle;
-                    eError = LCML_FlushHashes(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle);
-                    if (eError != OMX_ErrorNone) {
-                        G729ENC_DPRINT("Error occurred in Codec mapping flush!\n");
-                        break;
-                    }
-#endif                    
                     pComponentPrivate->curState = OMX_StateIdle;
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,
@@ -1032,14 +975,10 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->pOutputBufferList->numBuffers)
                 {
                     pComponentPrivate->InIdle_goingtoloaded = 1;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
                     pthread_cond_wait(&pComponentPrivate->InIdle_threshold,
                                       &pComponentPrivate->InIdle_mutex);
                     pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-                    OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
                 }
                 /* Now Deinitialize the component No error should be returned from
                  * this function. It should clean the system as much as possible */
@@ -1051,10 +990,6 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     G729ENC_EPRINT("LCML_ControlCodec.\n");
                     goto EXIT;
                 }
-#ifdef UNDER_CE
-                FreeLibrary(g_hLcmlDllHandle);
-                g_hLcmlDllHandle = NULL;
-#endif                    
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingCommand(pComponentPrivate->pPERF, -1, 0,
                                     PERF_ModuleComponent);
@@ -1254,13 +1189,9 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                    OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
                 }
             }
             if(commandData == 0x1 || commandData == -1)
@@ -1347,13 +1278,9 @@ OMX_U32 G729ENC_HandleCommand (G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
        
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-        OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     } 
 
     else if (command == OMX_CommandFlush)
@@ -2285,7 +2212,6 @@ OMX_ERRORTYPE G729ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
  * @retval OMX_HANDLETYPE
  */
 /* ================================================================================= */
-#ifndef UNDER_CE
 OMX_HANDLETYPE G729ENC_GetLCMLHandle(G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -2320,43 +2246,6 @@ OMX_HANDLETYPE G729ENC_GetLCMLHandle(G729ENC_COMPONENT_PRIVATE *pComponentPrivat
     return pHandle;
 }
 
-#else
-/*WINDOWS Explicit dll load procedure*/
-OMX_HANDLETYPE G729ENC_GetLCMLHandle(G729ENC_COMPONENT_PRIVATE *pComponentPrivate)
-{
-    typedef OMX_ERRORTYPE (*LPFNDLLFUNC1)(OMX_HANDLETYPE);
-    OMX_HANDLETYPE pHandle = NULL;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    LPFNDLLFUNC1 fpGetHandle1;
-        
-    g_hLcmlDllHandle = LoadLibraryEx(TEXT("OAF_BML.dll"), NULL,0);
-    if (g_hLcmlDllHandle == NULL) {
-        //fputs(dlerror(), stderr);
-        G729ENC_DPRINT("BML Load Failed!!!\n");
-        return pHandle;
-    }
-    fpGetHandle1 = (LPFNDLLFUNC1)GetProcAddress(g_hLcmlDllHandle,TEXT("GetHandle"));
-    if (!fpGetHandle1) 
-    {
-        // handle the error
-        FreeLibrary(g_hLcmlDllHandle);
-        g_hLcmlDllHandle = NULL;
-        return pHandle;
-    }
-    // call the function
-    eError = fpGetHandle1(&pHandle);
-    if(eError != OMX_ErrorNone) 
-    {
-        eError = OMX_ErrorUndefined;
-        G729ENC_DPRINT("eError != OMX_ErrorNone...\n");
-        FreeLibrary(g_hLcmlDllHandle);
-        g_hLcmlDllHandle = NULL;
-        pHandle = NULL;
-        return pHandle;
-    }
-    return pHandle;
-}
-#endif
 
 /* ================================================================================= */
 /**

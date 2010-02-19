@@ -59,11 +59,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -72,7 +67,6 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdarg.h> 
-#endif
 
 #include <string.h>
 #include <fcntl.h>
@@ -403,7 +397,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->nRuntimeInputBuffers=0;
     pComponentPrivate->nRuntimeOutputBuffers=0;
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -414,14 +407,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
     pComponentPrivate->bMutexInit = 1;
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#endif
     
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -457,7 +442,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 #endif
  EXIT:
     if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
-#ifndef UNDER_CE
         if (pComponentPrivate->bMutexInit) {
             pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
             pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -467,11 +451,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
             pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
             pComponentPrivate->bMutexInit = 0;
 	}
-#else
-        OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-        OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-        OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
         OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_OUTPUT_PORT]->pPortFormat);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G729ENC_INPUT_PORT]->pPortFormat);
@@ -1558,18 +1537,12 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
         goto EXIT;
     }
     
-#ifndef UNDER_CE    
     pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
     pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
     pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
     pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-#else
-    OMX_DestroyEvent(&(pComponentPrivate->InLoaded_event));
-    OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
-    OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
-#endif    
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Boundary(pComponentPrivate->pPERF,
@@ -1659,14 +1632,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     if(!(pPortDef->bEnabled))
     {
         pComponentPrivate->AlloBuf_waitingsignal = 1;  
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold,
                           &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     }
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
@@ -1709,13 +1678,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -1891,13 +1856,9 @@ static OMX_ERRORTYPE FreeBuffer(
         pComponentPrivate->InIdle_goingtoloaded)
     {
         pComponentPrivate->InIdle_goingtoloaded = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif
     }
     if (pComponentPrivate->bDisableCommandPending && (pComponentPrivate->pInputBufferList->numBuffers + 
                                                       pComponentPrivate->pOutputBufferList->numBuffers == 0)) {
@@ -1989,13 +1950,9 @@ static OMX_ERRORTYPE UseBuffer (
        (pComponentPrivate->InLoaded_readytoidle))
     {
         pComponentPrivate->InLoaded_readytoidle = 0;                  
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -2091,77 +2048,9 @@ static OMX_ERRORTYPE ComponentRoleEnum(
     return eError;
 }
 
-#ifdef UNDER_CE
-/* ================================================================================= */
-/**
- * @fns Sleep replace for WIN CE
- */
-/* ================================================================================ */
-int OMX_CreateEvent(OMX_Event *event){
-    int ret = OMX_ErrorNone;
-    HANDLE createdEvent = NULL;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    event->event  = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if(event->event == NULL)
-    {
-        ret = (int)GetLastError();
-    }
- EXIT:
-    return ret;
-}
-
-int OMX_SignalEvent(OMX_Event *event){
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    SetEvent(event->event);
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_WaitForEvent(OMX_Event *event)
-{
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }     
-    WaitForSingleObject(event->event, INFINITE);
-    ret = (int)GetLastError();
- EXIT:
-    return ret;
-}
-
-int OMX_DestroyEvent(OMX_Event *event)
-{
-    int ret = OMX_ErrorNone;
-
-    if(event == NULL)
-    {
-        ret = OMX_ErrorBadParameter;
-        goto EXIT;
-    }  
-    CloseHandle(event->event);
- EXIT:    
-    return ret;
-}
-#endif
 
 void G729ENC_eprint(int iLineNum, const char *szFunctionName, const char *strFormat, ...)
 {
-#ifndef UNDER_CE 
     va_list list;
 
     fprintf(stdout, "ERROR::%s():%d: ", szFunctionName, iLineNum);
@@ -2169,12 +2058,10 @@ void G729ENC_eprint(int iLineNum, const char *szFunctionName, const char *strFor
     va_start(list, strFormat);
     vfprintf(stdout, strFormat, list);
     va_end(list);
-#endif
 }
 
 void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionName, const char *strFormat, ...)
 {
-#ifndef UNDER_CE 
     va_list list;
         
     if (szFileName ==(const char *) "OMX_G729Encoder.c")
@@ -2200,5 +2087,4 @@ void G729ENC_Log(const char *szFileName, int iLineNum, const char *szFunctionNam
     va_start(list, strFormat);
     vfprintf(stdout, strFormat, list);
     va_end(list);
-#endif
 }
