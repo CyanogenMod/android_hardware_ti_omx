@@ -115,8 +115,6 @@
 #ifndef __KHRONOS_CONF_1_1__
     #define OMX_BUFFERFLAG_SYNCFRAME 0x00000040
 #endif
-#define OMX_LFRAMETYPE_H264 1
-#define OMX_CFRAMETYPE_MPEG4 1
 /*Select Timeout */
 #define  VIDENC_TIMEOUT_SEC 120;
 #define  VIDENC_TIMEOUT_USEC 0;

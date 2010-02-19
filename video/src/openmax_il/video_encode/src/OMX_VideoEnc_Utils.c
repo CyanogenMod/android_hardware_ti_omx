@@ -2839,7 +2839,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
 
    if (pComponentPrivate->bCodecStarted == OMX_TRUE)
     {
-
+        static OMX_BOOL H264FrameTaggedAsSync = OMX_FALSE;
         pBufferPrivate = pBufHead->pOutputPortPrivate;
         pSNPrivateParams = (H264VE_GPP_SN_UALGOutputParams*)(pBufferPrivate->pUalgParam);
         pBufHead->nFilledLen = ((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->ulBitstreamSize;
@@ -2864,13 +2864,22 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
                                                    pComponentPrivate);
             pBufHead->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
         }
+       /* Set H264FrameTaggedAsSync flag when the sockets' node tags the first slice of a frame as
+        * I or IDR frame.
+        **/
+        if (((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->lFrameType == H264_IVIDEO_I_FRAME
+          || ((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->lFrameType == H264_IVIDEO_IDR_FRAME){
+           H264FrameTaggedAsSync = OMX_TRUE;
+        }
 
-            /* Set lFrameType*/
-            if (((H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->lFrameType == OMX_LFRAMETYPE_H264)
-            {
-                /* IDR Frame */
-                pBufHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
-            }
+        if(H264FrameTaggedAsSync && (pBufHead->nFlags & OMX_BUFFERFLAG_ENDOFFRAME))
+        {
+       /* Enter here only if the sockets' nodes tagged the frame as an I frame, or
+        * IDR frame AND it is the end of frame.
+        * */
+           pBufHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
+           H264FrameTaggedAsSync = OMX_FALSE;
+        }
 
             /* if NAL frame mode */
             if (pComponentPrivate->AVCNALFormat == VIDENC_AVC_NAL_FRAME)
@@ -2929,13 +2938,14 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
             }
 
             pBufHead->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
-
             /* Set cFrameType*/
-            if (((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->cFrameType == OMX_CFRAMETYPE_MPEG4)
+            if (((MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam)->cFrameType == MPEG4_IVIDEO_I_FRAME)
             {
                 /* I-VOP Frame */
                 pBufHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
             }
+
+
             VIDENC_MPEG4_SEGMENTMODE_METADATA* pMetaData;
             /*copy MPEG4 segment mode meta data */
             pMetaData=(VIDENC_MPEG4_SEGMENTMODE_METADATA*)pBufferPrivate->pMetaData;
