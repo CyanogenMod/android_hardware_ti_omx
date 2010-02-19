@@ -1519,160 +1519,78 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
     OMX_TRACE2(pComponentPrivate->dbg, "pthread_join 0x%lx\n",(OMX_U32) pComponentPrivate->ComponentThread);
 
     if(pComponentPrivate->bLCMLOut == OMX_TRUE) {
-        if (0 != pthreadError) {
-            eError = OMX_ErrorHardware;
+        if (pthreadError != 0) {
+            OMX_PRINT1(pComponentPrivate->dbg, "Error while pthreadError\n");
         }
     }
     else{
         pthreadError = pthread_join(pComponentPrivate->ComponentThread, (void*)&threadError);
-        if (0 != pthreadError) {
-            eError = OMX_ErrorHardware;
+        if (pthreadError != 0) {
+            OMX_PRINT1(pComponentPrivate->dbg, "Error while pthreadError\n");
         }
-    }
-
-    /* Check for the errors */
-    if (OMX_ErrorNone != eError) {
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               "Error while closing Component Thread\n");
     }
 
     /* close the data pipe handles */
     err = close(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing free_inpBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing free_outBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing filled_inpBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing filled_outBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing free_inpBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->free_outBuf_Q[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing free_outBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->filled_inpBuf_Q[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing filled_inpBuf_Q pipe\n");
     }
 
     err = close(pComponentPrivate->filled_outBuf_Q[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing data pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing filled_outBuf_Q pipe\n");
     }
 
     /* Close the command pipe handles */
     err = close(pComponentPrivate->cmdPipe[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing cmd pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing cmdPipe pipe\n");
     }
 
     err = close(pComponentPrivate->cmdPipe[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing cmd pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing cmdPipe pipe\n");
     }
 
     /* Close the command data pipe handles */
     err = close (pComponentPrivate->cmdDataPipe[VIDDEC_PIPE_READ]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing cmd pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing cmdDataPipe pipe\n");
     }
 
     err = close (pComponentPrivate->cmdDataPipe[VIDDEC_PIPE_WRITE]);
-    if (0 != err) {
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorMajor,
-                                               "Error while closing cmd pipe\n");
+    if (err != 0) {
+        OMX_PRINT1(pComponentPrivate->dbg, "Error while closing cmdDataPipe pipe\n");
     }
     OMX_PRINT1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
@@ -2652,8 +2570,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                                OMX_ErrorHardware,
                                                                OMX_TI_ErrorSevere,
                                                                "LCML_ControlCodec Start");
-                        break;
                         OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Start... 0x%x\n",eError);
+                        break;
                     }
                 }
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Start;
@@ -2966,12 +2884,50 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 OMX_VidDec_Return(pComponentPrivate);
                 OMX_VidDec_Return(pComponentPrivate);
                 pComponentPrivate->eIdleToLoad = OMX_StateLoaded;
-                if(pComponentPrivate->eFirstBuffer.pFirstBufferSaved){
+                if (pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                    pComponentPrivate->pLCML != NULL) {
+                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
+                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
+                    if (eError != OMX_ErrorNone) {
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                                               OMX_EventError,
+                                                               OMX_ErrorHardware,
+                                                               OMX_TI_ErrorSevere,
+                                                               NULL);
+                        OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
+                        break;
+                    }
+                    pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
+                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
+                }
+
+                OMX_PRDSP2(pComponentPrivate->dbg, "Closing LCML lib 0x%p\n",pComponentPrivate->pModLCML);
+
+                if (pComponentPrivate->pModLCML != NULL) {
+                    dlclose(pComponentPrivate->pModLCML);
+                    pComponentPrivate->pModLCML = NULL;
+                    pComponentPrivate->pLCML = NULL;
+                }
+                pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
+
+                if (pComponentPrivate->eFirstBuffer.pFirstBufferSaved) {
                     free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
                     pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
                     pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
                     pComponentPrivate->eFirstBuffer.nFilledLen = 0;
                 }
+                if (pComponentPrivate->pInternalConfigBufferAVC != NULL) {
+                    free(pComponentPrivate->pInternalConfigBufferAVC);
+                }
+                pComponentPrivate->pInternalConfigBufferAVC = NULL;
+                pComponentPrivate->nInternalConfigBufferFilledAVC = 0;
+                if (pComponentPrivate->pCodecData != NULL) {
+                   free(pComponentPrivate->pCodecData);
+                   pComponentPrivate->pCodecData = NULL;
+                }
+                pComponentPrivate->nCodecDataSize = 0;
 #ifdef RESOURCE_MANAGER_ENABLED
                 if(pComponentPrivate->eRMProxyState == VidDec_RMPROXY_State_Registered){
                         OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 4 %d : %d bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
@@ -3020,34 +2976,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Load;
                 }
 #endif
-                if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
-                    pComponentPrivate->pLCML != NULL){
-                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
-                    pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
-                    if (eError != OMX_ErrorNone) {
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               OMX_ErrorHardware,
-                                                               OMX_TI_ErrorSevere,
-                                                               NULL);
-                        OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
-                        break;
-                    }
-                    pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
-                    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
-                }
-
-                OMX_PRDSP2(pComponentPrivate->dbg, "Closing LCML lib 0x%p\n",pComponentPrivate->pModLCML);
-
-                if(pComponentPrivate->pModLCML != NULL){
-                    dlclose(pComponentPrivate->pModLCML);
-                    pComponentPrivate->pModLCML = NULL;
-                    pComponentPrivate->pLCML = NULL;
-                }
-            pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
-
                OMX_PRDSP1(pComponentPrivate->dbg, "Closed LCML lib 0x%p\n",pComponentPrivate->pModLCML);
                OMX_PRBUFFER2(pComponentPrivate->dbg, "Waiting for unpopulate ports IN 0x%x OUT 0x%x\n",pPortDefIn->bEnabled,pPortDefOut->bEnabled);
                OMX_PRBUFFER1(pComponentPrivate->dbg, "Tunneling 0x%p\n",(pComponentPrivate->pCompPort[1]->hTunnelComponent));
@@ -4281,7 +4209,11 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
             OMX_PRINT2(pComponentPrivate->dbg, "Setting bConfigBufferCompleteAVC = OMX_FALSE");
             pComponentPrivate->bConfigBufferCompleteAVC = OMX_FALSE;
             /* Malloc Buffer if is not created yet, use Port  buffer size*/
-            if(pComponentPrivate->pInternalConfigBufferAVC == NULL){
+            if (pComponentPrivate->pInternalConfigBufferAVC != NULL) {
+                free(pComponentPrivate->pInternalConfigBufferAVC);
+                pComponentPrivate->pInternalConfigBufferAVC = NULL;
+            }
+            if (pComponentPrivate->pInternalConfigBufferAVC == NULL) {
                 pComponentPrivate->pInternalConfigBufferAVC = malloc(pComponentPrivate->pInPortDef->nBufferSize);
                 if(pComponentPrivate->pInternalConfigBufferAVC == NULL){
                     eError = OMX_ErrorInsufficientResources;
@@ -5090,12 +5022,12 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application %x\n",eError);
 
-                #ifdef __PERF_INSTRUMENTATION__
+#ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                           pBuffHead->pBuffer,
                                           pBuffHead->nFilledLen,
                                           PERF_ModuleHLMM);
-                #endif
+#endif
 #ifdef VIDDEC_WMVPOINTERFIXED
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "restoring buffer pointer 0x%p >> pBuffer 0x%p\n",  
                             pBufferPrivate->pTempBuffer, pBuffHead->pBuffer);
@@ -5116,6 +5048,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 else {
                     /*if no config flag is set just parse buffer and set flag first buffer*/
                     /*this is ejecuted by the first buffer regular buffer*/
+#ifdef VIDDEC_ACTIVATEPARSER
                     if (pComponentPrivate->bFirstHeader == OMX_FALSE) {
                         pComponentPrivate->bFirstHeader = OMX_TRUE;
                         eError = VIDDEC_ParseHeader(pComponentPrivate, pBuffHead);
@@ -5123,12 +5056,12 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                 OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application\n");
                                 pComponentPrivate->bFirstHeader = OMX_TRUE;
 
-                        #ifdef __PERF_INSTRUMENTATION__
+#ifdef __PERF_INSTRUMENTATION__
                                 PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                                   pBuffHead->pBuffer,
                                                   pBuffHead->nFilledLen,
                                                   PERF_ModuleHLMM);
-                        #endif
+#endif
 #ifdef VIDDEC_WMVPOINTERFIXED
                                 OMX_PRBUFFER1(pComponentPrivate->dbg, "restoring buffer pointer 0x%p >> pBuffer 0x%p\n",
                                     pBufferPrivate->pTempBuffer, pBuffHead->pBuffer);
@@ -5144,6 +5077,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                             eError = OMX_ErrorNone;
                         }
                     }
+#endif
                 }
             }
         }/*codec data is stored one time and repeated for each Config buffer*/
@@ -5192,6 +5126,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "incorrect path %lu\n",pBuffHead->nOffset);
                 /*if no config flag is set just parse buffer and set flag first buffer*/
                 /*this is ejecuted by the first buffer regular buffer*/
+#ifdef VIDDEC_ACTIVATEPARSER
                 if (pComponentPrivate->bFirstHeader == OMX_FALSE) {
                     pComponentPrivate->bFirstHeader = OMX_TRUE;
                     eError = VIDDEC_ParseHeader(pComponentPrivate, pBuffHead);
@@ -5199,12 +5134,12 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "Returning First Input Buffer to test application\n");
                             pComponentPrivate->bFirstHeader = OMX_TRUE;
 
-                    #ifdef __PERF_INSTRUMENTATION__
+#ifdef __PERF_INSTRUMENTATION__
                             PERF_SendingFrame(pComponentPrivate->pPERFcomp,
                                               pBuffHead->pBuffer,
                                               pBuffHead->nFilledLen,
                                               PERF_ModuleHLMM);
-                    #endif
+#endif
 #ifdef VIDDEC_WMVPOINTERFIXED
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "restoring buffer pointer 0x%p >> pBuffer 0x%p\n",
                                 pBufferPrivate->pTempBuffer, pBuffHead->pBuffer);
@@ -5220,6 +5155,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         eError = OMX_ErrorNone;
                     }
                 }
+#endif
             }
         }
     }
@@ -5312,7 +5248,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 
     if(pBuffHead->nFlags & OMX_BUFFERFLAG_EOS){
         OMX_PRBUFFER2(pComponentPrivate->dbg, "End of Input EOS, nFlags=0x%x nFilledLen 0x%lx\n", pBuffHead->nFlags, pBuffHead->nFilledLen);
-        if(pBuffHead->nFilledLen != 0) { /*TODO: Validate this lagic*/
+        if (pBuffHead->nFilledLen > 0) { /*Code is ok, SN is not accepting zero lenght buffers*/
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
                 ((H264VDEC_UALGInputParam *)pUalgInpParams)->lBuffCount = ++pComponentPrivate->frameCounter;
@@ -5506,7 +5442,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         if(pComponentPrivate->iEndofInputSent == 0){
             pComponentPrivate->iEndofInputSent = 1;
             OMX_PRBUFFER1(pComponentPrivate->dbg, "Sending EOS Empty eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-            if(pComponentPrivate->eFirstBuffer.bSaveFirstBuffer == OMX_FALSE){
+            if (pComponentPrivate->pUalgParams == OMX_FALSE) {
                 OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pUalgParams,OMX_PTR);
             }
 
@@ -5523,7 +5459,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(H264VDEC_UALGInputParam);
                 ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount = -1;
-                ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->ulFrameIndex = ++pComponentPrivate->frameCounter;
+                ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter++;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((H264VDEC_UALGInputParam *)pComponentPrivate->pUalgParams)->lBuffCount);
             }
@@ -5540,7 +5476,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(WMV9DEC_UALGInputParam);
                 ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount = -1;
-                ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->ulFrameIndex = ++pComponentPrivate->frameCounter;
+                ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter++;
                 OMX_PRBUFFER1(pComponentPrivate->dbg, "lBuffCount 0x%lx\n",
                     ((WMV9DEC_UALGInputParam*)pComponentPrivate->pUalgParams)->lBuffCount);
             }
@@ -5558,7 +5494,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
                 size_dsp = sizeof(MP4VD_GPP_SN_UALGInputParams);
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nBuffCount = -1;
-                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->ulFrameIndex = ++pComponentPrivate->frameCounter;
+                ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->ulFrameIndex = pComponentPrivate->frameCounter++;
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->uRingIOBlocksize = 0;
                 /* If EOS is sent, set nPerformMode to 0 (this handle thumbnail case)*/
                 ((MP4VD_GPP_SN_UALGInputParams*)pComponentPrivate->pUalgParams)->nPerformMode = 0;
@@ -7631,7 +7567,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                                 pComponentPrivate->nOutBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
                             }
                         }
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld\n", pBuffHead->nTimeStamp);
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp);
                         if(pBuffHead != NULL){
                             pBuffHead->nFilledLen = (OMX_S32)argsCb[8];
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFilledLen %lu\n", pBuffHead->nFilledLen);
@@ -8008,6 +7944,10 @@ OMX_ERRORTYPE VIDDEC_SaveBuffer(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
     OMX_PRINT1(pComponentPrivate->dbg, "IN\n");
     pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_TRUE;
 
+    if (pComponentPrivate->eFirstBuffer.pFirstBufferSaved != NULL) {
+        free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
+        pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+    }
     OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->eFirstBuffer.pFirstBufferSaved, OMX_U8, pBuffHead->nFilledLen, NULL);
     memcpy(pComponentPrivate->eFirstBuffer.pFirstBufferSaved, pBuffHead->pBuffer, pBuffHead->nFilledLen);
 
@@ -8103,7 +8043,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_HANDLETYPE hLCML = NULL;
     void* p = NULL;
    VIDDEC_fpo fpGetHandle;
-   char* error;
+   char* error = NULL;
 
    if(pComponentPrivate->pModLCML != NULL){
         eError = VIDDEC_UnloadCodec(pComponentPrivate);
@@ -8522,7 +8462,7 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 pComponentPrivate->pLCML != NULL &&
                 pComponentPrivate->bLCMLHalted != OMX_TRUE) {
     VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
-    OMX_PRDSP1(pComponentPrivate->dbg, "LCML_ControlCodec called MMCodecControlStop 0x%x\n",eError);
+    OMX_PRDSP1 (pComponentPrivate->dbg, "LCML_ControlCodec called MMCodecControlStop 0x%x\n",eError);
     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, MMCodecControlStop, NULL);
     if (eError != OMX_ErrorNone) {
         OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Stop...\n");
@@ -8573,6 +8513,7 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     }
     eError = OMX_ErrorNone;
 EXIT:
+    OMX_PRDSP1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
 

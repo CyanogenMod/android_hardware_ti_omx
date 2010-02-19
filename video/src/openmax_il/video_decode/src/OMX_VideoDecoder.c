@@ -2111,12 +2111,10 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     eError = write(pComponentPrivate->cmdPipe[VIDDEC_PIPE_WRITE], &Cmd, sizeof(Cmd));
     if (eError == -1) {
         eError = OMX_ErrorUndefined;
-        goto EXIT;
     }
     eError = write(pComponentPrivate->cmdDataPipe[VIDDEC_PIPE_WRITE], &nParam1, sizeof(nParam1));
     if (eError == -1) {
        eError = OMX_ErrorUndefined;
-       goto EXIT;
     }
 
     eError = VIDDEC_Stop_ComponentThread(pHandle);
@@ -2199,7 +2197,6 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 #endif
         else {
             eError = OMX_ErrorUnsupportedSetting;
-            goto EXIT;
         }
         pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Load;
     }
