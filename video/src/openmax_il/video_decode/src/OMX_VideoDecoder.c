@@ -2209,10 +2209,7 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     }
 #endif
 
-    VIDDEC_CircBuf_DeInit(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
-    VIDDEC_Queue_Free(&pComponentPrivate->qBuffMark);
-    VIDDEC_Queue_Free(&pComponentPrivate->qCmdMarkData);
-    VIDDEC_Queue_Free(&pComponentPrivate->qBytesSent);
+    VIDDEC_CircBuf_DeInit(&pComponentPrivate->eStoreTimestamps);
     /* Free Resources */
     if(pComponentPrivate->pPortParamType) {
         free(pComponentPrivate->pPortParamType);

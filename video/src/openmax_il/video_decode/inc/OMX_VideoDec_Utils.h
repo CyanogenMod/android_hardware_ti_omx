@@ -557,40 +557,9 @@ typedef struct VIDDEC_BUFFER_PRIVATE
 
 /*structures and defines for Circular Buffer*/
 #define VIDDEC_CBUFFER_LOCK
+#define CBUFFER_ARRAYSIZE                   1000
 #define MAX_MULTIPLY                        4
 #define CBUFFER_SIZE                        MAX_PRIVATE_BUFFERS * MAX_MULTIPLY
-
-typedef enum VIDDEC_QUEUE_TYPES {
-    VIDDEC_QUEUE_OMX_U32,
-    VIDDEC_QUEUE_OMX_MARKTYPE
-} VIDDEC_QUEUE_TYPES;
-
-typedef struct VIDDEC_QUEUE_TYPE {
-    OMX_PTR Elements;
-    OMX_U32 CounterElements[VIDDEC_MAX_QUEUE_SIZE];
-    OMX_U32 nHead;
-    OMX_S32 nTail;
-    OMX_U32 nElements;
-    OMX_U32 nErrorCount;
-    pthread_mutex_t mMutex;
-}VIDDEC_QUEUE_TYPE;
-
-typedef enum VIDDEC_CBUFFER_TYPE {
-    VIDDEC_CBUFFER_MARKDATA,
-    VIDDEC_CBUFFER_TIMESTAMP,
-    VIDDEC_CBUFFER_CMDMARKDATA
-} VIDDEC_CBUFFER_TYPE;
-
-typedef struct VIDDEC_CIRCULAR_BUFFER {
-    OMX_PTR pElement[CBUFFER_SIZE];
-    VIDDEC_CBUFFER_TYPE nType;
-#ifdef VIDDEC_CBUFFER_LOCK
-    pthread_mutex_t* m_lock;
-#endif
-    OMX_U8 nTail;
-    OMX_U8 nHead;
-    OMX_U8 nCount;
-} VIDDEC_CIRCULAR_BUFFER;
 
 typedef struct VIDDEC_CBUFFER_BUFFERFLAGS{
     OMX_TICKS       nTimeStamp;
@@ -598,7 +567,18 @@ typedef struct VIDDEC_CBUFFER_BUFFERFLAGS{
     OMX_U32         nTickCount;
     OMX_PTR         pMarkData;
     OMX_HANDLETYPE  hMarkTargetComponent;
+    OMX_S32         nBytesConsumed;
 } VIDDEC_CBUFFER_BUFFERFLAGS;
+
+typedef struct VIDDEC_CIRCULAR_BUFFER {
+    VIDDEC_CBUFFER_BUFFERFLAGS pElements[CBUFFER_ARRAYSIZE];
+#ifdef VIDDEC_CBUFFER_LOCK
+    pthread_mutex_t* m_lock;
+#endif
+    OMX_U32 nTail;
+    OMX_U32 nHead;
+    OMX_U32 nCount;
+} VIDDEC_CIRCULAR_BUFFER;
 
 typedef struct VIDDEC_PORT_TYPE
 {
@@ -607,7 +587,6 @@ typedef struct VIDDEC_PORT_TYPE
     OMX_BUFFERSUPPLIERTYPE eSupplierSetting;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate[MAX_PRIVATE_BUFFERS];
     OMX_U8 nBufferCnt;
-    VIDDEC_CIRCULAR_BUFFER eTimeStamp;
 } VIDDEC_PORT_TYPE;
 
 typedef struct VIDDEC_MUTEX{
@@ -908,24 +887,11 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U8 cMBErrorIndexIn;
     OMX_U8 cMBErrorIndexOut;
 #endif
-    OMX_U8 nInMarkBufIndex;                          /* for OMX_MARKTYPE */
-    OMX_U8 nOutMarkBufIndex;                         /* for OMX_MARKTYPE */
-    OMX_MARKTYPE arrMarkBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for OMX_MARKTYPE */
-
     OMX_U8 nInCmdMarkBufIndex;                          /* for OMX_MARKTYPE */
     OMX_U8 nOutCmdMarkBufIndex;                         /* for OMX_MARKTYPE */
     OMX_MARKTYPE arrCmdMarkBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for OMX_MARKTYPE */
-    OMX_U8 nInBufIndex;                          /* for time stamps */
-    OMX_U8 nOutBufIndex;                         /* for time stamps */
-    OMX_U64 arrBufIndex[VIDDEC_MAX_QUEUE_SIZE]; /* for time stamps */
-    OMX_MARKTYPE           MTbuffMark;
-    VIDDEC_QUEUE_TYPE      qBuffMark;
-    VIDDEC_QUEUE_TYPE      qCmdMarkData;
-    VIDDEC_QUEUE_TYPE      qBytesSent;
-    OMX_U32                nBytesConsumed;
-    OMX_BOOL               bBuffMarkTaked;
-    OMX_BOOL               bBuffalreadyMarked;
 
+    VIDDEC_CIRCULAR_BUFFER eStoreTimestamps;
     OMX_STATETYPE eIdleToLoad;
     OMX_STATETYPE eExecuteToIdle;
     OMX_BOOL iEndofInputSent;
@@ -1308,22 +1274,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
 OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing);
 OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
-
-OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex);
-OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex);
-OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex);
-OMX_ERRORTYPE VIDDEC_CircBuf_Add(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_PTR pElement);
-OMX_ERRORTYPE VIDDEC_CircBuf_Remove(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_PTR* pElement);
-OMX_ERRORTYPE VIDDEC_CircBuf_Count(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_U8* pCount);
-OMX_U8 VIDDEC_CircBuf_GetHead(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex);
-OMX_ERRORTYPE VIDDEC_Propagate_Mark(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE *pBuffHead);
-OMX_ERRORTYPE VIDDEC_Queue_Init(VIDDEC_QUEUE_TYPE *queue, VIDDEC_QUEUE_TYPES type);
-OMX_ERRORTYPE VIDDEC_Queue_Flush(VIDDEC_QUEUE_TYPE *queue);
-OMX_ERRORTYPE VIDDEC_Queue_Add(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type);
-OMX_ERRORTYPE VIDDEC_Queue_Remove(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type);
-OMX_ERRORTYPE VIDDEC_Queue_Replace_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type);
-OMX_ERRORTYPE VIDDEC_Queue_Get_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement,VIDDEC_QUEUE_TYPES type);
-OMX_ERRORTYPE VIDDEC_Queue_Free(VIDDEC_QUEUE_TYPE *queue);
+OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_CIRCULAR_BUFFER* pCBuffer);
+OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_CIRCULAR_BUFFER* pCBuffer);
+OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_CIRCULAR_BUFFER* pCBuffer);
+OMX_ERRORTYPE VIDDEC_CircBuf_Add( VIDDEC_CIRCULAR_BUFFER* pCBuffer, OMX_BUFFERHEADERTYPE* pBufferHeader, OMX_MARKTYPE* pMark);
+OMX_ERRORTYPE VIDDEC_CircBuf_Remove( VIDDEC_CIRCULAR_BUFFER* pCBuffer, OMX_BUFFERHEADERTYPE* pBufferHeader, OMX_U32 nBytesconsumed, OMX_U32 ProcessMode);
+OMX_U32 VIDDEC_GetBytesConsumed(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufferHeader);
 #ifdef RESOURCE_MANAGER_ENABLED
 void VIDDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif

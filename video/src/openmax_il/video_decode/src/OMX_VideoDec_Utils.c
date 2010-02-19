@@ -171,400 +171,29 @@ OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 
 }
 
-OMX_ERRORTYPE VIDDEC_Queue_Init(VIDDEC_QUEUE_TYPE *queue, VIDDEC_QUEUE_TYPES type)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_U32 count;
-    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
-    queue->nHead = 0;
-    queue->nTail = 0;
-    queue->nElements = 0;
-
-    switch(type)
-    {
-        case VIDDEC_QUEUE_OMX_U32:
-            queue->Elements = (void*)malloc(VIDDEC_MAX_QUEUE_SIZE*sizeof(OMX_U32));
-            break;
-        case VIDDEC_QUEUE_OMX_MARKTYPE:
-            queue->Elements = (void*)malloc(VIDDEC_MAX_QUEUE_SIZE*sizeof(OMX_MARKTYPE));
-            break;
-        default:
-           break;
-    }
-
-    pthread_mutex_init(&(queue->mMutex), NULL);
-
-    for(count=0; count < VIDDEC_MAX_QUEUE_SIZE; count++)
-    {
-        queue->CounterElements[count] = 0;
-    }
-
-    eError = OMX_ErrorNone;
-EXIT:
-    return eError;
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Flush(VIDDEC_QUEUE_TYPE *queue)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_U32 count;
-    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
-    if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-    queue->nHead = 0;
-    queue->nTail = 0;
-    queue->nElements = 0;
-
-    for(count=0; count < VIDDEC_MAX_QUEUE_SIZE; count++)
-    {
-        queue->CounterElements[count] = 0;
-    }
-    eError = OMX_ErrorNone;
-
-    if (pthread_mutex_unlock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-    }
-
-EXIT:
-    return eError;
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Add(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(queue, pElement, OMX_TRUE);
-    if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-    if(queue->nElements == 0)
-    {
-        switch(type)
-        {
-            case VIDDEC_QUEUE_OMX_U32:
-                {
-                    OMX_U32 *pLocal = (OMX_U32 *)queue->Elements;
-                    pLocal[queue->nHead] = *(OMX_U32 *)pElement;
-                }
-                break;
-            case VIDDEC_QUEUE_OMX_MARKTYPE:
-                {
-                    OMX_MARKTYPE *pLocal = (OMX_MARKTYPE *)queue->Elements;
-                    pLocal[queue->nHead] = *(OMX_MARKTYPE *)pElement;
-                }
-                break;
-            default:
-               break;
-        }
-        queue->CounterElements[queue->nHead] = 1;
-        queue->nElements++;
-        eError = OMX_ErrorNone;
-    }
-    else
-    {
-        switch(type)
-        {
-            case VIDDEC_QUEUE_OMX_U32:
-                {
-                    OMX_U32 *pLocal = (OMX_U32 *)queue->Elements;
-
-                    if(pLocal[queue->nHead] == *(OMX_U32 *)pElement)
-                    {
-                        queue->CounterElements[queue->nHead]++;
-                        eError = OMX_ErrorNone;
-                    }
-                    else
-                    {
-                        if(queue->nElements >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            eError = OMX_ErrorInsufficientResources;
-                            goto UNLOCK;
-                        }
-                        queue->nHead++;
-                        if(queue->nHead >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            queue->nHead = 0;
-                        }
-                        pLocal[queue->nHead] = *(OMX_U32 *)pElement;
-                        queue->CounterElements[queue->nHead] = 1;
-                        queue->nElements++;
-                    }
-                }
-                break;
-            case VIDDEC_QUEUE_OMX_MARKTYPE:
-                {
-                    OMX_MARKTYPE *pLocal = (OMX_MARKTYPE *)queue->Elements;
-                    
-                    if(pLocal[queue->nHead].hMarkTargetComponent == ((OMX_MARKTYPE *)pElement)->hMarkTargetComponent
-                        && pLocal[queue->nHead].pMarkData == ((OMX_MARKTYPE *)pElement)->pMarkData)
-                    {
-                        queue->CounterElements[queue->nHead]++;
-                        eError = OMX_ErrorNone;
-                    }
-                    else
-                    {
-                        if(queue->nElements >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            eError = OMX_ErrorInsufficientResources;
-                            goto UNLOCK;
-                        }
-                        queue->nHead++;
-                        if(queue->nHead >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            queue->nHead = 0;
-                        }
-                        pLocal[queue->nHead] = *(OMX_MARKTYPE *)pElement;
-                        queue->CounterElements[queue->nHead] = 1;
-                        queue->nElements++;
-                    }
-                }
-                break;
-            default:
-               break;
-        }
-
-        eError = OMX_ErrorNone;
-    }
-UNLOCK:
-    if (pthread_mutex_unlock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-    }
-EXIT:
-    return eError;
-
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Remove(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
-    if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-
-    if(queue->nElements > 0)
-    {
-        if(pElement)
-        {
-            switch(type)
-            {
-                case VIDDEC_QUEUE_OMX_U32:
-                {
-                    OMX_U32 *pLocal = (OMX_U32 *)queue->Elements;
-                    *(OMX_U32 *)pElement = pLocal[queue->nTail];
-                    break;
-                }
-                case VIDDEC_QUEUE_OMX_MARKTYPE:
-                {
-                    OMX_MARKTYPE *pLocal = (OMX_MARKTYPE *)queue->Elements;
-                    *(OMX_MARKTYPE *)pElement = pLocal[queue->nTail];
-                    break;
-                }
-                default:
-                   break;
-            }
-        }
-        queue->CounterElements[queue->nTail]--;
-        if(queue->CounterElements[queue->nTail] == 0)
-        {
-            queue->nElements--;
-            if(queue->nElements > 0)
-            {
-                queue->nTail++;
-                if(queue->nTail == VIDDEC_MAX_QUEUE_SIZE)
-                {
-                    queue->nTail = 0;
-                }
-            }
-        }
-        eError = OMX_ErrorNone;
-    }
-
-    if (pthread_mutex_unlock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-    }
-EXIT:
-    return eError;
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Get_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
-    if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-    if(queue->nElements > 0)
-    {
-        switch(type)
-        {
-            case VIDDEC_QUEUE_OMX_U32:
-            {
-                OMX_U32 *pLocal = (OMX_U32 *)queue->Elements;
-                *(OMX_U32 *)pElement = pLocal[queue->nTail];
-                break;
-            }
-            case VIDDEC_QUEUE_OMX_MARKTYPE:
-            {
-                OMX_MARKTYPE *pLocal = (OMX_MARKTYPE *)queue->Elements;
-                *(OMX_MARKTYPE *)pElement = pLocal[queue->nTail];
-                break;
-            }
-            default:
-               break;
-        }
-        eError = OMX_ErrorNone;
-    }
-    if (pthread_mutex_unlock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-    }
-
-EXIT:
-    return eError;
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Replace_Tail(VIDDEC_QUEUE_TYPE *queue, OMX_PTR pElement, VIDDEC_QUEUE_TYPES type)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(queue, pElement, OMX_TRUE);
-    if (pthread_mutex_lock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-    if(queue->nElements > 0)
-    {
-        switch(type)
-        {
-            case VIDDEC_QUEUE_OMX_U32:
-            {
-                OMX_U32 *pLocal = (OMX_U32 *)queue->Elements;
-                if(*(OMX_U32 *)pElement != pLocal[queue->nTail])
-                {
-                    if(queue->CounterElements[queue->nTail] != 1)
-                    {
-                        if(queue->nElements >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            eError = OMX_ErrorInsufficientResources;
-                            goto UNLOCK;
-                        }
-                        queue->CounterElements[queue->nTail]--;
-                        queue->nTail--;
-                        if( (queue->nTail >= VIDDEC_MAX_QUEUE_SIZE) || (queue->nTail < 0) )
-                        {
-                            queue->nTail = VIDDEC_MAX_QUEUE_SIZE-1;
-                        }
-                        queue->CounterElements[queue->nTail] = 1;
-                        queue->nElements++;
-                    }
-                    pLocal[queue->nTail] = *(OMX_U32 *)pElement;
-                    eError = OMX_ErrorNone;
-                    goto UNLOCK;
-                }
-                break;
-            }
-            case VIDDEC_QUEUE_OMX_MARKTYPE:
-            {
-                OMX_MARKTYPE *pLocal = (OMX_MARKTYPE *)queue->Elements;
-                if(pLocal[queue->nTail].hMarkTargetComponent != ((OMX_MARKTYPE *)pElement)->hMarkTargetComponent
-                    || pLocal[queue->nTail].pMarkData != ((OMX_MARKTYPE *)pElement)->pMarkData)
-                {
-                    if(queue->CounterElements[queue->nTail] != 1)
-                    {
-                        if(queue->nElements >= VIDDEC_MAX_QUEUE_SIZE)
-                        {
-                            eError = OMX_ErrorInsufficientResources;
-                            goto UNLOCK;
-                        }
-                        queue->CounterElements[queue->nTail]--;
-                        queue->nTail--;
-                        if( (queue->nTail >= VIDDEC_MAX_QUEUE_SIZE) || (queue->nTail < 0) )
-                        {
-                            queue->nTail = VIDDEC_MAX_QUEUE_SIZE-1;
-                        }
-                        queue->CounterElements[queue->nTail] = 1;
-                        queue->nElements++;
-                    }
-                    pLocal[queue->nTail] = *(OMX_MARKTYPE *)pElement;
-                    eError = OMX_ErrorNone;
-                    goto UNLOCK;
-                }
-                break;
-            }
-            default:
-               break;
-        }
-    }
-UNLOCK:
-    if (pthread_mutex_unlock (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-    }
-EXIT:
-    return eError;
-}
-
-OMX_ERRORTYPE VIDDEC_Queue_Free(VIDDEC_QUEUE_TYPE *queue)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    OMX_CONF_CHECK_CMD(queue, OMX_TRUE, OMX_TRUE);
-    queue->nHead = 0;
-    queue->nTail = 0;
-    queue->nElements = 0;
-
-    if(queue->Elements)
-    {
-        free(queue->Elements);
-    }
-    queue->Elements = NULL;
-
-    if (pthread_mutex_destroy (&(queue->mMutex)) != 0) {
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
-    }
-
-    eError = OMX_ErrorNone;
-EXIT:
-    return eError;
-}
-
 /*----------------------------------------------------------------------------*/
 /**
   * VIDDEC_CircBuf_Init()
   **/
 /*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex)
+OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_CIRCULAR_BUFFER* pCBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_U32 nCount = 0;
 
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        return eError;
-    }
+    OMX_CONF_CHECK_CMD(pCBuffer, OMX_TRUE, OMX_TRUE);
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pTempCBuffer->m_lock != NULL) {
-        free(pTempCBuffer->m_lock);
-        pTempCBuffer->m_lock = NULL;
-    }
-    OMX_MALLOC_STRUCT(pTempCBuffer->m_lock, pthread_mutex_t,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel3]);
-    pthread_mutex_init(pTempCBuffer->m_lock, NULL);
+    if(pCBuffer->m_lock != NULL) {
+        free(pCBuffer->m_lock);
+        pCBuffer->m_lock = NULL;
+     }
+    OMX_MALLOC_STRUCT(pCBuffer->m_lock, pthread_mutex_t,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel3]);
+    pthread_mutex_init(pCBuffer->m_lock, NULL);
 #endif
-    for(nCount = 0; nCount >= CBUFFER_SIZE; nCount++) {
-        pTempCBuffer->pElement[nCount] = NULL;
-    }
 EXIT:
-    pTempCBuffer->nCount = 0;
-    pTempCBuffer->nHead = 0;
-    pTempCBuffer->nTail = 0;
-
-    return eError;
+    pCBuffer->nCount = 0;
+    pCBuffer->nHead = 0;
+    pCBuffer->nTail = 0;
+     return eError;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -572,36 +201,23 @@ EXIT:
   * VIDDEC_CircBuf_Flush()
   **/
 /*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex)
+OMX_ERRORTYPE VIDDEC_CircBuf_Flush(VIDDEC_CIRCULAR_BUFFER* pCBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_U32 nCount = 0;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        return eError;
-    }
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_lock(pTempCBuffer->m_lock) != 0) {
+    if(pthread_mutex_lock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
-        return eError;
+        goto EXIT;
     }
 #endif
-    for (nCount = pTempCBuffer->nTail; nCount <= pTempCBuffer->nHead; nCount++){
-        pTempCBuffer->pElement[nCount] = NULL;
-    }
-    pTempCBuffer->nCount = 0;
-    pTempCBuffer->nHead = 0;
-    pTempCBuffer->nTail = 0;
+    pCBuffer->nCount = 0;
+    pCBuffer->nHead = 0;
+    pCBuffer->nTail = 0;
 
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_unlock(pTempCBuffer->m_lock) != 0) {
+    if(pthread_mutex_unlock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
-        return eError;
+        goto EXIT;
     }
 #endif
 EXIT:
@@ -613,28 +229,15 @@ EXIT:
   * VIDDEC_CircBuf_DeInit()
   **/
 /*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex)
+OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_CIRCULAR_BUFFER* pCBuffer)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_U32 nCount = 0;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        return eError;
-    }
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pTempCBuffer->m_lock != NULL) {
-        free(pTempCBuffer->m_lock);
-        pTempCBuffer->m_lock = NULL;
+    if(pCBuffer->m_lock != NULL) {
+        free(pCBuffer->m_lock);
+        pCBuffer->m_lock = NULL;
     }
 #endif
-    for(nCount = 0; nCount >= CBUFFER_SIZE; nCount++) {
-        pTempCBuffer->pElement[nCount] = NULL;
-    }
 EXIT:
     return eError;
 }
@@ -645,36 +248,70 @@ EXIT:
   * return the error number in case of exist an error.
   **/
 /*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_Add(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_PTR pElement)
+OMX_ERRORTYPE VIDDEC_CircBuf_Add( VIDDEC_CIRCULAR_BUFFER* pCBuffer, OMX_BUFFERHEADERTYPE* pBufferHeader, OMX_MARKTYPE* pMark)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pElement, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        return eError;
+    VIDDEC_CBUFFER_BUFFERFLAGS *pBufferFlags = NULL;
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "+++ENTERING\n");
+#endif
+    OMX_CONF_CHECK_CMD(pCBuffer, pBufferHeader, OMX_TRUE);
+    if (pBufferHeader->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+#ifdef VIDDEC_PROPAGATELOGD
+        LOGD("returning CC buffer nTimeStamp %lld nTickCount %d nFlags %x hMarkTargetComponent %x pMarkData %x\n"
+            ,pBufferHeader->nTimeStamp
+            ,pBufferHeader->nTickCount
+            ,pBufferHeader->nFlags
+            ,pBufferHeader->hMarkTargetComponent
+            ,pBufferHeader->pMarkData);
+#endif
+            goto EXIT;
     }
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_lock(pTempCBuffer->m_lock) != 0) {
+    if(pthread_mutex_lock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
         return eError;
     }
 #endif
-    pTempCBuffer->pElement[pTempCBuffer->nHead++] = pElement;
-    pTempCBuffer->nCount++;
-    if(pTempCBuffer->nHead >= CBUFFER_SIZE){
-        pTempCBuffer->nHead = 0;
+    pBufferFlags = &pCBuffer->pElements[pCBuffer->nHead];
+    pBufferFlags->nTimeStamp = pBufferHeader->nTimeStamp;
+    pBufferFlags->nTickCount = pBufferHeader->nTickCount;
+    /*OMX_BUFFERFLAG_STARTTIME added from OMAPS00197283*/
+    pBufferFlags->nFlags = pBufferHeader->nFlags & (OMX_BUFFERFLAG_DECODEONLY|OMX_BUFFERFLAG_STARTTIME);
+    pBufferHeader->nFlags = 0;
+    /* clear flags in inport buffer after they are transferred, so they are zeroed when returned to application layer */
+    pBufferFlags->nBytesConsumed = pBufferHeader->nFilledLen;
+    if (pMark != NULL){
+        pBufferFlags->hMarkTargetComponent = pMark->hMarkTargetComponent;
+        pBufferFlags->pMarkData = pMark->pMarkData;
+    }
+    else {
+        pBufferFlags->hMarkTargetComponent = pBufferHeader->hMarkTargetComponent;
+        pBufferFlags->pMarkData = pBufferHeader->pMarkData;
+    }
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "Adding nTimeStamp %lld nTickCount %d nFlags %x hMarkTargetComponent %x pMarkData %x\n"
+        ,pBufferHeader->nTimeStamp
+        ,pBufferHeader->nTickCount
+        ,pBufferHeader->nFlags
+        ,pBufferHeader->hMarkTargetComponent
+        ,pBufferHeader->pMarkData);
+#endif
+    pCBuffer->nHead++;
+    pCBuffer->nCount++;
+    if(pCBuffer->nHead >= CBUFFER_ARRAYSIZE){
+        pCBuffer->nHead = 0;
     }
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_unlock(pTempCBuffer->m_lock) != 0) {
+    if(pthread_mutex_unlock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
         return eError;
     }
 #endif
 EXIT:
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "---Exiting\n");
+#endif
     return eError;
 }
 
@@ -684,119 +321,124 @@ EXIT:
   * return the error number in case of exist an error.
   **/
 /*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_Remove(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_PTR* pElement)
+OMX_ERRORTYPE VIDDEC_CircBuf_Remove( VIDDEC_CIRCULAR_BUFFER* pCBuffer, OMX_BUFFERHEADERTYPE* pBufferHeader, OMX_U32 nBytesconsumed, OMX_U32 ProcessMode)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pElement, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        return eError;
-    }
+    VIDDEC_CBUFFER_BUFFERFLAGS *pBufferFlags = NULL;
+    OMX_S32 nDiffBytesconsumed = 0;
+    OMX_S32 nTempBytesconsumed = 0;
+    OMX_BOOL bKeepLoop = OMX_TRUE;
+    nTempBytesconsumed = (OMX_S32)nBytesconsumed;
+    nDiffBytesconsumed = (OMX_S32)nBytesconsumed;
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "+++ENTERING\n");
+#endif
+    OMX_CONF_CHECK_CMD(pCBuffer, pBufferHeader, OMX_TRUE);
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_lock(pTempCBuffer->m_lock) != 0) {
+    if(pthread_mutex_lock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
         return eError;
     }
 #endif
-    if(pTempCBuffer->nCount)
-    {
-        *pElement = pTempCBuffer->pElement[pTempCBuffer->nTail];
-        pTempCBuffer->pElement[pTempCBuffer->nTail++] = NULL;
-        pTempCBuffer->nCount--;
-        if(pTempCBuffer->nTail >= CBUFFER_SIZE){
-            pTempCBuffer->nTail = 0;
+    if ((pCBuffer->nTail != pCBuffer->nHead)) {
+        pBufferFlags = &pCBuffer->pElements[pCBuffer->nTail];
+    }
+    else {
+        if (pCBuffer->nTail == 0 ){
+            pBufferFlags = &pCBuffer->pElements[CBUFFER_ARRAYSIZE - 1];
+        }
+        else {
+            pBufferFlags = &pCBuffer->pElements[pCBuffer->nTail - 1];
         }
     }
-    else
-    {
-        *pElement = NULL;
+    pBufferHeader->nTimeStamp = pBufferFlags->nTimeStamp;
+    pBufferHeader->nTickCount = pBufferFlags->nTickCount;
+    pBufferHeader->nFlags |= pBufferFlags->nFlags;
+    pBufferHeader->hMarkTargetComponent = pBufferFlags->hMarkTargetComponent;
+    pBufferHeader->pMarkData = pBufferFlags->pMarkData;
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "removing nTimeStamp %lld nTickCount %d nFlags %x hMarkTarget %x pMarkData %x  tail %d head %d nTempBytes %d nCount %d BConsumed %d\n"
+        ,pBufferHeader->nTimeStamp
+        ,pBufferHeader->nTickCount
+        ,pBufferHeader->nFlags
+        ,pBufferHeader->hMarkTargetComponent
+        ,pBufferHeader->pMarkData,pCBuffer->nTail,pCBuffer->nHead,nTempBytesconsumed,pCBuffer->nCount,(int)pBufferFlags->nBytesConsumed);
+#endif
+    if ((ProcessMode != 0)  && (pCBuffer->nCount > 0)) {
+        while (bKeepLoop){
+            pBufferFlags = &pCBuffer->pElements[pCBuffer->nTail];
+            nDiffBytesconsumed -= (int)pBufferFlags->nBytesConsumed;
+            if ( (pCBuffer->nCount <= 0)) {
+#ifdef VIDDEC_PROPAGATELOGD
+                LOGD( "Exiting CB with zero elements\n");
+#endif
+                bKeepLoop = OMX_FALSE;
+                break;
+            }
+            else if (nDiffBytesconsumed > 0) {
+              nTempBytesconsumed -= pBufferFlags->nBytesConsumed;
+                pCBuffer->nTail++;
+                if(pCBuffer->nTail >= CBUFFER_ARRAYSIZE){
+                    pCBuffer->nTail = 0;
+                }
+                pCBuffer->nCount--;
+#ifdef VIDDEC_PROPAGATELOGD
+                LOGD( "removing tail no complete temp %d Bytesconsumed %d tail %d head %d\n",
+                    nTempBytesconsumed,
+                    pBufferFlags->nBytesConsumed,
+                    pCBuffer->nTail,
+                    pCBuffer->nHead);
+#endif
+            }/*added code base in minimum NAL lenght*/
+            else if (nDiffBytesconsumed < 0) {
+                pBufferFlags->nBytesConsumed -= nTempBytesconsumed;
+#ifdef VIDDEC_PROPAGATELOGD
+                LOGD( "updating CB values temp %d storeBytesconsumed %d tail %d head %d\n",
+                    nTempBytesconsumed,
+                    pBufferFlags->nBytesConsumed,
+                    pCBuffer->nTail,
+                    pCBuffer->nHead);
+#endif
+                    bKeepLoop = OMX_FALSE;
+                    break;
+            }/*added code base in minimum NAL lenght*/
+            else {
+                pBufferFlags->nBytesConsumed -= nTempBytesconsumed;
+                bKeepLoop = OMX_FALSE;
+#ifdef VIDDEC_PROPAGATELOGD
+                LOGD( "end loop temp %d Bytesconsumed %d tail %d head %d\n",
+                    nTempBytesconsumed,
+                    pBufferFlags->nBytesConsumed,
+                    pCBuffer->nTail,
+                    pCBuffer->nHead);
+#endif
+                break;
+            }
+        }
     }
 #ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_unlock(pTempCBuffer->m_lock) != 0) {
+    if (pCBuffer->nCount > 0) {
+        if (ProcessMode == 0) {/*frame mode*/
+            pCBuffer->nTail++;
+            if(pCBuffer->nTail >= CBUFFER_ARRAYSIZE){
+                pCBuffer->nTail = 0;
+            }
+            pCBuffer->nCount--;
+        }
+    }
+#endif
+
+#ifdef VIDDEC_CBUFFER_LOCK
+    if(pthread_mutex_unlock(pCBuffer->m_lock) != 0) {
         eError = OMX_ErrorHardware;
         return eError;
     }
 #endif
 EXIT:
+#ifdef VIDDEC_PROPAGATELOGD
+    LOGD( "---Exiting\n");
+#endif
     return eError;
-}
-
-/*----------------------------------------------------------------------------*/
-/**
-  * VIDDEC_CircBuf_Count() get the number of elements in the Circular Buffer
-  * return the error number in case of exist an error.
-  **/
-/*----------------------------------------------------------------------------*/
-OMX_ERRORTYPE VIDDEC_CircBuf_Count(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex, OMX_U8* pCount)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, pCount, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        eError = OMX_ErrorBadParameter;
-        pCount = 0;
-        return eError;
-    }
-#ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_lock(pTempCBuffer->m_lock) != 0) {
-        eError = OMX_ErrorHardware;
-        return eError;
-    }
-#endif
-
-    *pCount = pTempCBuffer->nCount;
-
-#ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_unlock(pTempCBuffer->m_lock) != 0) {
-        eError = OMX_ErrorHardware;
-        return eError;
-    }
-#endif
-EXIT:
-    return eError;
-}
-
-/*----------------------------------------------------------------------------*/
-/**
-  * VIDDEC_CircBuf_Head() get the number of elements in the Circular Buffer
-  * return the error number in case of exist an error.
-  **/
-/*----------------------------------------------------------------------------*/
-OMX_U8 VIDDEC_CircBuf_GetHead(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, VIDDEC_CBUFFER_TYPE nTypeIndex, VIDDEC_PORT_INDEX nPortIndex)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    VIDDEC_CIRCULAR_BUFFER *pTempCBuffer = NULL;
-    OMX_U8 ucHead = 0;
-    OMX_CONF_CHECK_CMD(pComponentPrivate, OMX_TRUE, OMX_TRUE);
-    if(nTypeIndex == VIDDEC_CBUFFER_TIMESTAMP){
-        pTempCBuffer = &pComponentPrivate->pCompPort[nPortIndex]->eTimeStamp;
-    }
-    else {
-        ucHead = 0;
-        return 0;
-    }
-#ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_lock(pTempCBuffer->m_lock) != 0) {
-        return 0;
-    }
-#endif
-
-    ucHead = pTempCBuffer->nHead;
-
-#ifdef VIDDEC_CBUFFER_LOCK
-    if(pthread_mutex_unlock(pTempCBuffer->m_lock) != 0) {
-        return 0;
-    }
-#endif
-EXIT:
-    return ucHead;
 }
 
 /* ========================================================================== */
@@ -818,11 +460,6 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 
     switch(nPassing){
         case VIDDEC_INIT_ALL:
-        case VIDDEC_INIT_STRUCTS:
-            pComponentPrivate->nInBufIndex  = 0;
-            pComponentPrivate->nOutBufIndex = 0;
-            pComponentPrivate->nInMarkBufIndex  = 0;
-            pComponentPrivate->nOutMarkBufIndex = 0;
             pComponentPrivate->nInCmdMarkBufIndex  = 0;
             pComponentPrivate->nOutCmdMarkBufIndex = 0;
 
@@ -1070,7 +707,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->ProcessMode                      = VIDDEC_DEFAULT_PROCESSMODE;
             pComponentPrivate->bParserEnabled                   = OMX_TRUE;
 
-            VIDDEC_CircBuf_Init(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
+            VIDDEC_CircBuf_Init(&pComponentPrivate->eStoreTimestamps);
             VIDDEC_PTHREAD_MUTEX_INIT(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sInSemaphore);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sOutSemaphore);
@@ -1146,7 +783,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 
         case VIDDEC_INIT_VARS:
             /* Set the process mode to zero, frame = 0, stream = 1 */
-            VIDDEC_CircBuf_Flush(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
+            VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
             pComponentPrivate->bIsPaused                        = 0;
             pComponentPrivate->bIsStopping                      = 0;
             pComponentPrivate->bFirstBuffer                     = 1;
@@ -1159,9 +796,6 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->frameCounter                     = 0;
             pComponentPrivate->bMult16Size                      = OMX_FALSE;
             pComponentPrivate->bFlushOut                        = OMX_FALSE;
-            pComponentPrivate->nBytesConsumed                   = 0;
-            pComponentPrivate->bBuffMarkTaked                   = OMX_FALSE;
-            pComponentPrivate->bBuffalreadyMarked               = OMX_FALSE;
             pComponentPrivate->bFirstHeader                     = OMX_FALSE;
             pComponentPrivate->nDisplayWidth                    = 0;
             pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]  = 0;
@@ -1188,10 +822,6 @@ case VIDDEC_INIT_IDLEEXECUTING:
             pComponentPrivate->bMult16Size                      = OMX_FALSE;
             pComponentPrivate->bFlushOut                        = OMX_FALSE;
             pComponentPrivate->bFirstHeader                     = OMX_FALSE;
-            pComponentPrivate->nInBufIndex  = 0;
-            pComponentPrivate->nOutBufIndex = 0;
-            pComponentPrivate->nInMarkBufIndex  = 0;
-            pComponentPrivate->nOutMarkBufIndex = 0;
             pComponentPrivate->nInCmdMarkBufIndex  = 0;
             pComponentPrivate->nOutCmdMarkBufIndex = 0;
         break;
@@ -1849,9 +1479,19 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "VideDec->PostProc EmptyThisBuffer\n");
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "wait to return buffer\n");
                             pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
-                            VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
-                            eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent, pBuffHead);
-                        }
+                            eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
+                                                  pBuffHead,
+                                                  VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
+#ifndef VIDDEC_USENALINFRAMEPROP
+                                                  pComponentPrivate->ProcessMode);
+#else
+                                                  VIDDEC_SETNALFRAMEMODE?0:1);
+#endif
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
+                                eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->hTunnelComponent, pBuffHead);
+                            }
                 }
             }
             else {
@@ -1867,12 +1507,23 @@ OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
                                               PERF_ModuleHLMM);
 #endif
                             pBuffHead = (OMX_BUFFERHEADERTYPE*)pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]->pBufferHdr;
-                            VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
+                            eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
+                                                  pBuffHead,
+                                                  VIDDEC_GetBytesConsumed( pComponentPrivate, pBuffHead),
+#ifndef VIDDEC_USENALINFRAMEPROP
+                                                  pComponentPrivate->ProcessMode);
+#else
+                                                  VIDDEC_SETNALFRAMEMODE?0:1);
+#endif
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
                             eError = VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
                        }
                 }
            }
         }
+EXIT:
     OMX_PRBUFFER1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
@@ -2052,7 +1703,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
             VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
 
         }
-        VIDDEC_CircBuf_Flush(pComponentPrivate, VIDDEC_CBUFFER_TIMESTAMP, VIDDEC_INPUT_PORT);
+        VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
         OMX_VidDec_Return(pComponentPrivate);
         OMX_VidDec_Return(pComponentPrivate);
         VIDDEC_ReturnBuffers(pComponentPrivate, VIDDEC_INPUT_PORT, OMX_TRUE);
@@ -2477,6 +2128,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
                     VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                 }
+                VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
                 VIDDEC_HandleCommandFlush(pComponentPrivate, -1, OMX_FALSE);
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -4644,6 +4296,24 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 /* We have received some part of the config Buffer.
                  * Send EmptyThisBuffer of the buffer we have just received to Client
                  */
+                if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                    eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                               pBuffHead,
+                                               &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                    pComponentPrivate->nOutCmdMarkBufIndex++;
+                    pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                }
+                else {
+                    eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                       pBuffHead,
+                                       NULL);
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                }
                 VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
 
                 /* Exit with out error to avoid sending again EmptyBufferDone in upper function*/
@@ -4984,6 +4654,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                       pBuffHead->nFilledLen,
                                       PERF_ModuleHLMM);
             #endif
+                    if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                        eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                   pBuffHead,
+                                                   &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                        pComponentPrivate->nOutCmdMarkBufIndex++;
+                        pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                    }
+                    else {
+                        eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                           pBuffHead,
+                                           NULL);
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                    }
                     VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     pComponentPrivate->bFirstHeader = OMX_TRUE;
                     goto EXIT;
@@ -5035,6 +4723,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                         pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
+                        if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                            eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                       pBuffHead,
+                                                       &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
+                            pComponentPrivate->nOutCmdMarkBufIndex++;
+                            pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                        }
+                        else {
+                            eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                               pBuffHead,
+                                               NULL);
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
+                        }
                         VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                         return OMX_ErrorNone;
                    }
@@ -5069,6 +4775,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                                 pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
+                            if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                           pBuffHead,
+                                                           &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                                if (eError != OMX_ErrorNone) {
+                                    goto EXIT;
+                                }
+                                pComponentPrivate->nOutCmdMarkBufIndex++;
+                                pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                            }
+                            else {
+                                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                   pBuffHead,
+                                                   NULL);
+                                if (eError != OMX_ErrorNone) {
+                                    goto EXIT;
+                                }
+                            }
                             VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                             eError = OMX_ErrorNone;
                             goto EXIT;
@@ -5147,6 +4871,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #else
                             pBuffHead->nOffset = VIDDEC_WMV_BUFFER_OFFSET;
 #endif
+                        if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                            eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                       pBuffHead,
+                                                       &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
+                            pComponentPrivate->nOutCmdMarkBufIndex++;
+                            pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                        }
+                        else {
+                            eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                               pBuffHead,
+                                               NULL);
+                            if (eError != OMX_ErrorNone) {
+                                goto EXIT;
+                            }
+                        }
                         VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                         eError = OMX_ErrorNone;
                         goto EXIT;
@@ -5207,6 +4949,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                   pBuffHead->nFilledLen,
                                   PERF_ModuleHLMM);
         #endif
+                if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                    eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                               pBuffHead,
+                                               &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                    pComponentPrivate->nOutCmdMarkBufIndex++;
+                    pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                }
+                else {
+                    eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                       pBuffHead,
+                                       NULL);
+                    if (eError != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                }
                 VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
             }
             eError = OMX_ErrorNone;
@@ -5225,23 +4985,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         }
     }
 #endif
-
-
-    if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
-        pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].hMarkTargetComponent = pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex].hMarkTargetComponent;
-        pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].pMarkData = pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex].pMarkData;
-        pComponentPrivate->nOutCmdMarkBufIndex++;
-        pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
-        pComponentPrivate->nInMarkBufIndex++;
-        pComponentPrivate->nInMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
-    }
-    else {
-        pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].hMarkTargetComponent = pBuffHead->hMarkTargetComponent;
-        pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].pMarkData = pBuffHead->pMarkData;
-        pComponentPrivate->nInMarkBufIndex++;
-        pComponentPrivate->nInMarkBufIndex  %= VIDDEC_MAX_QUEUE_SIZE;
-    }
-
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
     OMX_PRBUFFER1(pComponentPrivate->dbg, "nFilledLen 0x%lx nFlags 0x%lx\n", pBuffHead->nFilledLen,pBuffHead->nFlags);
     pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
@@ -5349,26 +5092,23 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 goto EXIT;
             }
 
-            if (pComponentPrivate->ProcessMode == 0) {
-                OMX_U8 ucIndex = 0;
-                OMX_PTR pBufferFlags = NULL;
-                ucIndex = VIDDEC_CircBuf_GetHead(pComponentPrivate,
-                                                 VIDDEC_CBUFFER_TIMESTAMP,
-                                                 VIDDEC_INPUT_PORT);
-                pComponentPrivate->aBufferFlags[ucIndex].nTimeStamp = pBuffHead->nTimeStamp;
-                pComponentPrivate->aBufferFlags[ucIndex].nTickCount = pBuffHead->nTickCount;
-                pBuffHead->nFlags &= ~OMX_BUFFERFLAG_EOS;
-                pComponentPrivate->aBufferFlags[ucIndex].nFlags = pBuffHead->nFlags;
-                pBufferFlags = &pComponentPrivate->aBufferFlags[ucIndex];
-                VIDDEC_CircBuf_Add(pComponentPrivate,
-                                   VIDDEC_CBUFFER_TIMESTAMP,
-                                   VIDDEC_INPUT_PORT,
-                                   pBufferFlags);
+            if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                           pBuffHead,
+                                           &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                if (eError != OMX_ErrorNone) {
+                    goto EXIT;
+                }
+                pComponentPrivate->nOutCmdMarkBufIndex++;
+                pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
             }
             else {
-                pComponentPrivate->arrBufIndex[pComponentPrivate->nInBufIndex] = pBuffHead->nTimeStamp;
-                pComponentPrivate->nInBufIndex++;
-                pComponentPrivate->nInBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                   pBuffHead,
+                                   NULL);
+                if (eError != OMX_ErrorNone) {
+                    goto EXIT;
+                }
             }
             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld\n", pBuffHead->nTimeStamp);
 
@@ -5562,6 +5302,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 
                 if(pComponentPrivate->bDynamicConfigurationInProgress){
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
+                    if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                        eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                                   pBuffHead,
+                                                   &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                        pComponentPrivate->nOutCmdMarkBufIndex++;
+                        pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                    }
+                    else {
+                        eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                           pBuffHead,
+                                           NULL);
+                        if (eError != OMX_ErrorNone) {
+                            goto EXIT;
+                        }
+                    }
                     VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
                     goto EXIT;
                 }
@@ -5879,26 +5637,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 goto EXIT;
             }
             /* Store time stamp information */
-            if (pComponentPrivate->ProcessMode == 0) {
-                OMX_U8 ucIndex = 0;
-                OMX_PTR pBufferFlags = NULL;
-                ucIndex = VIDDEC_CircBuf_GetHead(pComponentPrivate,
-                                                 VIDDEC_CBUFFER_TIMESTAMP,
-                                                 VIDDEC_INPUT_PORT);
-                pComponentPrivate->aBufferFlags[ucIndex].nTimeStamp = pBuffHead->nTimeStamp;
-                pBuffHead->nFlags &= ~OMX_BUFFERFLAG_EOS;
-                pComponentPrivate->aBufferFlags[ucIndex].nFlags = pBuffHead->nFlags;
-                pComponentPrivate->aBufferFlags[ucIndex].nTickCount = pBuffHead->nTickCount;
-                pBufferFlags = &pComponentPrivate->aBufferFlags[ucIndex];
-                VIDDEC_CircBuf_Add(pComponentPrivate,
-                                   VIDDEC_CBUFFER_TIMESTAMP,
-                                   VIDDEC_INPUT_PORT,
-                                   pBufferFlags);
+
+            if (pComponentPrivate->nInCmdMarkBufIndex != pComponentPrivate->nOutCmdMarkBufIndex) {
+                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                           pBuffHead,
+                                           &pComponentPrivate->arrCmdMarkBufIndex[pComponentPrivate->nOutCmdMarkBufIndex]);
+                if (eError != OMX_ErrorNone) {
+                    goto EXIT;
+                }
+                pComponentPrivate->nOutCmdMarkBufIndex++;
+                pComponentPrivate->nOutCmdMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
             }
             else {
-                pComponentPrivate->arrBufIndex[pComponentPrivate->nInBufIndex] = pBuffHead->nTimeStamp;
-                pComponentPrivate->nInBufIndex++;
-                pComponentPrivate->nInBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
+                eError = VIDDEC_CircBuf_Add(&pComponentPrivate->eStoreTimestamps,
+                                   pBuffHead,
+                                   NULL);
+                if (eError != OMX_ErrorNone) {
+                    goto EXIT;
+                }
             }
             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld\n", pBuffHead->nTimeStamp);
             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nOffset %lu\n", pBuffHead->nOffset);
@@ -6016,6 +5772,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
     OMX_ERRORTYPE eExtendedError = OMX_ErrorNone;
     OMX_BUFFERHEADERTYPE* pBuffHead;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
+    OMX_U32 nBytesConsumed = 0;
     int ret;
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "+++ENTERING\n");
@@ -6054,6 +5811,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
             ulFrameIndex = pUalgOutParams->ulFrameIndex;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6074,6 +5832,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pUalgOutParams = (WMV9DEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
             ulFrameIndex = pUalgOutParams->ulFrameIndex;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6094,6 +5853,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
             ulFrameIndex = pUalgOutParams->ulFrameIndex;
+            nBytesConsumed = pUalgOutParams->uBytesConsumed;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6113,6 +5873,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pUalgOutParams = (MP2VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->lErrorCode);
             ulFrameIndex = pUalgOutParams->ulDisplayID;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6133,6 +5894,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             pUalgOutParams = (SPARKVD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
             nErrorCode = (pUalgOutParams->iErrorCode);
             ulFrameIndex = pUalgOutParams->ulDisplayID;
+            nBytesConsumed = pUalgOutParams->uBytesConsumed;
             if(pUalgOutParams->ulDecodedFrameType == VIDDEC_I_FRAME) {
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_SYNCFRAME;
                 pBuffHead->nFlags |= VIDDEC_BUFFERFLAG_FRAMETYPE_I_FRAME;
@@ -6233,6 +5995,18 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             }
         }
 #endif
+        eError = VIDDEC_CircBuf_Remove(&pComponentPrivate->eStoreTimestamps,
+                              pBuffHead,
+                              nBytesConsumed,
+#ifndef VIDDEC_USENALINFRAMEPROP
+                              pComponentPrivate->ProcessMode);
+#else
+                              VIDDEC_SETNALFRAMEMODE?0:1);
+#endif
+
+        if (eError != OMX_ErrorNone) {
+            goto EXIT;
+        }
         if (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
             if(pComponentPrivate->bFirstBuffer) {
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "**** Setting OMX_BUFFERFLAG_STARTTIME\n");
@@ -6253,7 +6027,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                       PERF_ModuleLLMM);
     #endif
                     OMX_PRDSP2(pComponentPrivate->dbg, "VIDDEC_HandleDataBuf_FromDsp %x   %x\n",(int)pBuffHead->nFlags,(int)pBuffHead->nFilledLen);
-                    VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
                     eError = OMX_EmptyThisBuffer(pComponentPrivate->pCompPort[1]->hTunnelComponent, pBuffHead);
                 }
                 else {
@@ -6278,8 +6051,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                   pBuffHead->nFilledLen,
                                   PERF_ModuleHLMM);
     #endif
-
-                VIDDEC_Propagate_Mark(pComponentPrivate, pBuffHead);
                 VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
             }
         }
@@ -7377,44 +7148,6 @@ OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPr
     return eError;
 }
 
-
-/* ========================================================================== */
-/**
-  *  VIDDEC_PROPAGATE_MARK() Function called for propagate mark from input buffers to output buffers
-  *
-  * @param pComponentPrivate         This is the pointer to the private structure
-  * @param pBuffHead                       This is the pointer to the output buffer
-  *
-  * @retval OMX_NoError              Success
-  *         OMX_ErrorUnsupportedSetting        If CompressionFormat has not a valid value
- **/
-/* ========================================================================== */
-OMX_ERRORTYPE VIDDEC_Propagate_Mark(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE *pBuffHead)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pBuffHead->nFilledLen != 0) {
-        pBuffHead->hMarkTargetComponent = pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].hMarkTargetComponent;
-        pBuffHead->pMarkData = pComponentPrivate->arrMarkBufIndex[pComponentPrivate->nInMarkBufIndex].pMarkData;
-        pComponentPrivate->nOutMarkBufIndex++;
-        pComponentPrivate->nOutMarkBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
-        eError = OMX_ErrorNone;
-    }
-    if(pBuffHead->hMarkTargetComponent == pComponentPrivate->pHandle)
-    {
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                        pComponentPrivate->pHandle->pApplicationPrivate,
-                        OMX_EventMark,
-                        0,
-                        0,
-                        pBuffHead->pMarkData);
-    }
-
-    return eError;
-}
-
-
-
 /* ========================================================================== */
 /**
   *  Callback() function will be called LCML component to write the msg
@@ -7543,30 +7276,6 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                         }
 #endif
                         pBuffer = (OMX_U8*)argsCb[1];
-                        /* Retrieve time stamp information */
-                        if (pComponentPrivate->ProcessMode == 0) {
-                            OMX_PTR pBufferFlags;
-                            VIDDEC_CircBuf_Remove(pComponentPrivate,
-                                               VIDDEC_CBUFFER_TIMESTAMP,
-                                               VIDDEC_INPUT_PORT,
-                                               &pBufferFlags);
-                            if(pBufferFlags != NULL){
-                                pBuffHead->nTimeStamp = (OMX_TICKS)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nTimeStamp;
-                                pBuffHead->nFlags |= (((OMX_U32)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nFlags) & OMX_BUFFERFLAG_DECODEONLY);
-                                pBuffHead->nTickCount = (OMX_U32)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nTickCount;
-                            }
-                            else {
-                                pBuffHead->nTimeStamp = 0;
-                                pBuffHead->nTickCount = 0;
-                            }
-                        }
-                        else {
-                            if (pBuffHead->nFilledLen != 0){
-                                pBuffHead->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->nOutBufIndex];
-                                pComponentPrivate->nOutBufIndex++;
-                                pComponentPrivate->nOutBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
-                            }
-                        }
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp);
                         if(pBuffHead != NULL){
                             pBuffHead->nFilledLen = (OMX_S32)argsCb[8];
@@ -7701,30 +7410,6 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                         }
 #endif
                         pBuffer = (OMX_U8*)argsCb[1];
-                        /* Retrieve time stamp information */
-                        if (pComponentPrivate->ProcessMode == 0) {
-                            OMX_PTR pBufferFlags;
-                            VIDDEC_CircBuf_Remove(pComponentPrivate,
-                                               VIDDEC_CBUFFER_TIMESTAMP,
-                                               VIDDEC_INPUT_PORT,
-                                               &pBufferFlags);
-                            if(pBufferFlags != NULL){
-                                pBuffHead->nTimeStamp = (OMX_TICKS)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nTimeStamp;
-                                pBuffHead->nFlags |= (((OMX_U32)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nFlags) & OMX_BUFFERFLAG_DECODEONLY);
-                                pBuffHead->nTickCount = (OMX_U32)((VIDDEC_CBUFFER_BUFFERFLAGS*)pBufferFlags)->nTickCount;
-                            }
-                            else {
-                                pBuffHead->nTimeStamp = 0;
-                                pBuffHead->nTickCount = 0;
-                            }
-                        }
-                        else {
-                            if (pBuffHead->nFilledLen != 0){
-                                pBuffHead->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->nOutBufIndex];
-                                pComponentPrivate->nOutBufIndex++;
-                                pComponentPrivate->nOutBufIndex %= VIDDEC_MAX_QUEUE_SIZE;
-                            }
-                        }
                         OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld\n", pBuffHead->nTimeStamp);
                         if(pBuffHead != NULL){
                             pBuffHead->nFilledLen = (OMX_S32)argsCb[8];
@@ -7922,6 +7607,50 @@ void VIDDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     pCompPrivate = NULL;
 }
 #endif
+
+OMX_U32 VIDDEC_GetBytesConsumed(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufferHeader)
+{
+    OMX_U32 nBytesConsumed = 0;
+    VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
+    if (pBufferHeader == NULL || pComponentPrivate == NULL) {
+        return 0;
+    }
+    if (pBufferHeader->pOutputPortPrivate != NULL) {
+        pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBufferHeader->pOutputPortPrivate;
+        if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
+            H264VDEC_UALGOutputParam* pUalgOutParams = NULL;
+            pUalgOutParams = (H264VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
+        }
+        else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
+            WMV9DEC_UALGOutputParam* pUalgOutParams = NULL;
+            pUalgOutParams = (WMV9DEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
+        }
+        else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                     pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+            MP4VD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
+            pUalgOutParams = (MP4VD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
+            nBytesConsumed = pUalgOutParams->uBytesConsumed;
+        }
+        else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
+            MP2VDEC_UALGOutputParam* pUalgOutParams = NULL;
+            pUalgOutParams = (MP2VDEC_UALGOutputParam *)pBufferPrivate->pUalgParam;
+            nBytesConsumed = pUalgOutParams->ulBytesConsumed;
+        }
+#ifdef VIDDEC_SPARK_CODE
+        else if (VIDDEC_SPARKCHECK) {
+            SPARKVD_GPP_SN_UALGOutputParams* pUalgOutParams = NULL;
+            pUalgOutParams = (SPARKVD_GPP_SN_UALGOutputParams *)pBufferPrivate->pUalgParam;
+            nBytesConsumed = pUalgOutParams->uBytesConsumed;
+        }
+#endif
+        else {
+            nBytesConsumed = 0;
+        }
+    }
+    return nBytesConsumed;
+}
 
 #ifdef ANDROID
 /* ========================================================================== */
