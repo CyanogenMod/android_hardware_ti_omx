@@ -2736,7 +2736,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth > pComponentPrivate->nDisplayWidth) {
                             pComponentPrivate->nDisplayWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
                         }
-                        pDynParams->ulDisplayWidth = (((pComponentPrivate->nDisplayWidth + 15) >> 4) << 4);
+                        pDynParams->ulDisplayWidth = VIDDEC_MULTIPLE16 (pComponentPrivate->nDisplayWidth);
                         if (pComponentPrivate->nDisplayWidth != pDynParams->ulDisplayWidth ) {
                             pComponentPrivate->nDisplayWidth = pDynParams->ulDisplayWidth;
                             OMX_PRINT2(pComponentPrivate->dbg, "warning Display Width adjusted to %lu\n",pDynParams->ulDisplayWidth);
@@ -2746,7 +2746,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth > pComponentPrivate->nDisplayWidth) {
                             pComponentPrivate->nDisplayWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
                         }
-                        pDynParams->ulDisplayWidth = (((pComponentPrivate->nDisplayWidth + 15) >> 4) << 4);
+                        pDynParams->ulDisplayWidth = VIDDEC_MULTIPLE16 (pComponentPrivate->nDisplayWidth);
                         if (pComponentPrivate->nDisplayWidth != pDynParams->ulDisplayWidth ) {
                             pComponentPrivate->nDisplayWidth = pDynParams->ulDisplayWidth;
                             OMX_PRINT2(pComponentPrivate->dbg, "warning Display Width adjusted to %lu\n",pDynParams->ulDisplayWidth);
@@ -4738,25 +4738,47 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             }
         }
 
-        nPadWidth = nWidth;
-        nPadHeight = nHeight;
-        if((nPadWidth%16) != 0){
-            nPadWidth += 16-(nPadWidth%16);
-        }
-        if((nPadHeight%16) != 0){
-            nPadHeight += 16-(nPadHeight%16);
-        }
-
-        /*TODO: Test Croped MPEG4*/
-
-        if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
-            if(nPadWidth == 864){
-                nPadWidth = 854;
+        /*use default values when zero resolution is parsed*/
+        if ((eError == OMX_ErrorNone) || (nWidth == 0) || (nHeight == 0)) {
+            if ((nWidth == 0) || (nHeight == 0)) {
+                eError = OMX_ErrorStreamCorrupt;
+                pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
             }
-            if(nPadHeight == 864){
-                nPadHeight = 864;
+            nWidth  = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
+            nHeight =  pComponentPrivate->pInPortDef->format.video.nFrameHeight;
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       eError,
+                                       OMX_TI_ErrorSevere,
+                                       "eError != OMX_ErrorNone or nWidth<->nHeight == zero");
+            goto EXIT;
+        }
+        /*For MPeg4 WVGA SN requires that used resolutions be 854*/
+        /*if parser read 864 it needs to be changed to 854*/
+        /*nHeigth is changed in order to change portrait resolutions too*/
+        if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4  ||
+            pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+            if ((nWidth == 864) || (nHeight == 864)) {
+                nPadWidth = nWidth;
+                nPadHeight = nHeight;
             }
+            else {
+                nPadWidth = VIDDEC_MULTIPLE16 ( nWidth);
+                nPadHeight = VIDDEC_MULTIPLE16 ( nHeight);
+                if ((nPadWidth == 864)) {
+                    nWidth = 854;
+                    nPadWidth = 854;
+                }
+                if ((nPadHeight == 864)) {
+                    nHeight = 854;
+                    nPadHeight = 854;
+                }
+            }
+        }
+        else {
+            nPadWidth = VIDDEC_MULTIPLE16 ( nWidth);
+            nPadHeight = VIDDEC_MULTIPLE16 ( nHeight);
         }
 
         /*TODO: Get minimum INPUT buffer size & verify if the actual size is enough*/
@@ -4766,21 +4788,16 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth != nWidth ||
             pComponentPrivate->pInPortDef->format.video.nFrameHeight != nHeight) {
             if((nWidth >= 1500) || (nHeight >= 1500)){
-                pComponentPrivate->pInPortDef->format.video.nFrameHeight = 576;
-                pComponentPrivate->pInPortDef->format.video.nFrameWidth = 720;
-                eError = OMX_ErrorBadParameter;
-                goto EXIT;
+                nPadWidth = 720;
+                nPadHeight = 576;
             }
             else if(((nWidth < 16) || (nHeight < 16))){
-                pComponentPrivate->pInPortDef->format.video.nFrameHeight = 576;
-                pComponentPrivate->pInPortDef->format.video.nFrameWidth = 720;
-                eError = OMX_ErrorBadParameter;
-                goto EXIT;
+                nPadWidth = 720;
+                nPadHeight = 576;
             }
             pComponentPrivate->pInPortDef->format.video.nFrameWidth = nPadWidth;
             pComponentPrivate->pInPortDef->format.video.nFrameHeight = nPadHeight;
 #ifdef ANDROID
-            /*Force reload the component to configure create face args (SN)*/
             bOutPortSettingsChanged = OMX_TRUE;
             OMX_PRINT1(pComponentPrivate->dbg, "Input port setting change, Force reload component !!!!!!\n");
 #else
@@ -4806,6 +4823,10 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nWidth ||
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nHeight) {
 
+                if (nWidth < nHeight) {
+                    nWidth = VIDDEC_MULTIPLE16 (nWidth);
+                    nHeight = VIDDEC_MULTIPLE16 (nHeight);
+                }
                 pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nWidth;
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nHeight;
                 bOutPortSettingsChanged = OMX_TRUE;
@@ -4814,14 +4835,17 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
         else{ /*OMX_VIDEO_CodingAVC*/
             /* nCroppedWidth & nCroppedHeight indicate the resultant o/p resolution */
-            if((nWidth%16) != 0){
-                nWidth += 16-(nWidth%16);
+            nWidth = VIDDEC_MULTIPLE16 (nWidth);
+            nHeight = VIDDEC_MULTIPLE16 (nHeight);
+
+            if (nWidth < nHeight) {
+                nCroppedWidth = nWidth;
+                nCroppedHeight = nHeight;
             }
-            if((nHeight%16) != 0){
-                nHeight += 16-(nHeight%16);
+            else {
+                nCroppedWidth = nWidth - nCropWidth;
+                nCroppedHeight = nHeight - nCropHeight;
             }
-            nCroppedWidth = nWidth - nCropWidth;
-            nCroppedHeight = nHeight - nCropHeight;
             if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nCroppedWidth ||
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nCroppedHeight) {
 
@@ -4843,7 +4867,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             bOutPortSettingsChanged = OMX_TRUE;
             OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%x \n", nOutMinBufferSize);
         }
-
 
         OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %x, Resolution after parser: IN %dx%d : OUT %dx%d\n",
                 (unsigned int)pBuffHead,
@@ -8323,7 +8346,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             if (pComponentPrivate->pInPortDef->format.video.nFrameWidth > pComponentPrivate->nDisplayWidth) {
                 pComponentPrivate->nDisplayWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
             }
-            pDynParams->ulDisplayWidth = (((pComponentPrivate->nDisplayWidth + 15) >> 4) << 4);
+            pDynParams->ulDisplayWidth = VIDDEC_MULTIPLE16 (pComponentPrivate->nDisplayWidth);
             if (pComponentPrivate->nDisplayWidth != pDynParams->ulDisplayWidth ) {
                 pComponentPrivate->nDisplayWidth = pDynParams->ulDisplayWidth;
                 OMX_PRDSP2(pComponentPrivate->dbg, "warning Display Width adjusted to %lu\n",pDynParams->ulDisplayWidth);
@@ -8333,7 +8356,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
             if (pComponentPrivate->pInPortDef->format.video.nFrameWidth > pComponentPrivate->nDisplayWidth) {
                 pComponentPrivate->nDisplayWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
             }
-            pDynParams->ulDisplayWidth = (((pComponentPrivate->nDisplayWidth + 15) >> 4) << 4);
+            pDynParams->ulDisplayWidth = VIDDEC_MULTIPLE16 (pComponentPrivate->nDisplayWidth);
             if (pComponentPrivate->nDisplayWidth != pDynParams->ulDisplayWidth ) {
                 pComponentPrivate->nDisplayWidth = pDynParams->ulDisplayWidth;
                 OMX_PRDSP2(pComponentPrivate->dbg, "warning Display Width adjusted to %lu\n",pDynParams->ulDisplayWidth);
