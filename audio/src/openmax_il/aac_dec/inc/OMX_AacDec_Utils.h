@@ -52,17 +52,7 @@
 #include <ResourceManagerProxyAPI.h>
 #endif
 
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#endif
-#ifndef UNDER_CE
 #define AUDIO_MANAGER
-#else
-#undef AUDIO_MANAGER
-#endif
 
 #ifdef __PERF_INSTRUMENTATION__
 #include "perf.h"
@@ -144,34 +134,17 @@
 
 /* ======================================================================= */
 /**
- * Wince #define
- *
- */
-/* ======================================================================= */
-#ifdef UNDER_CE
-#define sleep Sleep
-#endif
-/* ======================================================================= */
-/**
  * @def    AACDEC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define AACDEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define AACDEC_USN_DLL_NAME "usn.dll64P"
-#endif
 
 /* ======================================================================= */
 /**
  * @def    AACDEC_DLL_NAME   AAC Dec Decoder socket node DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define AACDEC_DLL_NAME "\\windows\\mpeg4aacdec_sn.dll64P"
-#else
 #define AACDEC_DLL_NAME "mpeg4aacdec_sn.dll64P"
-#endif
 
 #define DONT_CARE 0
 
@@ -210,30 +183,11 @@
 #undef AACDEC_DEBUG 
 #define _ERROR_PROPAGATION__
 
-#ifdef UNDER_CE
-
 /* ======================================================================= */
 /**
  * @def    DEBUG   Memory print macro
  */
 /* ======================================================================= */
-#if DEBUG
-#define AACDEC_DPRINT printf
-#define AACDEC_MEMPRINT printf
-#define AACDEC_STATEPRINT printf
-#define AACDEC_BUFPRINT printf
-#define AACDEC_MEMPRINT printf
-#define AACDEC_EPRINT printf
-#else
-#define AACDEC_DPRINT
-#define AACDEC_MEMPRINT
-#define AACDEC_STATEPRINT
-#define AACDEC_BUFPRINT
-#define AACDEC_MEMPRINT
-#define AACDEC_EPRINT
-#endif
-
-#else /* for Linux */
 
 #ifdef  AACDEC_DEBUG
     #define AACDEC_DPRINT printf
@@ -265,9 +219,6 @@
 #endif
 
 #define AACDEC_EPRINT LOGE
-
-#endif
-
 
 /* ======================================================================= */
 /**
@@ -514,19 +465,6 @@ typedef enum{
     IAAC_WARN_INVALID_DUALMONOMODE, /* Invalid dual mono rendering mode */
     IAAC_WARN_ENABLEPS_NOTSET /* to indicate in case of PS stream and EnablePS not set */
 }IAAC_WARN_MSG;
-
-#ifdef UNDER_CE
-#ifndef _OMX_EVENT_
-#define _OMX_EVENT_
-typedef struct OMX_Event {
-    HANDLE event;
-} OMX_Event;
-#endif
-int OMX_CreateEvent(OMX_Event *event);
-int OMX_SignalEvent(OMX_Event *event);
-int OMX_WaitForEvent(OMX_Event *event);
-int OMX_DestroyEvent(OMX_Event *event);
-#endif
 
 /* ======================================================================= */
 /** IUALG_PCMDCmd: This enum specifies the command to DSP.
@@ -845,7 +783,6 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_S32 nOutStandingFillDones;
     OMX_BOOL bIsInvalidState;
     OMX_STRING* sDeviceString;
-#ifndef UNDER_CE    
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -872,16 +809,6 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded; 
-#endif
 
     OMX_BOOL bLoadedCommandPending;
     OMX_PARAM_COMPONENTROLETYPE *componentRole;
@@ -943,25 +870,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
  *  @see          AacDec_StartCompThread()
  */
 /* ================================================================================ * */
-#ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
-/* ===========================================================  */
-/**
- *  OMX_ComponentInit()  Initializes component
- *
- *
- *  @param hComp            OMX Handle
- *
- *  @return OMX_ErrorNone = Successful
- *          Other error code = fail
- *
- */
-/*================================================================== */
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
 
 /* ================================================================================= * */
 /**
