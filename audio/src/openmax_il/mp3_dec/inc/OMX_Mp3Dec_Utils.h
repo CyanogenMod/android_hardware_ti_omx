@@ -46,16 +46,7 @@
 #include <OMX_TI_Debug.h>
 #include "LCML_DspCodec.h"
 #include "usn.h"
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <pthread.h>
-#endif
-
-#ifndef UNDER_CE
 
 #ifdef RESOURCE_MANAGER_ENABLED
 #include <ResourceManagerProxyAPI.h>
@@ -79,8 +70,6 @@
     
     /* PV opencore capability custom parameter index */ 
     #define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-#endif
-
 #endif
 
 #define MP3DEC_MAJOR_VER 0x1/* Major number of the component */
@@ -122,72 +111,14 @@
 
 #define NUM_OF_PORTS 0x2 /* Number of ports of component */
 
-#ifdef UNDER_CE
-#define MP3DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define MP3DEC_USN_DLL_NAME "usn.dll64P"
-#endif
 
-#ifdef UNDER_CE
-#define MP3DEC_DLL_NAME "\\windows\\mp3dec_sn.dll64P"
-#else
 #define MP3DEC_DLL_NAME "mp3dec_sn.dll64P"
-#endif
 
 #define DONT_CARE 0
 
 #define EXIT_COMPONENT_THRD  10
 
-#ifdef UNDER_CE /* For Windows */
-
-#ifdef  MP3DEC_DEBUG
- #define MP3DEC_DPRINT(STR, ARG...) printf()
-#else
-#endif
-
-#ifdef  MP3DEC_DEBUG
- #define MP3DEC_EPRINT(STR, ARG...) printf()
-#else
-#endif
-
-
-#ifdef MP3DEC_MEMCHECK
-        #define MP3DEC_MEMPRINT(STR, ARG...) printf()
-#else
-#endif
-
-#ifdef MP3DEC_STATEDETAILS
-        #define MP3DEC_STATEPRINT(STR, ARG...) printf()
-#else
-#endif
-
-
-#ifdef MP3DEC_BUFDETAILS
-        #define MP3DEC_BUFPRINT(STR, ARG...) printf()
-#else
-#endif
-
-#ifdef MP3DEC_MEMDETAILS
-        #define MP3DEC_MEMPRINT(STR, ARG...) printf()
-#else
-#endif
-
-
-#ifdef DEBUG
-        #define MP3DEC_DPRINT   printf
-        #define MP3DEC_EPRINT   printf
-        #define MP3DEC_MEMPRINT   printf
-        #define MP3DEC_STATEPRINT   printf
-        #define MP3DEC_BUFPRINT   printf
-#else
-        #define MP3DEC_DPRINT
-        #define MP3DEC_EPRINT printf
-        #define MP3DEC_MEMPRINT
-        #define MP3DEC_STATEPRINT
-        #define MP3DEC_BUFPRINT
-#endif
-
-#else /* for Linux */
 #ifdef  MP3DEC_DEBUG
 
   #ifdef ANDROID
@@ -229,8 +160,6 @@
   #define MP3DEC_EPRINT LOGE
 #else
   #define MP3DEC_EPRINT printf
-#endif
-
 #endif
 
 #define MP3D_OMX_ERROR_EXIT(_e_, _c_, _s_)\
@@ -349,20 +278,6 @@ typedef struct {
   unsigned long    lMonoToStereoCopy;
   unsigned long    lStereoToMonoCopy;
 } MP3DEC_UALGParams;
-
-
-#ifdef UNDER_CE
-    #ifndef _OMX_EVENT_
-        #define _OMX_EVENT_
-        typedef struct OMX_Event {
-            HANDLE event;
-        } OMX_Event;
-    #endif
-    int OMX_CreateEvent(OMX_Event *event);
-    int OMX_SignalEvent(OMX_Event *event);
-    int OMX_WaitForEvent(OMX_Event *event);
-    int OMX_DestroyEvent(OMX_Event *event);
-#endif
 
 /* ======================================================================= */
 /** IUALG_MP3DCmd: This enum specifies the command to DSP.
@@ -680,7 +595,6 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
 
-#ifndef UNDER_CE        
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
@@ -700,17 +614,6 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-	
-#else
-    OMX_Event AlloBuf_event;
-    OMX_U8 AlloBuf_waitingsignal;
-    
-    OMX_Event InLoaded_event;
-    OMX_U8 InLoaded_readytoidle;
-    
-    OMX_Event InIdle_event;
-    OMX_U8 InIdle_goingtoloaded; 
-#endif    
 
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     
@@ -766,14 +669,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
 *  @see          Mp3Dec_StartCompThread()
 */
 /* ================================================================================ * */
-#ifndef UNDER_CE
 OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
-
 
 /* ================================================================================= * */
 /**

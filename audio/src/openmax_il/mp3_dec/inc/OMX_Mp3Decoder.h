@@ -43,24 +43,12 @@
 #ifndef OMX_MP3DECODER_H
 #define OMX_MP3DECODER_H
 
-
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#include <stdlib.h>
-#else
 #include <pthread.h>
-#endif
 
 #include <OMX_Component.h>
 #include "LCML_DspCodec.h"
 
-#ifndef UNDER_CE
 #define MP3D_RM_MANAGER /* Enable to use Resource Manager functionality */
-#else
-#undef MP3D_RM_MANAGER /* Enable to use Resource Manager functionality */
-#endif
 
 /* #define SWAT_ANALYSIS */   /* Enable to use SWAT functionality */
 /*#define DSP_RENDERING_ON*/ /* Enable to use DASF functionality */
