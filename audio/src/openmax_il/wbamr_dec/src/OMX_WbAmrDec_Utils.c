@@ -98,7 +98,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
                                             LCML_DSP *plcml_Init,
                                             OMX_U16 arr[])
 {
-
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf,nOpBuf;
     OMX_U32 nIpBufSize,nOpBufSize;
@@ -133,14 +132,12 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         }else{
             nIpBufSize = INPUT_WBAMRDEC_BUFFER_SIZE;
         }
-        //nIpBufSize = INPUT_WBAMRDEC_BUFFER_SIZE;
     }
 
     nOpBuf = pComponentPrivate->pOutputBufferList->numBuffers;
     pComponentPrivate->nRuntimeOutputBuffers = nOpBuf;
 
     nOpBufSize = OUTPUT_WBAMRDEC_BUFFER_SIZE;
-
 
     /* Fill Input Buffers Info for LCML */
     plcml_Init->In_BufInfo.nBuffers = nIpBuf;
@@ -202,7 +199,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pComponentPrivate->strmAttr = NULL;
     }
 
-
     /*copy the other information */
     plcml_Init->SegID = OMX_WBAMR_DEC_DEFAULT_SEGMENT;
     plcml_Init->Timeout = OMX_WBAMR_DEC_SN_TIMEOUT;
@@ -212,8 +208,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     /* TODO: Set this using SetParameter() */
     pComponentPrivate->iAmrSamplingFrequeny = WBAMR_DEC_SAMPLING_FREQUENCY;
-
-
 
     /*Accessing these 2 has the problem/creates problem in state transition tests*/
     pComponentPrivate->iAmrChannels =
@@ -228,8 +222,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     } else {
         pComponentPrivate->iAmrMimeFlag = WBAMR_DEC_MODE_NONMIME;
     }
-
-
 
     arr[0] = WBAMR_DEC_STREAM_COUNT;
     arr[1] = WBAMR_DEC_INPUT_PORT;
@@ -258,7 +250,6 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         else {
             arr[6] = 1;
         }
-
     }
 
     if(pComponentPrivate->iAmrMode == OMX_AUDIO_AMRDTXasEFR) {
@@ -634,7 +625,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_COMPONENTTYPE *pHandle;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState;
-    OMX_U32 commandData;
+    OMX_S32 commandData;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
 
     OMX_U16 i;
@@ -705,23 +696,6 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         NULL);
             }
             else if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) {
-
-                /*    if (pComponentPrivate->dasfmode == 1) {
-                      if(pComponentPrivate->streamID == 0)
-                      {
-                      WBAMR_DEC_EPRINT("**************************************\n");
-                      WBAMR_DEC_EPRINT(":: Error = OMX_ErrorInsufficientResources\n");
-                      WBAMR_DEC_EPRINT("**************************************\n");
-                      eError = OMX_ErrorInsufficientResources;
-                      pComponentPrivate->curState = OMX_StateInvalid;
-                      pComponentPrivate->cbInfo.EventHandler(
-                      pHandle, pHandle->pApplicationPrivate,
-                      OMX_EventError, OMX_ErrorInvalidState,OMX_TI_ErrorMajor,
-                      "AM: No Stream ID Available");
-                      goto EXIT;
-                      }
-                      }                */
-
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
@@ -1089,10 +1063,6 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
 
-                /*                if (pComponentPrivate->nNumOutputBufPending < pComponentPrivate->pOutputBufferList->numBuffers) {
-                                  pComponentPrivate->nNumOutputBufPending = pComponentPrivate->pOutputBufferList->numBuffers;
-                                  }
-                */
                 for (i=0; i < pComponentPrivate->nNumOutputBufPending; i++) {
                     if (pComponentPrivate->pOutputBufHdrPending[i]) {
                         WBAMR_DEC_GetCorresponding_LCMLHeader(pComponentPrivate,pComponentPrivate->pOutputBufHdrPending[i]->pBuffer, OMX_DirOutput, &pLcmlHdr);
@@ -1867,7 +1837,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pExtraData = pBufHeader->pBuffer + INPUT_WBAMRDEC_BUFFER_SIZE*nFrames;
 			/* check the pHoldBuffer boundary before copying */
 			if (pComponentPrivate->nHoldLength >
-			   (INPUT_WBAMRDEC_BUFFER_SIZE * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
+			   (OMX_U32)(INPUT_WBAMRDEC_BUFFER_SIZE * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
 			   {
                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_WbAmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
                                goto EXIT;
@@ -1957,9 +1927,6 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         memcpy(pComponentPrivate->pHoldBuffer,pExtraData,pComponentPrivate->nHoldLength);
 		    else
                         memmove(pComponentPrivate->pHoldBuffer,pExtraData,pComponentPrivate->nHoldLength);
-                    /* Clear the rest of the data from the pHoldBuffer */
-                    /*pExtraData = pComponentPrivate->pHoldBuffer + pComponentPrivate->nHoldLength;*/
-                    /*mset(pExtraData,0,holdBufferSize - pComponentPrivate->nHoldLength);*/
                 }
                 else {
                     if (pComponentPrivate->curState != OMX_StatePause) {
@@ -2458,14 +2425,12 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     OMX_ERRORTYPE rm_error = OMX_ErrorNone;
 #endif
     /*    ssize_t ret; */
-    LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U8 i;
     WBAMRDEC_BUFDATA *OutputFrames;
 #ifdef WBAMR_DEC_DEBUG
     LCML_DSP_INTERFACE *phandle = (LCML_DSP_INTERFACE *)args[6];
 #endif
     OMX_COMPONENTTYPE *pHandle = NULL;
-    char *pArgs = "damedesuStr";
     DSP_STATUS status;
     LCML_DSP_INTERFACE *dspphandle = (LCML_DSP_INTERFACE *)args[6];
 
@@ -2723,15 +2688,10 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         OMX_PRINT2(pComponentPrivate->dbg, "pComponentPrivate->bNoIdleOnStop = %ld\n",pComponentPrivate->bNoIdleOnStop);
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->nNumOutputBufPending=0;
-            /*            pComponentPrivate->ProcessingInputBuf=0;
-                          pComponentPrivate->ProcessingOutputBuf=0; */
             pComponentPrivate->nHoldLength = 0;
-            /*            pComponentPrivate->InBuf_Eos_alreadysent  =0; */
-            /*            OMX_NBMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer); */
-            /*            OMX_NBMEMFREE_STRUCT(pComponentPrivate->iMMFDataLastBuffer); */
             pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
-            eError = RMProxy_NewSendCommand(pHandle,
+            rm_error = RMProxy_NewSendCommand(pHandle,
                                             RMProxy_StateSet,
                                             OMX_WBAMR_Decoder_COMPONENT,
                                             OMX_StateIdle,
@@ -2950,7 +2910,7 @@ OMX_HANDLETYPE WBAMR_DEC_GetLCMLHandle(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPr
     void *handle;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
-    char *error;
+    const char *error;
     OMX_ERRORTYPE eError;
 
     OMX_PRINT1(pComponentPrivate->dbg, "WBAMR_DEC_GetLCMLHandle\n");
@@ -3198,7 +3158,6 @@ OMX_ERRORTYPE  WBAMR_DEC_Fill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
     nOpBuf = pComponentPrivate->pOutputBufferList->numBuffers;
     nOpBufSize = OUTPUT_WBAMRDEC_BUFFER_SIZE;
 
-
     size_lcml = nIpBuf * sizeof(LCML_WBAMR_DEC_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,LCML_WBAMR_DEC_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[WBAMR_DEC_INPUT_PORT] = pTemp_lcml;
@@ -3267,7 +3226,6 @@ OMX_ERRORTYPE  WBAMR_DEC_Fill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
         pTemp_lcml++;
     }
     pComponentPrivate->bPortDefsAllocated = 1;
-
 
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting WBAMR_DEC_Fill_LCMLInitParams");
 
@@ -3465,8 +3423,7 @@ void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 void WBAMRDEC_HandleUSNError (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
     OMX_COMPONENTTYPE *pHandle = NULL;
-    OMX_U8 pending_buffers = OMX_FALSE;
-    OMX_U32 i;
+
     switch (arg)
     {
         case IUALG_WARN_CONCEALED:
