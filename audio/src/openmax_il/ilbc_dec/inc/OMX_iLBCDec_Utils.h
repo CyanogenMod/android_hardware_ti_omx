@@ -45,6 +45,8 @@
 #include "LCML_DspCodec.h"
 #include <pthread.h>
 #include "TIDspOmx.h"
+#include "OMX_TI_Common.h"
+
 #ifdef RESOURCE_MANAGER_ENABLED
     #include <ResourceManagerProxyAPI.h>
 #endif
@@ -52,7 +54,7 @@
 
 /*#undef DSP_RENDERING_ON*/
 
-/*#define iLBCDEC_DEBUG           /* See all debug statement of the component */
+/*#define iLBCDEC_DEBUG */       /* See all debug statement of the component */
 /*#define iLBCDEC_MEMDETAILS **/     /* See memory details of the component */
 /*#define iLBCDEC_BUFDETAILS **/     /* See buffers details of the component */
 /*#define _ERROR_PROPAGATION__ **/
@@ -807,6 +809,8 @@ typedef struct iLBCDEC_COMPONENT_PRIVATE
     OMX_U32 nRuntimeInputBuffers; /* OK */
     OMX_U32 nRuntimeOutputBuffers; /* OK */
     
+    // Flag to set when mutexes are initialized
+    OMX_U8 bMutexInitialized;
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;

@@ -709,7 +709,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_COMPONENTTYPE *pHandle = NULL;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState = OMX_StateInvalid;
-    OMX_U32 commandData = 0;
+    OMX_S32 commandData = 0;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
 
     OMX_U16 i = 0;
@@ -800,14 +800,10 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
                     if(!(inputPortFlag && outputPortFlag)) {
                         pComponentPrivate->InLoaded_readytoidle = 1;
-#ifndef UNDER_CE
                         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
                         pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, 
                                           &pComponentPrivate->InLoaded_mutex);
                         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                        OMX_WaitForEvent(&(pComponentPrivate->InLoaded_event));
-#endif
                     }
  
                     iLBCDEC_DPRINT ("%d :: %s\n",__LINE__,__FUNCTION__);
@@ -841,18 +837,13 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     /*filling create phase params */
                     /*cb.LCML_Callback = (void *) iLBCDECLCML_Callback;*/
                     iLBCDEC_DPRINT("%d :: %s :: Calling LCML_InitMMCodec...\n", __LINE__,__FUNCTION__);
-#ifndef UNDER_CE
+
                     /* TeeDN will be default for decoder component */
                     iLBCDEC_DPRINT("%d :: %s :: iLBC decoder support TeeDN\n", __LINE__,__FUNCTION__);
                     eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE *)
                                                  pLcmlHandle)->pCodecinterfacehandle,
                                                 p,&pLcmlHandle,(void *)p,&cb, 
                                                 (OMX_STRING)pComponentPrivate->sDeviceString);
-#else
-                    eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE *)
-                                               pLcmlHandle)->pCodecinterfacehandle,
-                                              p,&pLcmlHandle,(void *)p,&cb);
-#endif
             
                     if(eError != OMX_ErrorNone) {
                         iLBCDEC_EPRINT("%d :: %s :: Error returned from LCML_Init function\n",__LINE__,__FUNCTION__);
@@ -947,9 +938,10 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                             goto EXIT; 
                         } 
 
-                        iLBCD_OMX_MALLOC_SIZE(pParmsTemp,
-                                               (sizeof(iLBCD_AudioCodecParams) + 256),
-                                               OMX_U8);
+                        iLBCD_OMX_MALLOC_SIZE(pComponentPrivate->pParams,
+                                              (sizeof(iLBCD_AudioCodecParams) + 256),
+                                              iLBCD_AudioCodecParams);
+                        pParmsTemp = (OMX_U8*)pComponentPrivate->pParams;
                         pParams = (iLBCD_AudioCodecParams*)(pParmsTemp + 128);
                         pComponentPrivate->pParams = pParams;
 
@@ -964,7 +956,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         pValues[2] = sizeof(iLBCD_AudioCodecParams);
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                    EMMCodecControlStrmCtrl,(void *)pValues);
-                        if(eError != OMX_ErrorNone) {
+                        if (eError != OMX_ErrorNone) {
                             iLBCDEC_EPRINT("%d :: %s :: Error Occurred in CodecStreamControl..\n",__LINE__,__FUNCTION__);
                             goto EXIT;
                         }
@@ -1195,14 +1187,10 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->pOutputBufferList->numBuffers) {
 
                     pComponentPrivate->InIdle_goingtoloaded = 1;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
                     pthread_cond_wait(&pComponentPrivate->InIdle_threshold,
                                       &pComponentPrivate->InIdle_mutex);
                     pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-                    OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
-#endif
                 }
 
                 /* Now Deinitialize the component No error should be returned 
@@ -1419,13 +1407,9 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
             pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled = OMX_TRUE;
             if(pComponentPrivate->AlloBuf_waitingsignal){
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
             }
 
             iLBCDEC_DPRINT("%d :: %s :: pComponentPrivate->pPortDef[iLBCDEC_INPUT_PORT]->bEnabled = %d\n",__LINE__,__FUNCTION__, pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled);
@@ -1434,13 +1418,9 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
             /* enable out port */
             if(pComponentPrivate->AlloBuf_waitingsignal) {
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
                 pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-#else
-                OMX_SignalEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
             }
 
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1502,7 +1482,6 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     }
     else if (command == OMX_CommandFlush) {
-#ifndef UNDER_CE         
         if(commandData == 0x0 || commandData == -1){
             for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
                 iLBCDEC_DPRINT("%d :: %s :: Calling EmptyBufferDone\n",__LINE__,
@@ -1540,37 +1519,11 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                    iLBCD_OUTPUT_PORT,
                                                    NULL);
         }
-#else
-        OMX_U32 aParam[3] = {0};
-        if(commandData == 0x0 || commandData == -1) {
-            aParam[0] = USN_STRMCMD_FLUSH; 
-            aParam[1] = 0x0; 
-            aParam[2] = 0x0; 
-
-            iLBCDEC_DPRINT("Flushing input port\n");
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       EMMCodecControlStrmCtrl,
-                                       (void*)aParam);
-            if (eError != OMX_ErrorNone) {
-                goto EXIT;
-            }
-        }
-        if(commandData == 0x1 || commandData == -1){
-            aParam[0] = USN_STRMCMD_FLUSH; 
-            aParam[1] = 0x1; 
-            aParam[2] = 0x0; 
-
-            iLBCDEC_DPRINT("Flushing output port\n");
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                       EMMCodecControlStrmCtrl,
-                                       (void*)aParam);
-            if (eError != OMX_ErrorNone) {
-                goto EXIT;
-            }
-        }
-#endif      
     }
- EXIT:
+EXIT:
+    if (eError != OMX_ErrorNone) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, iLBCD_AudioCodecParams);
+    }
     iLBCDEC_DPRINT ("%d :: %s :: Exiting\n",__LINE__,__FUNCTION__);
     iLBCDEC_DPRINT ("%d :: %s :: Returning %d\n",__LINE__,__FUNCTION__,eError);
     return eError;
@@ -1659,19 +1612,19 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 newfree(pBufParmsTemp);
                 pLcmlHdr->pFrameParam = NULL;                            
             }
-            if(pLcmlHdr->pFrameParam == NULL ){
-                iLBCD_OMX_MALLOC_SIZE(pBufParmsTemp,
-                                       ((sizeof(iLBCDEC_FrameStruct)*nFrames) + 256),
-                                       OMX_U8);
-                pLcmlHdr->pFrameParam =  
-                    (iLBCDEC_FrameStruct*)(pBufParmsTemp + 128);
+            if(pLcmlHdr->pFrameParam == NULL ) {
+                iLBCD_OMX_MALLOC_SIZE(pLcmlHdr->pFrameParam,
+                                      ((sizeof(iLBCDEC_FrameStruct)*nFrames) + 256),
+                                      iLBCDEC_FrameStruct);
+                pBufParmsTemp = (OMX_U8*)pLcmlHdr->pFrameParam;
+                pLcmlHdr->pFrameParam = (iLBCDEC_FrameStruct*)(pBufParmsTemp + 128);
                 eError = OMX_DmmMap(phandle->dspCodec->hProc, 
                                 nFrames*sizeof(iLBCDEC_FrameStruct),
                                 (void*)pLcmlHdr->pFrameParam, 
                                 (pLcmlHdr->pDmmBuf));
                 if (eError != OMX_ErrorNone){
                     iLBCDEC_EPRINT("%d :: %s :: Error: OMX_DmmMap.\n", __LINE__,__FUNCTION__);
-                   goto EXIT;
+                    goto EXIT;
                 }
                 pLcmlHdr->pBufferParam->pParamElem = 
                     (iLBCDEC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped;
@@ -1795,6 +1748,9 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
 
  EXIT:
+    if (eError != OMX_ErrorNone) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, iLBCDEC_FrameStruct);
+    }
     iLBCDEC_DPRINT("%d :: %s :: Exiting\n",__LINE__,__FUNCTION__);
     iLBCDEC_DPRINT("%d :: %s :: Returning error %d\n",__LINE__,__FUNCTION__, eError);
     return eError;
@@ -1993,53 +1949,6 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }
     } else if (event == EMMCodecStrmCtrlAck) {
         iLBCDEC_DPRINT("%d :: %s :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n", __LINE__,__FUNCTION__);
-#ifdef UNDER_CE
-
-        if (args[1] == (void *)USN_STRMCMD_FLUSH) {
-            pHandle = pComponentPrivate->pHandle; 
-            if ( args[2] == (void *)EMMCodecInputBuffer) {
-                if (args[0] == (void *)USN_ERR_NONE ) {
-                    iLBCDEC_DPRINT("Flushing input port %d\n",__LINE__);
-                    for (i=0; i < MAX_NUM_OF_BUFS; i++) {
-                        pComponentPrivate->pInputBufHdrPending[i] = NULL;
-                    }
-                    pComponentPrivate->nNumInputBufPending=0;
-                    for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
-                        pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
-                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                   pComponentPrivate->pInputBufferList->pBufHdr[i]);
-                    }
-                    pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                           OMX_EventCmdComplete, 
-                                                           OMX_CommandFlush,
-                                                           iLBCD_INPUT_PORT,
-                                                           NULL);   
-                } else {
-                    iLBCDEC_EPRINT ("LCML reported error while flushing input port\n");
-                    goto EXIT;                            
-                }
-            }
-            else if ( args[2] == (void *)EMMCodecOuputBuffer) { 
-                if (args[0] == (void *)USN_ERR_NONE ) {                      
-                    iLBCDEC_DPRINT("Flushing output port %d\n",__LINE__);
-                    for (i=0; i < MAX_NUM_OF_BUFS; i++) {
-                        pComponentPrivate->pOutputBufHdrPending[i] = NULL;
-                    }
-                    pComponentPrivate->nNumOutputBufPending=0;
-                    for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
-                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
-                                                                  pComponentPrivate->pOutputBufferList->pBufHdr[i]);
-                    }
-                    pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                           OMX_EventCmdComplete, OMX_CommandFlush,iLBCD_OUTPUT_PORT, NULL);
-                } else {
-                    iLBCDEC_EPRINT ("LCML reported error while flushing output port\n");
-                    goto EXIT;                            
-                }
-            }
-        }
-#endif               
     }
     else if(event == EMMCodecProcessingStoped) {
         iLBCDEC_DPRINT("%d :: %s :: pComponentPrivate->bNoIdleOnStop = %ld\n", __LINE__,__FUNCTION__, pComponentPrivate->bNoIdleOnStop);
@@ -2113,7 +2022,6 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             iLBCDEC_EPRINT("%d :: LCML_Callback: IUALG_ERR_GENERAL\n",__LINE__);
             pHandle = pComponentPrivate->pHandle;
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
-#ifndef UNDER_CE
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                        MMCodecControlStop,(void *)pArgs);
             if(eError != OMX_ErrorNone) {
@@ -2128,13 +2036,6 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    OMX_ErrorNone,
                                                    0, 
                                                    NULL);
-#else
-            pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
-                                                   OMX_EventError,
-                                                   OMX_ErrorUndefined,
-                                                   0,
-                                                   NULL);
-#endif
         }
         if( (int)args[5] == IUALG_ERR_DATA_CORRUPT ) {
                 char *pArgs = "damedesuStr";
@@ -2144,7 +2045,6 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                               __LINE__);
                 pHandle = pComponentPrivate->pHandle;
                 pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate->pLcmlHandle;
-#ifndef UNDER_CE
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            MMCodecControlStop,(void *)pArgs);
                 if(eError != OMX_ErrorNone) {
@@ -2160,14 +2060,6 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                        OMX_ErrorNone,
                                                        0, 
                                                        NULL);
-#else
-                pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                       pHandle->pApplicationPrivate,
-                                                       OMX_EventError, 
-                                                       OMX_ErrorUndefined,
-                                                       0,
-                                                       NULL);
-#endif                      
             }                                       
         if( (int)args[5] == IUALG_WARN_OVERFLOW ){
             iLBCDEC_DPRINT( "Algorithm error. Overflow, sending to Idle\n" );
@@ -2275,11 +2167,7 @@ OMX_ERRORTYPE iLBCDEC_GetCorresponding_LCMLHeader(iLBCDEC_COMPONENT_PRIVATE *pCo
     while (!pComponentPrivate->bInitParamsInitialized) {
         iLBCDEC_DPRINT("%d :: %s :: Waiting for init to complete\n",__LINE__,
                       __FUNCTION__);
-#ifndef UNDER_CE
         sched_yield();
-#else
-        Sleep(0);
-#endif
     }
     iLBCDEC_DPRINT("%d :: %s :: pComponentPrivate = %p\n",__LINE__,__FUNCTION__, pComponentPrivate);
     iLBCDEC_DPRINT("%d :: %s :: eDir = %d\n",__LINE__,__FUNCTION__,eDir);
@@ -2344,7 +2232,7 @@ OMX_HANDLETYPE iLBCDEC_GetLCMLHandle(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivat
     void *handle = NULL;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
-    char *error = NULL;
+    const char *error = NULL;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     iLBCDEC_DPRINT("%d :: %s Entering\n",__LINE__,__FUNCTION__);
@@ -2399,7 +2287,7 @@ EXIT:
 /* ========================================================================== */
 void iLBCDEC_SetPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir, OMX_U32 lineNumber)
 {
-    OMX_S16 i = 0;
+    OMX_U16 i = 0;
 
     if (eDir == OMX_DirInput) {
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
@@ -2438,7 +2326,7 @@ void iLBCDEC_SetPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFER
 
 OMX_U32 iLBCDEC_IsPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir)
 {
-    OMX_S16 i = 0;
+    OMX_U16 i = 0;
 
     if (eDir == OMX_DirInput) {
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
@@ -2480,7 +2368,7 @@ OMX_U32 iLBCDEC_IsPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFF
 
 void iLBCDEC_ClearPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFFERHEADERTYPE *pBufHdr, OMX_DIRTYPE eDir)
 {
-    OMX_S16 i = 0;
+    OMX_U16 i = 0;
 
     if (eDir == OMX_DirInput) {
         for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
@@ -2520,7 +2408,7 @@ void iLBCDEC_ClearPending(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFF
 
 OMX_U32 iLBCDEC_IsValid(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir)
 {
-    OMX_S16 i = 0;
+    OMX_U16 i = 0;
     OMX_S16 found=0;
 
     if (eDir == OMX_DirInput) {
