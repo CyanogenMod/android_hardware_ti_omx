@@ -2077,7 +2077,6 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
     OMX_U32 nParam1 = -1;
-    OMX_U32 buffcount = 0;
     OMX_U32 i = 0;
     OMX_U32 count = 0;
 
@@ -2237,8 +2236,7 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     }
 #endif
 
-    buffcount = MAX_PRIVATE_BUFFERS;
-    for (i = 0; i < buffcount; i++) {
+    for (i = 0; i < MAX_PRIVATE_BUFFERS; i++) {
         if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]) {
             OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferPrivate cleared 0x%p\n",
                     pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[i]);
@@ -2247,8 +2245,7 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
         }
     }
 
-    buffcount = MAX_PRIVATE_BUFFERS;
-    for (i = 0; i < buffcount; i++) {
+    for (i = 0; i < MAX_PRIVATE_BUFFERS; i++) {
         if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]) {
             OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferPrivate cleared 0x%p\n",
                     pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[i]);
@@ -2583,7 +2580,6 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_U8 pInBufferCnt = 0;
     VIDDEC_PORT_TYPE* pOutCompPort = NULL;
     OMX_U8 pOutBufferCnt = 0;
-    OMX_U32 buffcount = 0;
     OMX_STATETYPE TunnelState = OMX_StateInvalid;
     OMX_BOOL bTransIdle = OMX_FALSE;
 
@@ -2718,8 +2714,7 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         }
     }
 
-    buffcount = pPortDef->nBufferCountActual;
-    for(i = 0; i < buffcount; i++){
+    for(i = 0; i < pPortDef->nBufferCountActual; i++){
         if (pCompPort->pBufferPrivate[i]->pBufferHdr == pBuffHead){
             OMX_PRBUFFER1(pComponentPrivate->dbg, "buffcount %lu eBufferOwner 0x%x\n", i, pCompPort->pBufferPrivate[i]->eBufferOwner);
             free(pCompPort->pBufferPrivate[i]->pBufferHdr);
