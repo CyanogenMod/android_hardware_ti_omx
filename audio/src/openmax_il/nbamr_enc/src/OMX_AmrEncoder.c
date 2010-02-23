@@ -351,7 +351,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 /*ck*/    amr_ip->nChannels = 1;  //was 2 
     amr_ip->eNumData= OMX_NumericalDataSigned; 
     amr_ip->nBitPerSample = 16;  
-/*ck*/    amr_ip->nSamplingRate = 8000; //44100;           
+/*ck*/    amr_ip->nSamplingRate = 8000; //44100;
     amr_ip->ePCMMode = OMX_AUDIO_PCMModeLinear; 
     amr_ip->bInterleaved = OMX_TRUE; /*For Encoders Only*/
     strcpy((char *)pComponentPrivate->componentRole.cRole, "audio_encoder.amrnb");  
@@ -361,7 +361,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     amr_op->eAMRBandMode = OMX_AUDIO_AMRBandModeNB0;
     amr_op->eAMRDTXMode= OMX_AUDIO_AMRDTXModeOff;
     amr_op->eAMRFrameFormat =OMX_AUDIO_AMRFrameFormatConformance;
-
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
@@ -968,11 +967,9 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
        case OMX_IndexParamCompBufferSupplier:
      if(((OMX_PARAM_BUFFERSUPPLIERTYPE *)(ComponentParameterStructure))->nPortIndex == OMX_DirInput) {
                     OMX_PRDSP2(pComponentPrivate->dbg, ":: GetParameter OMX_IndexParamCompBufferSupplier \n");
-                    /*  memcpy(ComponentParameterStructure, pBufferSupplier, sizeof(OMX_PARAM_BUFFERSUPPLIERTYPE)); */                  
                 }
                 else if(((OMX_PARAM_BUFFERSUPPLIERTYPE *)(ComponentParameterStructure))->nPortIndex == OMX_DirOutput) {
                     OMX_PRBUFFER1(pComponentPrivate->dbg, ":: GetParameter OMX_IndexParamCompBufferSupplier \n");
-                    /*memcpy(ComponentParameterStructure, pBufferSupplier, sizeof(OMX_PARAM_BUFFERSUPPLIERTYPE)); */
                 } 
                 else {
                     OMX_ERROR1(pComponentPrivate->dbg, ":: OMX_ErrorBadPortIndex from GetParameter");
@@ -1145,7 +1142,6 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                     }
                     if(pCompAmrParam->eAMRDTXMode == OMX_AUDIO_AMRDTXasEFR) {
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRDTXMode = XasEFR\n",__LINE__);
-                        /*     pComponentPrivate->efrMode = 1; */
                     }  
                 }
                 else {
@@ -1308,7 +1304,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     OMX_S16 *customFlag = NULL;      
     
     TI_OMX_DATAPATH dataPath;                   
-    OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
 #ifdef DSP_RENDERING_ON
     AM_COMMANDDATATYPE cmd_data;
 #endif    
@@ -1642,6 +1637,7 @@ EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
 }
+
 /*-------------------------------------------------------------------*/
 /**
   * OMX_ComponentDeinit() this methold will de init the component
@@ -1675,7 +1671,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     close(pComponentPrivate->fdread);
 #endif
 #ifdef RESOURCE_MANAGER_ENABLED
-    /* eError = RMProxy_SendCommand(pHandle, RMProxy_FreeResource, OMX_NBAMR_Encoder_COMPONENT, 0, NULL); */
     eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_NBAMR_Encoder_COMPONENT, 0, 3456, NULL);
     if (eError != OMX_ErrorNone) {
          OMX_ERROR4(dbg, "%d ::Error returned from destroy ResourceManagerProxy thread\n",
@@ -1943,7 +1938,6 @@ static OMX_ERRORTYPE FreeBuffer(
             OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: pBuffer = %p\n",__LINE__,pBuffer);
         }
     }
-
 
     if (inputIndex != -1) {
         if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
