@@ -1602,8 +1602,8 @@ static OMX_ERRORTYPE SetParameter_JPEGDec(OMX_HANDLETYPE hComponent,
 	case OMX_IndexCustomSetMaxResolution:
 	{
 
-            if((((OMX_CUSTOM_RESOLUTION*) pCompParam)->nWidth > JPGDEC_SNTEST_MAX_WIDTH) ||
-                    (((OMX_CUSTOM_RESOLUTION*) pCompParam)->nHeight > JPGDEC_SNTEST_MAX_HEIGHT)){
+            if( (((OMX_CUSTOM_RESOLUTION*)pCompParam)->nWidth * ((OMX_CUSTOM_RESOLUTION*)pCompParam)->nHeight) > JPGDEC_MAX_RESOLUTION ) {
+                OMX_PRINT1(pComponentPrivate->dbg, " ERROR !!! Resolution exceeds the Maximum.\n"); 
                 eError = OMX_ErrorUnsupportedSetting;
                 goto EXIT;
             }

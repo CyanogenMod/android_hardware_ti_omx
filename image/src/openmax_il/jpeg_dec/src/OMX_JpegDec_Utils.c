@@ -699,10 +699,11 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
 
     if (pComponentPrivate->nProgressive == 1) {
         OMX_PRINT2(pComponentPrivate->dbg, "JPEGdec:: nProgressive IMAGE");
+        /*DSP SN expects the width and height to be multiple of 16 */
         arr[7] = nFrameHeight;
-        if ((arr[7]%2) != 0) arr[7]++;
+        if ((arr[7]%16) != 0) arr[7] = (( nFrameHeight/16 ) + 1 ) * 16;
         arr[8] = nFrameWidth;
-        if ((arr[8]%2) != 0) arr[8]++; 
+        if ((arr[8]%16) != 0) arr[8] = (( nFrameWidth/16 ) + 1 ) * 16;
         
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
