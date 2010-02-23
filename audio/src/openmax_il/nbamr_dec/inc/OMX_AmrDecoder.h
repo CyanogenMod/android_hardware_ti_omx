@@ -713,6 +713,8 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
 
     OMX_U32 nRuntimeOutputBuffers;
 
+    // Flag to set when mutexes are initialized
+    OMX_U8 bMutexInitialized;
     /* Removing sleep() calls. Definition. */
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
@@ -787,6 +789,8 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
 
     PV_OMXComponentCapabilityFlagsType iPVCapabilityFlags;
 
+    // set flag when dbg is initialized
+    OMX_U8 bDebugInitialized;
     struct OMX_TI_Debug dbg;
 
 } AMRDEC_COMPONENT_PRIVATE;

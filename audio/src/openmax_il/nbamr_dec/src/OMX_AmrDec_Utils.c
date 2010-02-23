@@ -73,13 +73,6 @@
 /* Log for Android system*/
 #include <utils/Log.h>
 
-/* ======================================================================= */
-/**
- * @def    DASF    Defines the value for identify DASF ON
- */
-/* ======================================================================= */
-#define DASF 1
-
 /* ========================================================================== */
 /**
 * @NBAMRDECFill_LCMLInitParams () This function is used by the component thread to
@@ -109,7 +102,6 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate;
     LCML_NBAMRDEC_BUFHEADERTYPE *pTemp_lcml;
-    char *ptr;
 
     pComponentPrivate = pHandle->pComponentPrivate; 
     OMX_PRINT1 (pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECFill_LCMLInitParams\n ",__LINE__);
@@ -173,7 +165,11 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     if(pComponentPrivate->dasfmode == 1) {
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: pComponentPrivate->dasfmode = %d\n",__LINE__,pComponentPrivate->dasfmode);
-        OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);   
+        OMX_MALLOC_GENERIC(strmAttr, LCML_STRMATTR);
+        if (strmAttr == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         
         pComponentPrivate->strmAttr = strmAttr;
         strmAttr->uSegid = 0;
@@ -216,13 +212,6 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     pComponentPrivate->iAmrMode =
         pComponentPrivate->amrParams[NBAMRDEC_INPUT_PORT]->eAMRDTXMode;
 
-    /*if(pComponentPrivate->mimemode == 1)
-    {
-       pComponentPrivate->iAmrMimeFlag = MODE_MIME;
-    } else {
-        pComponentPrivate->iAmrMimeFlag = MODE_NONMIME;
-    }*/
-
     arr[0] = STREAM_COUNT;
     arr[1] = NBAMRDEC_INPUT_PORT;
     arr[2] = NBAMRDEC_DMM;
@@ -262,13 +251,6 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         arr[7] = NBAMR;
     }
     
-    /*if(1 == pComponentPrivate->mimemode) {
-        arr[8] = NBAMRDEC_MIMEMODE;
-    } 
-    else {
-        arr[8] = NBAMRDEC_NONMIMEMODE;
-    }
-    */
     arr[8] = pComponentPrivate->mimemode; /*MIME, IF2 or FORMATCONFORMANCE*/
     arr[9] = END_OF_CR_PHASE_ARGS;
 
@@ -276,14 +258,17 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Comp: OMX_AmrDecUtils.c\n",__LINE__);
     size_lcml = nIpBuf * sizeof(LCML_NBAMRDEC_BUFHEADERTYPE);
-    OMX_MALLOC_SIZE(ptr, size_lcml,char);
-    pTemp_lcml = (LCML_NBAMRDEC_BUFHEADERTYPE *)ptr;
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_NBAMRDEC_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pLcmlBufHeader[NBAMRDEC_INPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nIpBuf; i++) {
         pTemp = pComponentPrivate->pInputBufferList->pBufHdr[i];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
-/*        pTemp->nAllocLen = nIpBufSize;*/
         pTemp->nFilledLen = nIpBufSize;
         pTemp->nVersion.s.nVersionMajor = AMRDEC_MAJOR_VER;
         pTemp->nVersion.s.nVersionMinor = AMRDEC_MINOR_VER;
@@ -294,12 +279,24 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
                                 sizeof(NBAMRDEC_ParamStruct),
-                                NBAMRDEC_ParamStruct); 
+                                NBAMRDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         pTemp_lcml->pFrameParam = NULL;
-        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);          
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -312,12 +309,17 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
        * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(LCML_NBAMRDEC_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,LCML_NBAMRDEC_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Clean up Init params
+        NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pLcmlBufHeader[NBAMRDEC_OUTPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nOpBuf; i++) {
         pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
-/*        pTemp->nAllocLen = nOpBufSize;*/
         pTemp->nFilledLen = nOpBufSize;
         pTemp->nVersion.s.nVersionMajor = AMRDEC_MAJOR_VER;
         pTemp->nVersion.s.nVersionMinor = AMRDEC_MINOR_VER;
@@ -333,11 +335,23 @@ OMX_ERRORTYPE NBAMRDECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
                                                                                
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
                                 sizeof(NBAMRDEC_ParamStruct),
-                                NBAMRDEC_ParamStruct); 
+                                NBAMRDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;        
-        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);   
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::pTemp_lcml = %p\n",__LINE__,pTemp_lcml);
         OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::pTemp_lcml->buffer = %p\n",__LINE__,pTemp_lcml->buffer);
@@ -395,45 +409,49 @@ OMX_ERRORTYPE NBAMRDEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     /* create the pipe used to send buffers to the thread */
     eError = pipe (pComponentPrivate->cmdDataPipe);
     if (eError) {
-       eError = OMX_ErrorInsufficientResources;
-       goto EXIT;
+       OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - OMX_ErrorInsufficientResources\n", __LINE__);
+       return OMX_ErrorInsufficientResources;
     }
 
     /* create the pipe used to send buffers to the thread */
     eError = pipe (pComponentPrivate->dataPipe);
     if (eError) {
-       eError = OMX_ErrorInsufficientResources;
-       goto EXIT;
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - OMX_ErrorInsufficientResources\n", __LINE__);
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        return OMX_ErrorInsufficientResources;
     }
 
     /* create the pipe used to send commands to the thread */
     eError = pipe (pComponentPrivate->cmdPipe);
     if (eError) {
-       eError = OMX_ErrorInsufficientResources;
-       goto EXIT;
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - OMX_ErrorInsufficientResources\n", __LINE__);
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        close (pComponentPrivate->dataPipe[0]);
+        close (pComponentPrivate->dataPipe[1]);
+        return OMX_ErrorInsufficientResources;
     }
 
-    /* create the pipe used to send commands to the thread */
-/*    eError = pipe (pComponentPrivate->lcml_Pipe);
-    if (eError) {
-       eError = OMX_ErrorInsufficientResources;
-       goto EXIT;
-    }
-*/
     /* Create the Component Thread */
     eError = pthread_create (&(pComponentPrivate->ComponentThread), NULL, NBAMRDEC_ComponentThread, pComponentPrivate);
     if (eError || !pComponentPrivate->ComponentThread) {
-       eError = OMX_ErrorInsufficientResources;
-       goto EXIT;
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - OMX_ErrorInsufficientResources\n", __LINE__);
+        close (pComponentPrivate->cmdDataPipe[0]);
+        close (pComponentPrivate->cmdDataPipe[1]);
+        close (pComponentPrivate->dataPipe[0]);
+        close (pComponentPrivate->dataPipe[1]);
+        close (pComponentPrivate->cmdPipe[0]);
+        close (pComponentPrivate->cmdPipe[1]);
+        return OMX_ErrorInsufficientResources;
     }
     pComponentPrivate->bCompThreadStarted = 1;
-EXIT:
     return eError;
 }
 
 /* ========================================================================== */
 /**
-* @Mp3Dec_FreeCompResources() This function is called by the component during
+* @NBAMRDEC_FreeCompResources() This function is called by the component during
 * de-init to close component thread, Command pipe, data pipe & LCML pipe.
 *
 * @param pComponent  handle for this instance of the component
@@ -466,7 +484,6 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     if (pComponentPrivate->bCompThreadStarted) {
         err = close (pComponentPrivate->dataPipe[0]);
-
         if (0 != err && OMX_ErrorNone == eError) {
             eError = OMX_ErrorHardware;
         }
@@ -495,41 +512,47 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         if (0 != err && OMX_ErrorNone == eError) {
             eError = OMX_ErrorHardware;
         }
-
-/*        err = close (pComponentPrivate->lcml_Pipe[0]);
-        if (0 != err && OMX_ErrorNone == eError) {
-            eError = OMX_ErrorHardware;
-        }
-
-        err = close (pComponentPrivate->lcml_Pipe[1]);
-        if (0 != err && OMX_ErrorNone == eError) {
-            eError = OMX_ErrorHardware;
-        } */
-        
     }
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pPriorityMgmt);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]);
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]);
     OMX_MEMFREE_STRUCT(pComponentPrivate->amrParams[NBAMRDEC_INPUT_PORT]);
     OMX_MEMFREE_STRUCT(pComponentPrivate->amrParams[NBAMRDEC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPriorityMgmt);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]);
         
     pComponentPrivate->bPortDefsAllocated = 0;
     /* Removing sleep() calls. */
-    OMX_PRDSP2(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    if (pComponentPrivate->bMutexInitialized == 1) {
+        pComponentPrivate->bMutexInitialized = 0;
+        OMX_PRDSP2(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
     
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
     
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-    /* Removing sleep() calls. */
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        /* Removing sleep() calls. */
+    }
+
+    // Close dbg file
+    if (pComponentPrivate->bDebugInitialized == 1) {
+        pComponentPrivate->bDebugInitialized = 0;
+        OMX_DBG_CLOSE(pComponentPrivate->dbg);
+    }
+
+    // Free pComponentPrivate
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
+
     return eError;
 }
-
-
 
 OMX_ERRORTYPE NBAMRDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 {
@@ -625,7 +648,7 @@ OMX_ERRORTYPE NBAMRDEC_StopComponentThread(OMX_HANDLETYPE pComponent)
         eError = OMX_ErrorInsufficientResources;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error while closing Component Thread\n",__LINE__);
     }
-   return eError;
+    return eError;
 }
 
 
@@ -646,11 +669,10 @@ OMX_ERRORTYPE NBAMRDEC_StopComponentThread(OMX_HANDLETYPE pComponent)
 
 OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-
     OMX_COMPONENTTYPE *pHandle;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState;
-    OMX_U32 commandData;
+    OMX_S32 commandData;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
 
     OMX_U16 i;
@@ -674,15 +696,27 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
     ret = read (pComponentPrivate->cmdPipe[0], &command, sizeof (command));
     if (ret == -1) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error While reading from the Pipe\n",__LINE__);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorHardware,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return OMX_ErrorHardware;
     }
 
     ret = read (pComponentPrivate->cmdDataPipe[0], &commandData, sizeof (commandData));
     if (ret == -1) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error While reading from the Pipe\n",__LINE__);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorHardware,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return OMX_ErrorHardware;
     }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -748,14 +782,13 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (pLcmlHandle == NULL) {
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: LCML Handle is NULL........exiting..\n",__LINE__);
                     pComponentPrivate->curState = OMX_StateInvalid;
-                    eError = OMX_ErrorHardware;
                     pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                             pHandle->pApplicationPrivate,
                                                             OMX_EventError,
                                                             OMX_ErrorHardware,
                                                             OMX_TI_ErrorSevere,
                                                             "Lcml Handle NULL");
-                    goto EXIT;
+                    return OMX_ErrorHardware;
                 }
                 OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleCommand\n",__LINE__);
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: pLcmlHandle = %p\n",__LINE__,pLcmlHandle);
@@ -777,7 +810,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             eError,
                                                             OMX_TI_ErrorSevere, 
                                                             NULL);
-                    goto EXIT;
+                    return eError;
                 }
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Comp: OMX_AmrDecUtils.c\n",__LINE__);
                 pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
@@ -802,7 +835,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 eError,
                                                 OMX_TI_ErrorSevere,
                                                 NULL);
-                    goto EXIT;
+                    return eError;
                 }
 
                 OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Setting to OMX_StateIdle\n",__LINE__);
@@ -885,18 +918,27 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         OMX_ERROR4(pComponentPrivate->dbg, "**************************************\n");
                         OMX_ERROR4(pComponentPrivate->dbg, ":: Error = OMX_ErrorInsufficientResources\n");
                         OMX_ERROR4(pComponentPrivate->dbg, "**************************************\n");
-                        eError = OMX_ErrorInsufficientResources; 
                         pComponentPrivate->curState = OMX_StateInvalid; 
                         pComponentPrivate->cbInfo.EventHandler( pHandle, 
                                                                 pHandle->pApplicationPrivate, 
                                                                 OMX_EventError, 
-                                                                OMX_ErrorInvalidState,
+                                                                OMX_ErrorInsufficientResources,
                                                                 OMX_TI_ErrorMajor, 
-                                                        "AM: No Stream ID Available");                 
-                        goto EXIT; 
-                    } 
+                                                        "AM: No Stream ID Available");
+                        return OMX_ErrorInsufficientResources;
+                    }
             
                     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(AMRDEC_AudioCodecParams), AMRDEC_AudioCodecParams);
+                    if (pComponentPrivate->pParams == NULL) {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        return OMX_ErrorInsufficientResources;
+                    }
                                     
                     pParams = pComponentPrivate->pParams;
                     pParams->iAudioFormat = 1;
@@ -918,7 +960,8 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                eError,
                                                                OMX_TI_ErrorSevere, 
                                                                NULL);                       
-                        goto EXIT;
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
+                        return eError;
                     }
                 }
         } 
@@ -955,7 +998,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             eError,
                                                             OMX_TI_ErrorSevere, 
                                                             NULL);  
-                    goto EXIT;
+                    return eError;
                 }
                 pComponentPrivate->bStopSent=1;
                 OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
@@ -1013,7 +1056,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         "Invalid State");
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Same State Given by \
                            Application\n",__LINE__);
-                    goto EXIT;                            
+                return OMX_ErrorSameState;
             }
             else if (pComponentPrivate->curState == OMX_StateIdle) {
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Comp: OMX_AmrDecUtils.c\n",__LINE__);
@@ -1038,7 +1081,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             eError,
                                                             OMX_TI_ErrorSevere, 
                                                             NULL);                  
-                    goto EXIT;
+                    return eError;
                 }
                 /* Send input buffers to application */
                 nBuf = pComponentPrivate->pInputBufferList->numBuffers;
@@ -1060,7 +1103,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             eError,
                                                             OMX_TI_ErrorSevere, 
                                                             NULL);
-                    goto EXIT;
+                    return eError;
                 }
                 for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
                     if (pComponentPrivate->pInputBufHdrPending[i]) {
@@ -1111,7 +1154,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         "Incorrect State Transition");
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid State Given by \
                        Application\n",__LINE__);
-                goto EXIT;
+                return OMX_ErrorIncorrectStateTransition;
 
             }
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -1174,7 +1217,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         "Incorrect State Transition");
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid State Given by \
                        Application\n",__LINE__);
-                goto EXIT;
+                return OMX_ErrorIncorrectStateTransition;
            }
 #ifdef __PERF_INSTRUMENTATION__
             PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundaryCleanup);
@@ -1216,7 +1259,14 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: In side OMX_StateLoaded State: \n",__LINE__);
             if (eError != OMX_ErrorNone) {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
-                goto EXIT;
+                OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventError,
+                                                       eError,
+                                                       OMX_TI_ErrorSevere,
+                                                       NULL);
+                return eError;
             }
            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleCommand: Cmd Loaded\n",__LINE__);
            eError = EXIT_COMPONENT_THRD;
@@ -1247,7 +1297,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         "Incorrect State Transition");
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid State Given by \
                        Application\n",__LINE__);
-                goto EXIT;
+                return OMX_ErrorIncorrectStateTransition;
            }
 #ifdef __PERF_INSTRUMENTATION__
            PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
@@ -1264,7 +1314,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                         eError,
                                                         OMX_TI_ErrorSevere, 
                                                         NULL);
-               goto EXIT;
+               return eError;
            }
 #ifdef RESOURCE_MANAGER_ENABLED
 /* notify RM of pause so resources can be redistributed if needed */
@@ -1579,7 +1629,14 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                            EMMCodecControlStrmCtrl, 
                                            (void*)aParam);
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           eError,
+                                                           OMX_TI_ErrorSevere,
+                                                           NULL);
+                    return eError;
                 }
             } else{
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
@@ -1601,7 +1658,14 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                            EMMCodecControlStrmCtrl, 
                                            (void*)aParam);
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           eError,
+                                                           OMX_TI_ErrorSevere,
+                                                           NULL);
+                    return eError;
                 }
             }else{
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_TRUE; 
@@ -1682,11 +1746,24 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     if (eError != OMX_ErrorNone) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: The PBufHeader is not found in the list\n",
                                                                      __LINE__);
-        goto EXIT;
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return eError;
     }    
     if (pBufHeader->pBuffer == NULL) {
-        eError = OMX_ErrorBadParameter;
-	goto EXIT;
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorBadParameter,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+        return OMX_ErrorBadParameter;
     }
 
     if (eDir == OMX_DirInput) {
@@ -1698,7 +1775,16 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->nEmptyBufferDoneCount++;
             SignalIfAllBuffersAreReturned(pComponentPrivate);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers\n", __LINE__, __FUNCTION__);
-            goto EXIT;
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+            if (eError != OMX_ErrorNone) {
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            }
+            return eError;
         }
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ( pBufHeader->nFilledLen > 0) {
@@ -1718,7 +1804,13 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             if (TOCframetype == NULL)
                             {
                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Couldn't realloc memory!",__LINE__);
-                              goto EXIT;
+                              pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                              return OMX_ErrorInsufficientResources;
                             }
                             TOCentry = pBufHeader->pBuffer[0];
                             TOCframetype[hh]= TOCentry & 0x7C;
@@ -1734,16 +1826,36 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             /* adding TOC to each frame */
                             if (offset > pBufHeader->nAllocLen){
                                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-                              goto EXIT;
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                if (eError != OMX_ErrorNone) {
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                }
+                                return eError;
                             }   
                             else
                                 memcpy(pBufHeader->pBuffer + offset, 
                                                 &TOCframetype[nFrames],
                                                 sizeof(OMX_U8));
                             offset+=pComponentPrivate->amrMimeBytes[index];
-                            if ( offset + 1 + nFilledLenLocal > pBufHeader->nAllocLen){
+                            if (offset + 1 + nFilledLenLocal > pBufHeader->nAllocLen) {
                                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-                              goto EXIT;
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                if (eError != OMX_ErrorNone) {
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                }
+                                return eError;
                             }   
                             else
                             memmove(pBufHeader->pBuffer + offset + 1,
@@ -1756,8 +1868,8 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             }
                             nFrames++;                                                
                         }
-                        free(TOCframetype);
-			 TOCframetype = NULL;
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
                     }
                     frameType = 0;
                     nFrames = 0;
@@ -1770,8 +1882,18 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         {
                             if (((nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME) + pBufHeader->nFilledLen) 
 			       > pBufHeader->nAllocLen) {
-                               OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-                               goto EXIT;
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                if (eError != OMX_ErrorNone) {
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                }
+                                return eError;
                            }
 
                             memmove(pBufHeader->pBuffer + (nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_MIME),
@@ -1820,7 +1942,17 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                             if (((nFrames*INPUT_NBAMRDEC_BUFFER_SIZE_IF2) + pBufHeader->nFilledLen) 
 			       > pBufHeader->nAllocLen) {
                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-                               goto EXIT;
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                if (eError != OMX_ErrorNone) {
+                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                }
+                                return eError;
                             }
                             memmove(pBufHeader->pBuffer + (nFrames *INPUT_NBAMRDEC_BUFFER_SIZE_IF2), 
                                     pBufHeader->pBuffer + i, 
@@ -1859,15 +1991,40 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     if ( pComponentPrivate->nHoldLength > 0 ) {/* something need to be hold in iHoldBuffer */
                         if (pComponentPrivate->pHoldBuffer == NULL) {
                             OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, (bufSize * (pComponentPrivate->pInputBufferList->numBuffers + 3)),void);
+                            if (pComponentPrivate->pHoldBuffer == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                         }
                         /* Copy the extra data into pHoldBuffer. Size will be nHoldLength. */
                         pExtraData = pBufHeader->pBuffer + bufSize*nFrames;
 			/* check the pHoldBuffer boundary before copying */
 			if (pComponentPrivate->nHoldLength >
-			   (bufSize * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
+			   (OMX_U32)(bufSize * (pComponentPrivate->pInputBufferList->numBuffers + 3)))
 			   {
                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-                               goto EXIT;
+                               // Free memories allocated
+                               OMX_MEMFREE_STRUCT(TOCframetype);
+
+                               if (eError != OMX_ErrorNone) {
+                                   OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                                   pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                               }
+                               return eError;
 			   }
                         memcpy (pComponentPrivate->pHoldBuffer, pExtraData, pComponentPrivate->nHoldLength);
                     }
@@ -1880,6 +2037,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         /* save the data into iHoldBuffer.*/
                         if (pComponentPrivate->pHoldBuffer == NULL) {
                             OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, (bufSize * (pComponentPrivate->pInputBufferList->numBuffers + 3)),void);
+                            if (pComponentPrivate->pHoldBuffer == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+
+                                // Free memories allocated
+                                OMX_MEMFREE_STRUCT(TOCframetype);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                         }
                         /* Not enough data to be sent. Copy all received data into iHoldBuffer.*/
                         /* Size to be copied will be iHoldLen == mmData->BufferSize() */
@@ -1904,7 +2074,22 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         else {
                             pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
                         }
-                        goto EXIT;
+
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+
+                        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+                        if (eError != OMX_ErrorNone ) {
+                            // Free memories allocated
+                            OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        }
+                        return eError;
                     }
                 }
             }
@@ -1944,7 +2129,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 		    if ((nFrames*frameLength) > pBufHeader->nAllocLen)
 		    {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: ERROR: Trying to write beyond buffer boundaries!",__LINE__);
-			goto EXIT;
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+
+                        if (eError != OMX_ErrorNone ) {
+                            OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        }
+                        return eError;
 		    }
                     memcpy(pBufHeader->pBuffer,pComponentPrivate->pHoldBuffer,nFrames*frameLength);
                     pBufHeader->nFilledLen = nFrames*frameLength;
@@ -1975,7 +2172,21 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    pBufHeader);
                         SignalIfAllBuffersAreReturned(pComponentPrivate);
-                        goto EXIT;
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+
+                        OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+                        if (eError != OMX_ErrorNone ) {
+                            // Free memories allocated
+                            OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        }
+                        return eError;
                     }
                     else {
                         pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
@@ -1993,7 +2204,21 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            pComponentPrivate->pInputBufferList->pBufHdr[0]);
                 SignalIfAllBuffersAreReturned(pComponentPrivate);
-                goto EXIT;
+                // Free memories allocated
+                OMX_MEMFREE_STRUCT(TOCframetype);
+
+                OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+                if (eError != OMX_ErrorNone ) {
+                    // Free memories allocated
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                }
+                return eError;
             }
             else{
                 nFrames=1;
@@ -2004,7 +2229,17 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
             eError = NBAMRDECGetCorresponding_LCMLHeader(pComponentPrivate,pBufHeader->pBuffer, OMX_DirInput, &pLcmlHdr);
             if (eError != OMX_ErrorNone) {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
+                // Free memories allocated
+                OMX_MEMFREE_STRUCT(TOCframetype);
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                return eError;
             }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -2028,6 +2263,20 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 
             if(pLcmlHdr->pFrameParam==NULL ){
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(NBAMRDEC_FrameStruct)*nFrames),NBAMRDEC_FrameStruct);
+                if (pLcmlHdr->pFrameParam == NULL) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+                    // Free memories allocated
+                    OMX_MEMFREE_STRUCT(TOCframetype);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return OMX_ErrorInsufficientResources;
+                }
 
                 eError = OMX_DmmMap(phandle->dspCodec->hProc, 
                                     nFrames*sizeof(NBAMRDEC_FrameStruct),
@@ -2037,7 +2286,18 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 if (eError != OMX_ErrorNone)
                 {
                     OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n\n");
-                    goto EXIT;
+                    // Free memories allocated
+                    OMX_MEMFREE_STRUCT(TOCframetype);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return eError;
                 }
                 pLcmlHdr->pBufferParam->pParamElem = (NBAMRDEC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/                    
             }
@@ -2073,18 +2333,38 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                         OMX_ERROR4(pComponentPrivate->dbg, "**************************************\n");
                         OMX_ERROR4(pComponentPrivate->dbg, ":: Error = OMX_ErrorInsufficientResources\n");
                         OMX_ERROR4(pComponentPrivate->dbg, "**************************************\n");
-                        eError = OMX_ErrorInsufficientResources; 
-                        pComponentPrivate->curState = OMX_StateInvalid; 
+                        pComponentPrivate->curState = OMX_StateInvalid;
+
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+                        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
                         pComponentPrivate->cbInfo.EventHandler( pComponentPrivate->pHandle, 
                                                                 pComponentPrivate->pHandle->pApplicationPrivate, 
                                                                 OMX_EventError, 
-                                                                OMX_ErrorInvalidState,
+                                                                OMX_ErrorInsufficientResources,
                                                                 OMX_TI_ErrorMajor, 
-                                                        "AM: No Stream ID Available");                 
-                        goto EXIT; 
-                    } 
+                                                        "AM: No Stream ID Available");
+                        return OMX_ErrorInsufficientResources;
+                    }
                     
                     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(AMRDEC_AudioCodecParams),AMRDEC_AudioCodecParams);
+                    if (pComponentPrivate->pParams == NULL) {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+                        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                        return OMX_ErrorInsufficientResources;
+                    }
                     pParams = pComponentPrivate->pParams;
                     pParams->iAudioFormat = 1;
                     pParams->iSamplingRate = 8000;
@@ -2099,13 +2379,20 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                     if(eError != OMX_ErrorNone) {
                         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error Occurred in Codec StreamControl..\n",__LINE__);
                         pComponentPrivate->curState = OMX_StateInvalid;
+
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+                        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
+
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                OMX_EventError, 
                                                                eError,
                                                                OMX_TI_ErrorSevere, 
                                                                NULL);                       
-                        goto EXIT;
+                        return eError;
                     }
                 }
                 
@@ -2114,13 +2401,20 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error Occurred in Codec Start..\n",__LINE__);
                     pComponentPrivate->curState = OMX_StateInvalid;
+
+                    // Free memories allocated
+                    OMX_MEMFREE_STRUCT(TOCframetype);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
+
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle, 
                                                             pComponentPrivate->pHandle->pApplicationPrivate,
                                                             OMX_EventError, 
                                                             eError,
                                                             OMX_TI_ErrorSevere, 
                                                             NULL);                  
-                    goto EXIT;
+                    return eError;
                 }
                 pComponentPrivate->SendAfterEOS = 0;
             }
@@ -2157,7 +2451,23 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                if(DSP_FAILED(status))
                {
                  OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
-                 goto EXIT;
+                 // Free memories allocated
+                 OMX_MEMFREE_STRUCT(TOCframetype);
+
+                 if (eError != OMX_ErrorNone) {
+                     // Free memories allocated
+                     OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                     OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+                     OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
+
+                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                            pComponentPrivate->pHandle->pApplicationPrivate,
+                                                            OMX_EventError,
+                                                            eError,
+                                                            OMX_TI_ErrorSevere,
+                                                            NULL);
+                 }
+                 return eError;
                }
             }
             pLcmlHdr->pBufferParam->usNbFrames = nFrames;
@@ -2213,8 +2523,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                                     sizeof(NBAMRDEC_ParamStruct), 
                                                     NULL);
                     if (eError != OMX_ErrorNone) {
-                       eError = OMX_ErrorHardware;
-                       goto EXIT;
+                        // Free memories allocated
+                        OMX_MEMFREE_STRUCT(TOCframetype);
+                        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
+
+                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                            pComponentPrivate->pHandle->pApplicationPrivate,
+                                                            OMX_EventError,
+                                                            OMX_ErrorHardware,
+                                                            OMX_TI_ErrorSevere,
+                                                            NULL);
+                        return OMX_ErrorHardware;
                     }
                     pComponentPrivate->lcml_nCntIp++;
                     pComponentPrivate->lcml_nIpBuf++;
@@ -2287,7 +2608,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
             pComponentPrivate->nFillBufferDoneCount++;
             SignalIfAllBuffersAreReturned(pComponentPrivate);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers\n", __LINE__, __FUNCTION__);
-            goto EXIT;
+            // Free memories allocated
+            OMX_MEMFREE_STRUCT(TOCframetype);
+
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
+            if (eError != OMX_ErrorNone ) {
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+            }
+            return eError;
         }
         eError = NBAMRDECGetCorresponding_LCMLHeader(pComponentPrivate, pBufHeader->pBuffer, OMX_DirOutput, &pLcmlHdr);     
         phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);
@@ -2312,6 +2645,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
 
         if(pLcmlHdr->pFrameParam==NULL ){
             OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(NBAMRDEC_FrameStruct)*nFrames), NBAMRDEC_FrameStruct);
+            if (pLcmlHdr->pFrameParam == NULL) {
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+                // Free memories allocated
+                OMX_MEMFREE_STRUCT(TOCframetype);
+
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorInsufficientResources,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                return OMX_ErrorInsufficientResources;
+            }
                     
             eError = OMX_DmmMap(phandle->dspCodec->hProc, 
                                 nFrames*sizeof(NBAMRDEC_FrameStruct),
@@ -2321,7 +2667,17 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
             if (eError != OMX_ErrorNone)
             {
                 OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n");
-                goto EXIT;
+                // Free memories allocated
+                OMX_MEMFREE_STRUCT(TOCframetype);
+                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                return eError;
             }
         
             pLcmlHdr->pBufferParam->pParamElem = (NBAMRDEC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped;/*DSP Address*/     
@@ -2340,7 +2696,19 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
         if(DSP_FAILED(status))
         {
            OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
-           goto EXIT;
+           // Free memories allocated
+           OMX_MEMFREE_STRUCT(TOCframetype);
+           OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
+           if (eError != OMX_ErrorNone ) {
+               pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               eError,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+           }
+           return eError;
         }
 
         if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -2356,8 +2724,17 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                           NULL);
                 if (eError != OMX_ErrorNone ) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: IssuingDSP OP: Error Occurred\n",__LINE__);
-                    eError = OMX_ErrorHardware;
-                    goto EXIT;
+                    // Free memories allocated
+                    OMX_MEMFREE_STRUCT(TOCframetype);
+                    OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
+
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                               pComponentPrivate->pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorHardware,
+                                               OMX_TI_ErrorSevere,
+                                               NULL);
+                    return OMX_ErrorHardware;
                 }
                 pComponentPrivate->lcml_nOpBuf++;
             }
@@ -2378,9 +2755,9 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
     }
 
 EXIT:
-    if (TOCframetype != NULL) {
-	 free(TOCframetype);
-    }
+    // Free memories allocated
+    OMX_MEMFREE_STRUCT(TOCframetype);
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting from  NBAMRDECHandleDataBuf_FromApp \n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Returning error %d\n",__LINE__,eError);
     if (eError != OMX_ErrorNone ) {
@@ -2426,7 +2803,7 @@ OMX_ERRORTYPE NBAMRDECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
             *eDir = OMX_DirInput;
             OMX_ERROR2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Buffer %p is INPUT BUFFER\n",__LINE__, pBufHeader);
             flag = 0;
-            goto EXIT;
+            return eError;
         }
     }
 
@@ -2439,16 +2816,15 @@ OMX_ERRORTYPE NBAMRDECGetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
             *eDir = OMX_DirOutput;
             OMX_ERROR2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Buffer %p is OUTPUT BUFFER\n",__LINE__, pBufHeader);
             flag = 0;
-            goto EXIT;
+            return eError;
         }
     }
 
     if (flag == 1) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Buffer %p is Not Found in the List\n",__LINE__,pBufHeader);
-        eError = OMX_ErrorUndefined;
-        goto EXIT;
+        return OMX_ErrorUndefined;
     }
-EXIT:
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECGetBufferDirection Function\n",__LINE__);
     return eError;
 }
@@ -2472,7 +2848,6 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10])
 #endif
     /*    ssize_t ret; */
     OMX_COMPONENTTYPE *pHandle = NULL;
-    LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U8 i;
     NBAMRDEC_BUFDATA *OutputFrames;
     DSP_STATUS status;
@@ -2554,7 +2929,7 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10])
 #endif
                 if (eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid Buffer Came ...\n",__LINE__);
-                    goto EXIT;
+                    return eError;
                 }
                 NBAMRDEC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirInput);
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Calling EmptyBufferDone\n",__LINE__);
@@ -2581,7 +2956,7 @@ HoldLength = %ld\n",__LINE__,pComponentPrivate->nHoldLength);
             eError = NBAMRDECGetCorresponding_LCMLHeader(pComponentPrivate, pBuffer, OMX_DirOutput, &pLcmlHdr);
             if (eError != OMX_ErrorNone) {
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
+                return eError;
             }
 
             if (!pComponentPrivate->bStopSent){
@@ -2623,7 +2998,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                     if(DSP_FAILED(status))
                     {
                       OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
-                      goto EXIT;
+                      return eError;
                     }
                     break;
                 }
@@ -2690,7 +3065,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                                                            NULL);    
                 } else {
                     OMX_ERROR4(pComponentPrivate->dbg, "LCML reported error while flushing input port\n");
-                    goto EXIT;                            
+                    return eError;
                 }
             }
             else if ( args[2] == (void *)EMMCodecOuputBuffer) { 
@@ -2713,7 +3088,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                                                            NULL);
                 } else {
                     OMX_ERROR4(pComponentPrivate->dbg, "LCML reported error while flushing output port\n");
-                    goto EXIT;                            
+                    return eError;
                 }
             }
         }
@@ -2750,43 +3125,17 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
         if (!pComponentPrivate->bNoIdleOnStop) {
             pComponentPrivate->nNumOutputBufPending=0;
     
-            /*            pComponentPrivate->ProcessingInputBuf=0;
-                          pComponentPrivate->ProcessingOutputBuf=0;
-            */            
             pComponentPrivate->nHoldLength = 0;
-            /*            pComponentPrivate->InBuf_Eos_alreadysent  =0; */
-        
-            /*            OMX_NBMEMFREE_STRUCT(pComponentPrivate->pHoldBuffer); */
-            /*            OMX_NBMEMFREE_STRUCT(pComponentPrivate->iMMFDataLastBuffer); */
         
             pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
-            eError = RMProxy_NewSendCommand(pHandle, 
+            rm_error = RMProxy_NewSendCommand(pHandle, 
                                             RMProxy_StateSet, 
                                             OMX_NBAMR_Decoder_COMPONENT, 
                                             OMX_StateIdle, 
                                             3456, 
                                             NULL);
 #endif
-            /*
-            if((pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount) || (pComponentPrivate->nFillThisBufferCount != pComponentPrivate->nFillBufferDoneCount)) {
-                if(pthread_mutex_lock(&bufferReturned_mutex) != 0) 
-                {
-                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex lock error"); 
-                }
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "pthread_cond_waiting for OMX to return all input and outbut buffers");
-                pthread_cond_wait(&bufferReturned_condition, &bufferReturned_mutex);
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
-                if(pthread_mutex_unlock(&bufferReturned_mutex) != 0) 
-                {
-                    OMXDBG_PRINT(stderr, PRINT, 1, 0, "bufferReturned_mutex mutex unlock error");  
-                }
-            }
-            else
-            {
-                OMXDBG_PRINT(stderr, PRINT, 1, 0, "OMX has returned all input and output buffers"); 
-            }
-            */
             if(pComponentPrivate->bPreempted == 0){
                 pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                    pHandle->pApplicationPrivate,
@@ -2897,7 +3246,6 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
 
     }
 #endif
- EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting the NBAMRDECLCML_Callback Function\n",__LINE__);
     return eError;
 }
@@ -2943,7 +3291,7 @@ OMX_ERRORTYPE NBAMRDECGetCorresponding_LCMLHeader(AMRDEC_COMPONENT_PRIVATE *pCom
     OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Inside NBAMRDECGetCorresponding_LCMLHeader..\n",__LINE__);
                 *ppLcmlHdr = pLcmlBufHeader;
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Corresponding LCML Header Found\n",__LINE__);
-                 goto EXIT;
+                return eError;
             }
             pLcmlBufHeader++;
         }
@@ -2963,10 +3311,10 @@ OMX_ERRORTYPE NBAMRDECGetCorresponding_LCMLHeader(AMRDEC_COMPONENT_PRIVATE *pCom
                 *ppLcmlHdr = pLcmlBufHeader;
         OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::\n",__LINE__);
 
-                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Corresponding LCML Header Found\n",__LINE__);
+                OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Corresponding LCML Header Found\n",__LINE__);
         OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::\n",__LINE__);
 
-                 goto EXIT;
+                return eError;
             }
             pLcmlBufHeader++;
         }
@@ -2976,7 +3324,6 @@ OMX_ERRORTYPE NBAMRDECGetCorresponding_LCMLHeader(AMRDEC_COMPONENT_PRIVATE *pCom
     }
         OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::\n",__LINE__);
 
-EXIT:
     return eError;
 }
 
@@ -3137,7 +3484,6 @@ OMX_ERRORTYPE  NBAMRDECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
     OMX_U16 i;
     OMX_BUFFERHEADERTYPE *pTemp;
     OMX_S16 size_lcml;
-    char *ptr;
         
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     AMRDEC_COMPONENT_PRIVATE *pComponentPrivate;
@@ -3165,17 +3511,17 @@ OMX_ERRORTYPE  NBAMRDECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
     nOpBuf = pComponentPrivate->pOutputBufferList->numBuffers;
     nOpBufSize = OUTPUT_NBAMRDEC_BUFFER_SIZE;
 
-
     size_lcml = (OMX_S16)nIpBuf * sizeof(LCML_NBAMRDEC_BUFHEADERTYPE);
-    OMX_MALLOC_SIZE(ptr, size_lcml,char);
-    pTemp_lcml = (LCML_NBAMRDEC_BUFHEADERTYPE *)ptr;
-    
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_NBAMRDEC_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pLcmlBufHeader[NBAMRDEC_INPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nIpBuf; i++) {
         pTemp = pComponentPrivate->pInputBufferList->pBufHdr[i];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
-/*        pTemp->nAllocLen = nIpBufSize;*/
         pTemp->nFilledLen = nIpBufSize;
         pTemp->nVersion.s.nVersionMajor = AMRDEC_MAJOR_VER;
         pTemp->nVersion.s.nVersionMinor = AMRDEC_MINOR_VER;
@@ -3184,14 +3530,27 @@ OMX_ERRORTYPE  NBAMRDECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
     
-       OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
                                 sizeof(NBAMRDEC_ParamStruct),
-                                NBAMRDEC_ParamStruct); 
+                                NBAMRDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
-       OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
-       pTemp_lcml->pFrameParam = NULL;       
-       pTemp_lcml->pBufferParam->usNbFrames =0;
-       pTemp_lcml->pBufferParam->pParamElem = NULL;
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+
+        pTemp_lcml->pFrameParam = NULL;
+        pTemp_lcml->pBufferParam->usNbFrames =0;
+        pTemp_lcml->pBufferParam->pParamElem = NULL;
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -3204,14 +3563,17 @@ OMX_ERRORTYPE  NBAMRDECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
        * This memory pointer will be sent to LCML */
     size_lcml = (OMX_S16)nOpBuf * sizeof(LCML_NBAMRDEC_BUFHEADERTYPE);
 
-    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,LCML_NBAMRDEC_BUFHEADERTYPE);   
-
+    OMX_MALLOC_SIZE(pTemp_lcml, size_lcml,LCML_NBAMRDEC_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pLcmlBufHeader[NBAMRDEC_OUTPUT_PORT] = pTemp_lcml;
 
     for (i=0; i<nOpBuf; i++) {
         pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
-/*        pTemp->nAllocLen = nOpBufSize;*/
         pTemp->nFilledLen = nOpBufSize;
         pTemp->nVersion.s.nVersionMajor = AMRDEC_MAJOR_VER;
         pTemp->nVersion.s.nVersionMinor = AMRDEC_MINOR_VER;
@@ -3222,11 +3584,23 @@ OMX_ERRORTYPE  NBAMRDECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
        
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
                                 sizeof(NBAMRDEC_ParamStruct),
-                                NBAMRDEC_ParamStruct); 
+                                NBAMRDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
                                 
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
-        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ); 
+        OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+            // Clean up Init params
+            NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
@@ -3432,8 +3806,7 @@ void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 void NBAMRDEC_HandleUSNError (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
     OMX_COMPONENTTYPE *pHandle = NULL;
-    OMX_U8 pending_buffers = OMX_FALSE;
-    OMX_U32 i;
+
     switch (arg)
     {
         case IUALG_WARN_CONCEALED:

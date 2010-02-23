@@ -100,7 +100,11 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
 
         if (pComponentPrivate->bIsStopping == 1) {
             OMX_ERROR4(pComponentPrivate->dbg, ":: Comp Thrd Exiting here...\n");
-            goto EXIT;
+#ifdef __PERF_INSTRUMENTATION__
+            PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
+
+            return (void*)eError;
         }
 
         if (0 == status) {
@@ -132,8 +136,13 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
 
                    OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateIdle) {
-                   OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
-                    goto EXIT;
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: AmrComponentThread \n",__LINE__);
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
+
+                    OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Exiting ComponentThread\n",__LINE__);
+                    return (void*)eError;
                 }
             }
              OMX_PRDSP1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Component Time Out !!!!!!!!!!!! \n",__LINE__);
@@ -167,10 +176,15 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
             if (nRet == EXIT_COMPONENT_THRD) {
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Exiting from Component thread\n",__LINE__);
 
-                if(eError != OMX_ErrorNone) {
+                if (eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Function Mp3Dec_FreeCompResources returned\
                                                                 error\n",__LINE__);
-                    goto EXIT;
+#ifdef __PERF_INSTRUMENTATION__
+                    PERF_Done(pComponentPrivate->pPERFcomp);
+#endif
+
+                    OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: Exiting ComponentThread\n",__LINE__);
+                    return (void*)eError;
                 }
                 OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: ARM Side Resources Have Been Freed\n",__LINE__);
 
@@ -196,7 +210,6 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
             }
         }
     }
-EXIT:
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERFcomp);
