@@ -5166,7 +5166,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         if(pComponentPrivate->iEndofInputSent == 0){
             pComponentPrivate->iEndofInputSent = 1;
             OMX_PRBUFFER1(pComponentPrivate->dbg, "Sending EOS Empty eBufferOwner 0x%x\n", pBufferPrivate->eBufferOwner);
-            if (pComponentPrivate->pUalgParams == OMX_FALSE) {
+            if(pComponentPrivate->pUalgParams != NULL){
                 OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pUalgParams,OMX_PTR);
             }
 
