@@ -4331,7 +4331,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
 
         /*use default values when zero resolution is parsed*/
-        if ((eError == OMX_ErrorNone) || (nWidth == 0) || (nHeight == 0)) {
+        if ((eError != OMX_ErrorNone) || (nWidth == 0) || (nHeight == 0)) {
             if ((nWidth == 0) || (nHeight == 0)) {
                 eError = OMX_ErrorStreamCorrupt;
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
