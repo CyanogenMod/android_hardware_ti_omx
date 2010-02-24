@@ -58,9 +58,6 @@
 #include <ResourceManagerProxyAPI.h>
 #endif
 
-#ifdef UNDER_CE
-	#define sleep Sleep
-#endif
 
 
 /* ======================================================================= */
@@ -77,7 +74,6 @@
 /* ======================================================================= */
 #undef G726ENC_MEMCHECK
 
-#ifndef UNDER_CE
 /* ======================================================================= */
 /**
  * @def    G726ENC_DEBUG   Debug print macro
@@ -99,30 +95,6 @@
         #define G726ENC_MEMPRINT(...)
 #endif
 
-#else   /*UNDER_CE*/
-/* ======================================================================= */
-/**
- * @def    G726ENC_DEBUG   Debug print macro
- */
-/* ======================================================================= */
-#ifdef  G726ENC_DEBUG
-    #define G726ENC_DPRINT(STR, ARG...) printf()
-#else
-
-#endif
-
-/* ======================================================================= */
-/**
- * @def    G726ENC_MEMCHECK   Memory print macro
- */
-/* ======================================================================= */
-#ifdef  G726ENC_MEMCHECK
-		#define G726ENC_MEMPRINT(STR, ARG...) printf()
-#else
-
-#endif
-
-#endif
 
 #ifdef DEBUG
 		#define G726ENC_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
@@ -285,22 +257,14 @@
  * @def    G726ENC_USN_DLL_NAME   USN DLL name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-	#define G726ENC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
-	#define G726ENC_USN_DLL_NAME "usn.dll64P"
-#endif
+#define G726ENC_USN_DLL_NAME "usn.dll64P"
 
 /* ======================================================================= */
 /**
  * @def    G726ENC_DLL_NAME   G726 Encoder socket node dll name
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-	#define G726ENC_DLL_NAME "\\windows\\g726enc_sn.dll64P"
-#else
-	#define G726ENC_DLL_NAME "g726enc_sn.dll64P"
-#endif
+#define G726ENC_DLL_NAME "g726enc_sn.dll64P"
 
 /* ======================================================================= */
 /** G726ENC_StreamType  Stream types
@@ -615,7 +579,6 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     /** Number of outstanding FillBufferDone() calls */
     OMX_U32 nOutStandingFillDones;
 
-#ifndef UNDER_CE
     /** Tells whether mutex have been initialized or not */
     OMX_U32 bMutexInit;
     /** sync mutexes and signals */
@@ -630,7 +593,6 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-#endif
     /** pointer to LCML lib */
     void* ptrLibLCML;
 
@@ -683,12 +645,6 @@ typedef struct G726ENC_COMPONENT_PRIVATE
 
 } G726ENC_COMPONENT_PRIVATE;
 
-
-#ifndef UNDER_CE
-    OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#else
-/*  WinCE Implicit Export Syntax */
-#define OMX_EXPORT __declspec(dllexport)
 /* =================================================================================== */
 /**
 *  OMX_ComponentInit()  Initializes component
@@ -701,8 +657,8 @@ typedef struct G726ENC_COMPONENT_PRIVATE
 *
 */
 /* =================================================================================== */
-OMX_EXPORT OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
-#endif
+
+    OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp);
 
 #define G726ENC_EXIT_COMPONENT_THRD  10
 /* =================================================================================== */

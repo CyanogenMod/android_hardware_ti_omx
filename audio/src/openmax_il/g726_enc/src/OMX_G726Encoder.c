@@ -48,11 +48,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -60,7 +55,6 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
 
 #include <string.h>
 #include <fcntl.h>
@@ -360,7 +354,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,":srcul/codec\0");
      
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -373,7 +366,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
     pComponentPrivate->bMutexInit = 1;
-#endif
     eError = G726ENC_StartComponentThread(pHandle);
     G726ENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
     if (eError != OMX_ErrorNone) {
@@ -1332,11 +1324,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     if(!pPortDef->bEnabled) {					
                 pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE
                 pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
                 pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#endif
 	}
 
 	OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -1386,13 +1376,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
          pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT]->bEnabled    &&
          pComponentPrivate->InLoaded_readytoidle)){
                     pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
                     pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
                     pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                    OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -1539,11 +1525,9 @@ static OMX_ERRORTYPE FreeBuffer(
             pComponentPrivate->InIdle_goingtoloaded)
        {
            pComponentPrivate->InIdle_goingtoloaded = 0;
-#ifndef UNDER_CE
            pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
            pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
            pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#endif
        }
 		if (pComponentPrivate->bDisableCommandPending) {
 			SendCommand (pComponentPrivate->pHandle,OMX_CommandPortDisable,pComponentPrivate->bDisableCommandParam,NULL);
@@ -1633,13 +1617,9 @@ if ((!pComponentPrivate->dasfMode                                   &&     /*Fil
          pComponentPrivate->pPortDef[G726ENC_OUTPUT_PORT]->bEnabled    &&
          pComponentPrivate->InLoaded_readytoidle)){
                     pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
                     pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
                     pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
                     pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-                    OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
