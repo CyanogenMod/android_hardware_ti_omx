@@ -228,6 +228,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         goto EXIT;
     }
 
+    pComponentPrivate = pHandle->pComponentPrivate;
+
     ((G722ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     ((G722ENC_COMPONENT_PRIVATE *)
      pHandle->pComponentPrivate)->sPortParam.nPorts = 0x2;
@@ -264,8 +266,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
      pHandle->pComponentPrivate)->pcmParams = pcm_ip;
     ((G722ENC_COMPONENT_PRIVATE *)
      pHandle->pComponentPrivate)->g722Params = pcm_op;
-
-    pComponentPrivate = pHandle->pComponentPrivate;
 
     pcm_ip->nPortIndex = G722ENC_INPUT_PORT;
     pcm_op->nSampleRate = 0;  /* 0 represents 60kpbs */
