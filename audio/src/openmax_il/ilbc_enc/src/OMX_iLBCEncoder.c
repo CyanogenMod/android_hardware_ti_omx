@@ -1075,11 +1075,12 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
     TI_OMX_STREAM_INFO *streamInfo = NULL;
     ILBCENC_OMX_MALLOC(streamInfo, TI_OMX_STREAM_INFO);
     if(streamInfo == NULL){
-        eError = OMX_ErrorBadParameter;
+        eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
+        OMX_MEMFREE_STRUCT(streamInfo);
         eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
