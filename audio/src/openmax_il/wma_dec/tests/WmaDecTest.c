@@ -270,23 +270,24 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
      OMX_ERRORTYPE eError1 = OMX_ErrorNone;
      /*int nCnt = 0;*/
      OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
-     eError1 = pComponent->GetState(pHandle, &CurState);
-	 if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE)
-	 {
-		 	eError1 = OMX_ErrorInvalidState;
-	 }
- 	if( (eError1 == OMX_ErrorNone) &&
-            (CurState != DesiredState) )
+
+    pthread_mutex_lock(&WaitForState_mutex);
+    eError1 = pComponent->GetState(pHandle, &CurState);
+    if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE)
+    {
+        eError1 = OMX_ErrorInvalidState;
+    }
+    APP_DPRINT("eError=%x,CurState= %d,DesiredState=%d",eError1,CurState,DesiredState);
+    if( (eError1 == OMX_ErrorNone) &&(CurState != DesiredState) )
     {
         APP_DPRINT( "%d :: App: WaitForState\n", __LINE__);
         WaitForState_flag = 1;
         TargetedState = DesiredState;
-        pthread_mutex_lock(&WaitForState_mutex); 
         pthread_cond_wait(&WaitForState_threshold, &WaitForState_mutex);/*Going to sleep till signal arrives*/
-        pthread_mutex_unlock(&WaitForState_mutex); 
         APP_DPRINT( "%d :: App: WaitForState\n", __LINE__);
+    }
+    pthread_mutex_unlock(&WaitForState_mutex);
 
-     }
      if( eError1 != OMX_ErrorNone ) return eError1;
      return OMX_ErrorNone;
 }
@@ -320,27 +321,26 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
        APP_DPRINT("%d :: App: Error returned from GetState\n",__LINE__);
    }
 
-   switch (eEvent) {
-       case OMX_EventCmdComplete:
-			if (nData1 == OMX_CommandPortDisable) {
-				if (nData2 == OMX_DirInput) {
-					APP_DPRINT ( "%d Component State Changed To %d\n", __LINE__,state);
-				}
-				if (nData2 == OMX_DirOutput) {
-					APP_DPRINT ( "%d Component State Changed To %d\n", __LINE__,state);
-				}
-			}
+    switch (eEvent) {
+    case OMX_EventCmdComplete:
+        if (nData1 == OMX_CommandPortDisable) {
+            if (nData2 == OMX_DirInput) {
+                APP_DPRINT ( "%d Component State Changed To %d\n", __LINE__,state);
+            }
+            if (nData2 == OMX_DirOutput) {
+                APP_DPRINT ( "%d Component State Changed To %d\n", __LINE__,state);
+            }
+        }
+        pthread_mutex_lock(&WaitForState_mutex);
+        if ((nData1 == OMX_CommandStateSet) && (TargetedState == nData2) && (WaitForState_flag))
+        {
+            APP_DPRINT( "%d :: App: Component State Changed To %d\n", __LINE__,state);
+            WaitForState_flag = 0;
+            /*Sending Waking Up Signal*/
+            pthread_cond_signal(&WaitForState_threshold);
+        }
+        pthread_mutex_unlock(&WaitForState_mutex);
 
-            if ((nData1 == OMX_CommandStateSet) && 
-				(TargetedState == nData2) && (WaitForState_flag))
-            {
-                APP_DPRINT( "%d :: App: Component State Changed To %d\n", __LINE__,state);
-                WaitForState_flag = 0;
-                pthread_mutex_lock(&WaitForState_mutex);
-                /*Sending Waking Up Signal*/
-                pthread_cond_signal(&WaitForState_threshold);
-                pthread_mutex_unlock(&WaitForState_mutex);
-            }        
             APP_DPRINT( "%d :: App: Component State Changed To %d\n", __LINE__,state);
             break;
 		case OMX_EventResourcesAcquired:
