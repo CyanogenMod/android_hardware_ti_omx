@@ -71,6 +71,13 @@ typedef enum OMX_TI_SEVERITYTYPE {
 /* ======================================================================= */
 /**
  * @def    OMX_MALLOC_SIZE   Macro to allocate Memory
+ *
+ * This macro is expected to be rewritten to remove the goto.  Some
+ * currently unreachable code has been added to the audio components
+ * after calls to the generic MALLOC functions defined in this file
+ * (i.e. after OMX_MALLOC_SIZE_DSPALIGN, OMX_MALLOC_GENERIC and OMX_MALLOC_SIZE)
+ * in anticipation of the change.
+ *
  */
 /* ======================================================================= */
 #define OMX_MALLOC_SIZE(_ptr_, _size_,_name_)            \
