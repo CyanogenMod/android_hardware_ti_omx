@@ -51,9 +51,6 @@
  *  INCLUDE FILES
  ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#else
 #include <unistd.h>
 #include <dbapi.h>
 #include <string.h>
@@ -64,7 +61,6 @@
 #include <sys/select.h>
 #include <sys/time.h> 
 #include <signal.h> 
-#endif
 
 /*-------program files ----------------------------------------*/
 #include "OMX_G729Dec_Utils.h"

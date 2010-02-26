@@ -111,11 +111,7 @@
  *                                           at initialization
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define G729DEC_USN_DLL_NAME "\\windows\\usn.dll64P"
-#else
 #define G729DEC_USN_DLL_NAME "usn.dll64P"
-#endif
 
 /* ======================================================================= */
 /**
@@ -123,11 +119,7 @@
  *                                           at initialization
  */
 /* ======================================================================= */
-#ifdef UNDER_CE
-#define G729DEC_DLL_NAME "\\windows\\g729dec_sn.dll64P"
-#else
 #define G729DEC_DLL_NAME "g729dec_sn.dll64P"
-#endif
 
 /****************************************************************
  *  INCLUDE FILES                                                 
@@ -136,6 +128,7 @@
 
 /*-------program files ----------------------------------------*/
 #include <OMX_Component.h>
+#include <OMX_TI_Common.h>
 #include "OMX_G729Decoder.h"
 /****************************************************************
  * EXTERNAL REFERENCES NOTE : only use if not found in header file
