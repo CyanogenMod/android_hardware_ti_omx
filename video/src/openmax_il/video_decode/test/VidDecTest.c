@@ -1235,6 +1235,89 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
         pAppData->bFirstPortSettingsChanged = OMX_FALSE;
     }
 
+    /*reroute the input and output buffer to the pipes*/
+        for (nCount = 0; nCount < pAppData->pOutPortDef->nBufferCountActual; nCount++) {
+            eError = OMX_FillThisBuffer(pHandle, pAppData->pOutBuff[nCount]);
+            CHECK_ERROR(eError, eError, "Error OMX_FillThisBuffer function %x\n", EXIT);
+        }
+        /*pAppData->nRewind = 1;*//*must not need to move file pointers back*/
+        if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+            pAppData->eCompressionFormat == OMX_VIDEO_CodingH263) {
+            eError = MPEG4VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
+        }
+        else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
+            eError= MPEG2VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
+        }
+        else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingAVC) {
+            eError= H264VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
+        }
+        else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) {
+            eError= WMVVIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
+        }
+#ifdef VIDDEC_SPARK_CODE
+        else if (VIDDEC_SPARKCHECK) {
+            eError= MPEG4VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
+        }
+#endif
+        if (eError != OMX_ErrorNone && eError != OMX_ErrorNoMore) {
+	        ERR_PRINT ("Error from Fill_Data function %x\n",eError);
+	        goto EXIT;
+        }
+        ++pAppData->nCurrentFrameIn;
+        TickCounPropatation( pAppData, pAppData->pInBuff[0], pAppData->nCurrentFrameIn);
+        if (pAppData->nTestCase == TESTCASE_TYPE_PROP_TICKCOUNT) {
+            APP_PRINT("In TickCount %d for input Buffer 0x%x\n", (int)pAppData->pInBuff[0]->nTickCount,
+                (unsigned int)pAppData->pInBuff[0]);
+        }
+        else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
+            APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", pBuf->nTimeStamp, (unsigned int)pBuf);
+        }
+        eError = OMX_EmptyThisBuffer(pHandle, pAppData->pInBuff[0]);
+        CHECK_ERROR(eError, eError, "Error from OMX_EmptyThisBuffer function %x\n", EXIT);
+        if((pAppData->pInBuff[0]->nFlags & OMX_BUFFERFLAG_EOS)){
+            pAppData->bInputEOS = OMX_TRUE;
+        }
+        for (nCount = 1; nCount < pAppData->pInPortDef->nBufferCountActual; nCount++) {
+            if(pAppData->bInputEOS != OMX_TRUE){
+                if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                    pAppData->eCompressionFormat == OMX_VIDEO_CodingH263) {
+                     eError = MPEG4VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[nCount]);
+                }
+                else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
+                    eError = MPEG2VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[nCount]);
+                }
+                else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingAVC) {
+                    eError = H264VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[nCount]);
+                }
+                else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) {
+                    eError = WMVVIDDEC_Fill_Data(pAppData,pAppData->pInBuff[nCount]);
+                }
+#ifdef VIDDEC_SPARK_CODE
+                else if (VIDDEC_SPARKCHECK) {
+                    eError = MPEG4VIDDEC_Fill_Data(pAppData,pAppData->pInBuff[nCount]);
+                }
+#endif
+                if (eError != OMX_ErrorNone && eError != OMX_ErrorNoMore) {
+			        ERR_PRINT ("Error from Fill_Data function %x\n",eError);
+			        goto EXIT;
+		        }
+		        ++pAppData->nCurrentFrameIn;
+                TickCounPropatation( pAppData, pAppData->pInBuff[nCount], pAppData->nCurrentFrameIn);
+                if (pAppData->nTestCase == TESTCASE_TYPE_PROP_TICKCOUNT) {
+                    APP_PRINT("In TickCount %d for input Buffer 0x%x\n", (int)pAppData->pInBuff[nCount]->nTickCount,
+                        (unsigned int)pAppData->pInBuff[nCount]);
+                }
+                else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
+                    APP_PRINT("In TimeStamp %lld for output Buffer 0x%x\n", pBuf->nTimeStamp, (unsigned int)pBuf);
+                }
+                eError = OMX_EmptyThisBuffer(pHandle, pAppData->pInBuff[nCount]);
+                CHECK_ERROR(eError, eError, "Error from OMX_EmptyThisBuffer function %x\n", EXIT);
+                if((pAppData->pInBuff[nCount]->nFlags & OMX_BUFFERFLAG_EOS)){
+                    pAppData->bInputEOS = 1;
+                    break;
+                }
+            }
+        }
     eError = OMX_ErrorNone;
 
 EXIT:
