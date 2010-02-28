@@ -57,6 +57,20 @@ typedef enum _BOOST_LEVEL
 /* for 3440 */
 #define OPERATING_POINT_6 5
 
+typedef enum _C_STATE
+{
+  C_STATE_0 = 0,
+  C_STATE_1,
+  C_STATE_2,
+  C_STATE_3,
+  C_STATE_4,
+  C_STATE_5,
+  C_STATE_6,
+  C_STATE_7,
+  C_STATE_8,
+  C_STATE_NOT_SUPPORTED /*check wheater kernel supports more*/
+} C_STATE;
+
 typedef enum _OMAP_CPU
 {
     OMAP3420_CPU = 0,

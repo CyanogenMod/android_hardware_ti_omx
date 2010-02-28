@@ -50,7 +50,7 @@ int rm_set_vdd1_constraint(int MHz)
     char command[100];
     int vdd2_opp = 1;
     /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = 2;
+    int c_state = C_STATE_2;
     
     currentMHzConstraint = MHz;
     if(MHz == 0)
@@ -60,7 +60,15 @@ int rm_set_vdd1_constraint(int MHz)
         vdd2_opp = OPERATING_POINT_2;
         
         /* set c-state back if no active MM */
-        c_state = 6;
+        if (get_omap_version() == OMAP3630_CPU)
+        {
+            c_state = C_STATE_8;
+        }
+        else
+        {
+           /*rest omap version support up to 6*/
+            c_state = C_STATE_6;
+        }
     }
     else
     {
@@ -518,14 +526,22 @@ int rm_set_min_scaling_freq(int MHz)
     
     char command[100];
     /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = 2;
+    int c_state = C_STATE_2;
     freq = rm_get_min_scaling_freq();
     
     if(MHz == 0)
     {
         /* clear constraints for idle MM case */
         /* set c-state back if no active MM */
-        c_state = 6;
+        if (get_omap_version() == OMAP3630_CPU)
+        {
+            c_state = C_STATE_8;
+        }
+        else
+        {
+           /*rest omap version support up to 6*/
+            c_state = C_STATE_6;
+        }
     }
     freq = dsp_mhz_to_min_scaling_freq(MHz);
 
