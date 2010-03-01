@@ -487,6 +487,7 @@ ComponentThread %d", eError);
                        PERF_FOURCC('W', 'B', 'E', 'T'));
 #endif
 
+#ifdef DSP_RENDERING_ON
     if ((pComponentPrivate->fdwrite = open(FIFO1, O_WRONLY)) < 0) {
         OMX_PRCOMM4(pComponentPrivate->dbg, "Failure to open Write pipe");
     }
@@ -494,6 +495,7 @@ ComponentThread %d", eError);
     if ((pComponentPrivate->fdread = open(FIFO2, O_RDONLY)) < 0) {
         OMX_PRCOMM4(pComponentPrivate->dbg, "Failure to open Read pipe");
     }
+#endif
 
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exit Returning = 0x%x", eError);
