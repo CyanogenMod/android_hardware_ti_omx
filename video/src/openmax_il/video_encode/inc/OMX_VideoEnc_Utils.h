@@ -35,7 +35,6 @@
 *
 * @rev  0.1
 */
-/* -------------------------------------------------------------------------- */
 /* =============================================================================
 *!
 *! Revision History
@@ -118,7 +117,7 @@
 /*Select Timeout */
 #define  VIDENC_TIMEOUT_SEC 120;
 #define  VIDENC_TIMEOUT_USEC 0;
-#define WVGA_MAX_WIDTH 854
+#define WVGA_MAX_WIDTH 864
 #define WVGA_MAX_HEIGHT WVGA_MAX_WIDTH
 
 /*
