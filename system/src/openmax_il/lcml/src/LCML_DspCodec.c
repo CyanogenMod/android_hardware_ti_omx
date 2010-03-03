@@ -508,12 +508,13 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                       PERF_BoundaryComplete | PERF_BoundarySetup);
 #endif
     }
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Exiting Init_DSPSubSystem\n error = %x\n", __LINE__, eError);
 
 ERROR:
 #ifndef CEXEC_DONE
     LCML_FREE(argv);
 #endif
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Exiting Init_DSPSubSystem\n error = %x\n", __LINE__, eError);
+
     return eError;
 }
 
@@ -815,11 +816,13 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                   PERF_BoundaryComplete | PERF_BoundarySetup);
 #endif
 
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Exiting Init_DSPSubSystem\n", __LINE__);
+
 ERROR:
 #ifndef CEXEC_DONE
     LCML_FREE(argv);
 #endif
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Exiting Init_DSPSubSystem\n", __LINE__);
+
     return eError;
 }
 
