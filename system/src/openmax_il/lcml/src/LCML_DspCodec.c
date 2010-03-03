@@ -222,13 +222,12 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 dllinfo;
 
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: InitMMCodecEx application\n", __LINE__);
-
     if (hInt == NULL )
     {
         eError = OMX_ErrorInsufficientResources;
         goto ERROR;
     }
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: InitMMCodecEx application\n", __LINE__);
     if(Args ==NULL)
     {
         InitMMCodec(hInt, codecName, toCodecInitParams, fromCodecInfoStruct, pCallbacks);
@@ -559,14 +558,12 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     int tmperr;
     char abs_dsp_path[ABS_DLL_NAME_LENGTH];
 
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: InitMMCodec application\n",__LINE__);
-
     if (hInt == NULL )
     {
         eError = OMX_ErrorInsufficientResources;
         goto ERROR;
     }
-
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: InitMMCodec application\n",__LINE__);
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hInt)->pCodec);
 #ifdef __PERF_INSTRUMENTATION__
     phandle->pPERF = PERF_Create(PERF_FOURCC('C','M','L',' '),
