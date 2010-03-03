@@ -882,14 +882,12 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     OMX_U32 MapBufLen=0;
     OMX_BOOL mappedBufferFound = false;
 
-    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "%d :: QueueBuffer application\n",__LINE__);
-
     if (hComponent == NULL )
     {
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-
+    OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "%d :: QueueBuffer application\n",__LINE__);
     phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)hComponent)->pCodec);
 
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "LCML QueueBuffer: phandle->iBufinputcount is %lu (%p) \n", phandle->iBufinputcount, phandle);
