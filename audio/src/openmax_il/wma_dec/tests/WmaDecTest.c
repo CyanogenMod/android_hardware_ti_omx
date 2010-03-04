@@ -277,7 +277,7 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
     {
         eError1 = OMX_ErrorInvalidState;
     }
-    APP_DPRINT("eError=%x,CurState= %d,DesiredState=%d",eError1,CurState,DesiredState);
+    APP_DPRINT("eError=%x,CurState= %d,DesiredState=%d\n",eError1,CurState,DesiredState);
     if( (eError1 == OMX_ErrorNone) &&(CurState != DesiredState) )
     {
         APP_DPRINT( "%d :: App: WaitForState\n", __LINE__);
@@ -491,14 +491,12 @@ printf("\n**********************************************************************
     struct timeval tv;
     int retval, i, j;
     int frmCount = 0;
-    int frmCnt = 1;
     int testcnt = 1;
     int testcnt1 = 1;
     int dasfmode = 0;
     int stress = 0;
     OMX_U64 outBuffSize;
-    char fname[15] = "output";
-	
+
     pthread_mutex_init(&WaitForState_mutex, NULL);
     pthread_cond_init (&WaitForState_threshold, NULL);
     WaitForState_flag = 0;    
@@ -623,7 +621,6 @@ printf("\n**********************************************************************
                printf ("-------------------------------------\n");
                printf ("Testing Stop and Play \n");
                printf ("-------------------------------------\n");
-               strcat(fname,"_tc2.pcm");
                testcnt = 2;
                break;
         case 3:
@@ -640,37 +637,34 @@ printf("\n**********************************************************************
                printf ("-------------------------------------------------\n");
                printf ("Testing Repeated PLAY without Deleting Component\n");
                printf ("-------------------------------------------------\n");
-               strcat(fname,"_tc5.pcm");
-				if (stress)
-				{
-					testcnt = 100;
-					printf("******   Stress testing selected, running 100 iterations   ******\n");
-				}
-				else
-				{
-					testcnt = STRESS_TEST_INTERATIONS;
-				}
+               if (stress)
+               {
+                    testcnt = 100;
+                    printf("******   Stress testing selected, running 100 iterations   ******\n");
+               }
+               else
+               {
+                    testcnt = STRESS_TEST_INTERATIONS;
+               }
                break;
         case 6:
                printf ("------------------------------------------------\n");
                printf ("Testing Repeated PLAY with Deleting Component\n");
                printf ("------------------------------------------------\n");
-               strcat(fname,"_tc6.pcm");
-			   	if (stress)
-				{
-					testcnt1 = 100;
-					printf("******   Stress testing selected, running 100 iterations   ******\n");
-				}
-				else
-				{
-					testcnt1 = STRESS_TEST_INTERATIONS;
-				}
+               if (stress)
+               {
+                    testcnt1 = 100;
+                    printf("******   Stress testing selected, running 100 iterations   ******\n");
+               }
+               else
+               {
+                    testcnt1 = STRESS_TEST_INTERATIONS;
+               }
                break;
         case 7:
                printf ("------------------------------------------------\n");
                printf ("Testing Window Play\n");
                printf ("------------------------------------------------\n");
-               strcat(fname,"_tc6.pcm");
                break;
         case 8:
             printf ("------------------------------------------------\n");
@@ -678,13 +672,12 @@ printf("\n**********************************************************************
             printf ("------------------------------------------------\n");
             sampleRateChange = 1;
             break;
-		case 9:
-		   printf ("------------------------------------------------------------\n");
-		   printf ("Testing Ringtone test\n");
-		   printf ("------------------------------------------------------------\n");
-		   strcat(fname,"_tc9.pcm");
-		   testcnt = 10;
-		   break;	
+        case 9:
+            printf ("------------------------------------------------------------\n");
+            printf ("Testing Ringtone test\n");
+            printf ("------------------------------------------------------------\n");
+            testcnt = 10;
+            break;
     }
 
     APP_DPRINT("%d :: WmaTest\n",__LINE__);
@@ -736,11 +729,12 @@ printf("\n**********************************************************************
                                                                    access\n", argv[1]);
                 goto EXIT;
             }
-            fOut = fopen(fname, "w");
+            fOut = fopen(argv[2], "w");
             if( fOut == NULL ) {
                 fprintf(stderr, "Error:  failed to create the output file \n");
                 goto EXIT;
             }
+
             error = TIOMX_Init();
 			if(error != OMX_ErrorNone) {
 			APP_DPRINT("%d [GSMFRTEST] Error returned by OMX_Init()\n",__LINE__);
@@ -1064,7 +1058,7 @@ printf("\n**********************************************************************
                 fprintf(stderr, "Error:  failed to open the file %s for readonly access\n", argv[1]);
                 goto EXIT;
             }
-            fOut = fopen(fname, "w");
+            fOut = fopen(argv[2], "w");
             if(fOut == NULL) {
                 fprintf(stderr, "Error:  failed to create the output file \n");
                 goto EXIT;
@@ -1208,10 +1202,9 @@ printf("\n**********************************************************************
                            printf ("Error While reading input pipe\n");
                            goto EXIT;
                        }
-                       frmCnt++;
                     }
                     break;
-					
+
             case 7:
                     if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
                        OMX_BUFFERHEADERTYPE* pBuffer;
@@ -1221,25 +1214,14 @@ printf("\n**********************************************************************
                            printf ("Error While reading input pipe\n");
                            goto EXIT;
                        }
-                       frmCnt++;
                     }
                     break;
-					
-            case 2:
+
+            case 2: /* Stop and play again */
+            case 4: /* Just Stop */
                     if(frmCount == 10) {
                         printf (" Sending Stop command to Codec \n");
-                        
-#ifdef OMX_GETTIME
-                        GT_START();
-                        error = OMX_SendCommand(pHandle, OMX_CommandStateSet, OMX_StateIdle, NULL);
-                        GT_END("Call to SendCommand <OMX_StateIdle> ");
-#else
-                        error = OMX_SendCommand(pHandle, OMX_CommandStateSet, OMX_StateIdle, NULL);
-#endif
-                        if(error != OMX_ErrorNone) {
-                            fprintf (stderr,"Error from SendCommand-Pasue State function\n");
-                            goto EXIT;
-                        }
+                        StopComponent(pHandle);
                     }
                     if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
                        OMX_BUFFERHEADERTYPE* pBuffer;
@@ -1250,43 +1232,9 @@ printf("\n**********************************************************************
                            printf ("Error While reading input pipe\n");
                            goto EXIT;
                        }
-                       frmCnt++;
                     }
                     break;
-					
-            case 4:
-                if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
 
-                    OMX_BUFFERHEADERTYPE* pBuffer;
-                    read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
-                    
-                    if(frmCount >= 5) {
-                        fprintf(stderr, "Shutting down ---------- \n");
-#ifdef OMX_GETTIME
-                        GT_START();
-                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
-                        GT_END("Call to SendCommand <OMX_StateIdle>");
-#else
-                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);;
-#endif
-                        
-                        if(error != OMX_ErrorNone) {
-                            fprintf (stderr,"Error from SendCommand-Idle(Stop) State function\n");
-                            goto EXIT;
-                        }
-                        done = 1;
-                    }
-                    else {
-                        error = send_input_buffer (pHandle, pBuffer, fIn);
-                        if (error != OMX_ErrorNone) {
-                            printf ("Error While reading input pipe\n");
-                            goto EXIT;
-                        }
-                    }
-                    frmCnt++;
-                }
-                 break;
-				 
             case 3:
                     if (frmCount == 8) {
                         printf (" Sending Resume command to Codec \n");
@@ -1340,25 +1288,24 @@ printf("\n**********************************************************************
                            printf ("Error While reading input pipe\n");
                            goto EXIT;
                        }
-                       frmCnt++;
                     }
                     break;
-			case 9:
-					if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
-						OMX_BUFFERHEADERTYPE* pBuffer;
-						read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
-						if(!playCompleted && pBuffer->nFlags!=OMX_BUFFERFLAG_EOS){
-							pBuffer->nFlags = 0;
-                            error = send_input_buffer (pHandle, pBuffer, fIn);
-                        }
-						
-						if (error != OMX_ErrorNone) {
-							goto EXIT;
-						}
-						frmCnt++;
-					}
-					break;
-					
+            case 9:
+                if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
+                    OMX_BUFFERHEADERTYPE* pBuffer;
+                    read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
+
+                    if(!playCompleted && pBuffer->nFlags!=OMX_BUFFERFLAG_EOS){
+                        pBuffer->nFlags = 0;
+                        error = send_input_buffer (pHandle, pBuffer, fIn);
+                    }
+
+                    if (error != OMX_ErrorNone) {
+                        goto EXIT;
+                    }
+                }
+                break;
+
             default:
                     APP_DPRINT("%d :: ### Running Simple DEFAULT Case Here ###\n",__LINE__);
             }
@@ -1593,7 +1540,7 @@ OMX_ERRORTYPE send_input_buffer(OMX_HANDLETYPE pHandle, OMX_BUFFERHEADERTYPE* pB
         lastBufferSent = 1;
     }
     else {
-        APP_DPRINT("Send input buffer nRead = %d\n",nRead);
+      //  APP_DPRINT("Send input buffer nRead = %d\n",nRead);
         pBuffer->nFilledLen = nRead;
         if(!(pBuffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG)){
           pBuffer->nFlags = 0;
