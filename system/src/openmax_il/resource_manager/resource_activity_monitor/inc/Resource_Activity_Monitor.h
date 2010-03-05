@@ -48,19 +48,32 @@
 #define OPERATING_POINT_4 3
 #define OPERATING_POINT_5 4
 
+/* for 3440 */
+#define OPERATING_POINT_6 5
+
+#if 0
+typedef enum _OPP_LEVEL
+{
+    OPERATING_POINT_1 = 1,
+    OPERATING_POINT_2 = 2,
+    OPERATING_POINT_3 = 3,
+    OPERATING_POINT_4 = 4,
+    OPERATING_POINT_5 = 5,
+    OPERATING_POINT_6 = 6,
+    OPERATING_POINT_NOT_SUPPORTED = -1,
+
+} OPP_LEVEL;
+#endif
+
 typedef enum _BOOST_LEVEL
 {
         MAX_BOOST = 0,
         NOMINAL_BOOST,
 } BOOST_LEVEL;
 
-/* for 3440 */
-#define OPERATING_POINT_6 5
-
 typedef enum _C_STATE
 {
-  C_STATE_0 = 0,
-  C_STATE_1,
+  C_STATE_1 = 1,
   C_STATE_2,
   C_STATE_3,
   C_STATE_4,
@@ -68,6 +81,7 @@ typedef enum _C_STATE
   C_STATE_6,
   C_STATE_7,
   C_STATE_8,
+  C_STATE_9,
   C_STATE_NOT_SUPPORTED /*check wheater kernel supports more*/
 } C_STATE;
 

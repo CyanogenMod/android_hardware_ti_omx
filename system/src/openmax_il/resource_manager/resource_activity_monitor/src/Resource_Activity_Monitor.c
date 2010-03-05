@@ -31,6 +31,7 @@
 /* global to keep the current constraint across requests
    this will be used to reset constraints if no MM is active */
 int currentMHzConstraint = 0;
+int bBoostOn = 0;
 
 /*
    Description : This function will determine the correct opp 
@@ -49,8 +50,8 @@ int rm_set_vdd1_constraint(int MHz)
     
     char command[100];
     int vdd2_opp = 1;
-    /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = C_STATE_2;
+    /* for any MM case, set c-state to 3, unless no mm is active */
+    int c_state = C_STATE_3;
     
     currentMHzConstraint = MHz;
     if(MHz == 0)
@@ -62,7 +63,7 @@ int rm_set_vdd1_constraint(int MHz)
         /* set c-state back if no active MM */
         if (get_omap_version() == OMAP3630_CPU)
         {
-            c_state = C_STATE_8;
+            c_state = C_STATE_9;
         }
         else
         {
@@ -84,9 +85,10 @@ int rm_set_vdd1_constraint(int MHz)
     /* plus one to convert zero based array indeces above */
     vdd1_opp++;
     vdd2_opp++;
-    if (vdd1_opp != rm_get_vdd1_constraint())
+
+    if(!bBoostOn || (bBoostOn && rm_get_vdd1_constraint() < vdd1_opp))
     {
-        /* actually set the sysfs for vdd1_opp */
+        /* actually set the sysfs for vdd1 and vdd2 */
         RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
         strcpy(command,"echo ");
         strcat(command,ram_itoa(vdd1_opp));
@@ -105,6 +107,9 @@ int rm_set_vdd1_constraint(int MHz)
         strcat(command,ram_itoa(c_state));
         strcat(command," > /sys/devices/system/cpu/cpu0/cpuidle/max_state");
         system(command);
+    }
+    else {
+        RAM_DPRINT("BOOST is enabled, ignoring current request\n");
     }
 
 #endif
@@ -263,10 +268,15 @@ int get_dsp_max_freq()
     int dsp_max_freq = 0;
 
     FILE *fp = fopen("/sys/power/max_dsp_frequency","r");
-    if (fp == NULL) RAM_DPRINT("open file failed\n");
-    fscanf(fp, "%d",&dsp_max_freq);
-    fclose(fp);
-    dsp_max_freq /= 1000000;
+    /* what to do if the kernel does not have this sysfs? */
+    if (fp == NULL) {
+        RAM_DPRINT("open file failed\n");
+    }
+    else {
+        fscanf(fp, "%d",&dsp_max_freq);
+        fclose(fp);
+        dsp_max_freq /= 1000000;
+    }
 
     return dsp_max_freq;
 }
@@ -383,7 +393,7 @@ int get_curr_cpu_mhz(int omapVersion){
         }
     }
 #else
-    // if DVFS is not available, use opp4 constraints
+    // if DVFS is not available, use NOMINAL constraints
     if (cpu_variant == OMAP3420_CPU){
         maxMhz = vdd1_dsp_mhz_3420[OPERATING_POINT_4];
     }
@@ -412,12 +422,14 @@ int rm_get_vdd1_constraint()
 {
     int vdd1_opp = 0;
     FILE *fp = fopen("/sys/power/vdd1_opp","r");
-    if (fp == NULL) RAM_DPRINT("open file failed\n");
-    fscanf(fp, "%d",&vdd1_opp);
-    fclose(fp);
-    RAM_DPRINT("[rm_get_vdd1_constraint] vdd1 OPP = %d \n",vdd1_opp);
+    if (fp == NULL) {
+        RAM_DPRINT("open file failed\n");
+    } else {
+        fscanf(fp, "%d",&vdd1_opp);
+        fclose(fp);
+        RAM_DPRINT("[rm_get_vdd1_constraint] vdd1 OPP = %d \n",vdd1_opp);
+    }
     return vdd1_opp;
-    
 }
 
 /*
@@ -440,55 +452,59 @@ void rm_request_boost(int level)
         switch (cpu_variant)
         {
             case OMAP3420_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3420[ sizeof(vdd1_dsp_mhz_3420)/sizeof(vdd1_dsp_mhz_3420[0]) ];
+                boostConstraintMHz = vdd1_dsp_mhz_3420[ sizeof(vdd1_dsp_mhz_3420)/sizeof(vdd1_dsp_mhz_3420[0]) -1];
                 break;
                 
             case OMAP3440_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3440[ sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) ];
+                boostConstraintMHz = vdd1_dsp_mhz_3440[ sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) -1];
                 break;
 
             case OMAP3630_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) ];
+                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -1];
                 break;
                 
             case OMAP3430_CPU:
+                boostConstraintMHz = vdd1_dsp_mhz_3430[ sizeof(vdd1_dsp_mhz_3430)/sizeof(vdd1_dsp_mhz_3430[0]) -1];
+                break;
+
             default:
-            /* fall through intentional */
-                boostConstraintMHz = vdd1_dsp_mhz_3430[ sizeof(vdd1_dsp_mhz_3430)/sizeof(vdd1_dsp_mhz_3420[0])];
+                RAM_DPRINT("boost not set, current OMAP not supported\n");
                 break;
         }
     }
     else if (level == NOMINAL_BOOST)
-    {
+    { /* NOMITNAL is defined as 1 less than MAX OPP */
         switch (cpu_variant)
         {
             case OMAP3420_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3420[sizeof(vdd1_dsp_mhz_3420)/sizeof(vdd1_dsp_mhz_3420[0]) - 1];
+                boostConstraintMHz = vdd1_dsp_mhz_3420[sizeof(vdd1_dsp_mhz_3420)/sizeof(vdd1_dsp_mhz_3420[0]) - 2];
                 break;
                 
             case OMAP3440_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3440[sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) -1];
+                boostConstraintMHz = vdd1_dsp_mhz_3440[sizeof(vdd1_dsp_mhz_3440)/sizeof(vdd1_dsp_mhz_3440[0]) -2];
                 break;
 
             case OMAP3630_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -1];
+                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -2];
                 break;
                 
             case OMAP3430_CPU:
-            default:
-                /* fall through intentional */
-                boostConstraintMHz = vdd1_dsp_mhz_3430[sizeof(vdd1_dsp_mhz_3430)/sizeof(vdd1_dsp_mhz_3430[0]) -1];
+                boostConstraintMHz = vdd1_dsp_mhz_3430[sizeof(vdd1_dsp_mhz_3430)/sizeof(vdd1_dsp_mhz_3430[0]) -2];
                 break;
+
+            default:
+                RAM_DPRINT("boost not set, current OMAP not supported\n");
+                break; 
         }
     }
-    if (dsp_mhz_to_vdd1_opp(boostConstraintMHz) != vdd1_opp)
-    {
-        rm_set_vdd1_constraint(boostConstraintMHz);
-    }
+   
+    rm_set_vdd1_constraint(boostConstraintMHz);
+    bBoostOn = 1;
 }
 
 /*
-   Description : This function will reset vdd1_opp after a boost request.
+   Description : In case any request came while boost is ON, this function will
+                 update vdd1_opp to the most recent requested OPP.
                  This MUST be called after each use of rm_request_boost()
    
    Parameter   : n/a
@@ -499,13 +515,9 @@ void rm_request_boost(int level)
 void rm_release_boost()
 {
     int vdd1_opp = rm_get_vdd1_constraint();
-    int currentConstraint = dsp_mhz_to_vdd1_opp(currentMHzConstraint);
-    
-    if (currentConstraint != vdd1_opp)
-    {
-         rm_set_vdd1_constraint(currentMHzConstraint);
-    }
-   
+
+    bBoostOn = 0;
+    rm_set_vdd1_constraint(currentMHzConstraint);
 }
 
 /* below are the new implementations frequency based constraints */
@@ -526,7 +538,7 @@ int rm_set_min_scaling_freq(int MHz)
     
     char command[100];
     /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = C_STATE_2;
+    int c_state = C_STATE_3;
     freq = rm_get_min_scaling_freq();
     
     if(MHz == 0)
@@ -535,7 +547,7 @@ int rm_set_min_scaling_freq(int MHz)
         /* set c-state back if no active MM */
         if (get_omap_version() == OMAP3630_CPU)
         {
-            c_state = C_STATE_8;
+            c_state = C_STATE_9;
         }
         else
         {
@@ -545,23 +557,20 @@ int rm_set_min_scaling_freq(int MHz)
     }
     freq = dsp_mhz_to_min_scaling_freq(MHz);
 
-    /* decide if we need to adjust the min scaling freq up or down */
-    if (freq != rm_get_min_scaling_freq())
-    {
-        /* actually set the sysfs for cpufreq */
-        RAM_DPRINT("[setting min scaling freq] requested MHz = %d new min scaling freq = %d\n",MHz,freq);
-        strcpy(command,"echo ");
-        strcat(command,ram_itoa(freq));
-        strcat(command," > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
-        system(command);
+    /* actually set the sysfs for cpufreq */
+    RAM_DPRINT("[setting min scaling freq] requested MHz = %d new min scaling freq = %d\n",MHz,freq);
+    strcpy(command,"echo ");
+    strcat(command,ram_itoa(freq));
+    strcat(command," > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
+    system(command);
 
-        /* actually set the sysfs for cpuidle/max_state */
-        RAM_DPRINT("[setting c-state] c-state %d\n",c_state);
-        strcpy(command,"echo ");
-        strcat(command,ram_itoa(c_state));
-        strcat(command," > /sys/devices/system/cpu/cpu0/cpuidle/max_state");
-        system(command);
-    }
+    /* actually set the sysfs for cpuidle/max_state */
+    RAM_DPRINT("[setting c-state] c-state %d\n",c_state);
+    strcpy(command,"echo ");
+    strcat(command,ram_itoa(c_state));
+    strcat(command," > /sys/devices/system/cpu/cpu0/cpuidle/max_state");
+    system(command);
+
 
 #endif
 
