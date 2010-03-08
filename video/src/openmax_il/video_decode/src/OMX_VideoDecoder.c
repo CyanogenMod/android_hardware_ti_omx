@@ -361,6 +361,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
         goto EXIT;
     }
     strncpy(pComponentPrivate->cComponentName, cVideoDecodeName, VIDDEC_MAX_NAMESIZE);
+
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pBufferRCV.sStructRCV,
+                             sizeof(VIDDEC_WMV_RCV_struct),
+                             VIDDEC_WMV_RCV_struct);
+    if (pComponentPrivate->pBufferRCV.sStructRCV == NULL) {
+        OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
+    pComponentPrivate->pBufferRCV.pBuffer = pComponentPrivate->pBufferRCV.sStructRCV;
+
     OMX_CONF_INIT_STRUCT( &pComponentPrivate->componentRole, OMX_PARAM_COMPONENTROLETYPE, pComponentPrivate->dbg);
     VIDDEC_Load_Defaults( pComponentPrivate, VIDDEC_INIT_ALL);
 #ifdef __ENV_CHANGE__
@@ -470,7 +481,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
         OMX_ERROR4(pComponentPrivate->dbg, "Error returned from the Component\n");
         goto EXIT;
     }
-
 EXIT:
     return eError;
 }
@@ -2399,6 +2409,8 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 
     OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pUalgParams,OMX_PTR);
 
+    OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pBufferRCV.sStructRCV,OMX_PTR);
+
     if(pHandle->pComponentPrivate != NULL) {
         free(pHandle->pComponentPrivate);
         pHandle->pComponentPrivate = NULL;
@@ -2743,7 +2755,7 @@ static OMX_ERRORTYPE VIDDEC_FreeBuffer (OMX_IN OMX_HANDLETYPE hComponent,
               OMX_FREE(pBufferPrivate->pOriginalBuffer);
               pBuffHead->pBuffer = NULL;
            } else{
-              OMX_FREE(pBuffHead->pBuffer);
+              OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer, OMX_PTR);
            }
         }
     }
@@ -2915,7 +2927,12 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     memset(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, 0, sizeof(OMX_BUFFERHEADERTYPE));
     OMX_CONF_INIT_STRUCT(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr, OMX_BUFFERHEADERTYPE, pComponentPrivate->dbg);
     /* Allocate Video Decoder buffer */
-    OMX_MALLOC_STRUCT_SIZED(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, OMX_U8, OMX_GET_DATABUFF_SIZE(nSizeBytes), NULL);
+    /* Have additional size logic here to take care of the WMV internal code requirements
+     * i.e. it requires atleast VIDDEC_WMV_BUFFER_OFFSET(251) bytes before actual buffer start size
+     * but in that case it would affect 128 bytes alignment. Hence have incrememented by 256 bytes */
+    OMX_MALLOC_SIZE_DSPALIGN(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer,
+                             (nSizeBytes + VIDDEC_PADDING_FULL),
+                             OMX_U8);
     if (!(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer)) {
         eError = OMX_ErrorInsufficientResources;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2929,13 +2946,11 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     /* Align and add padding for data buffer */
     pCompPort->pBufferPrivate[pBufferCnt]->pOriginalBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
     pTemp = (OMX_U8*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
-    pTemp += VIDDEC_PADDING_HALF;
 #ifdef VIDDEC_WMVPOINTERFIXED
-    pTemp += VIDDEC_WMV_BUFFER_OFFSET;
+    pTemp += VIDDEC_PADDING_FULL;
     pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
     pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->nOffset = 0;
 #endif
-    OMX_ALIGN_BUFFER(pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer, (OMX_U8*)VIDDEC_ALIGNMENT);
     pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer = (OMX_U8*)pTemp;
 
     (*pBuffHead)->pBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
@@ -3309,6 +3324,7 @@ static OMX_ERRORTYPE VIDDEC_Allocate_DSPResources(VIDDEC_COMPONENT_PRIVATE *pCom
     OMX_U8 nBufferCnt = pComponentPrivate->pCompPort[nPortIndex]->nBufferCnt;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = pComponentPrivate->pInPortDef;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
+    OMX_U32 nParamSize = 0;
 
     pBufferPrivate =
          (VIDDEC_BUFFER_PRIVATE*)(pComponentPrivate->pCompPort[nPortIndex]->pBufferPrivate[nBufferCnt]);
@@ -3316,69 +3332,59 @@ static OMX_ERRORTYPE VIDDEC_Allocate_DSPResources(VIDDEC_COMPONENT_PRIVATE *pCom
     if (nPortIndex == pComponentPrivate->pInPortFormat->nPortIndex) {
         if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
             pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgInpParams[0], MP4VD_GPP_SN_UALGInputParams, sizeof(MP4VD_GPP_SN_UALGInputParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(MP4VD_GPP_SN_UALGInputParams);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgInpParams[0], nParamSize, MP4VD_GPP_SN_UALGInputParams);
             if ((MP4VD_GPP_SN_UALGInputParams*)(!pUalgInpParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgInpParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgInpParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (MP4VD_GPP_SN_UALGInputParams*)(pUalgInpParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(MP4VD_GPP_SN_UALGInputParams);
         }
 #ifdef VIDDEC_SPARK_CODE
         else if (VIDDEC_SPARKCHECK) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgInpParams[0], SPARKVD_GPP_SN_UALGInputParams, sizeof(SPARKVD_GPP_SN_UALGInputParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(SPARKVD_GPP_SN_UALGInputParams);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgInpParams[0], nParamSize, SPARKVD_GPP_SN_UALGInputParams);
             if ((SPARKVD_GPP_SN_UALGInputParams*)(!pUalgInpParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgInpParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgInpParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (SPARKVD_GPP_SN_UALGInputParams*)(pUalgInpParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(SPARKVD_GPP_SN_UALGInputParams);
         }
 #endif
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgInpParams[0], MP2VDEC_UALGInputParam, sizeof(MP2VDEC_UALGInputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(MP2VDEC_UALGInputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgInpParams[0], nParamSize, MP2VDEC_UALGInputParam);
             if ((MP2VDEC_UALGInputParam*)(!pUalgInpParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgInpParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgInpParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (MP2VDEC_UALGInputParam*)(pUalgInpParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(MP2VDEC_UALGInputParam);
         }
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgInpParams[0], H264VDEC_UALGInputParam, sizeof(H264VDEC_UALGInputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(H264VDEC_UALGInputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgInpParams[0], nParamSize, H264VDEC_UALGInputParam);
             if ((H264VDEC_UALGInputParam*)(!pUalgInpParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgInpParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgInpParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (H264VDEC_UALGInputParam*)(pUalgInpParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(H264VDEC_UALGInputParam);
         }
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgInpParams[0], WMV9DEC_UALGInputParam, sizeof(WMV9DEC_UALGInputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(WMV9DEC_UALGInputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgInpParams[0], nParamSize, WMV9DEC_UALGInputParam);
             if ((WMV9DEC_UALGInputParam*)(!pUalgInpParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgInpParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgInpParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (WMV9DEC_UALGInputParam*)(pUalgInpParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(WMV9DEC_UALGInputParam);
         }
@@ -3390,69 +3396,59 @@ static OMX_ERRORTYPE VIDDEC_Allocate_DSPResources(VIDDEC_COMPONENT_PRIVATE *pCom
     else if (nPortIndex == pComponentPrivate->pOutPortFormat->nPortIndex) {
         if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
             pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgOutParams[0], MP4VD_GPP_SN_UALGOutputParams, sizeof(MP4VD_GPP_SN_UALGOutputParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(MP4VD_GPP_SN_UALGOutputParams);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams[0], nParamSize, MP4VD_GPP_SN_UALGOutputParams);
             if ((MP4VD_GPP_SN_UALGOutputParams*)(!pUalgOutParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgOutParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgOutParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (MP4VD_GPP_SN_UALGOutputParams*)(pUalgOutParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(MP4VD_GPP_SN_UALGOutputParams);
         }
 #ifdef VIDDEC_SPARK_CODE
         else if (VIDDEC_SPARKCHECK) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgOutParams[0], SPARKVD_GPP_SN_UALGOutputParams, sizeof(SPARKVD_GPP_SN_UALGOutputParams) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(SPARKVD_GPP_SN_UALGOutputParams);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams[0], nParamSize, SPARKVD_GPP_SN_UALGOutputParams);
             if ((SPARKVD_GPP_SN_UALGOutputParams*)(!pUalgOutParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgOutParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgOutParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (SPARKVD_GPP_SN_UALGOutputParams*)(pUalgOutParams[0]);
             pBufferPrivate->nUalgParamSize = sizeof(SPARKVD_GPP_SN_UALGOutputParams);
         }
 #endif
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgOutParams[0], MP2VDEC_UALGOutputParam, sizeof(MP2VDEC_UALGOutputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(MP2VDEC_UALGOutputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams[0], nParamSize, MP2VDEC_UALGOutputParam);
             if ((MP2VDEC_UALGOutputParam*)(!pUalgOutParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgOutParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgOutParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (MP2VDEC_UALGOutputParam*)(pUalgOutParams[0]); 
             pBufferPrivate->nUalgParamSize = sizeof(MP2VDEC_UALGOutputParam);
         }
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgOutParams[0], H264VDEC_UALGOutputParam, sizeof(H264VDEC_UALGOutputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(H264VDEC_UALGOutputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams[0], nParamSize, H264VDEC_UALGOutputParam);
             if ((H264VDEC_UALGOutputParam*)(!pUalgOutParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgOutParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgOutParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (H264VDEC_UALGOutputParam*)(pUalgOutParams[0]); 
             pBufferPrivate->nUalgParamSize = sizeof(H264VDEC_UALGOutputParam);
         }
         else if (pPortDefIn->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
-            OMX_MALLOC_STRUCT_SIZED(pUalgOutParams[0], WMV9DEC_UALGOutputParam, sizeof(WMV9DEC_UALGOutputParam) + VIDDEC_PADDING_FULL,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel1]);
+            nParamSize = sizeof(WMV9DEC_UALGOutputParam);
+            OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams[0], nParamSize, WMV9DEC_UALGOutputParam);
             if ((WMV9DEC_UALGOutputParam*)(!pUalgOutParams[0])) {
                 OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
                 eError = OMX_ErrorInsufficientResources;
                 goto EXIT;
             }
-            pTemp = (OMX_U8*)pUalgOutParams[0];
-            pTemp += VIDDEC_PADDING_HALF;
-            pUalgOutParams[0] = pTemp;
             pBufferPrivate->pUalgParam = (WMV9DEC_UALGOutputParam*)(pUalgOutParams[0]); 
             pBufferPrivate->nUalgParamSize = sizeof(WMV9DEC_UALGOutputParam);
         }
