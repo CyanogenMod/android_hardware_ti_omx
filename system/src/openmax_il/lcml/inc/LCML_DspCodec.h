@@ -75,6 +75,7 @@
 #include <LCML_Types.h>
 #include <LCML_CodecInterface.h>
 #include <pthread.h>
+#include <OMX_TI_Common.h>
 
 /*DSP specific*/
 
@@ -86,6 +87,18 @@
         printf("\n****************LCML ERROR : DSP ************************\n");\
         goto label;                               \
     }                                              /**/
+
+/* =======================================================================
+ *
+ * This enum is mean to translate buffer type to bridge values
+ *
+  ====================================================================== */
+enum{
+  NO_ALIGNMENT_CHECK = 0x4000,
+  ALIGNMENT_CHECK= 0x8000,
+  MAX_ALIGNMENT_CHECK
+};
+
 
 /* ======================================================================= */
 /**
