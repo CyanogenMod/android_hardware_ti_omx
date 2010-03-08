@@ -41,11 +41,6 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-#ifdef UNDER_CE
-#include <windows.h>
-#include <oaf_osal.h>
-#include <omx_core.h>
-#else
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -53,7 +48,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <pthread.h>
-#endif
+
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -61,10 +56,8 @@
 #include <dbapi.h>
 #include <dlfcn.h>
 
-#ifndef UNDER_CE
 #ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
-#endif
 #endif
 
 /*-------program files ----------------------------------------*/
@@ -240,7 +233,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pComponentPrivate = pHandle->pComponentPrivate;
     pComponentPrivate->pHandle = pHandle;
-
+    pComponentPrivate->bMutexInitialized = 0;
 
     iLBCD_OMX_MALLOC(iLBC_ip,OMX_AUDIO_PARAM_ILBCTYPE);
     iLBCD_OMX_MALLOC(iLBC_op,OMX_AUDIO_PARAM_PCMMODETYPE);
@@ -349,7 +342,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     strcpy((char*)pComponentPrivate->componentRole.cRole, "audio_decoder.xxx");
     
-#ifndef UNDER_CE
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -361,16 +353,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
-#else
-    OMX_CreateEvent(&(pComponentPrivate->AlloBuf_event));
-    pComponentPrivate->AlloBuf_waitingsignal = 0;
-
-    OMX_CreateEvent(&(pComponentPrivate->InLoaded_event));
-    pComponentPrivate->InLoaded_readytoidle = 0;
-
-    OMX_CreateEvent(&(pComponentPrivate->InIdle_event));
-    pComponentPrivate->InIdle_goingtoloaded = 0;
-#endif
+    pComponentPrivate->bMutexInitialized = 1;
 
     iLBCD_OMX_MALLOC(pPortDef_ip,OMX_PARAM_PORTDEFINITIONTYPE);
     iLBCD_OMX_MALLOC(pPortDef_op,OMX_PARAM_PORTDEFINITIONTYPE);
@@ -446,10 +429,25 @@ EXIT:
         iLBCDEC_EPRINT(":: ********* ERROR: Freeing Other Malloced Resources\n");
         iLBCD_OMX_FREE(iLBC_ip);
         iLBCD_OMX_FREE(iLBC_op);
-    if (pComponentPrivate != NULL) {
-        iLBCD_OMX_FREE(pComponentPrivate->pInputBufferList);
-        iLBCD_OMX_FREE(pComponentPrivate->pOutputBufferList);
-        iLBCD_OMX_FREE(pHandle->pComponentPrivate);
+        if (pComponentPrivate != NULL) {
+            if (pComponentPrivate->bMutexInitialized) {
+                /* Removing sleep() calls. */
+                iLBCDEC_DPRINT("\n\n FreeCompResources: Destroying mutexes.\n\n");
+
+                pComponentPrivate->bMutexInitialized = 0;
+
+                pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+                pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+
+                pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+                pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+                pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+                pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+            }
+            iLBCD_OMX_FREE(pComponentPrivate->pInputBufferList);
+            iLBCD_OMX_FREE(pComponentPrivate->pOutputBufferList);
+            iLBCD_OMX_FREE(pHandle->pComponentPrivate);
         }
         iLBCD_OMX_FREE(pPortDef_ip);
         iLBCD_OMX_FREE(pPortDef_op);
@@ -807,7 +805,7 @@ ORT]->nPortIndex = %ld\n",__LINE__,__FUNCTION__,
         }                
         break;
 
-    case OMX_IndexParamAudioILBC: /* <<<< 0j0 Gsm_FR: */
+    case (OMX_INDEXTYPE)OMX_IndexParamAudioILBC: /* <<<< 0j0 Gsm_FR: */
         if(((OMX_PARAM_PORTDEFINITIONTYPE *)(ComponentParameterStructure))->nPortIndex == 
            pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->nPortIndex) {
             iLBCDEC_DPRINT ("%d :: %s\n",__LINE__,__FUNCTION__);
@@ -939,7 +937,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
             goto EXIT;
         }
         break;
-    case OMX_IndexParamAudioILBC: /* <<<< 0j0 Gsm_FR: */
+    case (OMX_INDEXTYPE)OMX_IndexParamAudioILBC: /* <<<< 0j0 Gsm_FR: */
         iLBC_ip = (OMX_AUDIO_PARAM_ILBCTYPE *)pCompParam;
 	if (((iLBCDEC_COMPONENT_PRIVATE*)
                     pHandle->pComponentPrivate)->iLBCParams == NULL)
@@ -1036,7 +1034,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         }
         break;
         
-    case OMX_IndexCustomConfigILBCCodec:
+    case (OMX_INDEXTYPE)OMX_IndexCustomConfigILBCCodec:
         ((iLBCDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->iLBCcodecType = (int) pCompParam; /*((iLBCDEC_COMPONENT_PRIVATE *) ComponentConfigStructure)->iLBCcodecType;*/
         break;
 
@@ -1120,9 +1118,6 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     int flagValue=0;
     TI_OMX_DATAPATH dataPath;
 
-    OMX_AUDIO_CONFIG_MUTETYPE *pMuteStructure = NULL;
-    OMX_AUDIO_CONFIG_VOLUMETYPE *pVolumeStructure = NULL;
-
     iLBCDEC_DPRINT("%d :: %s :: Entering SetConfig\n", __LINE__,__FUNCTION__);
     if (!pHandle) {
         return (OMX_ErrorBadParameter);
@@ -1138,7 +1133,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 #endif
 
     switch (nConfigIndex) {
-    case  OMX_IndexCustomiLBCDecHeaderInfoConfig:
+    case  (OMX_INDEXTYPE)OMX_IndexCustomiLBCDecHeaderInfoConfig:
         iLBCDEC_DPRINT("%d :: %s :: SetConfig OMX_IndexCustomiLBCDecHeaderInfoC\
 onfig \n",__LINE__,__FUNCTION__);
 
@@ -1161,7 +1156,7 @@ onfig \n",__LINE__,__FUNCTION__);
         }
         break;
 
-    case  OMX_IndexCustomiLBCDecDataPath:
+    case (OMX_INDEXTYPE)OMX_IndexCustomiLBCDecDataPath:
         customFlag = (OMX_S16*)ComponentConfigStructure;
 
         if (customFlag) {
@@ -1189,7 +1184,7 @@ onfig \n",__LINE__,__FUNCTION__);
         }
         break;
 
-    case OMX_IndexCustomiLBCDecModeEfrConfig:
+    case (OMX_INDEXTYPE)OMX_IndexCustomiLBCDecModeEfrConfig:
         customFlag = (OMX_S16*)ComponentConfigStructure;
 
         if (customFlag) {
@@ -1197,7 +1192,7 @@ onfig \n",__LINE__,__FUNCTION__);
         }
         break;
 
-    case OMX_IndexCustomiLBCDecModeDasfConfig:
+    case (OMX_INDEXTYPE)OMX_IndexCustomiLBCDecModeDasfConfig:
         customFlag = (OMX_S16*)ComponentConfigStructure;
 
         if (customFlag) {
@@ -1219,7 +1214,7 @@ onfig \n",__LINE__,__FUNCTION__);
         }
         break;
 
-    case OMX_IndexCustomiLBCDecModeMimeConfig:
+    case (OMX_INDEXTYPE)OMX_IndexCustomiLBCDecModeMimeConfig:
         customFlag = (OMX_S16*)ComponentConfigStructure;
 
         if (customFlag) {
@@ -1633,14 +1628,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     if(!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold,
                           &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-#else
-        OMX_WaitForEvent(&(pComponentPrivate->AlloBuf_event));
-#endif
     }
 
     iLBCD_OMX_MALLOC(pBufferHeader,OMX_BUFFERHEADERTYPE);
@@ -1708,13 +1699,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled) &&
        (pComponentPrivate->InLoaded_readytoidle)){
         pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
@@ -1876,13 +1863,9 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
          !pComponentPrivate->pOutputBufferList->numBuffers) &&
         pComponentPrivate->InIdle_goingtoloaded){
         pComponentPrivate->InIdle_goingtoloaded = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
         pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
-#endif
     }
 
     iLBCDEC_DPRINT("%d :: %s ::pComponentPrivate->bDisableCommandPending = %ld\n" ,__LINE__,__FUNCTION__,pComponentPrivate->bDisableCommandPending);
@@ -1979,13 +1962,9 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
        (pComponentPrivate->InLoaded_readytoidle)){
 
         pComponentPrivate->InLoaded_readytoidle = 0;
-#ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
         pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-#else
-        OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
-#endif
     }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
