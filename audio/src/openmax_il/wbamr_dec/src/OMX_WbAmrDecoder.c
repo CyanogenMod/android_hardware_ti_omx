@@ -366,7 +366,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     amr_op->nBitPerSample = 16;
     amr_op->ePCMMode = OMX_AUDIO_PCMModeLinear;
 
-    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(OMX_STRING)),OMX_STRING);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(char)),OMX_STRING);
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
     pComponentPrivate->ptrLibLCML = NULL;
