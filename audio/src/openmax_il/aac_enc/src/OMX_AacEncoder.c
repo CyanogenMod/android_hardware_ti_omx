@@ -1232,13 +1232,13 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
     TI_OMX_DSP_DEFINITION* pDspDefinition = NULL;
     OMX_U16 FramesPerOutBuf =0  ;
     OMX_U16* ptrFramesPerOutBuf =NULL ;
-    TI_OMX_DATAPATH dataPath;
     OMX_S16 *customFlag = NULL;
-    
-    
+
 #ifdef DSP_RENDERING_ON
     OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
+    TI_OMX_DATAPATH dataPath;
 #endif
+
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: AACENC: Entering SetConfig\n", __LINE__);
     if (pHandle == NULL) 
     {
@@ -1324,15 +1324,16 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
             break;
 
         case  OMX_IndexCustomAacEncDataPath:
+#ifdef DSP_RENDERING_ON
             customFlag = (OMX_S16*)ComponentConfigStructure; 
             if (customFlag == NULL) 
             {
                 eError = OMX_ErrorBadParameter;
                 return eError;
             }
-/*
+
             dataPath = *customFlag;
-*/
+
             switch(dataPath) 
             {
                 case DATAPATH_APPLICATION:
@@ -1347,7 +1348,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp, OMX_INDEXTYPE nConfigIndex
                 break;
                     
             }
+#endif
         break;
+
     case OMX_IndexCustomDebug: 
 	    OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
 	    break;
