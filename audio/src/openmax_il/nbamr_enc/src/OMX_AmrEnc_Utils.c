@@ -619,8 +619,8 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U32 pValues[4];
     OMX_S32 commandData;
     OMX_U16 arr[100];
-    char *pArgs = "damedesuStr";
-    char *p = "hello";
+    char *pArgs = "";
+    char *p = "";
     OMX_U16 i = 0;
     OMX_S32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
@@ -1249,7 +1249,7 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
 
                 pComponentPrivate->pPortDef[NBAMRENC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1338,7 +1338,7 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT]->bEnabled = %d\n",pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT]->bEnabled);
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
