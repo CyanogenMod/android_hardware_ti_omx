@@ -354,6 +354,9 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Remove( VIDDEC_CIRCULAR_BUFFER* pCBuffer, OMX_BUFFE
     pBufferHeader->nTimeStamp = pBufferFlags->nTimeStamp;
     pBufferHeader->nTickCount = pBufferFlags->nTickCount;
     pBufferHeader->nFlags |= pBufferFlags->nFlags;
+    if((pBufferHeader->nFlags & OMX_BUFFERFLAG_DECODEONLY) == 0) {
+        pBufferHeader->nFlags &= ~OMX_BUFFERFLAG_DECODEONLY;
+    }
     pBufferHeader->hMarkTargetComponent = pBufferFlags->hMarkTargetComponent;
     pBufferHeader->pMarkData = pBufferFlags->pMarkData;
 #ifdef VIDDEC_PROPAGATELOGD
