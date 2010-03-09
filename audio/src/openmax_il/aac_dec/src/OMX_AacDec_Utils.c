@@ -534,7 +534,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U32 aParam[3] = {0};
     int inputPortFlag = 0;
     int outputPortFlag = 0;
-    char *pArgs = "damedesuStr";
+    char *pArgs = "";
 
 #ifdef RESOURCE_MANAGER_ENABLED
     OMX_ERRORTYPE rm_error = OMX_ErrorNone;
@@ -604,7 +604,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) { 
                     LCML_CALLBACKTYPE cb;
                     LCML_DSP *pLcmlDsp;
-                    char *p = "damedesuStr";
+                    char *p = "";
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
@@ -821,7 +821,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
 #endif
                 } else if (pComponentPrivate->curState == OMX_StatePause) { 
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
 #ifdef HASHINGENABLE
                     /*Hashing Change*/
                     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle;
@@ -890,7 +890,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     We will have to set the codec config parameters after receiving the first buffer that carries
     the config data */
                     
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     OMX_U32 pValues[4];
                     OMX_U32 pValues1[4];
  
@@ -1014,7 +1014,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         }
                     }
                 } else if (pComponentPrivate->curState == OMX_StatePause) {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d: UTILS: Resume Command Came from App\n",__LINE__);
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d: UTILS::About to call LCML_ControlCodec\n",__LINE__);
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
@@ -1332,7 +1332,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bEnabled = OMX_FALSE;
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 pComponentPrivate->pPortDef[OUTPUT_PORT_AACDEC]->bEnabled = OMX_FALSE;
             }
         }
@@ -1420,7 +1420,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
 
                 
                 if(pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1922,7 +1922,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_DIRTYPE eDir;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
-    char *pArgs = "damedesuStr";
+    char *pArgs = "";
     OMX_U32 pValues[4];
     OMX_U32 pValues1[4];
     int iObjectType = 0;
