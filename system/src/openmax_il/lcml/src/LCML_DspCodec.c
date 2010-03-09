@@ -252,7 +252,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         PERF_Boundary(phandle->pPERF,
                       PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
-        /* 720p implementation */
+        /* Reuse implementation */
         {
             pthread_mutex_init(&phandle->m_isStopped_mutex, NULL);
             phandle->mapped_buffer_count = 0;
@@ -563,7 +563,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                   PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
 
-    /* 720p implementation */
+    /* Reuse implementation */
     {
         pthread_mutex_init(&phandle->m_isStopped_mutex, NULL);
         phandle->mapped_buffer_count = 0;
@@ -998,12 +998,13 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 {
                     mappedBufferFound = true;
                     *pDmmBuf = phandle->mapped_dmm_buffers[i];
-                     OMX_PRBUFFER1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "Re-using pDmmBuf %p mapped %p\n", pDmmBuf, pDmmBuf->pMapped);
+                     OMX_PRBUFFER1 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "Re-using pDmmBuf %p mapped %p type %d\n", pDmmBuf, pDmmBuf->pMapped, bufType);
 
                     if(bufType == EMMCodecInputBuffer)
                     {
                         /* Issue a memory flush for input buffer to ensure cache coherency */
-                        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferSizeUsed, (bufferSizeUsed > 512*1024) ? 3: 0);
+                        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferSizeUsed,
+                                (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_INVALIDATE_MEM);
                         if(DSP_FAILED(status))
                         {
                             goto MUTEX_UNLOCK;
@@ -1013,9 +1014,9 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                     else if(bufType == EMMCodecOuputBuffer)
                     {
                         /* Issue an memory invalidate for output buffer */
-                        if (bufferLen > 512*1024)
+                        if (bufferLen > INVALIDATE_TRESHOLD)
                         {
-                            status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen, 3);
+                            status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen, DSPMSG_WRBK_INV_ALL);
                             if(DSP_FAILED(status))
                             {
                                 goto MUTEX_UNLOCK;
@@ -1050,7 +1051,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                     goto MUTEX_UNLOCK;
                 }
 
-                /*720p implementation */
+                /*Reuse implementation */
                 phandle->commStruct->iBufferPtr = (OMX_U32) pDmmBuf->pMapped;
                 /* storing reserve address for buffer */
                 pDmmBuf->bufReserved = pDmmBuf->pReserved;
@@ -1228,7 +1229,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                 OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "%d :: Error while closing Component Thread\n", pthreadError);
             }
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "Destroy the codec %d",eError);
-            /* 720p implementation */
+            /* Reuse implementation */
             /*DeleteDspResource (phandle);*/
             if (phandle->ReUseMap)
             {
@@ -1868,7 +1869,7 @@ void* MessagingThread(void* arg)
                                 OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                         "GOT MESSAGE EMMCodecBufferProcessed and now unmapping buufer %lx\n size=%ld",
                                              tmpDspStructAddress ->iBufferPtr, tmpDspStructAddress ->iBufferSize);
-                                /* 720p implementation */
+                                /* Reuse implementation */
                                 if (!hDSPInterface->ReUseMap)
                                 {
                                     DmmUnMap(hDSPInterface->dspCodec->hProc,
@@ -2177,7 +2178,7 @@ void* MessagingThread(void* arg)
 
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
-                                        /* 720p implementation */
+                                        /* Reuse implementation */
                                         if (!hDSPInterface->ReUseMap)
                                         {
                                             DmmUnMap(hDSPInterface->dspCodec->hProc,
@@ -2277,7 +2278,7 @@ void* MessagingThread(void* arg)
                                             (void *)msg.dwArg1);
                                     if (tmpDspStructAddress ->iBufferPtr != (OMX_U32)NULL)
                                     {
-                                        /* 720p implementation */
+                                        /* Reuse implementation */
                                         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                                 "tmpDspStructAddress ->iBufferPtr is not NULL\n");
                                         if (!hDSPInterface->ReUseMap)
@@ -2384,7 +2385,7 @@ void* MessagingThread(void* arg)
                                             (void *)msg.dwArg1);
                                     if (tmpDspStructAddress->iBufferPtr != (OMX_U32)NULL)
                                     {
-                                        /* 720p implementation */
+                                        /* Reuse implementation */
                                         if (!hDSPInterface->ReUseMap)
                                         {
                                             DmmUnMap(hDSPInterface->dspCodec->hProc,
@@ -2463,7 +2464,7 @@ void* MessagingThread(void* arg)
                                             (void *)msg.dwArg1);
                                     if (tmpDspStructAddress ->iBufferPtr != (OMX_U32)NULL)
                                     {
-                                        /* 720p implementation */
+                                        /* Reuse implementation */
                                         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                                 "tmpDspStructAddress ->iBufferPtr is not NULL\n");
                                         if (!hDSPInterface->ReUseMap)
@@ -2627,7 +2628,7 @@ void* MessagingThread(void* arg)
 
     } /* end of external while(1) loop */
 
-	/* 720p implementation */
+	/* Reuse implementation */
     if (((LCML_DSP_INTERFACE *)arg)->ReUseMap)
     {
         pthread_mutex_unlock(&((LCML_DSP_INTERFACE *)arg)->m_isStopped_mutex);

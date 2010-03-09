@@ -38,8 +38,11 @@
 #define MAX_OBJS                10
 #define MAX_STREAMS             10
 
-/* 720p implementation */
+/* Reuse implementation */
 #define MAX_DMM_BUFFERS 20
+/* If buffer size being mapped is large than this threshold,
+   bridge will be asked to writeback and invalidate entire cache */
+#define INVALIDATE_TRESHOLD 512*1024
 
 /*DSP specific*/
 #define DSP_DOF_IMAGE           "baseimage.dof"
@@ -86,6 +89,19 @@
 
 /* ======================================================================= */
 /**
+ * This enum is mean to abtract the enumerations of message optios that are
+ * sent to dsp processor.
+ */
+/*  ====================================================================== */
+enum{
+  DSPMSG_INVALIDATE_MEM = 0,
+  DSPMSG_WRBK_MEM,
+  DSPMSG_WRBK_INVALIDATE_MEM,
+  DSPMSG_WRBK_INV_ALL
+};
+
+/* ======================================================================= */
+/**
  * This enum is mean to abtract the enumerations of messages that are
  * sent to dsp processor.
  */
@@ -114,6 +130,9 @@ typedef struct
     OMX_U32 tBufState;
     OMX_U32 bBufActive;
     OMX_U32 unBufID;
+    OMX_U32 iNumAvailableBuf;
+    OMX_U32 bDoNotFlushBuf;
+    OMX_U32 bDoNotInvalidateBuf;
     OMX_U32 ulReserved;
     OMX_U32 iArmArg;/* storing dsp mapped address of structure*/
     OMX_U32 iArmbufferArg;/* ARM side buffer pointer*/
