@@ -1246,7 +1246,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting WMADECHandleCommand Function",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning %d",__LINE__,eError);
-    if (eError != OMX_ErrorNone ) {
+    if ((eError != OMX_ErrorNone) && (eError !=  EXIT_COMPONENT_THRD)) {
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,
@@ -3029,14 +3029,6 @@ OMX_ERRORTYPE WMADEC_CommandToLoaded(WMADEC_COMPONENT_PRIVATE *pComponentPrivate
     /* Send StateChangeNotification to application */
     pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
 
-    if (eError != OMX_ErrorNone ) {
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
-    }
     return eError;
 }
 
