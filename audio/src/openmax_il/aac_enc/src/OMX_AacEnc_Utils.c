@@ -721,8 +721,8 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U16 arr[100]={0};
     OMX_S32 ret = 0;
     OMX_U32 i=0;
-    char *p  = "start";
-    char *pArgs = "damedesuStr";
+    char *p  = "";
+    char *pArgs = "";
     OMX_U32 pValues[4]={0};
     OMX_U32 pValues1[4]={0};
     LCML_CALLBACKTYPE cb;
@@ -1479,7 +1479,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             }
             if(commandData == 0x1 || commandData == -1)
             {
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled = OMX_FALSE;
 
                 if (pComponentPrivate->curState == OMX_StateExecuting) 
@@ -1594,7 +1594,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                 }
                 if (pComponentPrivate->curState == OMX_StateExecuting) 
                 {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
 
                     OMX_PRCOMM1(pComponentPrivate->dbg, "AACENC: About to start socket node line %d\n",__LINE__);

@@ -274,7 +274,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
 
-    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), void);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(char), OMX_STRING);
     
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/rtmdn:i2:o1/codec\0");
