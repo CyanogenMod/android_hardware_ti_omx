@@ -646,7 +646,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
     OMX_U32 pValues[4];
     OMX_S32 commandData = cmdData;
     OMX_U16 arr[100];
-    char *pArgs = "damedesuStr";
+    char *pArgs = "";
     OMX_U32 i = 0;
     OMX_U8 inputPortFlag = 0, outputPortFlag = 0;
     WBAMRENC_LCML_BUFHEADERTYPE *pLcmlHdr = NULL;
