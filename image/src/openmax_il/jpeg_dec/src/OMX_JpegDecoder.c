@@ -171,6 +171,7 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef = NULL;
     JPEGDEC_PORT_TYPE* pCompPort;
+    OMX_U8* pBuff  = NULL;
     OMX_U8 nBufferCount = -1;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
@@ -239,8 +240,16 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
-        OMX_MALLOC(pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer, nSizeBytes + 256);
-        pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer = (pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer) + 128;
+        OMX_MALLOC_SIZE_DSPALIGN (pBuff, nSizeBytes, OMX_U8);
+        if (pBuff == NULL) {
+            eError = OMX_ErrorInsufficientResources;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, " ERROR:: Input port buffer allocation Failed.\n");
+            goto EXIT;
+        }
+
+        pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer = pBuff;
+        LinkedList_AddElement(&AllocList, pBuff);
+        pBuff = NULL;
 
 #ifdef __PERF_INSTRUMENTATION__
         PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -251,8 +260,16 @@ static OMX_ERRORTYPE AllocateBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
     }
     else if (nPortIndex == JPEGDEC_OUTPUT_PORT) {
-        OMX_MALLOC(pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer, nSizeBytes + 256);
-        pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer + 128;
+        OMX_MALLOC_SIZE_DSPALIGN ( pBuff, nSizeBytes, OMX_U8);
+        if (pBuff == NULL) {
+            eError = OMX_ErrorInsufficientResources;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, " ERROR:: Output port buffer allocation Failed.\n");
+            goto EXIT;
+        }
+
+        pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pBufferHdr->pBuffer = pBuff;
+        LinkedList_AddElement(&AllocList, pBuff);
+        pBuff = NULL;
 
 #ifdef __PERF_INSTRUMENTATION__
         PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -325,7 +342,6 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef = NULL;
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
-    OMX_U8* pTemp;
     OMX_U8 nBufferCount = -1;
 
     OMX_CHECK_PARAM(hComponent);
@@ -355,22 +371,14 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 
         pBuffPrivate = pBuffHead->pInputPortPrivate;
         if (pBuffPrivate->pUALGParams) {
-            pTemp = (OMX_U8*)(pBuffPrivate->pUALGParams);
-            pTemp -= 128;
-            (pBuffPrivate->pUALGParams) = (JPEGDEC_UAlgInBufParamStruct *)pTemp;
             OMX_FREE(pBuffPrivate->pUALGParams);
-            pBuffPrivate->pUALGParams = NULL;
         }
     }
     else if (nPortIndex == JPEGDEC_OUTPUT_PORT) {
 
         pBuffPrivate = pBuffHead->pOutputPortPrivate;
         if (pBuffPrivate->pUALGParams) {
-            pTemp = (OMX_U8*)(pBuffPrivate->pUALGParams);
-            pTemp -= 128;
-            (pBuffPrivate->pUALGParams) = (JPEGDEC_UAlgOutBufParamStruct *)pTemp;
             OMX_FREE(pBuffPrivate->pUALGParams);
-            pBuffPrivate->pUALGParams = NULL;
         }
     }
     else {
@@ -389,7 +397,6 @@ static OMX_ERRORTYPE FreeBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
             OMX_PRBUFFER1(pComponentPrivate->dbg, "INTERNAL BUFFER USED , trying to free it.\n");
-            pBuffHead->pBuffer -= 128;
             OMX_FREE(pBuffHead->pBuffer);
             pBuffHead->pBuffer = NULL;
         }
@@ -492,6 +499,12 @@ static OMX_ERRORTYPE UseBuffer_JPEGDec(OMX_IN OMX_HANDLETYPE hComponent,
     hTunnelComponent = pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->hTunnelComponent;
 
     OMX_PRINT1(pComponentPrivate->dbg, "Entering funtion UseBuffer_JPEGDec\n");
+
+    if ( ((OMX_U32)pBuffer & 0x7F) != NULL || (nSizeBytes & 0x7F) != NULL ) {
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "!!! pBuffer/nSizeBytes is not 128 byte aligned.\n");
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "!!! nSizeBytes=0x%x:: pBuffer=0x%x \n", nSizeBytes, pBuffer);
+    }
+
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -2372,8 +2385,8 @@ static OMX_ERRORTYPE Allocate_DSPResources_JPEGDec(OMX_IN JPEGDEC_COMPONENT_PRIV
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     void *pUalgOutParams;
     void *pUalgInpParams;
-    OMX_U8* pTemp;
     OMX_U8 nBufferCount = -1;
+    OMX_U32 nUalgParamsSize = 0;
 
     JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
@@ -2381,17 +2394,27 @@ static OMX_ERRORTYPE Allocate_DSPResources_JPEGDec(OMX_IN JPEGDEC_COMPONENT_PRIV
 
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
     if (nPortIndex == JPEGDEC_INPUT_PORT) {
-        OMX_MALLOC(pUalgInpParams, sizeof(JPEGDEC_UAlgInBufParamStruct) + 256);
-        pTemp = (OMX_U8*)pUalgInpParams;
-        pTemp += 128;
-        pUalgInpParams = pTemp;
+        OMX_U32 nUalgParamsSize = sizeof(JPEGDEC_UAlgInBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN (pUalgInpParams, nUalgParamsSize, void);
+        if (pUalgInpParams == NULL) {
+        eError = OMX_ErrorInsufficientResources;
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "ERROR: Memory allocation Failed for pUALGParams for INPUT PORT. \n");
+        goto EXIT;
+        }
+
+        LinkedList_AddElement(&AllocList, pUalgInpParams);
         (pComponentPrivate->pCompPort[JPEGDEC_INPUT_PORT]->pBufferPrivate[nBufferCount]->pUALGParams) = (JPEGDEC_UAlgInBufParamStruct *)(pUalgInpParams);
     }
     else if (nPortIndex == JPEGDEC_OUTPUT_PORT) {
-        OMX_MALLOC(pUalgOutParams, sizeof(JPEGDEC_UAlgOutBufParamStruct) + 256);
-        pTemp = (OMX_U8*)pUalgOutParams;
-        pTemp += 128;
-        pUalgOutParams = pTemp;
+        nUalgParamsSize = sizeof(JPEGDEC_UAlgOutBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN (pUalgOutParams, nUalgParamsSize, void);
+        if (pUalgOutParams == NULL) {
+        eError = OMX_ErrorInsufficientResources;
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "ERROR: Memory allocation Failed for pUALGParams for OUTPUT PORT. \n");
+        goto EXIT;
+        }
+
+        LinkedList_AddElement(&AllocList, pUalgOutParams);
         (pComponentPrivate->pCompPort[JPEGDEC_OUTPUT_PORT]->pBufferPrivate[nBufferCount]->pUALGParams) = (JPEGDEC_UAlgOutBufParamStruct *)(pUalgOutParams);
     }
     else {

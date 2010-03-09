@@ -1040,7 +1040,6 @@ OMX_ERRORTYPE SendDynamicParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     IDMJPGE_TIGEM_DynamicParams* pTmpDynParams;
     OMX_HANDLETYPE pLcmlHandle = NULL;
-    char* pTmp = NULL;
     OMX_U32 cmdValues[3] = {0, 0, 0};
     IIMGENC_DynamicParams ptParam;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
@@ -1094,10 +1093,7 @@ OMX_ERRORTYPE SendDynamicParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
 
     OMX_PRDSP1(pComponentPrivate->dbg, "ptParam.qValue %lu\n", ptParam.qValue);
 
-
-    pTmp = (char*)pComponentPrivate->pDynParams;
-    pTmp += 128;
-    pTmpDynParams = (IDMJPGE_TIGEM_DynamicParams*)pTmp;
+    pTmpDynParams = pComponentPrivate->pDynParams;
 
     pTmpDynParams->params         = ptParam;
     pTmpDynParams->captureHeight = pPortDefIn->format.image.nFrameHeight;
@@ -1108,7 +1104,7 @@ OMX_ERRORTYPE SendDynamicParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
 
     cmdValues[0] = IUALG_CMD_SETSTATUS;
     cmdValues[1] = (OMX_U32)(pTmpDynParams);
-    cmdValues[2] = sizeof(IDMJPGE_TIGEM_DynamicParams) + 128;
+    cmdValues[2] = sizeof(IDMJPGE_TIGEM_DynamicParams);
 
     pComponentPrivate->bAckFromSetStatus = 0;
     pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
@@ -2563,15 +2559,19 @@ OMX_ERRORTYPE SetJpegEncInParams(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
 
     if (pComponentPrivate->InParams.pInParams) {
         p = (OMX_U8 *)pComponentPrivate->InParams.pInParams;
-        p -= 128;
         OMX_FREE(p);
         pComponentPrivate->InParams.pInParams = NULL;
     }
 
    /*alloc enough memory for params array*/
     params_size = CalculateParamsSize(pComponentPrivate);
-    OMX_MALLOC(p, params_size + 256);
-    p += 128;
+    OMX_MALLOC_SIZE_DSPALIGN (p, params_size, OMX_U8);
+    if ( p == NULL) {
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
+    LinkedList_AddElement(&AllocList, p);
+
     pComponentPrivate->InParams.pInParams = (OMX_U32 *)p;
     p = NULL;
     eError = SetJpegEncInPortParams(pComponentPrivate, pComponentPrivate->InParams.pInParams);
