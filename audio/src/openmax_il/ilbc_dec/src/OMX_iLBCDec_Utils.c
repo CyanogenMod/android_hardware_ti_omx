@@ -717,7 +717,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
     OMX_U32 nBuf = 0;
     OMX_U16 arr[100] = {0};
-    char *p = "damedesuStr";
+    char *p = "";
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp = NULL;
     iLBCD_AudioCodecParams *pParams = NULL;
@@ -963,7 +963,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                 } 
                 else if (pComponentPrivate->curState == OMX_StateExecuting) {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     /*Set the bIsStopping bit */
                     iLBCDEC_DPRINT("%d :: %s About to set bIsStopping bit\n", __LINE__,__FUNCTION__);
                     iLBCDEC_DPRINT("%d :: %s :: About to call LCML_ControlCodec(STOP)\n",__LINE__,__FUNCTION__);
@@ -1325,7 +1325,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }           
             }
             if(commandData == 0x1 || commandData == -1){      /*Output*/
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 pComponentPrivate->pPortDef[iLBCD_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
@@ -1424,7 +1424,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
 
             if (pComponentPrivate->curState == OMX_StateExecuting) {
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlStart,
                                            (void *)pArgs);
@@ -2016,7 +2016,7 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             iLBCDEC_DPRINT( "Algorithm issued a warning. But can continue");
         }
         if((int)args[5] == IUALG_ERR_GENERAL) {
-            char *pArgs = "damedesuStr";
+            char *pArgs = "";
             iLBCDEC_EPRINT( "Algorithm error. Cannot continue" );
             iLBCDEC_EPRINT("%d :: arg5 = %x\n",__LINE__,(int)args[5]);
             iLBCDEC_EPRINT("%d :: LCML_Callback: IUALG_ERR_GENERAL\n",__LINE__);
@@ -2038,7 +2038,7 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    NULL);
         }
         if( (int)args[5] == IUALG_ERR_DATA_CORRUPT ) {
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 iLBCDEC_DPRINT( "Algorithm error. Corrupt data" );
                 iLBCDEC_DPRINT("%d :: arg5 = %x\n",__LINE__,(int)args[5]);
                 iLBCDEC_DPRINT("%d :: LCML_Callback: IUALG_ERR_DATA_CORRUPT\n",

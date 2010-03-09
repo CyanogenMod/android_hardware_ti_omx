@@ -312,8 +312,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->pParams                = NULL;
     pComponentPrivate->LastOutbuf             = NULL;
     
-    iLBCD_OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString,
-                           (100*sizeof(OMX_STRING)),OMX_STRING);
+    iLBCD_OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(char)), OMX_STRING);
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
     
     /* Set input port format defaults */
