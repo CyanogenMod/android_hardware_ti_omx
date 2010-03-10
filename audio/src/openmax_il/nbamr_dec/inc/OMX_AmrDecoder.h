@@ -92,14 +92,14 @@
  * @def    NUM_NBAMRDEC_INPUT_BUFFERS              Number of Input Buffers
  */
 /* ======================================================================= */
-#define NUM_NBAMRDEC_INPUT_BUFFERS 1
+#define NUM_NBAMRDEC_INPUT_BUFFERS 4
 
 /* ======================================================================= */
 /**
  * @def    NUM_NBAMRDEC_OUTPUT_BUFFERS              Number of Output Buffers
  */
 /* ======================================================================= */
-#define NUM_NBAMRDEC_OUTPUT_BUFFERS 2
+#define NUM_NBAMRDEC_OUTPUT_BUFFERS 4
 
 /* ======================================================================= */
 /**
