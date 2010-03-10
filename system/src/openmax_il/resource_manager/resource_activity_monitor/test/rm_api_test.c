@@ -32,12 +32,15 @@
 */
 /* ----------------------------------------------------------------------------
 *!
-*! Revision History
-*! ===================================
-*! 21-sept-2006 bk: updated some review findings for alpha release
-*! 24-Aug-2006 bk: Khronos OpenMAX (TM) 1.0 Conformance tests some more
-*! 18-July-2006 bk: Khronos OpenMAX (TM) 1.0 Conformance tests validated for few cases
-*! This is newest file
+*! Test Case definition:
+*! -1. get_omap_version() API check [always runs]
+*!  0. basic get/set vdd1 between MAX opp and MIN opp argv[3] times
+*!  1. 
+*!  2. 
+*!  3. 
+*!  4. 
+*!  5. 
+*!  6. 
 * =========================================================================== */
 /* ------compilation control switches -------------------------*/
 /****************************************************************
@@ -121,57 +124,96 @@ int main(int argc, char* argv[]) {
             }
 
         }
+        printf ("-------------------------------------\n");
+        printf ("verify get_omap_version API\n");
+        printf ("-------------------------------------\n");
+        omapVersion = get_omap_version();
+        if (omapVersion == OMAP3420_CPU) {
+            omapVersionStr = "omap 3420";
+        }
+        else if (omapVersion == OMAP3430_CPU) {
+            omapVersionStr = "omap 3430";
+        }
+        else if (omapVersion == OMAP3440_CPU) {
+            omapVersionStr = "omap 3440";
+        }
+        else if (omapVersion == OMAP3630_CPU) {
+            omapVersionStr = "omap 3630";
+        }
+        else {
+            omapVersionStr = "not supported or ERROR";
+        }
+        printf("\tThe detected OMAP version is %s. Please verify to pass this test\n\n", omapVersionStr);
+
+        /* set up some basic reused data */
+        maxDSPfreq =  get_dsp_max_freq();
 
         switch (tcID) {
 
-            case 0:
-                printf ("-------------------------------------\n");
-                printf ("verify get_omap_version API \n\n");
-                printf ("-------------------------------------\n");
-                omapVersion = get_omap_version();
-                if (omapVersion == OMAP3420_CPU) {
-                    omapVersionStr = "omap 3420";
-                }
-                else if (omapVersion == OMAP3430_CPU) {
-                    omapVersionStr = "omap 3430";
-                }
-                else if (omapVersion == OMAP3440_CPU) {
-                    omapVersionStr = "omap 3440";
-                }
-                else if (omapVersion == OMAP3630_CPU) {
-                    omapVersionStr = "omap 3630";
-                }
-                else {
-                    omapVersionStr = "not supported or ERROR";
-                }
-                printf("\tThe detected OMAP version is %s. Please verify to pass this test\n\n", omapVersionStr);
+           /* case -1:
+                
+                
                 if (!strcmp(argv[1], "all")) {
                     tcID ++;
                 } 
                 break;
-
-            case 1:
+*/
+            case 0:
+            {
+                int case1Cnt = atoi(argv[2]);
+                int i = 0;
                 printf ("-------------------------------------\n");
                 printf ("verify get/set vdd1 constraint interfaces \n\n");
                 printf ("-------------------------------------\n");
-                printf ("\tBasic get/set at 430MHz\n");
-                currentOpp = rm_get_vdd1_constraint();
-                printf ("\tget current OPP = %d\n", currentOpp);
-                maxDSPfreq =  get_dsp_max_freq();
-                printf ("\tget max dsp freq = %d\n\t\t then set the opp accordingly\n", maxDSPfreq);
-                rm_set_vdd1_constraint(maxDSPfreq);
-                if (rm_get_vdd1_constraint() == dsp_mhz_to_vdd1_opp(maxDSPfreq)+1){
-                    /* +1 is required to adjust the returned value from array index to actual opp value */
-                    printf ("\tsuccessfully set OPP for = %d for max dsp frequency\n\n", maxDSPfreq);
-                } else {
-                    printf ("\tfailed to correctly set OPP = %d for max dsp frequency\n\n", maxDSPfreq);
-                }
+                printf ("\tBasic get/set between min opp and max opp\n");
+                do {
+                    currentOpp = rm_get_vdd1_constraint();
+                    printf ("\tget current OPP = %d\n", currentOpp);
+                    rm_set_vdd1_constraint(maxDSPfreq);
+                    if (rm_get_vdd1_constraint() == dsp_mhz_to_vdd1_opp(maxDSPfreq)+1){
+                        /* +1 is required to adjust the returned value from array index to actual opp value */
+                        printf ("\tsuccessfully set OPP for = %d for max dsp frequency\n\n", maxDSPfreq);
+                        sleep(1);
+                        /* reset to min opp [per omap] */
+                        if (omapVersion == OMAP3420_CPU) {
+                            rm_set_vdd1_constraint(vdd1_dsp_mhz_3420[1]);
+                        }
+                        else if (omapVersion == OMAP3430_CPU) {
+                            rm_set_vdd1_constraint(vdd1_dsp_mhz_3430[1]);
+                        }
+                        else if (omapVersion == OMAP3440_CPU) {
+                             rm_set_vdd1_constraint(vdd1_dsp_mhz_3440[1]);
+                        }
+                        else if (omapVersion == OMAP3630_CPU) {
+                            rm_set_vdd1_constraint(vdd1_dsp_mhz_3630[1]);
+                        }
+                        else {
+                            printf("FAIL: omap not supported ERROR\n");
+                            break;
+                        }
+                        printf("\twait for reset to min OPP to complete\n");
+                        int wait = 0;
+                        while (rm_get_vdd1_constraint() != 2 && i < case1Cnt){
+                            sleep(1);
+                            wait++;
+                            if (wait > 10) {
+                                printf("FAIL: took too long to reset min OPP\n");
+                                break;
+                            }
+                        }
+                    } else {
+                        printf ("\tfailed to correctly set OPP = %d for max dsp frequency\n\n", maxDSPfreq);
+                        break;
+                    }
+                }while(i++ < case1Cnt);
+
                 if (!strcmp(argv[1], "all")) {
                     tcID ++;
                 } 
                 break;
+             }
 
-            case 2:
+            case 1:
                 printf ("-------------------------------------\n");
                 printf ("Testing new API test \n");
                 printf ("-------------------------------------\n");
