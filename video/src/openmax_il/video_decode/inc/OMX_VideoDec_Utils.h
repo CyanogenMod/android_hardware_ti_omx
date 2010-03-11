@@ -780,8 +780,8 @@ typedef struct VIDDEC_WMV_RCV_struct {
 } VIDDEC_WMV_RCV_struct;
 
 typedef union VIDDEC_WMV_RCV_header {
-    VIDDEC_WMV_RCV_struct sStructRCV;
-    OMX_U8 pBuffer[sizeof(VIDDEC_WMV_RCV_struct)];
+    VIDDEC_WMV_RCV_struct *sStructRCV;
+    OMX_U8 *pBuffer;
 } VIDDEC_WMV_RCV_header;
 
 typedef struct VIDDEC_SAVE_BUFFER{
