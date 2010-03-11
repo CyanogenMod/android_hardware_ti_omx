@@ -189,10 +189,10 @@ OMX_ERRORTYPE VIDDEC_CircBuf_Init(VIDDEC_CIRCULAR_BUFFER* pCBuffer)
     OMX_MALLOC_STRUCT(pCBuffer->m_lock, pthread_mutex_t,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel3]);
     pthread_mutex_init(pCBuffer->m_lock, NULL);
 #endif
-EXIT:
     pCBuffer->nCount = 0;
     pCBuffer->nHead = 0;
     pCBuffer->nTail = 0;
+EXIT:
      return eError;
 }
 
@@ -7260,7 +7260,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                         }
 #endif
                         pBuffer = (OMX_U8*)argsCb[1];
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp);
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp, pBuffHead->nFlags);
                         if(pBuffHead != NULL){
                             pBuffHead->nFilledLen = (OMX_S32)argsCb[8];
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFilledLen %lu\n", pBuffHead->nFilledLen);
