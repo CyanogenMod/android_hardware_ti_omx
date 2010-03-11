@@ -398,6 +398,19 @@ do {                                                        \
     }                                                       \
 } while(0)
 
+#define VIDENC_MALLOC_DSP_ALLIGNED(_p_, _s_, _c_, _h_, dbg) \
+do {                                                        \
+	OMX_MALLOC_SIZE_DSPALIGN(_p_,_s_,_c_)                 \
+    if (_p_ == NULL) {                                      \
+        goto OMX_CONF_CMD_BAIL;                             \
+    }                                                       \
+    eError = OMX_VIDENC_ListAdd(&(dbg), _h_, _p_);          \
+    if (eError == OMX_ErrorInsufficientResources) {         \
+        OMX_TRACE4(dbg, "malloc() error.\n");               \
+        goto OMX_CONF_CMD_BAIL;                             \
+    }                                                       \
+} while(0)
+
 #define VIDENC_FREE(_p_, _h_, dbg)                          \
 do {                                                        \
     OMX_VIDENC_ListRemove((&dbg), _h_, _p_);                \
