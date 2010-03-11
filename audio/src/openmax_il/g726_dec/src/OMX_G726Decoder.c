@@ -1157,8 +1157,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     G726DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
+#ifdef DSP_RENDERING_ON
     OMX_AUDIO_CONFIG_MUTETYPE *pMuteStructure = NULL;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pVolumeStructure = NULL;
+#endif
     TI_OMX_DSP_DEFINITION* pDspDefinition = NULL;
     OMX_S16* deviceString = NULL;
     TI_OMX_DATAPATH dataPath;
@@ -1712,6 +1714,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     /* Needed for cache synchronization between ARM and DSP */
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+    if (pBufferHeader->pBuffer == NULL) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+        return OMX_ErrorInsufficientResources;
+    }
     pBufferHeader->nVersion.nVersion = G726DEC_BUFHEADER_VERSION;
 
 

@@ -894,9 +894,6 @@ OMX_U32 G726DEC_IsPending(G726DEC_COMPONENT_PRIVATE *pComponentPrivate,
 OMX_U32 G726DEC_IsValid(G726DEC_COMPONENT_PRIVATE *pComponentPrivate, 
                         OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 
-OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr, DMM_BUFFER_OBJ* pDmmBuf);
-OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr);
-
 #ifdef RESOURCE_MANAGER_ENABLED
 /***********************************
  *  Callback to the RM                                       *

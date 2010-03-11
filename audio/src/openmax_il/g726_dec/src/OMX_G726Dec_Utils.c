@@ -99,7 +99,7 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf = 0,nIpBufSize = 0,nOpBuf = 0,nOpBufSize = 0;
-    OMX_U32 i = 0;
+    OMX_U32 i = 0, j=0, k=0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)pComponent;
     G726DEC_COMPONENT_PRIVATE *pComponentPrivate =
@@ -108,7 +108,6 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     OMX_U32 size_lcml = 0;
     /*int inputPortFlag=0,outputPortFlag=0;*/
     LCML_STRMATTR *strmAttr = NULL;
-    OMX_U8 *ptemp = NULL;
 
     G726DEC_DPRINT(":: Entered Fill_LCMLInitParams");
 
@@ -144,6 +143,11 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(G726D_USN_AudioCodecParams),
                           G726D_USN_AudioCodecParams);
+
+    if (pComponentPrivate->pParams == NULL){
+        G726DEC_DPRINT("Exiting G726DEC_Fill_LCMLInitParams\n");
+        return OMX_ErrorInsufficientResources;
+    }
 
     plcml_Init->NodeInfo.nNumOfDLLs = 3;
 
@@ -279,9 +283,22 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pFrameParam,G726DEC_UAlgInBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pFrameParam,
+                                 sizeof(G726DEC_UAlgInBufParamStruct),
+                                 G726DEC_UAlgInBufParamStruct);
 
-
+        if (pComponentPrivate->pParams == NULL) {
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT];
+            for(k=0; k<i; k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, G726DEC_UAlgInBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT]);
+            OMX_MEMFREE_STRUCT(strmAttr);
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G726D_USN_AudioCodecParams);
+            G726DEC_DPRINT("Exiting G726DEC_Fill_LCMLInitParams\n");
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((G726DEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -297,8 +314,8 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
     pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT] = pTemp_lcml;
 
-    for (i=0; i<nOpBuf; i++) {
-        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+    for (j=0; j<nOpBuf; j++) {
+        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[j];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
         pTemp->nAllocLen = nOpBufSize;
         pTemp->nVersion.s.nVersionMajor = G726DEC_MAJOR_VER;
@@ -308,13 +325,13 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
-        pTemp_lcml->pOtherParams[i] = NULL;
+        pTemp_lcml->pOtherParams[j] = NULL;
                 
         pTemp->nFlags = NORMAL_BUFFER;
         ((G726DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
-        G726DEC_DPRINT("::Comp:  >>>>>>>>>>>>> OutBuffHeader[%ld] = %p\n", i, pTemp);
-        G726DEC_DPRINT("::Comp:  >>>> OutBuffHeader[%ld]->pBuffer = %p\n", i, pTemp->pBuffer);
-        G726DEC_DPRINT("::Comp: Op : pTemp_lcml[%ld] = %p\n", i, pTemp_lcml);
+        G726DEC_DPRINT("::Comp:  >>>>>>>>>>>>> OutBuffHeader[%ld] = %p\n", j, pTemp);
+        G726DEC_DPRINT("::Comp:  >>>> OutBuffHeader[%ld]->pBuffer = %p\n", j, pTemp->pBuffer);
+        G726DEC_DPRINT("::Comp: Op : pTemp_lcml[%ld] = %p\n", j, pTemp_lcml);
         pTemp_lcml++;
     }
     
@@ -322,9 +339,18 @@ OMX_ERRORTYPE G726DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     pComponentPrivate->bInitParamsInitialized = 1;
 
  EXIT:
-    if(eError == OMX_ErrorInsufficientResources || eError == OMX_ErrorBadParameter){
+    if (eError != OMX_ErrorNone) {
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT]);
+
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT];
+        for(k=0; k<i; k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, G726DEC_UAlgInBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT]);
+
         OMX_MEMFREE_STRUCT(strmAttr);
-        OMX_MEMFREE_STRUCT(pTemp_lcml);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G726D_USN_AudioCodecParams);
     }
     G726DEC_DPRINT("Exiting G726DEC_Fill_LCMLInitParams\n");
     return eError;
@@ -516,14 +542,15 @@ OMX_ERRORTYPE G726DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 /* ================================================================================ * */
 OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    OMX_U32 i = 0,ret = 0;
+    OMX_U32 i = 0;
+    int ret = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     char *pArgs = "damedesuStr";
     OMX_COMPONENTTYPE *pHandle =
         (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState = OMX_StateInvalid;
-    OMX_U32 commandData = 0;
+    int commandData = 0;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
     OMX_U16 arr[10] = {0};
 
@@ -972,6 +999,11 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
             case OMX_StateMax:
                 G726DEC_DPRINT(": HandleCommand: Cmd OMX_StateMax::\n");
                 break;
+
+            default:
+                G726DEC_DPRINT(": Default Case: Cmd :: %d\n",commandedState);
+                break;
+
             } /* End of Switch */
         }
     }
@@ -1563,8 +1595,9 @@ OMX_ERRORTYPE G726DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             G726DEC_DPRINT(":: Input: *pLcmlHdr->eDir = %d\n", pLcmlHdr->eDir);
             G726DEC_DPRINT(":: Input: Filled Len = %ld\n", pLcmlHdr->pBufHdr->nFilledLen);
 
-            if((int)args[5] == IUALG_WARN_PLAYCOMPLETED)
+            if((int)args[5] == IUALG_WARN_PLAYCOMPLETED) {
                 G726DEC_DPRINT("IUALG_WARN_PLAYCOMPLETED is sent from EMMCodecBufferProcessed event\n");
+            }
             if (eError != OMX_ErrorNone) {
                 G726DEC_EPRINT(":: Error: Invalid Buffer Came ...\n");
                 goto EXIT;
@@ -1866,131 +1899,6 @@ OMX_ERRORTYPE G726DEC_GetCorresponding_LCMLHeader(G726DEC_COMPONENT_PRIVATE *pCo
     return eError;
 }
 
-
-/** ========================================================================
- *  OMX_DmmMap () method is used to allocate the memory using DMM.
- *
- *  @param ProcHandle -  Component identification number
- *  @param size  - Buffer header address, that needs to be sent to codec
- *  @param pArmPtr - Message used to send the buffer to codec
- *  @param pDmmBuf - buffer id
- *
- *  @retval OMX_ErrorNone  - Success
- *          OMX_ErrorHardware  -  Hardware Error
- ** ==========================================================================*/
-OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
-                         int size,
-                         void* pArmPtr,
-                         DMM_BUFFER_OBJ* pDmmBuf)
-{
-    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status = DSP_SOK;
-    int nSizeReserved = 0;
-
-    if(pDmmBuf == NULL)
-    {
-        G726DEC_DPRINT("pBuf is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    if(pArmPtr == NULL)
-    {
-        G726DEC_DPRINT("pBuf is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    /* Allocate */
-    pDmmBuf->pAllocated = pArmPtr;
-
-    /* Reserve */
-    nSizeReserved = ROUND_TO_PAGESIZE(size) + 2*DMM_PAGE_SIZE ;
-    status = DSPProcessor_ReserveMemory(ProcHandle, nSizeReserved, &(pDmmBuf->pReserved));
-    G726DEC_DPRINT("\nOMX Reserve DSP: %p\n",pDmmBuf->pReserved);
-    
-    if(DSP_FAILED(status))
-    {
-        G726DEC_EPRINT("DSPProcessor_ReserveMemory() failed - error 0x%x", (int)status);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
-    }
-    pDmmBuf->nSize = size;
-    G726DEC_DPRINT(" DMM MAP Reserved: %p, size 0x%x (%d)\n", pDmmBuf->pReserved,nSizeReserved,nSizeReserved);
-    
-    /* Map */
-    status = DSPProcessor_Map(ProcHandle,
-                              pDmmBuf->pAllocated,/* Arm addres of data to Map on DSP*/
-                              OMX_GET_SIZE_DSPALIGN(size), /* size to Map on DSP*/
-                              pDmmBuf->pReserved, /* reserved space */
-                              &(pDmmBuf->pMapped), /* returned map pointer */
-                              ALIGNMENT_CHECK);
-    if(DSP_FAILED(status))
-    {
-        G726DEC_EPRINT("DSPProcessor_Map() failed - error 0x%x", (int)status);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
-    }
-    G726DEC_DPRINT("DMM Mapped: %p, size 0x%x (%d)\n",pDmmBuf->pMapped, size,size);
-
-    /* Issue an initial memory flush to ensure cache coherency */
-    status = DSPProcessor_FlushMemory(ProcHandle, pDmmBuf->pAllocated, size, 0);
-    if(DSP_FAILED(status))
-    {
-        G726DEC_EPRINT("Unable to flush mapped buffer: error 0x%x",(int)status);
-        goto EXIT;
-    }
-    eError = OMX_ErrorNone;
-    
- EXIT:
-    return eError;
-}
-
-/** ========================================================================
- *  OMX_DmmUnMap () method is used to de-allocate the memory using DMM.
- *
- *  @param ProcHandle -  Component identification number
- *  @param pMapPtr  - Map address
- *  @param pResPtr - reserve adress
- *
- *  @retval OMX_ErrorNone  - Success
- *          OMX_ErrorHardware  -  Hardware Error
- ** ==========================================================================*/
-OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr)
-{
-    DSP_STATUS status = DSP_SOK;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    G726DEC_DPRINT("\nOMX UnReserve DSP: %p\n",pResPtr);
-
-    if(pMapPtr == NULL)
-    {
-        G726DEC_DPRINT("pMapPtr is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    if(pResPtr == NULL)
-    {
-        G726DEC_DPRINT("pResPtr is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    status = DSPProcessor_UnMap(ProcHandle,pMapPtr);
-    if(DSP_FAILED(status))
-    {
-        G726DEC_EPRINT("DSPProcessor_UnMap() failed - error 0x%x",(int)status);
-    }
-
-    G726DEC_DPRINT("unreserving  structure =0x%p\n",pResPtr );
-    status = DSPProcessor_UnReserveMemory(ProcHandle,pResPtr);
-    if(DSP_FAILED(status))
-    {
-        G726DEC_EPRINT("DSPProcessor_UnReserveMemory() failed - error 0x%x", (int)status);
-    }
-
- EXIT:
-    return eError;
-}
-
 /* ================================================================================= * */
 /**
  * @fn G726DEC_GetLCMLHandle() function gets the LCML handle and interacts with LCML
@@ -2062,9 +1970,7 @@ void G726DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT];
     for(i=0; i<nIpBuf; i++) {
         G726DEC_MEMPRINT(":: Freeing: pTemp_lcml->pFrameParam = %p\n",pTemp_lcml->pFrameParam);
-        if(pTemp_lcml->pFrameParam!=NULL){                     
-            OMX_MEMFREE_STRUCT(pTemp_lcml->pFrameParam);
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, G726DEC_UAlgOutBufParamStruct);
         pTemp_lcml++;
     }
 
@@ -2266,7 +2172,7 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf = 0,nIpBufSize = 0,nOpBuf = 0,nOpBufSize = 0;
-    OMX_U32 i = 0;
+    OMX_U32 i = 0, j=0, k=0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
     G726D_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     G726DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
@@ -2326,6 +2232,27 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer, nIpBufSize, OMX_U8);
+            if (pTemp->pBuffer == NULL) {
+                pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT] ;
+                if (pTemp_lcml != NULL) {
+                    for (k=0; k<i; k++) {
+                        OMX_MEMFREE_STRUCT(pTemp_lcml->pFrameParam);
+                        if (pComponentPrivate->bufAlloced == 0) {
+                            pTemp = pTemp_lcml->pBufHdr;
+                            if (pTemp != NULL) {
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp->pBuffer, OMX_U8);
+                            }
+                            OMX_MEMFREE_STRUCT(pTemp);
+                        }
+                        pTemp_lcml++;
+                    }
+                }
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT]);
+
+                G726DEC_DPRINT("Exiting G726DECFill_LCMLInitParamsEx\n");
+                return OMX_ErrorInsufficientResources;
+            }
+
         } else {
             G726DEC_DPRINT(":: IpBuffer %p is already there\n",pTemp->pBuffer);
         }
@@ -2352,13 +2279,13 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,G726D_LCML_BUFHEADERTYPE);
     pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT] = pTemp_lcml;
 
-    for (i=0; i<nOpBuf; i++) {
+    for (j=0; j<nOpBuf; j++) {
         if(pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_GENERIC(pTemp, OMX_BUFFERHEADERTYPE);
         } else {
             G726DEC_DPRINT(":: OpBufferHeader %p is already there\n",
-                           pComponentPrivate->pOutputBufferList->pBufHdr[i]);
-            pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+                           pComponentPrivate->pOutputBufferList->pBufHdr[j]);
+            pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[j];
         }
 
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
@@ -2373,6 +2300,25 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer, nOpBufSize, OMX_U8);
+            if (pTemp->pBuffer == NULL) {
+                pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT];
+                if (pTemp_lcml != NULL) {
+                    if(pComponentPrivate->bufAlloced == 0) {
+                        for (k=0; k<j; k++) {
+                            pTemp = pTemp_lcml->pBufHdr;
+                            if (pTemp != NULL) {
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp->pBuffer, OMX_U8);
+                            }
+                            OMX_MEMFREE_STRUCT(pTemp);
+                            pTemp_lcml++;
+                        }
+                    }
+                }
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT]);
+                G726DEC_DPRINT("Exiting G726DECFill_LCMLInitParamsEx\n");
+                return OMX_ErrorInsufficientResources;
+            }
+
             G726DEC_DPRINT("%d:: OpBuffer %p is already there\n",__LINE__,pTemp->pBuffer);
         } else {
             G726DEC_DPRINT(":: OpBuffer %p is already there\n",pTemp->pBuffer);
@@ -2380,14 +2326,14 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
-        pTemp_lcml->pOtherParams[i] = NULL;
+        pTemp_lcml->pOtherParams[j] = NULL;
 
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((G726DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
-        G726DEC_DPRINT("::Comp:  >>>>>>>>>>>>> OutBuffHeader[%ld] = %p\n", i, pTemp);
-        G726DEC_DPRINT("::Comp:  >>>> OutBuffHeader[%ld]->pBuffer = %p\n", i, pTemp->pBuffer);
-        G726DEC_DPRINT("::Comp: Op : pTemp_lcml[%ld] = %p\n", i, pTemp_lcml);
+        G726DEC_DPRINT("::Comp:  >>>>>>>>>>>>> OutBuffHeader[%ld] = %p\n", j, pTemp);
+        G726DEC_DPRINT("::Comp:  >>>> OutBuffHeader[%ld]->pBuffer = %p\n", j, pTemp->pBuffer);
+        G726DEC_DPRINT("::Comp: Op : pTemp_lcml[%ld] = %p\n", j, pTemp_lcml);
         pTemp_lcml++;
     }
     pComponentPrivate->bPortDefsAllocated = 1;
@@ -2401,7 +2347,7 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_OUTPUT_PORT];
 	if (pTemp_lcml != NULL) {
             if(pComponentPrivate->bufAlloced == 0) {
-                for (i=0; i<nOpBuf; i++) {
+                for (k=0; k<j; k++) {
                     pTemp = pTemp_lcml->pBufHdr;
                     if (pTemp != NULL) {
 	               OMX_MEMFREE_STRUCT_DSPALIGN(pTemp->pBuffer, OMX_U8);
@@ -2415,7 +2361,7 @@ OMX_ERRORTYPE G726DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726D_INPUT_PORT] ;
 	if (pTemp_lcml != NULL) {
-            for (i=0; i<nIpBuf; i++) {
+            for (k=0; k<i; k++) {
                 OMX_MEMFREE_STRUCT(pTemp_lcml->pFrameParam);
                 if (pComponentPrivate->bufAlloced == 0) {
                     pTemp = pTemp_lcml->pBufHdr;
