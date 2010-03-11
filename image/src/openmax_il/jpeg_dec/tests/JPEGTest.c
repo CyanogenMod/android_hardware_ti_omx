@@ -642,7 +642,6 @@ int main(int argc, char** argv)
     OMX_S32 nPostProcCompId = 200; 
     /*int nDone = 0;*/
     int nExternal= 0;
-    OMX_U8 * pTemp;
     OMX_BUFFERHEADERTYPE* pInBuffHead[NUM_OF_BUFFERS];
     OMX_BUFFERHEADERTYPE* pOutBuffHead[NUM_OF_BUFFERS];
     OMX_U8* pInBuffer = NULL;
@@ -658,6 +657,7 @@ int main(int argc, char** argv)
     int  nMaxFrames = 1;
     OMX_BUFFERHEADERTYPE* pInBufferHdr;    
     struct timeval tv1, tv2;
+    OMX_U32 nTempSize = 0;
 
     /* validate command line args */
     if ( (argc < 5) || ((argc > 7) && (argc < 11)) ||(argc > 11)) {
@@ -1224,12 +1224,21 @@ int main(int argc, char** argv)
     /********* EXTERNAL BUFFER ****************/
 
     if ( nExternal == 1 ) {
-        pTemp=(OMX_U8*)malloc(pInPortDef->nBufferSize+256);
-        pTemp+=128;
-        pInBuffer = pTemp;
-        pTemp=(OMX_U8*)malloc(pOutPortDef->nBufferSize+256);
-        pTemp+=128;
-        pOutBuffer = pTemp;
+        nTempSize = pInPortDef->nBufferSize;
+        OMX_MALLOC_SIZE_DSPALIGN ( pInBuffer, nTempSize, OMX_U8);
+        if(pInBuffer == NULL){
+            PRINT("ERROR:: pInBuffer Allocation Failed..\n");
+            eError = OMX_ErrorInsufficientResources;
+            goto EXIT;
+        }
+
+        nTempSize = pOutPortDef->nBufferSize;
+        OMX_MALLOC_SIZE_DSPALIGN ( pOutBuffer, nTempSize, OMX_U8);
+        if(pOutBuffer == NULL){
+            PRINT("ERROR:: pOutBuffer Allocation Failed..\n");
+            eError = OMX_ErrorInsufficientResources;
+            goto EXIT;
+        }
  
         eError = OMX_UseBuffer(pHandle, &pInBuffHead[0], nIndex1, pInBuffHead, pInPortDef->nBufferSize, pInBuffer);
         for(nBufferHdrSend = 0; (nBufferHdrSend < nNUM_OF_DECODING_BUFFERS); nBufferHdrSend++){
@@ -1445,8 +1454,6 @@ DEINIT2:
     /* Free buffers */
     if ( nExternal==1 )
     {
-        pOutBuffer-=128;
-        pInBuffer-=128;
         eError = OMX_FreeBuffer(pHandle, nIndex1, pInBuffHead[0]); 
         for(nBufferHdrSend = 0; nBufferHdrSend < nNUM_OF_DECODING_BUFFERS; nBufferHdrSend++){
             eError = OMX_FreeBuffer(pHandle, nIndex2, pOutBuffHead[nBufferHdrSend]); 

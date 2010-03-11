@@ -1115,6 +1115,7 @@ int main(int argc, char** argv)
     int nHeightNew, nWidthNew;
     OMX_INDEXTYPE nCustomIndex = OMX_IndexMax;
     OMX_ERRORTYPE error = OMX_ErrorNone;
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
 
 #ifdef STRESS
     int multiload = 0;
@@ -1664,21 +1665,19 @@ do
 	if (buffertype == 1) {
 	    
 	    for (nCounter = 0; nCounter < NUM_OF_BUFFERSJPEG; nCounter++) {
-	        pTemp=(OMX_U8*)malloc(pInPortDef->nBufferSize+256);
+                OMX_MALLOC_SIZE_DSPALIGN ( pTemp, pInPortDef->nBufferSize,OMX_U8 );
 	        if(pTemp == NULL){
 	            error = OMX_ErrorInsufficientResources;
 	            goto EXIT;
 	        }
-	        pTemp+= 128;
 	        pInBuffer[nCounter] = pTemp;
 	        pTemp = NULL;
 
-	        pTemp= (OMX_U8*)malloc(pOutPortDef->nBufferSize+256);
+                OMX_MALLOC_SIZE_DSPALIGN ( pTemp, pOutPortDef->nBufferSize, OMX_U8 );
 	        if(pTemp == NULL){
 	            error = OMX_ErrorInsufficientResources;
 	            goto EXIT;
 	        }
-	        pTemp+= 128;
 	        pOutBuffer[nCounter] = pTemp;
 	    }
 
@@ -2010,8 +2009,6 @@ EXIT:
 	if( error != OMX_ErrorNone){
 		if (buffertype == 1) {
 			for (nCounter = 0; nCounter < NUM_OF_BUFFERSJPEG; nCounter++) {
-				pOutBuffer[nCounter]-=128;
-				pInBuffer[nCounter]-=128;
 				FREE(pOutBuffer[nCounter]);
 				FREE(pInBuffer[nCounter]);
 			}

@@ -183,7 +183,6 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     JPEGENC_BUFFER_PRIVATE* pBuffPrivate         = NULL;
     JPEG_PORT_TYPE* pCompPort                    = NULL;
     OMX_ERRORTYPE eError                         = OMX_ErrorNone;
-    OMX_U8* pTemp                                = NULL;
     
     OMX_CHECK_PARAM(hComponent);
     OMX_CHECK_PARAM(pBuffer);
@@ -217,17 +216,12 @@ static OMX_ERRORTYPE JPEGENC_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
 
     if (pBuffPrivate->bAllocByComponent == OMX_TRUE) {
         if (pBuffer->pBuffer) {
-           pTemp = (char*)pBuffer->pBuffer;
-           pTemp -= 128;
-           OMX_FREE(pTemp);
+           OMX_FREE(pBuffer->pBuffer);
            pBuffer->pBuffer = NULL;
         }
     }
 
 	if (pBuffPrivate->pUalgParam){
-            pTemp = (OMX_U8*)(pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam);
-            pTemp -= 128;
-            pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam = (JPEGENC_UALGOutputParams *)pTemp;
             OMX_FREE(pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[0]->pUalgParam);
             pBuffPrivate->pUalgParam = NULL;
             }
@@ -320,6 +314,11 @@ OMX_ERRORTYPE JPEGENC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     hTunnelComponent = pComponentPrivate->pCompPort[JPEGENC_INP_PORT]->hTunnelComponent;
     pPortDef = pComponentPrivate->pCompPort[nPortIndex]->pPortDef;
     nBufferCount = pComponentPrivate->pCompPort[nPortIndex]->nBuffCount;
+
+    if ( ((OMX_U32)pBuffer & 0x7F) != NULL || (nSizeBytes & 0x7F)!= NULL ) {
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "!!! pBuffer/nSizeBytes is not 128 byte aligned.\n");
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "!!! pBuffer=0x%x : nSizeBytes=0x%x.\n",(OMX_U32)pBuffer, nSizeBytes);
+    }
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -439,6 +438,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     OMX_COMPONENTTYPE *pHandle  = NULL;
     OMX_ERRORTYPE eError            = OMX_ErrorNone;
     JPEGENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
+    OMX_U32 nSize = 0;
     OMX_U8 i = 0;
     
     /* Allocate memory for component's private data area */
@@ -585,11 +585,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 #endif
 
 
-    OMX_MALLOC(pComponentPrivate->pDynParams, sizeof(IDMJPGE_TIGEM_DynamicParams)+256);
+    nSize = sizeof(IDMJPGE_TIGEM_DynamicParams);
+    OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pDynParams, nSize, IDMJPGE_TIGEM_DynamicParams);
     if (!pComponentPrivate->pDynParams) {
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
+    LinkedList_AddElement(&AllocList, pComponentPrivate->pDynParams);
 
     eError = SetJpegEncInParams(pComponentPrivate);
 
@@ -2304,7 +2306,6 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_BUFFERHEADERTYPE         *pBufferHdr        = NULL;
     OMX_U32 nBufferCount = -1;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_U8* pTemp = NULL;
     
     pHandle           = (OMX_COMPONENTTYPE *) hComponent;
     pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -2351,7 +2352,13 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
 
-    OMX_MALLOC(pBufferHdr->pBuffer, nSizeBytes+256);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHdr->pBuffer, nSizeBytes, OMX_U8);
+    if (!pBufferHdr->pBuffer) {
+        OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
+        eError = OMX_ErrorInsufficientResources;
+        goto EXIT;
+    }
+    LinkedList_AddElement(&AllocList, pBufferHdr->pBuffer);
 
 #ifdef __PERF_INSTRUMENTATION__
         PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -2360,16 +2367,6 @@ OMX_ERRORTYPE JPEGENC_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
                            PERF_ModuleMemory);
 #endif
   
-    if (!pBufferHdr->pBuffer) {
-        OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-
-
-    pTemp = (OMX_U8 *)(pBufferHdr->pBuffer);
-    pTemp += 128;
-    pBufferHdr->pBuffer = pTemp;
     OMX_PRBUFFER2(pComponentPrivate->dbg, "Allocate Buffer Input pBufferPrivate[0]-pBuffer = %p\n",pBufferHdr->pBuffer);
     
     eError = JPEGENC_Allocate_DSPResources(pComponentPrivate, nPortIndex);
@@ -2532,8 +2529,8 @@ static OMX_ERRORTYPE JPEGENC_Allocate_DSPResources(OMX_IN JPEGENC_COMPONENT_PRIV
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     void *pUalgOutParams;
     void *pUalgInpParams;
-    OMX_U8* pTemp;
     OMX_U8 nBufferCount = -1;
+    OMX_U32 nUalgOutParamsSize = 0;
 
    /* JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1); */          
 
@@ -2546,10 +2543,14 @@ static OMX_ERRORTYPE JPEGENC_Allocate_DSPResources(OMX_IN JPEGENC_COMPONENT_PRIV
 	goto EXIT;
     }
     else if ( nPortIndex == pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pPortFormat->nPortIndex  ) {
-        OMX_MALLOC(pUalgOutParams, sizeof(JPEGENC_UALGOutputParams) + 256);
-        pTemp = (OMX_U8*)pUalgOutParams;
-        pTemp += 128;
-        pUalgOutParams = pTemp;
+        nUalgOutParamsSize = sizeof(JPEGENC_UALGOutputParams);
+        OMX_MALLOC_SIZE_DSPALIGN(pUalgOutParams, nUalgOutParamsSize, JPEGENC_UALGOutputParams);
+        if ( pUalgOutParams == NULL) {
+            eError = OMX_ErrorInsufficientResources;
+            goto EXIT;
+        }
+        LinkedList_AddElement(&AllocList, pUalgOutParams);
+
         (pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->pBufferPrivate[nBufferCount]->pUalgParam) = (JPEGENC_UALGOutputParams *)(pUalgOutParams);
     }
     else {
