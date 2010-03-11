@@ -56,6 +56,8 @@
 #include <getopt.h>
 #include <sys/types.h>
 
+#include "OMX_TI_Common.h"
+
 #define DSP_MMU_FAULT_HANDLING
 
 #ifdef DSP_MMU_FAULT_HANDLING
@@ -110,6 +112,27 @@
 #define VIDENCTEST_FREE(_p_, _h_)                           \
     VIDENCTEST_ListRemove(_h_, _p_);                        \
     _p_ = NULL;                                             \
+
+#define VIDENCTEST_MALLOC_DSPALIGN(_p_, _s_, _c_, _h_)                  \
+    OMX_MALLOC_SIZE_DSPALIGN(_p_,_s_,_c_)				\
+    if (_p_ == NULL) {                                                  \
+        VIDENCTEST_MTRACE("malloc() error.\n");                         \
+        eError = OMX_ErrorInsufficientResources;                        \
+    }                                                                   \
+    else {                                                              \
+        VIDENCTEST_MTRACE(": %d :memalign() -> %p\n", __LINE__, _p_);     \
+        memset((_p_), 0x0, _s_);                                        \
+        if ((_p_) == NULL) {                                            \
+            VIDENCTEST_MTRACE("memset() error.\n");                     \
+            eError = OMX_ErrorUndefined;                                \
+        }                                                               \
+        else{                                                           \
+            eError = VIDENCTEST_ListAdd(_h_, _p_);                      \
+            if (eError == OMX_ErrorInsufficientResources) {             \
+                VIDENCTEST_MTRACE("malloc() error.\n");                 \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
 
 #define VIDENCTEST_CHECK_ERROR(_e_, _s_)                    \
     if (_e_ != OMX_ErrorNone){                              \
@@ -1235,15 +1258,13 @@ OMX_ERRORTYPE VIDENCTEST_AllocateBuffers(MYDATATYPE* pAppData)
 
     for (nCounter = 0; nCounter < NUM_OF_IN_BUFFERS; nCounter++) {
         if (pAppData->bAllocateIBuf == OMX_TRUE) {
-            VIDENCTEST_MALLOC(pAppData->pIBuffer[nCounter], pAppData->nSizeIn + 256, OMX_U8, pListHead);
-            pAppData->pIBuffer[nCounter] += 128;
+            VIDENCTEST_MALLOC_DSPALIGN(pAppData->pIBuffer[nCounter], pAppData->nSizeIn, OMX_U8, pListHead);
             pAppData->pIBuffer[nCounter] = (unsigned char*)pAppData->pIBuffer[nCounter];
         }
     }
     for (nCounter = 0; nCounter < NUM_OF_OUT_BUFFERS; nCounter++) {
         if (pAppData->bAllocateOBuf == OMX_TRUE) {
-            VIDENCTEST_MALLOC(pAppData->pOBuffer[nCounter], pAppData->nSizeOut + 256, OMX_U8, pListHead);
-            pAppData->pOBuffer[nCounter] += 128;
+            VIDENCTEST_MALLOC_DSPALIGN(pAppData->pOBuffer[nCounter], pAppData->nSizeOut, OMX_U8, pListHead);
             pAppData->pOBuffer[nCounter] = (unsigned char*)pAppData->pOBuffer[nCounter];
             }
     }
@@ -2553,8 +2574,7 @@ OMX_ERRORTYPE VIDENCTEST_HandlePortDisable(MYDATATYPE* pAppData, OMX_U32 ePort)
 
             for (nCounter = 0; nCounter < NUM_OF_IN_BUFFERS; nCounter++) {
                 if (pAppData->bAllocateIBuf == OMX_TRUE) {
-                    VIDENCTEST_MALLOC(pAppData->pIBuffer[nCounter], pAppData->nSizeIn + 256, OMX_U8, pListHead);
-                    pAppData->pIBuffer[nCounter] += 128;
+                    VIDENCTEST_MALLOC_DSPALIGN(pAppData->pIBuffer[nCounter], pAppData->nSizeIn, OMX_U8, pListHead);
                     pAppData->pIBuffer[nCounter] = (unsigned char*)pAppData->pIBuffer[nCounter];
                 }
             }
@@ -2616,8 +2636,7 @@ OMX_ERRORTYPE VIDENCTEST_HandlePortEnable(MYDATATYPE* pAppData, OMX_U32 ePort)
 
         for (nCounter = 0; nCounter < NUM_OF_OUT_BUFFERS; nCounter++) {
             if (pAppData->bAllocateOBuf == OMX_TRUE) {
-                VIDENCTEST_MALLOC(pAppData->pOBuffer[nCounter], pAppData->nSizeOut + 256, OMX_U8, pListHead);
-                pAppData->pOBuffer[nCounter] += 128;
+                VIDENCTEST_MALLOC_DSPALIGN(pAppData->pOBuffer[nCounter], pAppData->nSizeOut, OMX_U8, pListHead);
                 pAppData->pOBuffer[nCounter] = (unsigned char*)pAppData->pOBuffer[nCounter];
             }
         }
