@@ -3793,7 +3793,6 @@ OMX_CONF_CMD_BAIL:
 OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pComponentPrivate,
                                                OMX_IN OMX_U32 nPortIndex)
 {
-    char* pTemp = NULL;
     OMX_U32 nBufferCnt = -1;
     VIDENC_NODE* pMemoryListHead = NULL;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -3815,41 +3814,32 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
         {
             H264VE_GPP_SN_UALGInputParams* pUalgParam;
 
-            VIDENC_MALLOC(pUalgParam,
-                          sizeof(H264VE_GPP_SN_UALGInputParams) + 256,
+            VIDENC_MALLOC_DSP_ALLIGNED(pUalgParam,
+                          sizeof(H264VE_GPP_SN_UALGInputParams),
                           H264VE_GPP_SN_UALGInputParams,
                           pMemoryListHead,
                           pComponentPrivate->dbg);
 
-            pTemp = (char*)pUalgParam;
-            pTemp += 128;
-            pUalgParam = (H264VE_GPP_SN_UALGInputParams*)pTemp;
             pCompPort->pBufferPrivate[nBufferCnt]->pUalgParam = pUalgParam;
         }
         else if (eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                  eCompressionFormat == OMX_VIDEO_CodingH263)
         {
             MP4VE_GPP_SN_UALGInputParams* pUalgParam;
-
-            VIDENC_MALLOC(pUalgParam,
-                          sizeof(MP4VE_GPP_SN_UALGInputParams) + 256,
+	        VIDENC_MALLOC_DSP_ALLIGNED(pUalgParam,
+                          sizeof(MP4VE_GPP_SN_UALGInputParams),
                           MP4VE_GPP_SN_UALGInputParams,
                           pMemoryListHead,
                           pComponentPrivate->dbg);
-            pTemp = (char*)pUalgParam;
-            pTemp += 128;
-            pUalgParam = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
             pCompPort->pBufferPrivate[nBufferCnt]->pUalgParam = pUalgParam;
             if(eCompressionFormat == OMX_VIDEO_CodingMPEG4)
             {/*Structure needed to send the request for VOLHeader to SN*/
-                VIDENC_MALLOC(pComponentPrivate->pTempUalgInpParams,
-                              sizeof(MP4VE_GPP_SN_UALGInputParams) + 256,
+
+                VIDENC_MALLOC_DSP_ALLIGNED(pComponentPrivate->pTempUalgInpParams,
+                              sizeof(MP4VE_GPP_SN_UALGInputParams),
                               MP4VE_GPP_SN_UALGInputParams,
                               pMemoryListHead,
                               pComponentPrivate->dbg);
-                pTemp = (char*)pComponentPrivate->pTempUalgInpParams;
-                pTemp += 128;
-                pComponentPrivate->pTempUalgInpParams = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
             }
         }
     }
@@ -3859,29 +3849,22 @@ OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources(VIDENC_COMPONENT_PRIVATE* pCompon
         {
             H264VE_GPP_SN_UALGOutputParams* pUalgParam;
 
-            VIDENC_MALLOC(pUalgParam,
-                          sizeof(H264VE_GPP_SN_UALGOutputParams) + 256,
+            VIDENC_MALLOC_DSP_ALLIGNED(pUalgParam,
+                          sizeof(H264VE_GPP_SN_UALGOutputParams),
                           H264VE_GPP_SN_UALGOutputParams,
                           pMemoryListHead,
                           pComponentPrivate->dbg);
-            pTemp = (char*)pUalgParam;
-            pTemp += 128;
-            pUalgParam = (H264VE_GPP_SN_UALGOutputParams*)pTemp;
             pCompPort->pBufferPrivate[nBufferCnt]->pUalgParam = pUalgParam;
         }
         else if (eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                  eCompressionFormat == OMX_VIDEO_CodingH263)
         {
             MP4VE_GPP_SN_UALGOutputParams* pUalgParam;
-
-            VIDENC_MALLOC(pUalgParam,
-                          sizeof(MP4VE_GPP_SN_UALGOutputParams) + 256,
+            VIDENC_MALLOC_DSP_ALLIGNED(pUalgParam,
+                          sizeof(MP4VE_GPP_SN_UALGOutputParams),
                           MP4VE_GPP_SN_UALGOutputParams,
                           pMemoryListHead,
                           pComponentPrivate->dbg);
-            pTemp = (char*)pUalgParam;
-            pTemp += 128;
-            pUalgParam = (MP4VE_GPP_SN_UALGOutputParams*)pTemp;
             pCompPort->pBufferPrivate[nBufferCnt]->pUalgParam = pUalgParam;
         }
     }

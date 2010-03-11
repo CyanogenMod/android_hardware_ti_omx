@@ -3669,12 +3669,10 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
         (*pBufHead)->nOutputPortIndex = VIDENC_OUTPUT_PORT;
     }
 
-    VIDENC_MALLOC((*pBufHead)->pBuffer,
-                  nSizeBytes + 256,
+    VIDENC_MALLOC_DSP_ALLIGNED((*pBufHead)->pBuffer,
+                  nSizeBytes,
                   OMX_U8,
                   pMemoryListHead, pComponentPrivate->dbg);
-    ((*pBufHead)->pBuffer) += 128;
-    ((*pBufHead)->pBuffer) = (unsigned char*)((*pBufHead)->pBuffer);
     (*pBufHead)->nSize       = sizeof(OMX_BUFFERHEADERTYPE);
     (*pBufHead)->nVersion    = pPortDef->nVersion;
     (*pBufHead)->pAppPrivate = pAppPrivate;
@@ -3849,6 +3847,10 @@ static OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp, struct OMX_TI_Debug *dbg)
         eError = OMX_ErrorInsufficientResources;
         OMX_TRACE4(*dbg, "Error in video encoder OMX_ErrorInsufficientResources %d\n",__LINE__);
         goto EXIT;
+    }
+    else
+    {
+	memset(pTunnelcComponentName,0,128);
     }
 
     pTunnelComponentVersion = malloc(sizeof(OMX_VERSIONTYPE));
