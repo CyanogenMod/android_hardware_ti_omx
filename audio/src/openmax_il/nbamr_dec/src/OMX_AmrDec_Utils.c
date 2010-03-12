@@ -680,7 +680,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
     OMX_U32 nBuf;
     OMX_U16 arr[100];
-    OMX_STRING p = "hello";
+    OMX_STRING p = "";
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp;
     AMRDEC_AudioCodecParams *pParams;
@@ -967,7 +967,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
         } 
         else if (pComponentPrivate->curState == OMX_StateExecuting) 
         {
-                OMX_U8 *pArgs = (void*)"damedesuStr";
+                char *pArgs = "";
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif            
@@ -1005,7 +1005,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->nHoldLength = 0;
             } 
             else if(pComponentPrivate->curState == OMX_StatePause) {
-                OMX_U8 *pArgs = (void*)"damedesuStr";
+                char *pArgs = "";
                 if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                     pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
                 }
@@ -1445,7 +1445,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }            
         }
         if(commandData == 0x1 || commandData == -1){      /*Output*/
-            char *pArgs = "damedesuStr";
+            char *pArgs = "";
             pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
             if (pComponentPrivate->curState == OMX_StateExecuting) {
                 pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
@@ -1532,7 +1532,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal){
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -1722,7 +1722,7 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     LCML_DSP_INTERFACE * phandle;
     OMX_U8 bufSize=0;
     AMRDEC_AudioCodecParams *pParams;
-    OMX_STRING p = "hello";
+    OMX_STRING p = "";
     
     OMX_U32 nFilledLenLocal;
     OMX_U8 TOCentry, hh=0, *TOCframetype=0;
