@@ -2770,6 +2770,12 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
         pUalgInpParams->ulQpMax         = 18;
         pUalgInpParams->ulQPIntra       = 4;
     }
+    if((pPortDefIn->format.video.nFrameWidth >= 640 ||
+        pPortDefIn->format.video.nFrameHeight >= 480) && (pComponentPrivate->nTargetFrameRate > 15)) {
+        pUalgInpParams->ulACPred            = 0;
+        pUalgInpParams->ulAIRRate           = 0;
+    }
+
     ++pComponentPrivate->nFrameCnt;
 
     if(pComponentPrivate->bRequestVOLHeader == OMX_TRUE)
@@ -3642,9 +3648,6 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     else
         pCreatePhaseArgs->ucHEC                   = 0;/**/
 
-    if(pCompPortOut->pErrorCorrectionType->bEnableResync)
-        pCreatePhaseArgs->ucResyncMarker          = 1;
-    else
         pCreatePhaseArgs->ucResyncMarker          = 0;/**/
 
     if(pCompPortOut->pErrorCorrectionType->bEnableDataPartitioning)
@@ -3789,6 +3792,14 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
 
+    if ((pPortDefIn->format.video.nFrameWidth >= 640 ||
+        pPortDefIn->format.video.nFrameHeight >= 480) &&
+        pCreatePhaseArgs->ucFrameRate > 15)
+    {
+        if(pCreatePhaseArgs->ulTargetBitRate >= 4000000) {
+            pComponentPrivate->nIntraFrameInterval = 30;
+        }
+    }
     pLcmlDSP->pCrPhArgs = nArr;
     printMpeg4Params(pCreatePhaseArgs, &pComponentPrivate->dbg);
 
