@@ -2691,10 +2691,12 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     LCML_DSP_INTERFACE* pLcmlHandle = NULL;
     VIDEOENC_PORT_TYPE* pCompPortOut = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut = NULL;
+    OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
 
     pBufferPrivate = (VIDENC_BUFFER_PRIVATE*)pBufHead->pInputPortPrivate;
     pCompPortOut = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT];
     pPortDefOut = pCompPortOut->pPortDef;
+    pPortDefIn = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortDef;
     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
 
     pUalgInpParams = (MP4VE_GPP_SN_UALGInputParams*)pBufferPrivate->pUalgParam;
@@ -2761,6 +2763,13 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulcapturewidth      = 0;
     pUalgInpParams->ulQpMax             = 31;
     pUalgInpParams->ulQpMin             = 2;
+
+    if((pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType == OMX_Video_ControlRateVariable) &&
+        (pPortDefIn->format.video.nFrameWidth >= 640 || pPortDefIn->format.video.nFrameHeight >= 480) &&
+        (pComponentPrivate->nTargetFrameRate <= 15)) {
+        pUalgInpParams->ulQpMax         = 18;
+        pUalgInpParams->ulQPIntra       = 4;
+    }
     ++pComponentPrivate->nFrameCnt;
 
     if(pComponentPrivate->bRequestVOLHeader == OMX_TRUE)
