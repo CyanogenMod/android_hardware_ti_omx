@@ -633,7 +633,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
 
     OMX_U32 nBuf;
     OMX_U16 arr[100];
-    char *p = "damedesuStr";
+    char *p = "";
 
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp;
@@ -896,7 +896,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
             else if (pComponentPrivate->curState == OMX_StateExecuting) {
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif
@@ -933,7 +933,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
 
             else if(pComponentPrivate->curState == OMX_StatePause) {
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 if (pComponentPrivate->codecStop_waitingsignal == 0){ 
                     pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);    
                 }
@@ -1373,7 +1373,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 pComponentPrivate->pPortDef[WBAMR_DEC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
@@ -1476,7 +1476,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
@@ -1661,7 +1661,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U16 offset = 0;
 
     WBAMR_DEC_AudioCodecParams *pParams;
-    OMX_STRING p = "damedesuStr";
+    OMX_STRING p = "";
     DSP_STATUS status;
     OMX_BOOL isFrameParamChanged=OMX_FALSE;
 
