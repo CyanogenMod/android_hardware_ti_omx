@@ -765,8 +765,14 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     pthread_cond_t codecFlush_threshold;
     OMX_U8 codecFlush_waitingsignal;
     
+    /* counts the number of unhandled FillThisBuffer() calls */
     OMX_U8 nUnhandledFillThisBuffers;
+    /* counts the number of handled FillThisBuffer() calls */
+    OMX_U8 nHandledFillThisBuffers;
+    /* counts the number of unhandled EmptyThisBuffer() calls */
     OMX_U8 nUnhandledEmptyThisBuffers;
+    /* counts the number of handled EmptyThisBuffer() calls */
+    OMX_U8 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
 
