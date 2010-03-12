@@ -39,6 +39,7 @@
 #include <OMX_Component.h>
 #include <OMX_Audio.h>
 #include <TIDspOmx.h>
+#include <OMX_TI_Common.h>
 #include <stdio.h>
 #ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
@@ -1238,7 +1239,8 @@ int Aacenc_fdread;
 #else
 	    for(i = 0; i < numofinbuff; i++) 
 		{
-		   pInputBuffer[i] = (OMX_U8*)newmalloc(INPUT_AACENC_BUFFER_SIZE + 256);  
+                   OMX_MALLOC_SIZE_DSPALIGN(pInputBuffer[i], INPUT_AACENC_BUFFER_SIZE, OMX_U8);
+
 		   APP_DPRINT("%d :: APP: pInputBuffer[%d] = %p\n",__LINE__,i,pInputBuffer[i]);
 		   if(NULL == pInputBuffer[i]) 
 		   {
@@ -1246,7 +1248,6 @@ int Aacenc_fdread;
 			  error = OMX_ErrorInsufficientResources;
 			  goto EXIT;
 		   }
-		   pInputBuffer[i] = pInputBuffer[i] + 128;
 		   /* pass input buffer */
 		   APP_DPRINT("%d :: APP: About to call OMX_UseBuffer\n",__LINE__);
 		   APP_DPRINT("%d :: APP: pInputBufferHeader[%d] = %p\n",__LINE__,i,pInputBufferHeader[i]);
@@ -1260,7 +1261,7 @@ int Aacenc_fdread;
 
 	    for(i = 0; i < numofoutbuff; i++) 
 		{
-		   pOutputBuffer[i] = (OMX_U8*) newmalloc (OutputBufferSize + 256); 
+                   OMX_MALLOC_SIZE_DSPALIGN(pOutputBuffer[i], OutputBufferSize, OMX_U8);
 		   APP_DPRINT("%d :: APP: pOutputBuffer[%d] = %p\n",__LINE__,i,pOutputBuffer[i]);
 		   if(NULL == pOutputBuffer[i]) 
 		   {
@@ -1268,7 +1269,6 @@ int Aacenc_fdread;
 			  error = OMX_ErrorInsufficientResources;
 			  goto EXIT;
 		   }
-		   pOutputBuffer[i] = pOutputBuffer[i] + 128;
 
 		   /* allocate output buffer */
 		   APP_DPRINT("%d :: APP: About to call OMX_UseBuffer\n",__LINE__);
