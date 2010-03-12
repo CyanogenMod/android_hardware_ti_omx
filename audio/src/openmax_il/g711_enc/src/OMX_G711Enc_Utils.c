@@ -2421,7 +2421,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr,
                               OMX_GET_SIZE_DSPALIGN(size), /* size to Map on DSP*/
                               pDmmBuf->pReserved, /* reserved space */
                               &(pDmmBuf->pMapped), /* returned map pointer */
-                              0); /* final param is reserved.  set to zero. */
+                              ALIGNMENT_CHECK);
     
     if(DSP_FAILED(status))
     {
