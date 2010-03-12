@@ -273,7 +273,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
         
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(ILBCENC_ParamStruct),ILBCENC_ParamStruct);
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
@@ -506,7 +506,7 @@ OMX_ERRORTYPE ILBCENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
             OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, ILBCENC_FrameStruct);
         }
 
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);                           
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam,ILBCENC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
 
         pTemp_lcml++;
@@ -593,11 +593,11 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp = NULL;
     OMX_U32 pValues[4] = {0};
-    OMX_U32 commandData = 0;
+    OMX_S32 commandData = 0;
     OMX_U16 arr[100] = {0};
     char *p = "";
     OMX_U16 i = 0;
-    OMX_U32 ret = 0;
+    OMX_S32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
     ILBCENC_LCML_BUFHEADERTYPE *pLcmlHdr = NULL;
 
@@ -1105,6 +1105,10 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
 
             case OMX_StateMax:
                 ILBCENC_DPRINT("%d ILBCENC_HandleCommand :: Cmd OMX_StateMax\n",__LINE__);
+                break;
+
+            default:
+                ILBCENC_DPRINT("%d ILBCENC_HandleCommand :: invalid commandedState :0x%x\n",__LINE__,commandedState);
                 break;
             } /* End of Switch */
         }
@@ -2310,7 +2314,7 @@ OMX_HANDLETYPE ILBCENC_GetLCMLHandle(ILBCENC_COMPONENT_PRIVATE *pComponentPrivat
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
     void *handle = NULL;
-    char *error = NULL;
+    const char *error = NULL;
 
     ILBCENC_DPRINT("%d Entering ILBCENC_GetLCMLHandle..\n",__LINE__);
     handle = dlopen("libLCML.so", RTLD_LAZY);
@@ -2606,7 +2610,7 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         ILBCENC_DPRINT("%d pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, ILBCENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(ILBCENC_ParamStruct),ILBCENC_ParamStruct);
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
