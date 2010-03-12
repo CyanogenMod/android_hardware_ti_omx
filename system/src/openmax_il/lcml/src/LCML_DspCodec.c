@@ -1843,11 +1843,20 @@ void* MessagingThread(void* arg)
                                 {
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "output buffer loop");
                                     tmpDspStructAddress = hDSPInterface->Armoutputstorage[i] ;
-                                    hDSPInterface ->Armoutputstorage[i] =NULL;
-                                    pDmmBuf = hDSPInterface ->dspCodec->OutDmmBuffer;
+                                    hDSPInterface->Armoutputstorage[i] =NULL;
+                                    pDmmBuf = hDSPInterface->dspCodec->OutDmmBuffer;
                                     pDmmBuf = pDmmBuf + (tmpDspStructAddress->Bufoutindex);
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                             "Address output  matching index= %ld\n ",tmpDspStructAddress->Bufoutindex);
+                                    /* @FIXME WorkAround: Invalidate the Communication buffer before using. to get the actual values writen by DSP
+                                       some buffers have shown corruption when passing them to upper layer. */
+                                    status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                            (TArmDspCommunicationStruct  *)tmpDspStructAddress, sizeof(TArmDspCommunicationStruct));
+                                    if(DSP_FAILED(status))
+                                    {
+                                        OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                "Invalidation Fail for output buffer %p \n", tmpDspStructAddress);
+                                    }
                                     break;
                                 }
                                 i++;
@@ -1875,6 +1884,7 @@ void* MessagingThread(void* arg)
                                 ((OMX_BUFFERHEADERTYPE*)args[7])->nFlags |= tmpDspStructAddress->iEOSFlag;
                             }
                             /* USN updates*/
+
                             args[8] = (void *) tmpDspStructAddress->iBufSizeUsed ;
                             /* managing buffers  and free buffer logic */
 
