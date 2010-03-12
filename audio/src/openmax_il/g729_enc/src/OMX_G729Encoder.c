@@ -1637,6 +1637,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+    if (pBufferHeader->pBuffer == NULL) {
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+        G729ENC_DPRINT("Exiting AllocateBuffer. Returning = 0x%x\n", OMX_ErrorInsufficientResources);
+        return OMX_ErrorInsufficientResources;
+    }
     G729ENC_MEMPRINT("%d :: [ALLOC]  %p\n",__LINE__,pBufferHeader->pBuffer);
     if (nPortIndex == G729ENC_INPUT_PORT)
     {
@@ -1703,6 +1708,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
                         PERF_ModuleMemory);
 #endif     
  EXIT:
+    if ((eError != OMX_ErrorNone) && (pBufferHeader)) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+    }
     G729ENC_DPRINT("Exiting AllocateBuffer. Returning = 0x%x\n", eError);
     return eError;
 }
