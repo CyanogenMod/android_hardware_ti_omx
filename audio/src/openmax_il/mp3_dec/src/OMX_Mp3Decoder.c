@@ -305,7 +305,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDisableCommandParam = 0;
     pComponentPrivate->bEnableCommandParam = 0;
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
-    pComponentPrivate->sDeviceString = newmalloc(100*sizeof(OMX_STRING));
     pComponentPrivate->IpBufindex = 0;
     pComponentPrivate->OpBufindex = 0;
     pComponentPrivate->nNumInputBufPending = 0;
@@ -329,6 +328,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bConfigData = 1;
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 1; //set the initial value to true if you expect to do port config...
+
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(char)), OMX_STRING);
 
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");

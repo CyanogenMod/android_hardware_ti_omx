@@ -536,7 +536,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U32 i,ret = 0;
     OMX_U16 arr[24];
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    char *pArgs = "damedesuStr";
+    char *pArgs = "";
     OMX_U32 pValues[4];
     OMX_U32 pValues1[4];
     OMX_COMPONENTTYPE *pHandle =(OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
@@ -604,7 +604,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) {
                     LCML_CALLBACKTYPE cb;
                     LCML_DSP *pLcmlDsp;
-                    char *p = "damedesuStr";
+                    char *p = "";
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
@@ -827,7 +827,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
 #endif
                 } else if(pComponentPrivate->curState == OMX_StatePause) {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     OMX_PRCOMM2(pComponentPrivate->dbg, ":: Comp: Stop Command Received\n");
 #ifdef HASHINGENABLE
                     /*Hashing Change*/
@@ -896,7 +896,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
             case OMX_StateExecuting:
                 OMX_PRDSP2(pComponentPrivate->dbg, ": HandleCommand: Cmd Executing \n");
                 if (pComponentPrivate->curState == OMX_StateIdle) {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     OMX_U32 pValues[4];
                     OMX_U32 pValues1[4];
 
@@ -974,7 +974,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         pComponentPrivate->SendAfterEOS = 1;
                     } 
                 } else if (pComponentPrivate->curState == OMX_StatePause) {
-                    char *pArgs = "damedesuStr";
+                    char *pArgs = "";
                     OMX_PRDSP2(pComponentPrivate->dbg, ": Comp: Resume Command Came from App\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec  START %d\n", __LINE__);
@@ -1263,7 +1263,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
             if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "damedesuStr";
+                char *pArgs = "";
                 pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]->bEnabled = OMX_FALSE;
             }
         }
@@ -1772,7 +1772,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_DIRTYPE eDir;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
-    char *pArgs = "damedesuStr";
+    char *pArgs = "";
     OMX_U32 pValues[4];
     OMX_U32 pValues1[4];
     OMX_U32 nBitPosition = 0;
