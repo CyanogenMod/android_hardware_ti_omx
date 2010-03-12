@@ -1016,12 +1016,15 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
                     if(bufType == EMMCodecInputBuffer)
                     {
-                        /* Issue a memory flush for input buffer to ensure cache coherency */
-                        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferSizeUsed,
-                                (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_INVALIDATE_MEM);
-                        if(DSP_FAILED(status))
-                        {
-                            goto MUTEX_UNLOCK;
+                        if(bufferSizeUsed) {
+                            /* Issue a memory flush for input buffer to ensure cache coherency */
+                            status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc,
+                                      pDmmBuf->pAllocated, bufferSizeUsed,
+				      (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_INVALIDATE_MEM);
+                            if(DSP_FAILED(status))
+                            {
+                                goto MUTEX_UNLOCK;
+                            }
                         }
                     }
 

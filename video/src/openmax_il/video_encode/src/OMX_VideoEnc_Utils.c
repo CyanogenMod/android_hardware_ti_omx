@@ -84,7 +84,12 @@
 // We cannot request the same MHz for all resolutions.
 // we have to change this implementation once we modify
 // opencore to request the correct level based on resolution/bitrate/etc
-#define VIDEO_ENCODER_MHZ (400 - 45 + 2) 
+#define VIDEO_ENCODER_MHZ (300 - 45 + 2)
+
+// Following two MACROS can be used to turn ON/OFF the Reuse MAP buffer
+// optimization on input and output buffers respectively
+#define TURN_ON_MAP_REUSE_INPUT
+#define TURN_ON_MAP_REUSE_OUTPUT
 
 #ifdef UNDER_CE
     HINSTANCE g_hLcmlDllHandle = NULL;
@@ -1507,9 +1512,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             /* Resource Manager Proxy Calls */
                 if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+                    OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_H264_Encode_COMPONENT,
@@ -1519,9 +1522,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 }
                 else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+                    OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_MPEG4_Encode_COMPONENT,
@@ -1531,9 +1532,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 }
                 else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
+                    OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Idle from Loaded\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_H263_Encode_COMPONENT,
@@ -1749,8 +1748,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
 #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
                 if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_H264_Encode_COMPONENT,
@@ -1760,8 +1757,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 }
                 else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_MPEG4_Encode_COMPONENT,
@@ -1771,9 +1766,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                 }
                 else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
                 {
-                    /* TODO: Disable RM Send for now */
-                    /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "Setting Idle state from Executing to RMProxy\n");
+                    OMX_PRMGR2(pComponentPrivate->dbg, "Setting Idle state from Executing to RMProxy\n");
                     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                                  RMProxy_StateSet,
                                                  OMX_H263_Encode_COMPONENT,
@@ -1871,9 +1864,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
 #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
             {
-                /* TODO: Disable RM Send for now */
-            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
+                OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_H264_Encode_COMPONENT,
@@ -1883,9 +1874,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
             {
-                /* TODO: Disable RM Send for now */
-            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
+                OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_MPEG4_Encode_COMPONENT,
@@ -1896,9 +1885,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetExecuting(VIDENC_COMPONENT_PRIVATE
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
+                OMX_PRMGR2(pComponentPrivate->dbg, "Setting executing state to RMProxy\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_H263_Encode_COMPONENT,
@@ -2078,9 +2065,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
 #ifdef RESOURCE_MANAGER_ENABLED
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+                OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_H264_Encode_COMPONENT,
@@ -2090,9 +2075,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+                OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_MPEG4_Encode_COMPONENT,
@@ -2102,9 +2085,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
-            OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
+                OMX_PRMGR2(pComponentPrivate->dbg, "RMProxy_SendCommand: Setting state to Loaded from WFR\n");
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_StateSet,
                                              OMX_H263_Encode_COMPONENT,
@@ -2162,8 +2143,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
     #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H264_Encode_COMPONENT, 0); */
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_FreeResource,
                                              OMX_H264_Encode_COMPONENT,
@@ -2173,8 +2152,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_MPEG4_Encode_COMPONENT, 0); */
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_FreeResource,
                                              OMX_MPEG4_Encode_COMPONENT,
@@ -2184,8 +2161,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             }
             else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
             {
-                /* TODO: Disable RM Send for now */
-                /* eError = RMProxy_SendCommand(pHandle, RMProxy_RequestResource, OMX_H263_Encode_COMPONENT, 0); */
                 eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                              RMProxy_FreeResource,
                                              OMX_H263_Encode_COMPONENT,
@@ -2347,6 +2322,16 @@ goto EXIT;
             pUalgOutParams =(H264VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam;
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p \n", (void*)pBufHead);
             pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+            #ifdef TURN_ON_MAP_REUSE_OUTPUT
+            eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                      EMMCodecOutputBufferMapReuse,
+                                      pBufHead->pBuffer,
+                                      pBufHead->nAllocLen,
+                                      0,
+                                      (OMX_U8*)pUalgOutParams,
+                                      sizeof(H264VE_GPP_SN_UALGOutputParams),
+                                      (void*)pBufHead);
+            #else
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                       EMMCodecOuputBuffer,
                                       pBufHead->pBuffer,
@@ -2355,6 +2340,7 @@ goto EXIT;
                                       (OMX_U8*)pUalgOutParams,
                                       sizeof(H264VE_GPP_SN_UALGOutputParams),
                                       (void*)pBufHead);
+	    #endif
             if (eError != OMX_ErrorNone)
         {
             OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
@@ -2368,6 +2354,16 @@ goto EXIT;
         pUalgOutParams = (MP4VE_GPP_SN_UALGOutputParams*)pBufferPrivate->pUalgParam;
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+        #ifdef TURN_ON_MAP_REUSE_OUTPUT
+        eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                  EMMCodecOutputBufferMapReuse,
+                                  pBufHead->pBuffer,
+                                  pBufHead->nAllocLen,
+                                  0,
+                                  (OMX_U8*)pUalgOutParams,
+                                  sizeof(MP4VE_GPP_SN_UALGOutputParams),
+                                  (void*)pBufHead);
+        #else
         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                   EMMCodecOuputBuffer,
                                   pBufHead->pBuffer,
@@ -2376,6 +2372,7 @@ goto EXIT;
                                   (OMX_U8*)pUalgOutParams,
                                   sizeof(MP4VE_GPP_SN_UALGOutputParams),
                                   (void*)pBufHead);
+        #endif
         if (eError != OMX_ErrorNone)
         {
             OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
@@ -2644,6 +2641,16 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
        /*Send Buffer to LCML*/
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+        #ifdef TURN_ON_MAP_REUSE_INPUT
+        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                  EMMCodecInputBufferMapReuse,
+                                  pBufHead->pBuffer,
+                                  pBufHead->nAllocLen,
+                                  pBufHead->nFilledLen,
+                                  (OMX_U8*)pUalgInpParams,
+                                  sizeof(H264VE_GPP_SN_UALGInputParams),
+                                  (OMX_U8*)pBufHead);
+        #else
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                   EMMCodecInputBuffer,
                                   pBufHead->pBuffer,
@@ -2652,6 +2659,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
                                   (OMX_U8*)pUalgInpParams,
                                   sizeof(H264VE_GPP_SN_UALGInputParams),
                                   (OMX_U8*)pBufHead);
+        #endif
         if (eError != OMX_ErrorNone)
         {
             OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
@@ -2761,6 +2769,16 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
         memcpy(pComponentPrivate->pTempUalgInpParams,pUalgInpParams,sizeof(MP4VE_GPP_SN_UALGInputParams));
         pComponentPrivate->pTempUalgInpParams->ulGenerateHeader = 1;
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+        #ifdef TURN_ON_MAP_REUSE_INPUT
+        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                  EMMCodecInputBufferMapReuse,
+                                  pComponentPrivate->pTempUalgInpParams,/*send any buffer*/
+                                  1,
+                                  0,
+                                  pComponentPrivate->pTempUalgInpParams,
+                                  sizeof(MP4VE_GPP_SN_UALGInputParams),
+                                  (OMX_U8*)pBufHead);
+        #else
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                   EMMCodecInputBuffer,
                                   pComponentPrivate->pTempUalgInpParams,/*send any buffer*/
@@ -2769,6 +2787,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
                                   pComponentPrivate->pTempUalgInpParams,
                                   sizeof(MP4VE_GPP_SN_UALGInputParams),
                                   (OMX_U8*)pBufHead);
+        #endif
         if (eError != OMX_ErrorNone)
         {
             OMX_PRDSP2(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
@@ -2791,6 +2810,16 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
         /*Send Buffer to LCML*/
         OMX_PRBUFFER1(pComponentPrivate->dbg, " %p\n", (void*)pBufHead);
         pBufferPrivate->eBufferOwner = VIDENC_BUFFER_WITH_DSP;
+        #ifdef TURN_ON_MAP_REUSE_INPUT
+        eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                  EMMCodecInputBufferMapReuse,
+                                  pBufHead->pBuffer,
+                                  pBufHead->nAllocLen,
+                                  pBufHead->nFilledLen,
+                                  (OMX_U8*)pUalgInpParams,
+                                  sizeof(MP4VE_GPP_SN_UALGInputParams),
+                                  (OMX_U8*)pBufHead);
+        #else
         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                   EMMCodecInputBuffer,
                                   pBufHead->pBuffer,
@@ -2799,6 +2828,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
                                   (OMX_U8*)pUalgInpParams,
                                   sizeof(MP4VE_GPP_SN_UALGInputParams),
                                   (OMX_U8*)pBufHead);
+        #endif
     if (eError != OMX_ErrorNone)
     {
         OMX_PRDSP4(pComponentPrivate->dbg, "LCML QueueBuffer failed: %x\n", eError);
