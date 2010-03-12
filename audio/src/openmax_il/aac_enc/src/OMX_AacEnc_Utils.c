@@ -102,7 +102,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf =0 ,nIpBufSize=0 ,nOpBuf = 0 ,nOpBufSize=0;
-    OMX_U32 i                               = 0;
+    OMX_U32 i=0, j=0, k=0;
     OMX_BUFFERHEADERTYPE *pTemp             = NULL;
     OMX_S32 size_lcml                       = 0;
     char *ptr;
@@ -316,6 +316,23 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
                                sizeof(AACENC_UAlgInBufParamStruct),
                                AACENC_UAlgInBufParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+            for(k=0;k<i;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+
+            if(pComponentPrivate->dasfmode == 1) {
+                OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+            }
+
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: Exiting Fill_LCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml->pIpParam %p \n",pTemp_lcml->pIpParam);
         
         pTemp_lcml->pIpParam->bLastBuffer = 0;
@@ -332,9 +349,9 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
     pTemp_lcml = (LCML_AACENC_BUFHEADERTYPE *)ptr;
 
     pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = pTemp_lcml;
-    for (i=0; i<nOpBuf; i++) 
+    for (j=0; j<nOpBuf; j++)
     {
-        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[j];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
         pTemp->nAllocLen = nOpBufSize;
         pTemp->nFilledLen = nOpBufSize;
@@ -352,6 +369,32 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam, 
                                sizeof(AACENC_UAlgOutBufParamStruct),
                                AACENC_UAlgOutBufParamStruct);
+        if (pTemp_lcml->pOpParam == NULL) {
+
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+
+            for(k=0;k<j;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+            for(k=0;k<i;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+
+            if(pComponentPrivate->dasfmode == 1) {
+                OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+            }
+
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: Exiting Fill_LCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
 
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: size of pOpParam: %d \n",__LINE__,sizeof(pTemp_lcml->pOpParam->unFrameSizes));
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: numframes of pOpParam: %d \n\n",__LINE__,sizeof(pTemp_lcml->pOpParam->unNumFramesEncoded)) ;
@@ -368,7 +411,30 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->ptAlgDynParams,
                                 sizeof(MPEG4AACENC_UALGParams),
-                                MPEG4AACENC_UALGParams); 
+                                MPEG4AACENC_UALGParams);
+    if (pComponentPrivate->ptAlgDynParams == NULL) {
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+
+        for(k=0;k<j;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+        for(k=0;k<i;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+
+        if(pComponentPrivate->dasfmode == 1) {
+            OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        }
+        OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: Exiting Fill_LCMLInitParams\n",__LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
 
     OMX_PRINT2(pComponentPrivate->dbg, "UTIL: pComponentPrivate->ptAlgDynParams %p \n",pComponentPrivate->ptAlgDynParams);
 
@@ -379,6 +445,29 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParams(OMX_HANDLETYPE pComponent, LCML_DSP *plc
 
 
 EXIT:
+    if (eError != OMX_ErrorNone) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->ptAlgDynParams, MPEG4AACENC_UALGParams);
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+
+        for(k=0;k<j;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+        for(k=0;k<i;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+
+        if(pComponentPrivate->dasfmode == 1) {
+            OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        }
+    }
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: Exiting Fill_LCMLInitParams\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: UTIL: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1069,7 +1158,16 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                             OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,
                                 sizeof(AACENC_AudioCodecParams),
-                                AACENC_AudioCodecParams); 
+                                AACENC_AudioCodecParams);
+                            if (pComponentPrivate->pParams != NULL) {
+                                pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                        pHandle->pApplicationPrivate,
+                                        OMX_EventError,
+                                        OMX_ErrorInsufficientResources,
+                                        OMX_TI_ErrorSevere,
+                                        NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
 
                             OMX_PRDSP2(pComponentPrivate->dbg, "AACENC: pComponentPrivate->pParams %p \n",pComponentPrivate->pParams);
                             if(pComponentPrivate->unNumChannels == 1)   /*MONO*/
@@ -3080,7 +3178,7 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf,nIpBufSize,nOpBuf,nOpBufSize;
-    OMX_U16 i;
+    OMX_U16 i=0, j=0, k=0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
     OMX_U32 size_lcml;
     LCML_AACENC_BUFHEADERTYPE *pTemp_lcml = NULL;
@@ -3119,6 +3217,18 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->eDir = OMX_DirInput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(AACENC_UAlgInBufParamStruct), AACENC_UAlgInBufParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+            for(k=0;k<i;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting Fill_LCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         OMX_PRDSP2(pComponentPrivate->dbg, "pTemp_lcml %p to %p \n",pTemp_lcml,(pTemp_lcml + sizeof(pTemp_lcml) ));
         
         pTemp_lcml->pIpParam->bLastBuffer = 0;
@@ -3140,9 +3250,9 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "[AACENCFill_LCMLInitParamsEx] nOpBuf = %d\n", (int)nOpBuf);
     OMX_PRBUFFER2(pComponentPrivate->dbg, "[AACENCFill_LCMLInitParamsEx] pComponentPrivate->pOutputBufferList->numBuffers = %d\n",pComponentPrivate->pOutputBufferList->numBuffers);
-    for (i=0; i<nOpBuf; i++) {
+    for (j=0; j<nOpBuf; j++) {
            OMX_PRDSP2(pComponentPrivate->dbg, "[AACENCFill_LCMLInitParamsEx] pTemp_lcml = %p\n",pTemp_lcml);    
-        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[j];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
         pTemp->nAllocLen = nOpBufSize;
         pTemp->nFilledLen = nOpBufSize;
@@ -3157,7 +3267,26 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->eDir = OMX_DirOutput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam, sizeof(AACENC_UAlgOutBufParamStruct), AACENC_UAlgOutBufParamStruct);
-        
+        if (pTemp_lcml->pOpParam == NULL) {
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+
+            for(k=0;k<j;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+            for(k=0;k<i;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+            OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting Fill_LCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
         OMX_PRINT2(pComponentPrivate->dbg, "\n pTemp_lcml->pOpParam %p \n",pTemp_lcml->pOpParam);
         pTemp->nFlags = NORMAL_BUFFER;
         pTemp++;
@@ -3167,6 +3296,24 @@ OMX_ERRORTYPE AACENCFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     pComponentPrivate->bBypassDSP = 0;
 
 EXIT:
+    if (eError != OMX_ErrorNone) {
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+
+        for(k=0;k<j;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, AACENC_UAlgOutBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
+
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
+
+        for(k=0;k<i;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, AACENC_UAlgInBufParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
+    }
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting Fill_LCMLInitParams\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
