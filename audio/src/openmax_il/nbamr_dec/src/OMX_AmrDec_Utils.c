@@ -405,6 +405,7 @@ OMX_ERRORTYPE NBAMRDEC_StartComponentThread(OMX_HANDLETYPE pComponent)
     pComponentPrivate->lcml_nIpBuf = 0;
     pComponentPrivate->app_nBuf = 0;
     pComponentPrivate->num_Reclaimed_Op_Buff = 0;
+    pComponentPrivate->first_output_buf_rcv = OMX_FALSE;
 
     /* create the pipe used to send buffers to the thread */
     eError = pipe (pComponentPrivate->cmdDataPipe);
@@ -1647,7 +1648,10 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                        pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
-                pComponentPrivate->first_buff = 0;
+                if (pComponentPrivate->first_output_buf_rcv) {
+                    pComponentPrivate->first_buff = 0;
+                    pComponentPrivate->first_output_buf_rcv = OMX_FALSE;
+                }
 
                 aParam[0] = USN_STRMCMD_FLUSH; 
                 aParam[1] = 0x1; 
@@ -2983,7 +2987,7 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
                               PERF_BoundaryStart | PERF_BoundarySteadyState);
             }
 #endif
-
+            pComponentPrivate->first_output_buf_rcv = OMX_TRUE;
             NBAMRDEC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirOutput);
             pComponentPrivate->nOutStandingFillDones++;
 
