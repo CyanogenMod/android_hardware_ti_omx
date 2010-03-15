@@ -1234,7 +1234,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     rm_error = RMProxy_NewSendCommand(pHandle, 
                                                       RMProxy_StateSet, 
                                                       OMX_AAC_Decoder_COMPONENT, 
-                                                      OMX_StateWaitForResources, 
+                                                      OMX_StatePause,
                                                       3456,
                                                       NULL);
 #endif
