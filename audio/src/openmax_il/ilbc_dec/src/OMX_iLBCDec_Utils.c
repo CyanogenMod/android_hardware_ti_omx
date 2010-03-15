@@ -337,7 +337,12 @@ OMX_ERRORTYPE iLBCDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, iLBCDEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(iLBCDEC_ParamStruct), iLBCDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+            iLBCDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
@@ -375,7 +380,14 @@ OMX_ERRORTYPE iLBCDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
         pTemp_lcml->pFrameParam = NULL;
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam, iLBCDEC_ParamStruct);
+
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(iLBCDEC_ParamStruct), iLBCDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+            iLBCDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;        
 
@@ -608,7 +620,7 @@ OMX_ERRORTYPE iLBCDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
             OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, OMX_U8);
         }
 
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam, iLBCDEC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
 
         pTemp_lcml++;
@@ -624,7 +636,7 @@ OMX_ERRORTYPE iLBCDEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
             pTemp_lcml->pFrameParam = NULL;                     
         }
     
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam, iLBCDEC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
 
         pTemp_lcml++;
@@ -2465,12 +2477,18 @@ OMX_ERRORTYPE iLBCDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
     
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam,iLBCDEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(iLBCDEC_ParamStruct), iLBCDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+            iLBCDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf,DMM_BUFFER_OBJ);
         
-       pTemp_lcml->pFrameParam = NULL;       
-       pTemp_lcml->pBufferParam->usNbFrames =0;
-       pTemp_lcml->pBufferParam->pParamElem = NULL;
+        pTemp_lcml->pFrameParam = NULL;
+        pTemp_lcml->pBufferParam->usNbFrames =0;
+        pTemp_lcml->pBufferParam->pParamElem = NULL;
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -2497,7 +2515,13 @@ OMX_ERRORTYPE iLBCDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp->nTickCount = NOT_USED;
         pTemp_lcml->pFrameParam = NULL;
        
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam,iLBCDEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(iLBCDEC_ParamStruct), iLBCDEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+            iLBCDEC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+
         pTemp_lcml->pBufferParam->usNbFrames =0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         
