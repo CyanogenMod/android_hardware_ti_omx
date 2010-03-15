@@ -595,7 +595,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U32 pValues[4] = {0};
     OMX_U32 commandData = 0;
     OMX_U16 arr[100] = {0};
-    char *p = "damedesuStr";
+    char *p = "";
     OMX_U16 i = 0;
     OMX_U32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
@@ -2195,7 +2195,7 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                                 NULL);
         }
         if((int)args[5] == IUALG_ERR_GENERAL) {
-            char *pArgs = "damedesuStr";
+            char *pArgs = "";
             ILBCENC_EPRINT( "Algorithm error. Cannot continue" );
             ILBCENC_EPRINT("%d arg5 = %p\n",__LINE__,args[5]);                        
             ILBCENC_EPRINT("%d LCML_Callback: IUALG_ERR_GENERAL\n",__LINE__);
@@ -2222,7 +2222,7 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
 #endif
         }
         if((int)args[5] == IUALG_ERR_DATA_CORRUPT ){
-            char *pArgs = "damedesuStr";
+            char *pArgs = "";
             ILBCENC_EPRINT( "Algorithm error. Corrupt data" );
             ILBCENC_EPRINT("%d arg5 = %p\n",__LINE__,args[5]);
             ILBCENC_EPRINT("%d LCML_Callback: IUALG_ERR_DATA_CORRUPT\n",__LINE__);
