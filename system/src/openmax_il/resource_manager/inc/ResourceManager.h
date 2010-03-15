@@ -56,7 +56,7 @@
         goto label;                               \
     }                                              /**/
 
-#undef RM_DEBUG 
+#undef RM_DEBUG
 
 #include <utils/Log.h>
 #undef LOG_TAG
@@ -93,9 +93,9 @@ typedef enum _RM_COMPONENTSTATUS
 
 typedef enum _RM_DENYREASON
 {
-    RM_ReasonNone = 0,           /* component has not been denied resource */
+    RM_ReasonNone = 0,          /* component has not been denied resource */
     RM_ReasonResource,          /* component has been denied resource because DSP resource is unavailable */
-    RM_ReasonPolicy                /* component has been denied resource because policy manager denied request */
+    RM_ReasonPolicy             /* component has been denied resource because policy manager denied request */
 } RM_DENYREASON;
 
 
@@ -174,8 +174,6 @@ int Install_Bridge();
 int Uninstall_Bridge();
 int LoadBaseimage();
 void *RM_FatalErrorWatchThread();
-
-
 
 #endif
 

@@ -88,6 +88,10 @@ int eErrno;
    if there is a run-time failure */
 bool stub_mode = 0;
 
+/* used to block new requests while mmu-fault
+   recovery in progress */
+bool mmuRecoveryInProgress = 0;
+
 unsigned int totalCpu=0;
 unsigned int peakBufferCpu=0;
 unsigned int imageTotalCpu=0;
@@ -141,6 +145,7 @@ int main()
     int reuse_pipe = -1;
     cpuStruct.snapshotsCaptured = 0;
     cpuStruct.averageCpuLoad = 0;
+    pthread_t dsp_monitor = NULL;
 
     RM_DPRINT("[Resource Manager] - going to create the read & write pipe\n");
     unlink(RM_SERVER_IN);
@@ -152,6 +157,9 @@ int main()
     sleep(1); /* since the policy manager needs to create pipes that this process will 
                         read we will wait to give time for the policy manager time to establish pipes */
     componentList.numRegisteredComponents = 0;
+
+    /* start the MMU fault monitor */
+    pthread_create(&dsp_monitor, NULL, RM_FatalErrorWatchThread, NULL);
 
     /* check that running OMAP is supported, if not fallback to stub mode */
     if (get_omap_version() == OMAP_NOT_SUPPORTED){
@@ -299,12 +307,39 @@ int main()
                 break;
 
                 case PM_GRANTPOLICY:
-                    /* if policy request is granted then check to see if resource is available */
+                    /* if policy request is granted then check to see if we are currently handling an MMU fault,
+                       then check to see if resource is available */
 
-                    if (RM_GetQos() == QOS_OK)
-                    {
-                        globalrequest_cmd_data.rm_status = RM_GRANT;
-                        RM_SetStatus(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid,RM_ComponentActive);
+                    if (!mmuRecoveryInProgress) {
+                        if (RM_GetQos() == QOS_OK)
+                        {
+                            globalrequest_cmd_data.rm_status = RM_GRANT;
+                            RM_SetStatus(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid,RM_ComponentActive);
+                            if(write(RM_GetPipe(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid),
+                                     &globalrequest_cmd_data, sizeof(globalrequest_cmd_data)) < 0)
+                            {
+                                RM_DPRINT ("[Resource Manager] - failure write data back to component\n");
+                            }
+                            else
+                            {
+                                RM_DPRINT ("[Resource Manager] - Granted by policy, ok to write data back to component\n");
+                            }
+                        }
+                        else {
+                            policy_data.PM_Cmd = PM_FreeResources;
+                            policy_data.param1 = globalrequest_cmd_data.param1;
+                            policy_data.hComponent=globalrequest_cmd_data.hComponent;
+                            policy_data.nPid = globalrequest_cmd_data.nPid;
+                    
+                            if (write(pmfdwrite,&policy_data,sizeof(policy_data)) < 0)
+                                RM_DPRINT ("[Resource Manager] - failure write data to the policy manager\n");
+                            else
+                                RM_DPRINT ("[Resource Manager] - wrote the data to the policy manager\n");                        
+                        }
+                    }
+                    else {
+                        globalrequest_cmd_data.rm_status = RM_RESOURCEFATALERROR;
+                        RM_SetStatus(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid,RM_WaitingForClient);
                         if(write(RM_GetPipe(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid),
                                  &globalrequest_cmd_data, sizeof(globalrequest_cmd_data)) < 0)
                         {
@@ -312,20 +347,8 @@ int main()
                         }
                         else
                         {
-                            RM_DPRINT ("[Resource Manager] - Granted by policy, ok to write data back to component\n");
-                        }
-                    }
-                    else {
-                        policy_data.PM_Cmd = PM_FreeResources;
-                        policy_data.param1 = globalrequest_cmd_data.param1;
-                        policy_data.hComponent=globalrequest_cmd_data.hComponent;
-                        policy_data.nPid = globalrequest_cmd_data.nPid;
-                    
-                        if (write(pmfdwrite,&policy_data,sizeof(policy_data)) < 0)
-                            RM_DPRINT ("[Resource Manager] - failure write data to the policy manager\n");
-                        else
-                            RM_DPRINT ("[Resource Manager] - wrote the data to the policy manager\n");
-                            
+                            RM_DPRINT ("[Resource Manager] -Denied request due to pending DSP recovery\n");
+                        }   
                     }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -459,6 +482,7 @@ void HandleRequestResource(RESOURCEMANAGER_COMMANDDATATYPE cmd)
     if (!stub_mode)
     {
         RM_DPRINT ("[Resource Manager] - HandleRequestResource() function call\n");
+
         policy_data.PM_Cmd = PM_RequestPolicy;
         policy_data.param1 = cmd.param1;
         policy_data.hComponent=cmd.hComponent;
@@ -970,7 +994,7 @@ int LoadBaseimage()
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     char *filename = "/tmp/baseimageloaded";
 
-        struct stat sb = {0};
+    struct stat sb = {0};
 
     while (stat("/tmp/bridgeinstalled",&sb)) {
         sched_yield();
@@ -1201,9 +1225,7 @@ int RM_GetQos()
 
 }
 
-/* @deprecated
-   RM_FatalErrorWatch not being used because a new bridge
-   recovery daemon is in use, deprecate */
+
 void *RM_FatalErrorWatchThread()
 {
 
@@ -1215,6 +1237,8 @@ void *RM_FatalErrorWatchThread()
     struct DSP_NOTIFICATION* notification_syserror ;
     int i;
 
+
+    RM_DPRINT("\n\n\nstarting dsp_monitor thread\n\n\n\n");
     status = DSPProcessor_Attach(0, NULL, &hProc);
            
     notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
@@ -1232,7 +1256,7 @@ void *RM_FatalErrorWatchThread()
 
     notification_syserror = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
     if(notification_syserror == NULL) {
-        RM_DPRINT("%d :: malloc failed....\n",__LINE__);
+        RM_EPRINT("%d :: malloc failed....\n",__LINE__);
     }
     else
     {
@@ -1245,9 +1269,12 @@ void *RM_FatalErrorWatchThread()
 
     while (1) {
     status = DSPManager_WaitForEvents(notificationObjects, 2, &index, 1000000);
+    RM_DPRINT("listening...\n");
     if (DSP_SUCCEEDED(status)) {
         if (index == 0 || index == 1){
             /* exception received - start telling all components to close */
+            RM_EPRINT("DSP ERROR [%d] ... starting to preempt MM components\n",index);
+            mmuRecoveryInProgress = 1;
             for(i=0; i < componentList.numRegisteredComponents; i++) {
                 cmd_data.rm_status = RM_RESOURCEFATALERROR;
 
@@ -1255,10 +1282,12 @@ void *RM_FatalErrorWatchThread()
                 cmd_data.nPid = componentList.component[i].nPid;
                 RM_SetStatus(cmd_data.hComponent, cmd_data.nPid,RM_WaitingForClient);  
                 int preemptpipe = RM_GetPipe(cmd_data.hComponent,cmd_data.nPid);
-                if (write(preemptpipe,&cmd_data,sizeof(cmd_data)) < 0)
+                if (write(preemptpipe,&cmd_data,sizeof(cmd_data)) < 0){
                     RM_DPRINT("Didn't write pipe\n");
-                else
-                    RM_DPRINT("Wrote RMProxy pipe\n");
+                }
+                else {
+                    RM_DPRINT("Wrote RMProxy pipe, cleaned [%d] components\n", i+1);
+                }
             }
 
             /* detach processor from gpp */
@@ -1270,11 +1299,8 @@ void *RM_FatalErrorWatchThread()
                 sleep(1);
             }
 
-            /* After all components finish shutting down, uninstall bridge, reinstall bridge, and reload baseimage */
-            Uninstall_Bridge();
-            Install_Bridge();
-            LoadBaseimage();
-            
+            /* should be safe to unblock new requests now */
+            mmuRecoveryInProgress = 0;
         }
     }
     }
