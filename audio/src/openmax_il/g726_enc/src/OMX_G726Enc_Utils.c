@@ -101,7 +101,7 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     G726ENC_COMPONENT_PRIVATE *pComponentPrivate = pHandle->pComponentPrivate;
     G726ENC_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
-    OMX_U32 i = 0;
+    OMX_U32 i = 0, j=0, k=0;
     OMX_U32 size_lcml = 0;
     G726ENC_DPRINT("%d :: Entering G726ENC_FillLCMLInitParams\n",__LINE__);
 
@@ -151,6 +151,10 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     if(pComponentPrivate->dasfMode == 1) {
         G726ENC_DPRINT("%d :: Codec is configuring to DASF mode\n",__LINE__);
         OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->strmAttr, sizeof(LCML_STRMATTR), LCML_STRMATTR);
+        if (pComponentPrivate->strmAttr == NULL) {
+            G726ENC_DPRINT("%d :: Exiting G726ENC_FillLCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         pComponentPrivate->strmAttr->uSegid = G726ENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = G726ENC_SN_TIMEOUT;
@@ -235,7 +239,19 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(G726ENC_ParamStruct), OMX_U8);
-
+        if (pTemp_lcml->pIpParam == NULL) {
+            pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726ENC_INPUT_PORT];
+            for (k=0;k<i;k++) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, G726ENC_ParamStruct);
+                pTemp_lcml++;
+            }
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726ENC_INPUT_PORT]);
+            if(pComponentPrivate->dasfMode == 1) {
+                OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->strmAttr,  LCML_STRMATTR);
+            }
+            G726ENC_DPRINT("%d :: Exiting G726ENC_FillLCMLInitParams\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pIpParam->bLastBuffer = 0;
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -251,9 +267,9 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     G726ENC_MEMPRINT("%d :: ALLOCATING MEMORY = %p\n",__LINE__,pTemp_lcml);
 
     pComponentPrivate->pLcmlBufHeader[G726ENC_OUTPUT_PORT] = pTemp_lcml;
-    for (i=0; i<nOpBuf; i++) {
+    for (j=0; j<nOpBuf; j++) {
         G726ENC_DPRINT("%d :: OUTPUT--------- Inside Op Loop\n",__LINE__);
-        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[i];
+        pTemp = pComponentPrivate->pOutputBufferList->pBufHdr[j];
         pTemp->nSize = sizeof(OMX_BUFFERHEADERTYPE);
         pTemp->nFilledLen = nOpBufSize;
         pTemp->nVersion.s.nVersionMajor = G726ENC_MAJOR_VER;
@@ -275,6 +291,18 @@ OMX_ERRORTYPE G726ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     pComponentPrivate->bPortDefsAllocated = 1;
     pComponentPrivate->bInitParamsInitialized = 1;
 EXIT:
+    if (eError != OMX_ErrorNone) {
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726ENC_OUTPUT_PORT]);
+        pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G726ENC_INPUT_PORT];
+        for (k=0;k<i;k++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, G726ENC_ParamStruct);
+            pTemp_lcml++;
+        }
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G726ENC_INPUT_PORT]);
+        if(pComponentPrivate->dasfMode == 1) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->strmAttr,  LCML_STRMATTR);
+        }
+    }
     G726ENC_DPRINT("%d :: Exiting G726ENC_FillLCMLInitParams\n",__LINE__);
     G726ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -742,6 +770,16 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 if(pComponentPrivate->dasfMode == 1) {
                     G726ENC_DPRINT("%d :: ---- Comp: DASF Functionality is ON ---\n",__LINE__);
                     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(G726ENC_AudioCodecParams), G726ENC_AudioCodecParams);
+                    if (pComponentPrivate->pParams == NULL) {
+                        pComponentPrivate->cbInfo.EventHandler ( pHandle,
+                                pHandle->pApplicationPrivate,
+                                OMX_EventError,
+                                OMX_ErrorInsufficientResources,
+                                OMX_TI_ErrorSevere,
+                                NULL);
+                        G726ENC_DPRINT("%d :: Exiting G726ENC_HandleCommand Function\n",__LINE__);
+                        return OMX_ErrorInsufficientResources;
+                    }
                     pComponentPrivate->pParams->iAudioFormat = 1;
                     pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
                     pComponentPrivate->pParams->iSamplingRate = G726ENC_SAMPLING_FREQUENCY;

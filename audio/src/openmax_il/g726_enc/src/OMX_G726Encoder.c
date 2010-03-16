@@ -1323,7 +1323,13 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 	}
 
 	OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
-    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+        OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+        if (pBufferHeader->pBuffer == NULL) {
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+            G726ENC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
 	G726ENC_MEMPRINT("%d :: ALLOCATING MEMORY = %p\n",__LINE__,pBufferHeader->pBuffer);
 
 	if (nPortIndex == G726ENC_INPUT_PORT) {
