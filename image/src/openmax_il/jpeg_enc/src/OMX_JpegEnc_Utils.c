@@ -658,12 +658,12 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
     */
     ptCreateString[9] = 1;
 
-    ptCreateString[10] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App0 marker */
-    ptCreateString[11] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App0 marker */
-    ptCreateString[12] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App1 marker */
-    ptCreateString[13] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App1 marker */
-    ptCreateString[14] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App13 marker */
-    ptCreateString[15] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App13 marker */
+    ptCreateString[10] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App0 marker */
+    ptCreateString[11] = (ptCreateString[8] < 240) ? (ptCreateString[8] ) : 240; /* Maximum Vertical Size of the Thumbnail for App0 marker */
+    ptCreateString[12] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App1 marker */
+    ptCreateString[13] = (ptCreateString[8] < 240) ? (ptCreateString[8] ) : 240; /* Maximum Vertical Size of the Thumbnail for App1 marker */
+    ptCreateString[14] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App13 marker */
+    ptCreateString[15] = (ptCreateString[8] < 240) ? (ptCreateString[8] ) : 240; /* Maximum Vertical Size of the Thumbnail for App13 marker */
     ptCreateString[16] = 0; /* Number of scans is always 0 */
 
 /*
@@ -706,8 +706,8 @@ this option supportsonly up to 3 mega pixels
         lcml_dsp->ProfileID +=3;
     }
 
-    ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] - 2) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
-    ptCreateString[19] = (ptCreateString[8] < 240) ? (ptCreateString[8] - 2) : 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */	
+    ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
+    ptCreateString[19] = (ptCreateString[8] < 240) ? (ptCreateString[8] ) : 240; /* Maximum Vertical Size of the Thumbnail for App5 marker */	
 	
 #ifdef __JPEG_OMX_PPLIB_ENABLED__
 

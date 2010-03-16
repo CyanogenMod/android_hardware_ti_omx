@@ -848,6 +848,17 @@ OMX_ERRORTYPE SetMarkers(OMX_HANDLETYPE pHandle, IMAGE_INFO *imageinfo, OMX_CONF
 		sAPP0.nThumbnailWidth = imageinfo->nThumbnailWidth_app0;
 		sAPP0.nThumbnailHeight = imageinfo->nThumbnailHeight_app0;
 		
+                if (sAPP0.nThumbnailWidth > nWidth) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid JFIF thumbnail Width  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
+                if (sAPP0.nThumbnailHeight > nHeight) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid JFIF thumbnail Height  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
+
 		eError = OMX_GetExtensionIndex(pHandle, "OMX.TI.JPEG.encoder.Config.APP0", (OMX_INDEXTYPE*)&nCustomIndex);
 		if ( eError != OMX_ErrorNone ) {
 			printf("%d::APP_Error at function call: %x\n", __LINE__, eError);
@@ -873,6 +884,17 @@ OMX_ERRORTYPE SetMarkers(OMX_HANDLETYPE pHandle, IMAGE_INFO *imageinfo, OMX_CONF
 		/* set JFIF marker buffer */
 		sAPP1.nThumbnailWidth = imageinfo->nThumbnailWidth_app1;
 		sAPP1.nThumbnailHeight = imageinfo->nThumbnailHeight_app1;
+
+                if (sAPP1.nThumbnailWidth > nWidth) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid EXIF thumbnail Width  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
+                if (sAPP1.nThumbnailHeight > nHeight) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid EXIF thumbnail Height  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
 
 		/* if thumbnail is set, use APPLICATION structure with thumbnail */
 		if(sAPP1.nThumbnailWidth > 0 && sAPP1.nThumbnailHeight > 0) {
@@ -934,6 +956,17 @@ OMX_ERRORTYPE SetMarkers(OMX_HANDLETYPE pHandle, IMAGE_INFO *imageinfo, OMX_CONF
 		sAPP5.nThumbnailWidth = imageinfo->nThumbnailWidth_app5;
 		sAPP5.nThumbnailHeight = imageinfo->nThumbnailHeight_app5;
 		
+                if (sAPP5.nThumbnailWidth > nWidth) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid APP5 thumbnail Width  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
+                if (sAPP5.nThumbnailHeight > nHeight) {
+                    printf("%s-%s()::%d::!!APP_Error!! Invalid APP5 thumbnail Height  \n", __FILE__,__FUNCTION__,__LINE__);
+                    eError = OMX_ErrorUndefined;
+                    goto EXIT;
+                }
+
 		eError = OMX_GetExtensionIndex(pHandle, "OMX.TI.JPEG.encoder.Config.APP5", (OMX_INDEXTYPE*)&nCustomIndex);
 		if ( eError != OMX_ErrorNone ) {
 			printf("%d::APP_Error at function call: %x\n", __LINE__, eError);
