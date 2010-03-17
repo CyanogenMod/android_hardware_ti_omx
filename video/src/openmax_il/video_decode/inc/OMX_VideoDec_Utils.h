@@ -372,7 +372,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_WMV_PROFILE_ID7                          7
 #define VIDDEC_WMV_PROFILE_ID8                          8
 
-#define VIDDEC_MAX_QUEUE_SIZE                           256
+#define VIDDEC_MAX_QUEUE_SIZE                           MAX_PRIVATE_BUFFERS * 4
 #define VIDDEC_WMV_BUFFER_OFFSET                        (255 - 4)
 #define VIDDEC_WMV_ELEMSTREAM                           0
 #define VIDDEC_WMV_RCVSTREAM                            1
@@ -972,6 +972,8 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     pthread_mutex_t mutexStateChangeRequest;
     pthread_cond_t StateChangeCondition;
     OMX_BOOL bFlushing;
+    /*to store last error severity*/
+    OMX_S32 nLastErrorSeverity;
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/
@@ -1268,9 +1270,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
 #ifdef VIDDEC_SPARK_CODE
 OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 #endif
-OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bRetDSP);
+OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1, OMX_BOOL bRetDSP);
 OMX_ERRORTYPE VIDDEC_HandleCommandMarkBuffer(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_PTR pCmdData);
-OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bPass);
+OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1, OMX_BOOL bPass);
 OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing);
 OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);

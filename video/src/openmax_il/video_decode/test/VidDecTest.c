@@ -1364,12 +1364,13 @@ void VidDec_EventHandler (OMX_HANDLETYPE hComponent,OMX_PTR pAppData,OMX_EVENTTY
     VIDEODEC_PORT_INDEX sVidDecPortIndex;
     OMX_STATETYPE state = OMX_StateInvalid;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-
+    /*removed to avoid blocking calls*/
+/*
     eError = OMX_GetState(hComponent, &state);
     if (eError != OMX_ErrorNone) {
         ERR_PRINT("%d :: App: Error returned from GetState\n", __LINE__);
     }
-
+*/
     switch (eEvent) {
         case OMX_EventCmdComplete:
             if (nData1 == OMX_CommandFlush) {
@@ -3541,6 +3542,10 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             {
                                 read(pAppData->OpBuf_Pipe[0], &pBuf, sizeof(pBuf));
                             }
+                            if( FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) )
+                            {
+                                read(pAppData->IpBuf_Pipe[0], &pBuf, sizeof(pBuf));
+                            }
                             if( FD_ISSET(pAppData->Error_Pipe[0], &rfds) )
                             {
                                 read(pAppData->Error_Pipe[0], &eError, sizeof(eError));
@@ -3662,7 +3667,6 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             sigaddset (&set, SIGALRM);
                             retval = pselect (fdmax+1, &rfds, NULL, NULL,&tv, &set);
                             sigdelset (&set, SIGALRM);
-
                             if (retval == -1) {
                                 ERR_PRINT("select()");
                                 ERR_PRINT(" : Error \n");
@@ -3672,10 +3676,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             if (retval == 0) {
                                 break;
                             }
-
                             if( FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds) )
                             {
                                 read(pAppData->OpBuf_Pipe[0], &pBuf, sizeof(pBuf));
+                            }
+                            if( FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) )
+                            {
+                                read(pAppData->IpBuf_Pipe[0], &pBuf, sizeof(pBuf));
                             }
                             if( FD_ISSET(pAppData->Error_Pipe[0], &rfds) )
                             {
