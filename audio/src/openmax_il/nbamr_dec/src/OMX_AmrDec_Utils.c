@@ -986,6 +986,9 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
                 }
 
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                pComponentPrivate->nHoldLength = 0;
+
                 if(eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error Occurred in Codec Stop..\n",
                                                                       __LINE__);
@@ -999,8 +1002,6 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     return eError;
                 }
                 pComponentPrivate->bStopSent=1;
-                OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-                pComponentPrivate->nHoldLength = 0;
             } 
             else if(pComponentPrivate->curState == OMX_StatePause) {
                 char *pArgs = "";
