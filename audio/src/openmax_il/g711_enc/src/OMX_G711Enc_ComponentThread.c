@@ -117,7 +117,7 @@ void* G711ENC_CompThread(void* pThreadData)
                 pComponentPrivate->bIsEOFSent = 0;
                 if (pComponentPrivate->curState != OMX_StateIdle) {
                     G711ENC_DPRINT("%d :: pComponentPrivate->curState is not OMX_StateIdle\n",__LINE__);
-                    goto EXIT;
+                    return (void*)eError;
                 }
             }
             G711ENC_DPRINT("%d :: Component Time Out !!!!! \n",__LINE__);
@@ -138,7 +138,7 @@ void* G711ENC_CompThread(void* pThreadData)
             ret = read(pComponentPrivate->dataPipe[0], &pBufHeader, sizeof(pBufHeader));
             if (ret == -1) {
                 G711ENC_DPRINT("%d :: Error while reading from the pipe\n",__LINE__);
-                goto EXIT;
+                return (void*)eError;
             }
             eError = G711ENC_HandleDataBufFromApp(pBufHeader,pComponentPrivate);
             if (eError != OMX_ErrorNone) {
@@ -172,7 +172,7 @@ void* G711ENC_CompThread(void* pThreadData)
             }
         }
     }
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_CompThread\n", __LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return (void*)eError;

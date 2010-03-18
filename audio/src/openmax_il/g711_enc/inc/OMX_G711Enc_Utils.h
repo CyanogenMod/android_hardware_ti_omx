@@ -121,8 +121,8 @@
     err = close (_pStruct_);                                    \
     if(0 != err && OMX_ErrorNone == eError){                    \
         eError = OMX_ErrorHardware;                             \
-        printf("%d :: Error while closing pipe\n",__LINE__);    \
-        goto EXIT;                                              \
+        printf("%d :: Error while closing pipe; err:0x%x\n",__LINE__,err);    \
+        return eError;                                              \
     }
 
 /* ======================================================================= */
@@ -721,6 +721,8 @@ typedef struct G711ENC_COMPONENT_PRIVATE
     pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
     OMX_U8 InLoaded_readytoidle;
+    /* To remeber Mutex Initialisation is done or not */
+    OMX_BOOL bMutexInit;
 
     OMX_BOOL bPreempted;
 

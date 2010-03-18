@@ -142,6 +142,9 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     if(pComponentPrivate->dasfMode == 1) {
         G711ENC_DPRINT("%d :: Codec is configuring to DASF mode\n",__LINE__);
         OMX_MALLOC_GENERIC(pComponentPrivate->strmAttr, LCML_STRMATTR);
+        if(NULL == pComponentPrivate->strmAttr){
+            return OMX_ErrorInsufficientResources;
+        }
         pComponentPrivate->strmAttr->uSegid = G711ENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = G711ENC_SN_TIMEOUT;
@@ -215,6 +218,10 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(G711ENC_LCML_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,G711ENC_LCML_BUFHEADERTYPE);
+    if(NULL == pTemp_lcml){
+        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[G711ENC_INPUT_PORT] = pTemp_lcml;
     for (i=0; i<nIpBuf; i++) {
@@ -232,14 +239,23 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
         
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
-        /* pTemp_lcml->pIpParam->usEndOfFile = 0; */
-        
+        if(NULL == pTemp_lcml->pIpParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
-        
+        if(NULL == pTemp_lcml->pDmmBuf){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         /* This means, it is not a last buffer. This flag is to be modified by the application to indicate the last buffer */
         pTemp->nFlags = G711ENC_NORMAL_BUFFER;
         pTemp++;
@@ -250,6 +266,10 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
      * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(G711ENC_LCML_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,G711ENC_LCML_BUFHEADERTYPE);
+    if(NULL == pTemp_lcml){
+        G711ENC_CleanupInitParams(pComponent);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[G711ENC_OUTPUT_PORT] = pTemp_lcml;
     
@@ -270,13 +290,25 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,sizeof(G711ENC_UAlgOutBufParamStruct),G711ENC_UAlgOutBufParamStruct);
+        if(NULL == pTemp_lcml->pOpParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pOpParam->ulFrameCount = 0;
         
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if(NULL == pTemp_lcml->pDmmBuf){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -329,14 +361,14 @@ OMX_ERRORTYPE G711ENC_StartComponentThread(OMX_HANDLETYPE pComponent)
     if (eError) {
         eError = OMX_ErrorInsufficientResources;
         G711ENC_DPRINT("%d :: Error while creating cmdDataPipe\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
     /* create the pipe used to send buffers to the thread */
     eError = pipe (pComponentPrivate->dataPipe);
     if (eError) {
         eError = OMX_ErrorInsufficientResources;
         G711ENC_DPRINT("%d :: Error while creating dataPipe\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
 
     /* create the pipe used to send commands to the thread */
@@ -344,7 +376,7 @@ OMX_ERRORTYPE G711ENC_StartComponentThread(OMX_HANDLETYPE pComponent)
     if (eError) {
         eError = OMX_ErrorInsufficientResources;
         G711ENC_DPRINT("%d :: Error while creating cmdPipe\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
 
     /* Create the Component Thread */
@@ -353,11 +385,12 @@ OMX_ERRORTYPE G711ENC_StartComponentThread(OMX_HANDLETYPE pComponent)
 
     if (eError || !pComponentPrivate->ComponentThread) {
         eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
+        G711ENC_DPRINT("%d :: Error while creating thread \n",__LINE__);
+        return eError;
     }
 
     pComponentPrivate->bCompThreadStarted = 1;
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_StartComponentThread\n", __LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -396,35 +429,43 @@ OMX_ERRORTYPE G711ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_G711ENC_CLOSE_PIPE(pComponentPrivate->cmdDataPipe[1],err);
     }
 
-    if (pComponentPrivate->bPortDefsAllocated) {
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G711ENC_OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->G711Params[G711ENC_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->G711Params[G711ENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G711ENC_OUTPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->G711Params[G711ENC_INPUT_PORT]);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->G711Params[G711ENC_OUTPUT_PORT]);
 
+    if(pComponentPrivate->pCompPort[G711ENC_INPUT_PORT]){
         OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711ENC_INPUT_PORT]->pPortFormat);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711ENC_OUTPUT_PORT]->pPortFormat);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711ENC_INPUT_PORT]);
+    }
+    if(pComponentPrivate->pCompPort[G711ENC_OUTPUT_PORT]){
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711ENC_OUTPUT_PORT]->pPortFormat);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G711ENC_OUTPUT_PORT]);
-
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
     }
 
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
 
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+    if(OMX_TRUE == pComponentPrivate->bMutexInit){
 
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    }
+
     pComponentPrivate->bPortDefsAllocated = 0;
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_FreeCompResources()\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
     return eError;
 }
 
@@ -520,15 +561,15 @@ OMX_ERRORTYPE G711ENC_StopComponentThread(OMX_HANDLETYPE pComponent)
     if (0 != pthreadError) {
         eError = OMX_ErrorHardware;
         G711ENC_DPRINT("%d :: Error closing ComponentThread - pthreadError = %d\n",__LINE__,pthreadError);
-        goto EXIT;
+        return eError;
     }
     if (OMX_ErrorNone != threadError && OMX_ErrorNone != eError) {
         eError = OMX_ErrorInsufficientResources;
         G711ENC_DPRINT("%d :: Error while closing Component Thread\n",__LINE__);
-        goto EXIT;
+        return eError;
     }
     
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_StopComponentThread\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -560,7 +601,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_U16 arr[100] = {0};
     char *p = "damedesuStr";
     OMX_U32 i = 0;
-    OMX_U32 ret = 0;
+    OMX_S32 ret = 0;
     OMX_U8 inputPortFlag=0,outputPortFlag=0;    
 
     G711ENC_LCML_BUFHEADERTYPE *pLcmlHdr = NULL;
@@ -577,13 +618,13 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
     if (ret == -1) {
         G711ENC_DPRINT("%d :: Error in Reading from the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
     ret = read(pComponentPrivate->cmdDataPipe[0], &commandData, sizeof (commandData));
     if (ret == -1) {
         G711ENC_DPRINT("%d :: Error in Reading from the Data pipe\n", __LINE__);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
 
     if (command == OMX_CommandStateSet) {
@@ -617,7 +658,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                    OMX_EventError, 
                                                                    OMX_ErrorInvalidState,
                                                                    0, NULL);              
-                            goto EXIT; 
+                            return eError;
                         }                                                       
                     }
 
@@ -650,7 +691,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     pLcmlHandle = (OMX_HANDLETYPE) G711ENC_GetLCMLHandle(pComponentPrivate);
                     if (pLcmlHandle == NULL) {
                         G711ENC_DPRINT("%d :: LCML Handle is NULL........exiting..\n",__LINE__);
-                        goto EXIT;
+                        return eError;
                     }
                     pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
 
@@ -659,7 +700,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     eError = G711ENC_FillLCMLInitParams(pHandle, pLcmlDsp, arr);
                     if(eError != OMX_ErrorNone) {
                         G711ENC_DPRINT("%d :: Error from G711ENCFill_LCMLInitParams()\n",__LINE__);
-                        goto EXIT;
+                        return eError;
                     }
 
                     G711ENC_DPRINT("%d :: Calling LCML_InitMMCodecEx...\n",__LINE__);
@@ -671,14 +712,14 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 (OMX_STRING)pComponentPrivate->sDeviceString);
                     if(eError != OMX_ErrorNone) {
                         G711ENC_DPRINT("%d :: Error returned from LCML_Init()\n",__LINE__);
-                        goto EXIT;
+                        return eError;
                     }
 #ifdef HASHINGENABLE
                     /* Enable the Hashing Code */
                     eError = LCML_SetHashingState(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, OMX_TRUE);
                     if (eError != OMX_ErrorNone){
                         G711ENC_DPRINT("Failed to set Mapping State\n");
-                        goto EXIT;
+                        return eError;
                     }
 #endif
 
@@ -759,7 +800,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                MMCodecControlStop,(void *)p);
                     if(eError != OMX_ErrorNone) {
                         G711ENC_DPRINT("%d :: Error from LCML_ControlCodec MMCodecControlStop..\n",__LINE__);
-                        goto EXIT;
+                        return eError;
                     }
                 }
                 else if(pComponentPrivate->curState == OMX_StatePause) {
@@ -806,6 +847,9 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                         G711ENC_DPRINT("%d :: ---- Comp: DASF Functionality is ON ---\n",__LINE__);
                         OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,
                                                 sizeof(G711ENC_AudioCodecParams),G711ENC_AudioCodecParams);
+                        if(NULL == pComponentPrivate->pParams){
+                            return OMX_ErrorInsufficientResources;
+                        }
                         pComponentPrivate->pParams->iAudioFormat = 1;
                         pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
                         pComponentPrivate->pParams->iSamplingRate = G711ENC_SAMPLING_FREQUENCY;
@@ -818,7 +862,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                    EMMCodecControlStrmCtrl,(void *)pValues);
                         if(eError != OMX_ErrorNone) {
                             G711ENC_DPRINT("%d :: Error from LCML_ControlCodec EMMCodecControlStrmCtrl = %x\n",__LINE__,eError);
-                            goto EXIT;
+                            return eError;
                         }
                     }
                     pComponentPrivate->bBypassDSP = 0; 
@@ -828,7 +872,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                EMMCodecControlStart, (void *)p);
                     if(eError != OMX_ErrorNone) {
                         G711ENC_PRINT("%d :: Error from LCML_ControlCodec EMMCodecControlStart = %x\n",__LINE__,eError);
-                        goto EXIT;
+                        return eError;
                     }
                 }
                 else if (pComponentPrivate->curState == OMX_StatePause) {
@@ -836,7 +880,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                EMMCodecControlStart, (void *)p);
                     if (eError != OMX_ErrorNone) {
                         G711ENC_DPRINT("%d :: Error While Resuming the codec = %x\n",__LINE__,eError);
-                        goto EXIT;
+                        return eError;
                     }
                     for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
                         if (pComponentPrivate->pInputBufHdrPending[i]) {
@@ -883,7 +927,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             OMX_ErrorIncorrectStateTransition,
                                                             0, NULL);
                     G711ENC_DPRINT("%d :: Comp: OMX_ErrorIncorrectStateTransition Given by Comp\n",__LINE__);
-                    goto EXIT;
+                    return eError;
 
                 }
                 pComponentPrivate->curState = OMX_StateExecuting; /* Change to Executing */
@@ -924,7 +968,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                              OMX_ErrorIncorrectStateTransition,
                                                              0, NULL);
                     G711ENC_DPRINT("%d :: Error: OMX_ErrorIncorrectStateTransition Given by Comp\n",__LINE__);
-                    goto EXIT;
+                    return eError;
                 }
 
                 if (pComponentPrivate->pInputBufferList->numBuffers ||
@@ -942,13 +986,13 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 eError = G711ENC_CleanupInitParams(pHandle);
                 if(eError != OMX_ErrorNone) {
                     G711ENC_PRINT("%d :: G711ENC_CleanupInitParams returned error\n",__LINE__);
-                    goto EXIT;
+                    return eError;
                 }               
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy, (void *)p);
                 if (eError != OMX_ErrorNone) {
                     G711ENC_PRINT("%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
-                    goto EXIT;
+                    return eError;
                 }
 
                 /*Closing LCML Lib*/
@@ -974,13 +1018,13 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                              0,
                                                              NULL);
                     G711ENC_PRINT("%d :: Error: OMX_ErrorIncorrectStateTransition Given by Comp\n",__LINE__);
-                    goto EXIT;
+                    return eError;
                 }
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlPause, (void *)p);
                 if (eError != OMX_ErrorNone) {
                     G711ENC_DPRINT("%d :: Error: LCML_ControlCodec EMMCodecControlPause = %x\n",__LINE__,eError);
-                    goto EXIT;
+                    return eError;
                 }
                 G711ENC_DPRINT("%d :: Comp: OMX_CommandStateSet Given by Comp\n",__LINE__);
                 break;
@@ -1030,6 +1074,10 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
             case OMX_StateMax:
                 G711ENC_DPRINT("%d :: G711ENC_HandleCommand :: Cmd OMX_StateMax\n",__LINE__);
                 break;
+
+            default:
+                G711ENC_DPRINT("%d :: G711ENC_HandleCommand :: default commandedState :0x%x \n",__LINE__,commandedState);
+                break;
             } /* End of Switch */
         }
     }
@@ -1044,12 +1092,12 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandPortDisable) {
         G711ENC_DPRINT("%d :: Inside command Port disabled \n",__LINE__);
         if (!pComponentPrivate->bDisableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* disable port */
                 pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bEnabled = OMX_FALSE;
                 G711ENC_DPRINT("%d :: command disabled input port\n",__LINE__);
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 /* disable output port */
                 char *p = "damedesuStr";
                 pComponentPrivate->pPortDef[G711ENC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
@@ -1094,7 +1142,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bDisableCommandParam = commandData;
             }
         }
-        if(commandData == -1) {
+        if((OMX_S32)commandData == -1) {
             if (!pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bPopulated &&
                 !pComponentPrivate->pPortDef[G711ENC_OUTPUT_PORT]->bPopulated){
                 /* return cmdcomplete event if inout & output unpopulated */
@@ -1122,7 +1170,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
 
     else if (command == OMX_CommandPortEnable) {
         if (!pComponentPrivate->bEnableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* enable in port */
                 G711ENC_DPRINT("%d :: setting input port to enabled\n",__LINE__);
                 pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bEnabled = OMX_TRUE;
@@ -1133,7 +1181,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
             }
             G711ENC_DPRINT("pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bEnabled = %d\n",pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bEnabled);
 
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal){
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -1189,7 +1237,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->nEnableCommandParam = commandData;
             }
         }
-        else if(commandData == -1){
+        else if((OMX_S32)commandData == -1){
             if (pComponentPrivate->curState == OMX_StateLoaded || 
                 (pComponentPrivate->pPortDef[G711ENC_INPUT_PORT]->bPopulated
                  && pComponentPrivate->pPortDef[G711ENC_OUTPUT_PORT]->bPopulated)){
@@ -1221,43 +1269,8 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);     
     }
     else if (command == OMX_CommandFlush) {
-#if 0
-        if(commandData == 0x0 || commandData == -1){
-            for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
-                pComponentPrivate->cbInfo.EmptyBufferDone (pHandle,
-                                                           pHandle->pApplicationPrivate,
-                                                           pComponentPrivate->pInputBufferList->pBufHdr[i]);
-                                                           
-                pComponentPrivate->pInputBufHdrPending[i] = NULL;
-            }
-            pComponentPrivate->nNumInputBufPending=0;
-            pComponentPrivate->cbInfo.EventHandler( pHandle,
-                                                    pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandFlush,
-                                                    G711ENC_INPUT_PORT,
-                                                    NULL);
-        }
-        if(commandData == 0x1 || commandData == -1){
-            for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
-                pComponentPrivate->cbInfo.FillBufferDone (pHandle,
-                                                          pHandle->pApplicationPrivate,
-                                                          pComponentPrivate->pOutputBufferList->pBufHdr[i]);
-                                                        
-                pComponentPrivate->pOutputBufHdrPending[i] = NULL;
-            }
-            pComponentPrivate->nNumOutputBufPending=0;
-            /* return all output buffers */
-            pComponentPrivate->cbInfo.EventHandler( pHandle,
-                                                    pHandle->pApplicationPrivate,
-                                                    OMX_EventCmdComplete,
-                                                    OMX_CommandFlush,
-                                                    G711ENC_OUTPUT_PORT,
-                                                    NULL);
-        }
-#endif
         OMX_U32 aParam[3] = {0};
-        if(commandData == 0x0 || commandData == -1) {
+        if(commandData == 0x0 || (OMX_S32)commandData == -1) {
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
 
@@ -1270,13 +1283,13 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                            EMMCodecControlStrmCtrl, (void*)aParam);
                  
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    return eError;
                 }
             }else {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
             }
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
 
@@ -1289,7 +1302,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                            EMMCodecControlStrmCtrl, (void*)aParam);
                 
                 if (eError != OMX_ErrorNone) {
-                    goto EXIT;
+                    return eError;
                 }
             } else {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_TRUE; 
@@ -1298,7 +1311,6 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
 
     }
 
- EXIT:
     G711ENC_DPRINT("%d :: Exiting G711ENC_HandleCommand Function\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1328,8 +1340,6 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     
     OMX_U8 nFrames = 0,i = 0;
     LCML_DSP_INTERFACE * phandle = NULL;
-    OMX_U8* pBufParmsTemp = NULL;
-
     OMX_U32 frameLength_in;
     OMX_U32 frameLength_out;
 
@@ -1340,7 +1350,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     eError = G711ENC_GetBufferDirection(pBufHeader, &eDir);
     if (eError != OMX_ErrorNone) {
         G711ENC_DPRINT ("%d :: The pBufHeader is not found in the list\n", __LINE__);
-        goto EXIT;
+        return eError;
     }
 
     if (eDir == OMX_DirInput) {
@@ -1354,7 +1364,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                             &pLcmlHdr);
                 if (eError != OMX_ErrorNone) {
                     G711ENC_DPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-                    goto EXIT;
+                    return eError;
                 }
                 switch (pComponentPrivate->frametype) {
                 case 0:
@@ -1387,13 +1397,16 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                 if(pLcmlHdr->pFrameParam == NULL ){
                     OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(G711ENC_FrameStruct)*nFrames),G711ENC_FrameStruct);
+                    if(NULL == pLcmlHdr->pFrameParam){
+                        return OMX_ErrorInsufficientResources;
+                    }
                     eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                         nFrames*sizeof(G711ENC_FrameStruct),
                                         (void*)pLcmlHdr->pFrameParam,
                                         (pLcmlHdr->pDmmBuf));
                     if (eError != OMX_ErrorNone){
                         G711ENC_DPRINT("%d OMX_DmmMap ERRROR!!!!\n",__LINE__);
-                        goto EXIT;
+                        return eError;
                     }
                     G711ENC_DPRINT("%d OMX_DmmMap Success first !!!!\n",__LINE__);
                     pLcmlHdr->pBufferParam->pParamElem = (G711ENC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/
@@ -1435,7 +1448,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                        
                             if (eError != OMX_ErrorNone) {
                                 eError = OMX_ErrorHardware;
-                                goto EXIT;
+                                return eError;
                             }
                             pComponentPrivate->num_Sent_Ip_Buff++;
                             pComponentPrivate->lcml_nCntIp++;
@@ -1501,7 +1514,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                     &pLcmlHdr);
         if (eError != OMX_ErrorNone) {
             G711ENC_DPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-            goto EXIT;
+            return eError;
         }
 
         switch (pComponentPrivate->frametype) {
@@ -1533,6 +1546,9 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
         if(pLcmlHdr->pFrameParam==NULL ){
             OMX_MALLOC_SIZE_DSPALIGN( pLcmlHdr->pFrameParam, (sizeof(G711ENC_FrameStruct)*nFrames),G711ENC_FrameStruct);
+            if(NULL == pLcmlHdr->pFrameParam){
+                return OMX_ErrorInsufficientResources;
+            }
             pLcmlHdr->pBufferParam->pParamElem = NULL;
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                 nFrames*sizeof(G711ENC_FrameStruct),
@@ -1541,7 +1557,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
             if (eError != OMX_ErrorNone){
                 G711ENC_DPRINT("%d OMX_DmmMap ERRROR!!!!\n",__LINE__);
-                goto EXIT;
+                return eError;
             }
             G711ENC_DPRINT("%d OMX_DmmMap Success second!!!!\n",__LINE__);
             pLcmlHdr->pBufferParam->pParamElem = (G711ENC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/
@@ -1570,7 +1586,7 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if (eError != OMX_ErrorNone ) {
                             G711ENC_DPRINT ("%d :: IssuingDSP OP: Error Occurred\n",__LINE__);
                             eError = OMX_ErrorHardware;
-                            goto EXIT;
+                            return eError;
                         }
                         pComponentPrivate->lcml_nOpBuf++;
                         pComponentPrivate->num_Op_Issued++;
@@ -1598,7 +1614,6 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         eError = OMX_ErrorBadParameter;
     }
 
- EXIT:
     G711ENC_DPRINT("%d :: Exiting from  G711ENC_HandleDataBufFromApp \n",__LINE__);
     G711ENC_DPRINT("%d :: Returning error %d\n",__LINE__,eError);
     return eError;
@@ -1662,9 +1677,9 @@ OMX_ERRORTYPE G711ENC_HandleDataBufFromLCML(G711ENC_COMPONENT_PRIVATE* pComponen
     }
     else {
         eError = OMX_ErrorBadParameter;
-        goto EXIT;
+        return eError;
     }
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_HandleDataBufFromLCML Function\n",__LINE__);
     return eError;
 }
@@ -1697,7 +1712,7 @@ OMX_ERRORTYPE G711ENC_GetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
             *eDir = OMX_DirInput;
             G711ENC_DPRINT("%d :: pBufHeader = %p is INPUT BUFFER pBuf = %p\n",__LINE__,pBufHeader,pBuf);
             flag = 0;
-            goto EXIT;
+            return eError;
         }
     }
     /*Search this buffer in output buffers list */
@@ -1709,17 +1724,16 @@ OMX_ERRORTYPE G711ENC_GetBufferDirection(OMX_BUFFERHEADERTYPE *pBufHeader,
             *eDir = OMX_DirOutput;
             G711ENC_DPRINT("%d :: pBufHeader = %p is OUTPUT BUFFER pBuf = %p\n",__LINE__,pBufHeader,pBuf);
             flag = 0;
-            goto EXIT;
+            return eError;
         }
     }
 
     if (flag == 1) {
         G711ENC_DPRINT("%d :: Buffer %p is Not Found in the List\n",__LINE__, pBufHeader);
         eError = OMX_ErrorUndefined;
-        goto EXIT;
+        return eError;
     }
-    
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_GetBufferDirection Function\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1767,7 +1781,7 @@ OMX_ERRORTYPE G711ENC_GetCorrespondingLCMLHeader(G711ENC_COMPONENT_PRIVATE *pCom
                 *ppLcmlHdr = pLcmlBufHeader;
                 G711ENC_DPRINT("%d :: Corresponding Input LCML Header Found = %p\n",__LINE__,pLcmlBufHeader);
                 eError = OMX_ErrorNone;
-                goto EXIT;
+                return eError;
             }
             
             pLcmlBufHeader++;
@@ -1785,7 +1799,7 @@ OMX_ERRORTYPE G711ENC_GetCorrespondingLCMLHeader(G711ENC_COMPONENT_PRIVATE *pCom
                 *ppLcmlHdr = pLcmlBufHeader;
                 G711ENC_DPRINT("%d :: Corresponding Output LCML Header Found = %p\n",__LINE__,pLcmlBufHeader);
                 eError = OMX_ErrorNone;
-                goto EXIT;
+                return eError;
             }
             
             pLcmlBufHeader++;
@@ -1796,7 +1810,6 @@ OMX_ERRORTYPE G711ENC_GetCorrespondingLCMLHeader(G711ENC_COMPONENT_PRIVATE *pCom
         eError = OMX_ErrorUndefined;
     }
 
- EXIT:
     G711ENC_DPRINT("%d :: Exiting G711ENC_GetCorrespondingLCMLHeader..\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -1838,14 +1851,14 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             eError = G711ENC_GetCorrespondingLCMLHeader(pComponentPrivate,pBuffer, OMX_DirInput, &pLcmlHdr);
             if (eError != OMX_ErrorNone) {
                 G711ENC_DPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
+                return eError;
             }
             G711ENC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirInput,__LINE__);
             eError =  G711ENC_HandleDataBufFromLCML(pComponentPrivate, pLcmlHdr);
             if (eError != OMX_ErrorNone) {
                 G711ENC_DPRINT("%d :: Error in Sending Buffer to App\n", __LINE__);
                 eError = OMX_ErrorHardware;
-                goto EXIT;
+                return eError;
             }
         } else if((OMX_U32)args[0] == EMMCodecOuputBuffer) {
             G711ENC_DPRINT("%d :: OUTPUT: pBuffer = %p %d\n",__LINE__, pBuffer);
@@ -1853,7 +1866,7 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             eError = G711ENC_GetCorrespondingLCMLHeader(pComponentPrivate,pBuffer, OMX_DirOutput, &pLcmlHdr);
             if (eError != OMX_ErrorNone) {
                 G711ENC_DPRINT("%d :: Error: Invalid Buffer Came ...\n",__LINE__);
-                goto EXIT;
+                return eError;
             }
             G711ENC_DPRINT("%d :: Output: pLcmlHdr->buffer->pBuffer = %p\n",__LINE__, pLcmlHdr->buffer->pBuffer);
             pLcmlHdr->buffer->nFilledLen = (OMX_U32)args[8];
@@ -1865,7 +1878,7 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
             if (eError != OMX_ErrorNone) {
                 G711ENC_DPRINT("%d :: Error in Sending Buffer to App\n", __LINE__);
                 eError = OMX_ErrorHardware;
-                goto EXIT;
+                return eError;
             }
             
             if(!pLcmlHdr->pBufferParam->usNbFrames){
@@ -1894,7 +1907,7 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                                            NULL);    
                 } else {
                     G711ENC_DPRINT ("LCML reported error while flushing input port\n");
-                    goto EXIT;                            
+                    return eError;
                 }
             }
             else if ( args[2] == (void *)EMMCodecOuputBuffer) { 
@@ -1917,7 +1930,7 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                                            NULL);
                 } else {
                     G711ENC_DPRINT("LCML reported error while flushing output port\n");
-                    goto EXIT;                            
+                    return eError;
                 }
             }
         }       
@@ -2048,7 +2061,6 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
         break;
     }
 
- EXIT:
     G711ENC_DPRINT("%d :: Exiting the G711ENC_LCMLCallback Function\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return eError;
@@ -2067,31 +2079,30 @@ OMX_HANDLETYPE G711ENC_GetLCMLHandle(G711ENC_COMPONENT_PRIVATE *pComponentPrivat
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
     void *handle = NULL;
-    char *error = NULL;
+    const char *error = NULL;
     G711ENC_DPRINT("%d :: Entering G711ENC_GetLCMLHandle..\n",__LINE__);
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         if ((error = dlerror()) != NULL)
             fputs(error, stderr);
-        goto EXIT;
+        return pHandle;
     }
     fpGetHandle = dlsym (handle, "GetHandle");
     if ((error = dlerror()) != NULL) {
         fputs(error, stderr);
         dlclose(handle);
-        goto EXIT;
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorUndefined;
         G711ENC_DPRINT("%d :: OMX_ErrorUndefined...\n",__LINE__);
         pHandle = NULL;
-        goto EXIT;
+        return pHandle;
     }
     ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate= pComponentPrivate;
     pComponentPrivate->ptrLibLCML = handle; /* saving LCML  backup lib pointer  */
-    
- EXIT:
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_GetLCMLHandle..\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     return pHandle;
@@ -2283,6 +2294,9 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(G711ENC_LCML_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,G711ENC_LCML_BUFHEADERTYPE);
+    if(NULL == pTemp_lcml){
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[G711ENC_INPUT_PORT] = pTemp_lcml;
     
@@ -2300,15 +2314,27 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
+        if(NULL == pTemp_lcml->pIpParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         /* pTemp_lcml->pIpParam->usEndOfFile = 0; */
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
          
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if(NULL == pTemp_lcml->pDmmBuf){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
          
         pTemp->nFlags = G711ENC_NORMAL_BUFFER;
         pTemp++;
@@ -2319,6 +2345,10 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
      * This memory pointer will be sent to LCML */
     size_lcml = nOpBuf * sizeof(G711ENC_LCML_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,G711ENC_LCML_BUFHEADERTYPE);
+    if(NULL == pTemp_lcml){
+        G711ENC_CleanupInitParams(pComponent);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[G711ENC_OUTPUT_PORT] = pTemp_lcml;
     
@@ -2337,13 +2367,25 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,sizeof(G711ENC_UAlgOutBufParamStruct),G711ENC_UAlgOutBufParamStruct);
+        if(NULL == pTemp_lcml->pOpParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pOpParam->ulFrameCount = 0;
-        
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if(NULL == pTemp_lcml->pDmmBuf){
+            G711ENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -2379,27 +2421,8 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr,
     DSP_STATUS status = DSP_SOK;
     int nSizeReserved = 0;
 
-    if(pDmmBuf == NULL)
-    {
-        G711ENC_DPRINT("pBuf is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
+    G711ENC_OMX_CONF_CHECK_CMD(pDmmBuf,pArmPtr,ProcHandle);
 
-    if(pArmPtr == NULL)
-    {
-        G711ENC_DPRINT("pBuf is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-
-    if (ProcHandle == NULL)
-    {
-        G711ENC_DPRINT ("ProcHandle is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    
     /* Allocate */
     pDmmBuf->pAllocated = pArmPtr;
     /* Reserve */
@@ -2410,7 +2433,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr,
     {
         G711ENC_DPRINT("DSPProcessor_ReserveMemory() failed - error 0x%x", (int)status);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
     pDmmBuf->nSize = size;
     G711ENC_DPRINT(" OMX DMM MAP Reserved: %p, size 0x%x (%d)\n", pDmmBuf->pReserved,nSizeReserved,nSizeReserved);
@@ -2427,7 +2450,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr,
     {
         G711ENC_DPRINT("DSPProcessor_Map() failed - error 0x%x", (int)status);
         eError = OMX_ErrorHardware;
-        goto EXIT;
+        return eError;
     }
     G711ENC_DPRINT("OMX DMM Mapped: %p, size 0x%x (%d)\n",pDmmBuf->pMapped, size,size);
 
@@ -2436,11 +2459,10 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle, int size, void* pArmPtr,
     if(DSP_FAILED(status))
     {
         G711ENC_DPRINT("Unable to flush mapped buffer: error 0x%x",(int)status);
-        goto EXIT;
+        return eError;
     }
     eError = OMX_ErrorNone;
-    
- EXIT:
+
     return eError;
 }
 
@@ -2461,24 +2483,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     G711ENC_DPRINT("\nOMX UnReserve DSP: %p\n",pResPtr);
 
-    if(pMapPtr == NULL)
-    {
-        G711ENC_DPRINT("pMapPtr is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    if(pResPtr == NULL)
-    {
-        G711ENC_DPRINT("pResPtr is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
-    if(ProcHandle == NULL)
-    {
-        G711ENC_DPRINT("--ProcHandle is NULL\n");
-        eError = OMX_ErrorBadParameter;
-        goto EXIT;
-    }
+    G711ENC_OMX_CONF_CHECK_CMD(pMapPtr,pResPtr,ProcHandle);
 
     status = DSPProcessor_UnMap(ProcHandle,pMapPtr);
     if(DSP_FAILED(status))
@@ -2493,7 +2498,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
         G711ENC_DPRINT("DSPProcessor_UnReserveMemory() failed - error 0x%x", (int)status);
     }
 
- EXIT:
     return eError;
 }
 
