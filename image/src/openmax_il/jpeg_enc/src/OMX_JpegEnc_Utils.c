@@ -627,8 +627,17 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
       else if ((pPortDefIn->format.image.nFrameHeight * pPortDefIn->format.image.nFrameWidth) <= (6*1024*1024)) {
           lcml_dsp->ProfileID = 9 ;
       }
+      else if ((pPortDefIn->format.image.nFrameHeight * pPortDefIn->format.image.nFrameWidth) <= (8*1024*1024)) {
+          lcml_dsp->ProfileID = 10 ;
+      }
+      else if ((pPortDefIn->format.image.nFrameHeight * pPortDefIn->format.image.nFrameWidth) <= (10*1024*1024)) {
+          lcml_dsp->ProfileID = 11 ;
+      }
+      else if ((pPortDefIn->format.image.nFrameHeight * pPortDefIn->format.image.nFrameWidth) <= (12*1024*1024)) {
+          lcml_dsp->ProfileID = 12 ;
+      }
       else {
-          lcml_dsp->ProfileID = 10;
+          lcml_dsp->ProfileID = 13;
       }
 #else
     /* according to JPEG Enc SN Interface guide */
@@ -637,14 +646,17 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
 #endif
 
     /* CrPhArgs for JpegEnc */
-    ptCreateString[0] = JPGENC_SNTEST_STRMCNT;
+    ptCreateString[0] = JPGENC_SNTEST_STRMCNT;  /*Number of Streams connected to USN, both STRM and DMM */
     ptCreateString[1] = JPGENC_SNTEST_INSTRMID; /* Stream ID   */
     ptCreateString[2] = 0;                      /* Stream based input stream   */
     ptCreateString[3] = JPGENC_SNTEST_INBUFCNT; /* Number of buffers on input stream   */
     ptCreateString[4] = JPGENC_SNTEST_OUTSTRMID;/* Stream ID   */
-    ptCreateString[5] = 0;                      /* Stream based input stream   */
-    ptCreateString[6] = JPGENC_SNTEST_OUTBUFCNT;/* Number of buffers on input stream   */
+    ptCreateString[5] = 0;                      /* Stream based output stream   */
+    ptCreateString[6] = JPGENC_SNTEST_OUTBUFCNT;/* Number of buffers on output stream   */
+
+    /*Max Width */
     ptCreateString[7] = (pPortDefOut->format.image.nFrameWidth > 0) ? pPortDefOut->format.image.nFrameWidth : JPGENC_SNTEST_MAX_WIDTH;
+    /* Max Height */
     ptCreateString[8] = (pPortDefOut->format.image.nFrameHeight > 0) ? pPortDefOut->format.image.nFrameHeight : JPGENC_SNTEST_MAX_HEIGHT;
 
     /*
@@ -656,7 +668,7 @@ OMX_ERRORTYPE Fill_JpegEncLCMLInitParams(LCML_DSP *lcml_dsp, OMX_U16 arr[], OMX_
         arr[9] = 4;
     }
     */
-    ptCreateString[9] = 1;
+    ptCreateString[9] = 1;  /*Force Chroma Format : 1- XDM_YUV_420P */
 
     ptCreateString[10] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App0 marker */
     ptCreateString[11] = (ptCreateString[8] < 240) ? (ptCreateString[8] ) : 240; /* Maximum Vertical Size of the Thumbnail for App0 marker */
@@ -704,6 +716,14 @@ this option supportsonly up to 3 mega pixels
     {
         /* memory requirement for having both conversion and pplib is much larger */
         lcml_dsp->ProfileID +=3;
+    }
+
+    if (lcml_dsp->ProfileID > 13) {
+         /* May be with conversion flag set and higer resolution >8MP images will result the profileID
+            greater than 13. We have max profileID as 13.*/
+         OMX_PRINT1(pComponentPrivate->dbg, "ERROR:: Invalid value in lcml_dsp->ProfileID =%d. \n",lcml_dsp->ProfileID);
+         eError = OMX_ErrorUndefined;
+         goto EXIT;
     }
 
     ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
@@ -1534,7 +1554,13 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
             }
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             lcml_dsp = (((LCML_DSP_INTERFACE*)pLcmlHandle)->dspCodec);
-            Fill_JpegEncLCMLInitParams(lcml_dsp,arr, pHandle);
+
+            eError = Fill_JpegEncLCMLInitParams(lcml_dsp,arr, pHandle);
+            if ( eError != OMX_ErrorNone ) {
+                OMX_PRINT1(pComponentPrivate->dbg, "ERROR:: Fill_JpegEncLCMLInitParams() Failed...\n");
+                goto EXIT;
+            }
+
             cb.LCML_Callback = (void *) JpegEncLCML_Callback;
             OMX_PRDSP2(pComponentPrivate->dbg, "Start LCML_InitMMCodec JPEG Phase in JPEG.....\n");
 
