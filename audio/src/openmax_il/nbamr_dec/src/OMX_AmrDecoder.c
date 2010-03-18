@@ -283,10 +283,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, NBAMRDEC_BUFFERLIST);
     if (pComponentPrivate->pInputBufferList == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
 
@@ -294,20 +297,26 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, NBAMRDEC_BUFFERLIST);
     if (pComponentPrivate->pOutputBufferList == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pPriorityMgmt, OMX_PRIORITYMGMTTYPE);
     if (pComponentPrivate->pPriorityMgmt == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
          
@@ -412,10 +421,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, (100*sizeof(char)),OMX_STRING);
     if (pComponentPrivate->sDeviceString == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
@@ -472,20 +484,26 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_MALLOC_GENERIC(pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT], OMX_PARAM_PORTDEFINITIONTYPE);
     if (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT] == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT], OMX_PARAM_PORTDEFINITIONTYPE);
     if (pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT] == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorInsufficientResources;
     }
 
@@ -528,10 +546,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::Error returned from loading ResourceManagerProxy thread\n",
                                                         __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return eError;
     }
 #endif
@@ -541,10 +562,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::Error returned from the Component\n",
                                                      __LINE__);
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return eError;
     }
     OMX_PRINT2(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::OMX_ComponentInit\n", __LINE__);
@@ -559,10 +583,13 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_PRINT2(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::OMX_ComponentInit\n", __LINE__);
     if((pComponentPrivate->fdread=open(FIFO2,O_RDONLY))<0) {
         OMX_ERROR4(pComponentPrivate->dbg, "[NBAMR Dec Component] - failure to open READ pipe\n");
+        // Free Component resources
+        NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-        NBAMRDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
         return OMX_ErrorBadParameter;
     }
 #endif
@@ -575,10 +602,13 @@ EXIT:
     if (pComponentPrivate != NULL) {
         OMX_PRINT1(pComponentPrivate->dbg, "%d ::OMX_ComponentInit() - returning %d\n", __LINE__, eError);
         if (eError != OMX_ErrorNone) {
+            // Free Component resources
+            NBAMRDEC_FreeCompResources(pHandle);
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Done(pComponentPrivate->pPERF);
 #endif
-            NBAMRDEC_FreeCompResources(pHandle);
+            // Free pComponentPrivate
+            OMX_MEMFREE_STRUCT(pComponentPrivate);
         }
     }
     return eError;
@@ -1780,6 +1810,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
                   PERF_BoundaryComplete | PERF_BoundaryCleanup);
     PERF_Done(pComponentPrivate->pPERF);
 #endif
+
+    // Free pComponentPrivate
+    OMX_MEMFREE_STRUCT(pComponentPrivate);
+
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d ::After NBAMRDEC_FreeCompResources\n", __LINE__);
     OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d ::Exiting from ComponentDeInit()\n", __LINE__);
       
