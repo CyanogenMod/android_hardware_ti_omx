@@ -1895,11 +1895,13 @@ static OMX_ERRORTYPE VIDDEC_GetState (OMX_HANDLETYPE hComponent,
            }
            else if(errorFromWait == ETIMEDOUT) {
               /* Unlock mutex in case of timeout */
+              *pState = ((VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->eState;
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorTimeout;
            }
            else {
               /* Incase of other errors unlock the mutex*/
+              *pState = ((VIDDEC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->eState;
               pthread_mutex_unlock(&pComponentPrivate->mutexStateChangeRequest);
               return OMX_ErrorUndefined;
            }
