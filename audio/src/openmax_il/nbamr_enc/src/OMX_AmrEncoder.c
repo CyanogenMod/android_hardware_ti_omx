@@ -203,9 +203,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_AUDIO_PARAM_AMRTYPE  *amr_op;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
-    NBAMRENC_PORT_TYPE *pCompPort = NULL;
     OMX_AUDIO_PARAM_PORTFORMATTYPE *pPortFormat = NULL;
-    int i = 0;
+    int i = 0, ret;
 
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "Entering OMX_ComponentInit\n");
 
@@ -228,13 +227,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pHandle->GetExtensionIndex = GetExtensionIndex;
     pHandle->ComponentRoleEnum = ComponentRoleEnum;
 
-
     /*Allocate the memory for Component private data area */
     OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, AMRENC_COMPONENT_PRIVATE);
+    if (pHandle->pComponentPrivate == NULL) {
+        OMXDBG_PRINT(stderr, ERROR, 2, 0, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
 
-
-    ((AMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     pComponentPrivate = pHandle->pComponentPrivate;
+    pComponentPrivate->pHandle = pHandle;
+    pComponentPrivate->bMutexInitialized = FALSE;
 
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_NBAMRENC");
 
@@ -253,13 +255,45 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
                                            PERF_ModuleLLMM | PERF_ModuleAudioDecode);
 #endif
 
-    OMX_MALLOC_GENERIC(pCompPort, NBAMRENC_PORT_TYPE);
-    pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT] = pCompPort;
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT], NBAMRENC_PORT_TYPE);
+    if (pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT] == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Close dbg
+        OMX_DBG_CLOSE(pComponentPrivate->dbg);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
 
-    OMX_MALLOC_GENERIC(pCompPort, NBAMRENC_PORT_TYPE);
-    pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT] = pCompPort;
+    OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT], NBAMRENC_PORT_TYPE);
+    if (pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT] == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Close dbg
+        OMX_DBG_CLOSE(pComponentPrivate->dbg);
+        // Free component resources
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
 
     OMX_MALLOC_GENERIC(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
+    if (pComponentPrivate->sPortParam == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->sPortParam, OMX_PORT_PARAM_TYPE);
 
     /* Initialize sPortParam data structures to default values */
@@ -268,6 +302,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* Malloc and Set pPriorityMgmt defaults */
     OMX_MALLOC_GENERIC(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
+    if (pComponentPrivate->sPriorityMgmt == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->sPriorityMgmt, OMX_PRIORITYMGMTTYPE);
 
     /* Initialize sPriorityMgmt data structures to default values */
@@ -275,20 +320,63 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->sPriorityMgmt->nGroupID = -1;
 
     OMX_MALLOC_GENERIC(amr_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
+    if (amr_ip == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(amr_ip, OMX_AUDIO_PARAM_PCMMODETYPE);
     pComponentPrivate->pcmParams = amr_ip;
 
-
     OMX_MALLOC_GENERIC(amr_op, OMX_AUDIO_PARAM_AMRTYPE);
+    if (amr_op == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(amr_op, OMX_AUDIO_PARAM_AMRTYPE);
     pComponentPrivate->amrParams = amr_op;
 
     /* newmalloc and initialize number of input buffers */
     OMX_MALLOC_GENERIC(pComponentPrivate->pInputBufferList, NBAMRENC_BUFFERLIST);
+    if (pComponentPrivate->pInputBufferList == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pInputBufferList->numBuffers = 0;
 
     /* newmalloc and initialize number of output buffers */
     OMX_MALLOC_GENERIC(pComponentPrivate->pOutputBufferList, NBAMRENC_BUFFERLIST);
+    if (pComponentPrivate->pOutputBufferList == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->pOutputBufferList->numBuffers = 0;
 
     for (i=0; i < NBAMRENC_MAX_NUM_OF_BUFS; i++) {
@@ -298,10 +386,20 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* Set input port defaults */
     OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
+    if (pPortDef_ip == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT] = pPortDef_ip;
 
-    
     /* Let's set defaults for IF2 conditions on Android and see what happens */
     pPortDef_ip->nPortIndex                         = NBAMRENC_INPUT_PORT;
     pPortDef_ip->eDir                               = OMX_DirInput;
@@ -319,6 +417,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /* Set output port defaults */
     OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
+    if (pPortDef_op == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[NBAMRENC_OUTPUT_PORT] = pPortDef_op;
 
@@ -337,6 +446,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->format.audio.bFlagErrorConcealment = OMX_FALSE;
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    if (pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT]->pPortFormat == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set input port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[NBAMRENC_INPUT_PORT]->pPortFormat;
@@ -363,6 +483,17 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     amr_op->eAMRFrameFormat =OMX_AUDIO_AMRFrameFormatConformance;
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
+    if (pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     OMX_NBCONF_INIT_STRUCT(pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat, OMX_AUDIO_PARAM_PORTFORMATTYPE);
     /* Set output port format defaults */
     pPortFormat = pComponentPrivate->pCompPort[NBAMRENC_OUTPUT_PORT]->pPortFormat;
@@ -466,29 +597,184 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->ProcessingInputBuf = 0;
     pComponentPrivate->ProcessingOutputBuf = 0;
 
-    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(char),OMX_STRING);
+    OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(char), OMX_STRING);
+    if (pComponentPrivate->sDeviceString == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
 
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,":srcul/codec\0");
     
-    pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
+    ret = pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
+    ret = pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->AlloBuf_waitingsignal = 0;
 
-    pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    ret = pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
+    ret = pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->codecStop_waitingsignal = 0;
 
-    pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
+    ret = pthread_mutex_init(&pComponentPrivate->InLoaded_mutex, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
+    ret = pthread_cond_init (&pComponentPrivate->InLoaded_threshold, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->InLoaded_readytoidle = 0;
 
-    pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
-    pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
+    ret = pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
+    ret = pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
-    pthread_mutex_init(&pComponentPrivate->ToLoaded_mutex, NULL);
+    ret = pthread_mutex_init(&pComponentPrivate->ToLoaded_mutex, NULL);
+    if (ret) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - mutex_init Failed\n", __LINE__);
+        // Free component resources
+        NBAMRENC_FreeCompResources(pComponentPrivate->pHandle);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_Done(pComponentPrivate->pPERF);
+#endif
+        // Destroy Mutexes
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return OMX_ErrorInsufficientResources;
+    }
 
+    pComponentPrivate->bMutexInitialized = TRUE;
     pComponentPrivate->bIsInvalidState = OMX_FALSE;
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -1263,6 +1549,10 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComp,
 
     TI_OMX_STREAM_INFO *streamInfo;
     OMX_MALLOC_GENERIC(streamInfo, TI_OMX_STREAM_INFO);
+    if (streamInfo == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         eError = OMX_ErrorInvalidState;
@@ -1699,22 +1989,12 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
          goto EXIT;
     }
 
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
-
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-
 #ifdef __PERF_INSTRUMENTATION__
     PERF_Boundary(pComponentPrivate->pPERF,
                   PERF_BoundaryComplete | PERF_BoundaryCleanup);
     PERF_Done(pComponentPrivate->pPERF);
 #endif
 
-    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
     OMX_MEMFREE_STRUCT(pComponentPrivate);
 
 EXIT:
@@ -1801,8 +2081,27 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    if (pBufferHeader == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_ReceivedBuffer(pComponentPrivate->pPERF,
+                        (*pBuffer)->pBuffer, nSizeBytes,
+                        PERF_ModuleMemory);
+#endif
+        return OMX_ErrorInsufficientResources;
+    }
 
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+    if (pBufferHeader->pBuffer == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_ReceivedBuffer(pComponentPrivate->pPERF,
+                        (*pBuffer)->pBuffer, nSizeBytes,
+                        PERF_ModuleMemory);
+#endif
+        return OMX_ErrorInsufficientResources;
+    }
     
     if (nPortIndex == NBAMRENC_INPUT_PORT) {        
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1822,6 +2121,17 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 1;
         OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, NBAMRENC_BUFDATA);
+        if (pBufferHeader->pBuffer == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+            OMX_MEMFREE_STRUCT(pBufferHeader->pBuffer);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+#ifdef __PERF_INSTRUMENTATION__
+    PERF_ReceivedBuffer(pComponentPrivate->pPERF,
+                        (*pBuffer)->pBuffer, nSizeBytes,
+                        PERF_ModuleMemory);
+#endif
+            return OMX_ErrorInsufficientResources;
+        }
 
         if (pComponentPrivate->pOutputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
@@ -2093,6 +2403,10 @@ static OMX_ERRORTYPE UseBuffer (
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
+    if (pBufferHeader == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
     
     if (nPortIndex == NBAMRENC_OUTPUT_PORT) {
         pBufferHeader->nInputPortIndex = -1;
@@ -2101,6 +2415,11 @@ static OMX_ERRORTYPE UseBuffer (
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
         pComponentPrivate->pOutputBufferList->bufferOwner[pComponentPrivate->pOutputBufferList->numBuffers++] = 0;
         OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate, NBAMRENC_BUFDATA);
+        if (pBufferHeader->pOutputPortPrivate == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_AmrEncoder.c :: AMRENC: Error - Insufficient resources\n", __LINE__);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+            return OMX_ErrorInsufficientResources;
+        }
 
         if (pComponentPrivate->pOutputBufferList->numBuffers == pPortDef->nBufferCountActual) {
             pPortDef->bPopulated = OMX_TRUE;
