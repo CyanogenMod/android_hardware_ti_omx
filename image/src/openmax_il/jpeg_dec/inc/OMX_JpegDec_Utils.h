@@ -33,6 +33,19 @@
 * ================================================================================
 */
 
+#include <features.h>
+#define __USE_POSIX
+#define _XOPEN_SOURCE 600
+#ifndef OMX_DEBUG
+    #define __USE_POSIX199309
+#else
+    #if OMX_DEBUG==0
+        #define __USE_POSIX199309
+    #endif
+#endif
+#define USE_STRSEP
+#include <sys/select.h>
+
 #ifndef OMX_JPEGDEC_UTILS__H
 #define OMX_JPEGDEC_UTILS__H
 
@@ -160,11 +173,14 @@ do {					       \
     struct timespec  ts;                                                    \
     struct timeval sTime;                                                   \
     struct timezone sTimeZone;                                              \
+   OMX_U32 ts_us;							 \
                                                                             \
     pthread_mutex_lock(&((_pComponentPrivate_)->mJpegDecMutex));     \
-    gettimeofday(&sTime, &sTimeZone);                                       \
+    gettimeofday(&sTime, NULL);                                       \
+   ts_us = sTime.tv_usec;							\
     ts.tv_sec = sTime.tv_sec;                                               \
     ts.tv_sec += JPEGDEC_TIMEOUT;                                      \
+   ts.tv_nsec = ts_us * 1000;				\
                                                                    \
     nRet = pthread_cond_timedwait(&((_pComponentPrivate_)->sPortPopulated_cond),\
                                   &((_pComponentPrivate_)->mJpegDecMutex), \
@@ -187,11 +203,14 @@ do {					       \
     struct timespec  ts;                                                    \
     struct timeval sTime;                                                   \
     struct timezone sTimeZone;                                              \
+  OMX_U32 ts_us;		\
                                                                             \
     pthread_mutex_lock(&((_pComponentPrivate_)->mJpegDecMutex));     \
-    gettimeofday(&sTime, &sTimeZone);                                       \
+    gettimeofday(&sTime, NULL);                                       \
+    ts_us = sTime.tv_usec;							\
     ts.tv_sec = sTime.tv_sec;                                               \
     ts.tv_sec += JPEGDEC_TIMEOUT;                                      \
+    ts.tv_nsec = ts_us * 1000;				\
                                                                    \
     nRet = pthread_cond_timedwait(&((_pComponentPrivate_)->sPortPopulated_cond),\
                                   &((_pComponentPrivate_)->mJpegDecMutex), \
@@ -214,11 +233,14 @@ do {					       \
     struct timespec  ts;                                                    \
     struct timeval sTime;                                                   \
     struct timezone sTimeZone;                                              \
-                                                                            \
+     OMX_U32 ts_us;                                                                        \
+                                                                        \
     pthread_mutex_lock(&((_pComponentPrivate_)->mJpegDecFlushMutex));     \
-    gettimeofday(&sTime, &sTimeZone);                                       \
+    gettimeofday(&sTime, NULL);                                       \
+    ts_us = sTime.tv_usec;							\
     ts.tv_sec = sTime.tv_sec;                                               \
     ts.tv_sec += JPEGDEC_TIMEOUT;                                      \
+    ts.tv_nsec = ts_us * 1000;				\
                                                                    \
     nRet = pthread_cond_timedwait(&((_pComponentPrivate_)->sFlush_cond),\
                                   &((_pComponentPrivate_)->mJpegDecFlushMutex), \

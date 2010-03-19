@@ -1258,6 +1258,8 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 */            
             nCount = 0;
             pComponentPrivate->ExeToIdleFlag = 0;
+	OMX_TRACE2(pComponentPrivate->dbg, "before stop lock\n");
+        pthread_mutex_lock(&pComponentPrivate->mJpegDecMutex);
             OMX_PRDSP2(pComponentPrivate->dbg, "OMX_StateIdle->OMX_StateExecuting-THE CODEC IS STOPPING!!!\n");
             pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, MMCodecControlStop, NULL);
@@ -1266,8 +1268,6 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                           PERF_BoundaryComplete | PERF_BoundarySteadyState);
 #endif
 
-	    OMX_TRACE2(pComponentPrivate->dbg, "before stop lock\n");
-        pthread_mutex_lock(&pComponentPrivate->mJpegDecMutex);
         while ((pComponentPrivate->ExeToIdleFlag & JPEGD_DSPSTOP) == 0) {
             pthread_cond_wait(&pComponentPrivate->sStop_cond, &pComponentPrivate->mJpegDecMutex);
         }
