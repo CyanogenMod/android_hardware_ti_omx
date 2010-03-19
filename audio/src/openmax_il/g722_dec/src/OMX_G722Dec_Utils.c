@@ -378,7 +378,15 @@ OMX_ERRORTYPE G722DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam,G722DEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,sizeof(G722DEC_ParamStruct),
+                              G722DEC_ParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+            G722DEC_CleanupInitParams(pComponent);
+            G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
+
         pTemp_lcml->pIpParam->usLastFrame = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
@@ -422,14 +430,19 @@ OMX_ERRORTYPE G722DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,sizeof(G722D_USN_AudioCodecParams),
                           G722D_USN_AudioCodecParams);
+
+    if (pComponentPrivate->pParams == NULL) {
+        G722DEC_CleanupInitParams(pComponent);
+        G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
     pComponentPrivate->bPortDefsAllocated = 1;
     pComponentPrivate->bInitParamsInitialized = 1;
 
  EXIT:
-    if(eError == OMX_ErrorInsufficientResources || eError == OMX_ErrorBadParameter){
-        OMX_MEMFREE_STRUCT(strmAttr);
+    if(eError != OMX_ErrorNone){
         OMX_MEMFREE_STRUCT(arr);
-        OMX_MEMFREE_STRUCT(pTemp_lcml);
+        G722DEC_CleanupInitParams(pComponent);
     }
     G722DEC_DPRINT("Exiting G722DEC_Fill_LCMLInitParams\n");
     return eError;
@@ -1940,7 +1953,7 @@ void G722DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G722D_INPUT_PORT];
     for(i=0; i<nIpBuf; i++) {
         G722DEC_MEMPRINT(":: Freeing: pTemp_lcml->pIpParam = %p\n",pTemp_lcml->pIpParam);
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam, G722DEC_ParamStruct);
         pTemp_lcml++;
     }
 
@@ -1951,7 +1964,7 @@ void G722DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G722D_OUTPUT_PORT];
     for(i=0; i<nOpBuf; i++) {
-        G722DEC_MEMPRINT(":: Freeing: pTemp_lcml->pIpParam = %p\n",pTemp_lcml->pOpParam);
+        G722DEC_MEMPRINT(":: Freeing: pTemp_lcml->pOpParam = %p\n",pTemp_lcml->pOpParam);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pOpParam);
         pTemp_lcml++;
     }
@@ -2196,6 +2209,12 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer,nIpBufSize,OMX_U8);
+            if (pTemp->pBuffer == NULL) {
+                G722DEC_CleanupInitParams(pComponent);
+                G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+                return OMX_ErrorInsufficientResources;
+            }
+
         } else {
             G722DEC_DPRINT(":: IpBuffer %p is already there\n",pTemp->pBuffer);
         }
@@ -2204,7 +2223,15 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G722DEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,sizeof(G722DEC_ParamStruct),
+                              G722DEC_ParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+            G722DEC_CleanupInitParams(pComponent);
+            G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
+
         pTemp_lcml->pIpParam->usLastFrame = 0;
 
         pTemp->nFlags = NORMAL_BUFFER;
@@ -2244,6 +2271,12 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
 
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer,nOpBufSize,OMX_U8);
+            if (pTemp->pBuffer == NULL) {
+                 G722DEC_CleanupInitParams(pComponent);
+                 G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+                 return OMX_ErrorInsufficientResources;
+             }
+
             G722DEC_DPRINT("%d:: OpBuffer %p is already there\n",__LINE__,pTemp->pBuffer);
         } else {
             G722DEC_DPRINT(":: OpBuffer %p is already there\n",pTemp->pBuffer);
@@ -2267,6 +2300,9 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     pComponentPrivate->bInitParamsInitialized = 1;
 
  EXIT:
+    if (eError != OMX_ErrorNone) {
+       G722DEC_CleanupInitParams(pComponent);
+    }
     return eError;
 }
 /**
