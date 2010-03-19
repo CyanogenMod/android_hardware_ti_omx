@@ -2066,10 +2066,10 @@ void* MessagingThread(void* arg)
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
 
                                     tmp2 = (char *) tmpDspStructAddress;
-                                    LCML_MEMFREE(tmp2, NULL);
 
                                     tmpDspStructAddress->iBufSizeUsed = 0;
                                     args[8] = (void *) tmpDspStructAddress->iBufSizeUsed ;
+                                    LCML_MEMFREE(tmp2, NULL);
 
                                     hDSPInterface->Armoutputstorage[k] = NULL;
                                     tmpDspStructAddress = NULL;
@@ -2212,8 +2212,8 @@ void* MessagingThread(void* arg)
                                     {
                                         tmp2 = (char*)tmpDspStructAddress;
                                     }
-                                    LCML_MEMFREE(tmp2, NULL);
                                     hDSPInterface->Arminputstorage[i] = NULL;
+                                    LCML_MEMFREE(tmp2, NULL);
                                     tmpDspStructAddress     = NULL;
 #ifdef __PERF_INSTRUMENTATION__
                                     PERF_XferingBuffer(hDSPInterface->pPERFcomp,
@@ -2306,11 +2306,11 @@ void* MessagingThread(void* arg)
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
 
                                     tmp2 = (char *) tmpDspStructAddress;
-                                    LCML_MEMFREE(tmp2, NULL);
                                     tmpDspStructAddress->iBufSizeUsed = 0;
                                     args[8] = (void *) tmpDspStructAddress->iBufSizeUsed ;
 
                                     hDSPInterface->Armoutputstorage[i] = NULL;
+                                    LCML_MEMFREE(tmp2, NULL);
                                     tmpDspStructAddress = NULL;
 #ifdef __PERF_INSTRUMENTATION__
                                     PERF_XferingBuffer(hDSPInterface->pPERFcomp,
@@ -2400,8 +2400,8 @@ void* MessagingThread(void* arg)
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
 
                                     tmp2 = (char*)tmpDspStructAddress;
-                                    LCML_MEMFREE(tmp2, NULL);
                                     hDSPInterface->Arminputstorage[i] = NULL;
+                                    LCML_MEMFREE(tmp2, NULL);
                                     tmpDspStructAddress     = NULL;
 #ifdef __PERF_INSTRUMENTATION__
                                     PERF_XferingBuffer(hDSPInterface->pPERFcomp,
@@ -2477,11 +2477,12 @@ void* MessagingThread(void* arg)
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved,
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
 
-                                    LCML_MEMFREE(tmp2, NULL);
+                                    tmp2 = (char *)tmpDspStructAddress;
                                     tmpDspStructAddress->iBufSizeUsed = 0;
                                     args[8] = (void *) tmpDspStructAddress->iBufSizeUsed ;
 
                                     hDSPInterface->Armoutputstorage[i] = NULL;
+                                    LCML_MEMFREE(tmp2, NULL);
                                     tmpDspStructAddress = NULL;
 #ifdef __PERF_INSTRUMENTATION__
                                     PERF_XferingBuffer(hDSPInterface->pPERFcomp,
