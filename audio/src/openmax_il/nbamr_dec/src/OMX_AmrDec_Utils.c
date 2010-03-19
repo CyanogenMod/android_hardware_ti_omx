@@ -549,9 +549,6 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_DBG_CLOSE(pComponentPrivate->dbg);
     }
 
-    // Free pComponentPrivate
-    OMX_MEMFREE_STRUCT(pComponentPrivate);
-
     return eError;
 }
 
