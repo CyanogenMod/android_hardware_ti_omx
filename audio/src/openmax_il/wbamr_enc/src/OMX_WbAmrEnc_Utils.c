@@ -160,6 +160,10 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         OMX_PRDSP2(pComponentPrivate->dbg,
                    "Codec is configuring to DASF mode\n");
         OMX_MALLOC_GENERIC(pComponentPrivate->strmAttr, LCML_STRMATTR);
+        if (pComponentPrivate->strmAttr == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
         pComponentPrivate->strmAttr->uSegid = WBAMRENC_DEFAULT_SEGMENT;
         pComponentPrivate->strmAttr->uAlignment = 0;
         pComponentPrivate->strmAttr->uTimeout = WBAMRENC_SN_TIMEOUT;
@@ -240,6 +244,11 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
 
 
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, WBAMRENC_LCML_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[WBAMRENC_INPUT_PORT] = pTemp_lcml;
 
@@ -258,15 +267,25 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
                       pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
-                                 sizeof(WBAMRENC_ParamStruct),
-                                 WBAMRENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(WBAMRENC_ParamStruct), WBAMRENC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEncder.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames = 0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         pTemp_lcml->pFrameParam = NULL;
 
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEncder.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp->nFlags = WBAMRENC_NORMAL_BUFFER;
         pTemp++;
@@ -278,6 +297,12 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
     size_lcml = nOpBuf * sizeof(WBAMRENC_LCML_BUFHEADERTYPE);
 
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, WBAMRENC_LCML_BUFHEADERTYPE);
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+        // Cleanup Init Params
+        WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[WBAMRENC_OUTPUT_PORT] = pTemp_lcml;
 
@@ -297,15 +322,25 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
                       pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
 
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
-                                 sizeof(WBAMRENC_ParamStruct),
-                                 WBAMRENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(WBAMRENC_ParamStruct), WBAMRENC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEncder.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames = 0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         pTemp_lcml->pFrameParam = NULL;
 
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEncder.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp->nFlags = WBAMRENC_NORMAL_BUFFER;
         pTemp++;
@@ -454,15 +489,25 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent) {
     OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
 
-    OMX_PRDSP1(pComponentPrivate->dbg, "Destroying mutexes\n");
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+    if (pComponentPrivate->bMutexInitialized)
+    {
+        OMX_PRDSP1(pComponentPrivate->dbg, "Destroying mutexes\n");
+        pComponentPrivate->bMutexInitialized = FALSE;
 
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+    }
+
+    // Close dbg
+    OMX_DBG_CLOSE(pComponentPrivate->dbg);
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "Exiting\n");
     OMX_PRINT1(pComponentPrivate->dbg, "Returning = 0x%x\n", eError);
@@ -955,6 +1000,16 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                             OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pAlgParam,
                                                      sizeof(WBAMRENC_TALGCtrl),
                                                      WBAMRENC_TALGCtrl);
+                            if (pComponentPrivate->pAlgParam == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                       OMX_EventError,
+                                                                       OMX_ErrorInsufficientResources,
+                                                                       OMX_TI_ErrorSevere,
+                                                                       NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                             OMX_PRBUFFER2(pComponentPrivate->dbg,
                                           "pAlgParam %p\n", pComponentPrivate->pAlgParam);
                         }
@@ -963,6 +1018,17 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                             OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pAlgParamDTX,
                                                      sizeof(WBAMRENC_TALGCtrlDTX),
                                                      WBAMRENC_TALGCtrlDTX);
+                            if (pComponentPrivate->pAlgParamDTX == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, WBAMRENC_TALGCtrl);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                       OMX_EventError,
+                                                                       OMX_ErrorInsufficientResources,
+                                                                       OMX_TI_ErrorSevere,
+                                                                       NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                             OMX_PRBUFFER2(pComponentPrivate->dbg,
                                           "pAlgParamDTX %p\n", pComponentPrivate->pAlgParamDTX);
                         }
@@ -1028,6 +1094,18 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                             OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,
                                                      sizeof(WBAMRENC_AudioCodecParams),
                                                      WBAMRENC_AudioCodecParams);
+                            if (pComponentPrivate->pParams == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, WBAMRENC_TALGCtrl);
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParamDTX, WBAMRENC_TALGCtrlDTX);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                       OMX_EventError,
+                                                                       OMX_ErrorInsufficientResources,
+                                                                       OMX_TI_ErrorSevere,
+                                                                       NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
 
                             OMX_PRBUFFER2(pComponentPrivate->dbg,
                                           "pParams %p\n", pComponentPrivate->pParams);
@@ -1625,9 +1703,17 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                     if (pComponentPrivate->nHoldLength > 0) {/* something need to be hold in pHoldBuffer */
                         if (pComponentPrivate->pHoldBuffer == NULL) {
-                            OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer,
-                                            WBAMRENC_INPUT_BUFFER_SIZE,
-                                            OMX_U8);
+                            OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, WBAMRENC_INPUT_BUFFER_SIZE, OMX_U8);
+                            if (pComponentPrivate->pHoldBuffer == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                       OMX_EventError,
+                                                                       OMX_ErrorInsufficientResources,
+                                                                       OMX_TI_ErrorSevere,
+                                                                       NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                         }
 
                         memset(pComponentPrivate->pHoldBuffer, 0, WBAMRENC_INPUT_BUFFER_SIZE);
@@ -1653,9 +1739,17 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                         /* save the data into pHoldBuffer */
                         if (pComponentPrivate->pHoldBuffer == NULL) {
-                            OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer,
-                                            WBAMRENC_INPUT_BUFFER_SIZE,
-                                            OMX_U8);
+                            OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer, WBAMRENC_INPUT_BUFFER_SIZE, OMX_U8);
+                            if (pComponentPrivate->pHoldBuffer == NULL) {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                       OMX_EventError,
+                                                                       OMX_ErrorInsufficientResources,
+                                                                       OMX_TI_ErrorSevere,
+                                                                       NULL);
+                                return OMX_ErrorInsufficientResources;
+                            }
                         }
 
                         /* Not enough data to be sent. Copy all received data into pHoldBuffer.*/
@@ -1700,9 +1794,18 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     remainingBytes = pComponentPrivate->nHoldLength + pBufHeader->nFilledLen - pBufHeader->nAllocLen;
 
                     if (pComponentPrivate->pHoldBuffer2 == NULL) {
-                        OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer2,
-                                        WBAMRENC_INPUT_BUFFER_SIZE,
-                                        OMX_U8);
+                        OMX_MALLOC_SIZE(pComponentPrivate->pHoldBuffer2, WBAMRENC_INPUT_BUFFER_SIZE, OMX_U8);
+                        if (pComponentPrivate->pHoldBuffer2 == NULL) {
+                            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                            OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                   OMX_EventError,
+                                                                   OMX_ErrorInsufficientResources,
+                                                                   OMX_TI_ErrorSevere,
+                                                                   NULL);
+                            return OMX_ErrorInsufficientResources;
+                        }
                     }
 
                     pExtraData = (pBufHeader->pBuffer) + (pBufHeader->nFilledLen - remainingBytes);
@@ -1818,6 +1921,18 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam,
                                          (sizeof(WBAMRENC_FrameStruct)*(nFrames)),
                                          WBAMRENC_FrameStruct);
+                if (pLcmlHdr->pFrameParam == NULL) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventError,
+                                                           OMX_ErrorInsufficientResources,
+                                                           OMX_TI_ErrorSevere,
+                                                           NULL);
+                    return OMX_ErrorInsufficientResources;
+                }
 
                 eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                     (nFrames * sizeof(WBAMRENC_FrameStruct)),
@@ -1946,6 +2061,17 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam,
                                      sizeof(WBAMRENC_FrameStruct)*nFrames,
                                      WBAMRENC_FrameStruct);
+            if (pLcmlHdr->pFrameParam == NULL) {
+                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventError,
+                                                       OMX_ErrorInsufficientResources,
+                                                       OMX_TI_ErrorSevere,
+                                                       NULL);
+                return OMX_ErrorInsufficientResources;
+            }
+
 
             pLcmlHdr->pBufferParam->pParamElem = NULL;
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
@@ -2517,6 +2643,10 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event, void * args[10]) {
             OMX_MALLOC_SIZE(pComponentPrivate->iMMFDataLastBuffer,
                             WBAMRENC_OUTPUT_BUFFER_SIZE_MIME * (pComponentPrivate->pOutputBufferList->numBuffers + 1),
                             OMX_BUFFERHEADERTYPE);
+            if (pComponentPrivate->iMMFDataLastBuffer == NULL) {
+                OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+                return OMX_ErrorInsufficientResources;
+            }
 
             OMX_PRINT2(pComponentPrivate->dbg,
                        "pComponentPrivate->iHoldLen = %ld \n",
@@ -2961,7 +3091,10 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent) {
      * This memory pointer will be sent to LCML */
     size_lcml = nIpBuf * sizeof(WBAMRENC_LCML_BUFHEADERTYPE);
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, WBAMRENC_LCML_BUFHEADERTYPE);
-
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[WBAMRENC_INPUT_PORT] = pTemp_lcml;
 
@@ -2979,12 +3112,24 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent) {
         pTemp_lcml->eDir = OMX_DirInput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(WBAMRENC_ParamStruct), WBAMRENC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames = 0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         pTemp_lcml->pFrameParam = NULL;
 
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
@@ -2998,7 +3143,12 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent) {
     size_lcml = nOpBuf * sizeof(WBAMRENC_LCML_BUFHEADERTYPE);
 
     OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, WBAMRENC_LCML_BUFHEADERTYPE);
-
+    if (pTemp_lcml == NULL) {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+        // Cleanup Init Params
+        WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+        return OMX_ErrorInsufficientResources;
+    }
 
     pComponentPrivate->pLcmlBufHeader[WBAMRENC_OUTPUT_PORT] = pTemp_lcml;
 
@@ -3016,15 +3166,25 @@ OMX_ERRORTYPE WBAMRENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent) {
         OMX_PRBUFFER2(pComponentPrivate->dbg, "pTemp_lcml->buffer->pBuffer = %p \n", pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
 
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
-                                 sizeof(WBAMRENC_ParamStruct),
-                                 WBAMRENC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(WBAMRENC_ParamStruct), WBAMRENC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pTemp_lcml->pBufferParam->usNbFrames = 0;
         pTemp_lcml->pBufferParam->pParamElem = NULL;
         pTemp_lcml->pFrameParam = NULL;
 
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf, DMM_BUFFER_OBJ);
+        if (pTemp_lcml->pDmmBuf == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d ::OMX_WbAmrEnc_Utils.c :: WBAMRENC: Error - Insufficient resources\n", __LINE__);
+            // Cleanup Init Params
+            WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
 
         /* This means, it is not a last buffer. This flag is to be modified by
          * the application to indicate the last buffer */
