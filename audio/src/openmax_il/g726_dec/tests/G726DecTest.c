@@ -245,8 +245,8 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,OMX_PTR pAppData,OMX_EVENTT
     case OMX_EventPortSettingsChanged:
     case OMX_EventBufferFlag:
         if(nData2 == (OMX_U32)OMX_BUFFERFLAG_EOS){
-            /*                playcompleted = 1; 
-                              printf("playcomplted set true:: %d\n", __LINE__); */
+            playcompleted = 1;
+            printf("playcomplted set true:: %d\n", __LINE__);
         }
         break;
     case OMX_EventResourcesAcquired:
