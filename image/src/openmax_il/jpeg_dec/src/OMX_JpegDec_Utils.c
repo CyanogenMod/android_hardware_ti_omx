@@ -679,6 +679,10 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
             nFrameWidth<= 3200) {
             lcml_dsp->ProfileID = 9;
         }
+        else if (nFrameHeight <= JPGDEC_SNTEST_MAX_HEIGHT &&
+            nFrameWidth<= JPGDEC_SNTEST_MAX_WIDTH ) {
+            lcml_dsp->ProfileID = 10;
+        }
         else {
             lcml_dsp->ProfileID = 3;
         }
