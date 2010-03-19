@@ -67,7 +67,6 @@
 #include <dbapi.h>
 #include <string.h>
 #include <stdio.h>
-
 #include "OMX_Mp3Dec_Utils.h"
 
 /* ================================================================================= * */
