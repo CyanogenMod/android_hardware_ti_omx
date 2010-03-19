@@ -262,12 +262,29 @@ OMX_ERRORTYPE G711DECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G711DEC_UAlgInBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
+                              sizeof(G711DEC_UAlgInBufParamStruct),
+                              G711DEC_UAlgInBufParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+            G711DEC_CleanupInitParams(pComponent);
+            G711DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
+
         
         pTemp_lcml->pIpParam->usFrameLost = 0;
         pTemp_lcml->pIpParam->usEndOfFile = 0;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pBufferParam,G711DEC_ParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,
+                              sizeof(G711DEC_ParamStruct),
+                              G711DEC_ParamStruct);
+        if (pTemp_lcml->pBufferParam == NULL) {
+            G711DEC_CleanupInitParams(pComponent);
+            G711DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
         OMX_MALLOC_GENERIC(pTemp_lcml->pDmmBuf,DMM_BUFFER_OBJ);
 
         /* This means, it is not a last buffer. This flag is to be modified by
@@ -315,16 +332,11 @@ OMX_ERRORTYPE G711DECFill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     
  EXIT:
 
-    if(eError == OMX_ErrorInsufficientResources)
+    if(eError != OMX_ErrorNone)
     {
-        OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_OUTPUT_PORT]);
-	if (pTemp_lcml != NULL) {
-	    OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
-	}
+       G711DEC_CleanupInitParams(pComponent);
     }
-        
+
     return eError;
 }
 
@@ -542,8 +554,8 @@ OMX_ERRORTYPE G711DEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G711DEC_INPUT_PORT];
     
     for(i=0; i<nIpBuf; i++) {
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
-        OMX_MEMFREE_STRUCT(pTemp_lcml->pBufferParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam,G711DEC_UAlgInBufParamStruct);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam,G711DEC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
         OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam, G711DEC_FrameStruct);
         pTemp_lcml++;
@@ -1642,6 +1654,11 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam,
                                       (sizeof(G711DEC_FrameStruct)*nFrames),
                                       G711DEC_FrameStruct);
+                if (pLcmlHdr->pFrameParam == NULL) {
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    G711DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+                    return OMX_ErrorInsufficientResources;
+                }
 
                 eError = OMX_DmmMap(phandle->dspCodec->hProc, 
                                     nFrames*sizeof(G711DEC_FrameStruct),
@@ -1827,7 +1844,7 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     G711DEC_DPRINT("Returning error %d\n",eError);
 
     if (eError != OMX_ErrorNone){
-        OMX_MEMFREE_STRUCT(pLcmlHdr->pFrameParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, G711DEC_FrameStruct);
     }
     return eError;
 
@@ -2627,7 +2644,15 @@ OMX_ERRORTYPE  G711DECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
         pTemp_lcml->buffer = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
 
-        OMX_MALLOC_GENERIC(pTemp_lcml->pIpParam, G711DEC_UAlgInBufParamStruct);
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
+                              sizeof(G711DEC_UAlgInBufParamStruct),
+                              G711DEC_UAlgInBufParamStruct);
+        if (pTemp_lcml->pIpParam == NULL) {
+            G711DEC_CleanupInitParams(pComponent);
+            G711DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
         
         pTemp_lcml->pIpParam->usFrameLost = 0;
         pTemp_lcml->pIpParam->usEndOfFile = 0;
@@ -2670,14 +2695,9 @@ OMX_ERRORTYPE  G711DECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
 
     pComponentPrivate->bInitParamsInitialized = 1;
  EXIT:
-    if(eError == OMX_ErrorInsufficientResources)
+    if(eError != OMX_ErrorNone)
     {
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(strmAttr);
-	if (pTemp_lcml != NULL) {
-	    OMX_MEMFREE_STRUCT(pTemp_lcml->pIpParam);
-	}
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[G711DEC_OUTPUT_PORT]);
+       G711DEC_CleanupInitParams(pComponent);
     }
     return eError;
 }
