@@ -568,6 +568,9 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     
     /** Stop Codec Command Sent Flag*/
     OMX_U8 bStopSent;
+
+    // Flag to set when mutexes are initialized
+    OMX_BOOL bMutexInitialized;
     
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
