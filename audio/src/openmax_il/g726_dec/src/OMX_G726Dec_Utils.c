@@ -1174,7 +1174,7 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandFlush) {
         OMX_U32 aParam[3] = {0};
         if(commandData == 0x0 || commandData == -1) {
-            G726DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+            G726DEC_DPRINT("Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
                        pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
@@ -1194,7 +1194,7 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
         if(commandData == 0x1 || commandData == -1){
-            G726DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+            G726DEC_DPRINT("Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
                        pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers)  {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
@@ -1713,6 +1713,7 @@ OMX_ERRORTYPE G726DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         G726DEC_DPRINT(":: --------- EMMCodecDspError Here\n");
         if(((int)args[4] == USN_ERR_WARNING) && ((int)args[5] == IUALG_WARN_PLAYCOMPLETED)) {
             /* add callback to application to indicate SN/USN has completed playing of current set of date */
+            G726DEC_DPRINT("%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
 
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,                  
                                                    pComponentPrivate->pHandle->pApplicationPrivate,
