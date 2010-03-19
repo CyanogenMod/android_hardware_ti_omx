@@ -689,14 +689,17 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
     OMX_INIT_STRUCT(appPrvt->pCompRoleStruct,OMX_PARAM_COMPONENTROLETYPE);
 
     /* Check for default role */
-    error = OMX_GetParameter (appPrvt->phandle,
+    /* Commenting for now, as it seems get parameter does not have this index in
+       current implementation*/
+    /*
+      error = OMX_GetParameter (appPrvt->phandle,
                               OMX_IndexParamStandardComponentRole,
                               appPrvt->pCompRoleStruct);
     if (error != OMX_ErrorNone) {
         APP_DPRINT("Error in OMX_GetParameter-%d\n",error);
         return 1;
-    }
-
+        }
+    */
     /* Now set the role to the appropriate format */
     switch(appPrvt->in_port->format.audio.eEncoding){
     case OMX_AUDIO_CodingMP3:
