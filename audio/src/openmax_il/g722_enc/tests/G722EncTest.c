@@ -67,7 +67,7 @@
 #include <OMX_Audio.h>
 #include <TIDspOmx.h>
 #include <OMX_Component.h>
-
+#include <OMX_TI_Common.h>
 
 #ifdef OMX_GETTIME
 #include <OMX_Common_Utils.h>
@@ -627,8 +627,12 @@ int main(int argc, char* argv[])
         }
 #else
 
-        pInputBuffer = (OMX_U8*)malloc(inBufSize+G722ENC_CACHE_ALIGN_MALLOC);
-        pInputBuffer = pInputBuffer+G722ENC_CACHE_ALIGN_OFFSET;
+        OMX_MALLOC_SIZE_DSPALIGN(pInputBuffer, inBufSize, OMX_U8);
+        if (pInputBuffer == NULL) {
+            APP_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+         }
+
         APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pInputBuffer);
         /* allocate input buffer */
         error = OMX_UseBuffer(pHandle,&pInputBufferHeader,0,NULL,inBufSize,pInputBuffer);
@@ -636,8 +640,12 @@ int main(int argc, char* argv[])
             APP_DPRINT("%d :: Error returned by OMX_UseBuffer()\n",__LINE__);
             goto EXIT;
         }
-        pOutputBuffer= (OMX_U8*)malloc (outBufSize+G722ENC_CACHE_ALIGN_MALLOC);
-        pOutputBuffer = pOutputBuffer+G722ENC_CACHE_ALIGN_OFFSET;
+        OMX_MALLOC_SIZE_DSPALIGN(pOutputBuffer, inBufSize, OMX_U8);
+        if (pOutputBuffer == NULL) {
+            APP_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
+            return OMX_ErrorInsufficientResources;
+        }
+
         APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pOutputBuffer);
         /* allocate output buffer */
         error = OMX_UseBuffer(pHandle,&pOutputBufferHeader,1,NULL,outBufSize,pOutputBuffer);
@@ -1122,12 +1130,8 @@ int main(int argc, char* argv[])
                         }
 #ifdef USE_BUFFER
                         /* free the App Allocated Buffers */
-                        pInputBuffer = pInputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-                        pOutputBuffer = pOutputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-                        free(pOutputBuffer);
-                        free(pInputBuffer);
-                        pOutputBuffer = NULL;
-                        pInputBuffer = NULL;
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer, OMX_U8);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer, OMX_U8);
 #endif
                         OMX_SendCommand(pHandle,OMX_CommandStateSet,OMX_StateLoaded,NULL);
                         WaitForState(pHandle,OMX_StateLoaded);
@@ -1171,12 +1175,8 @@ int main(int argc, char* argv[])
                         }
 #ifdef USE_BUFFER
                         /* free the App Allocated Buffers */
-                        pInputBuffer = pInputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-                        pOutputBuffer = pOutputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-                        free(pOutputBuffer);
-                        free(pInputBuffer);
-                        pOutputBuffer = NULL;
-                        pInputBuffer = NULL;
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer, OMX_U8);
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer, OMX_U8);
 #endif
 
                         error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateLoaded, NULL);
@@ -1249,12 +1249,8 @@ int main(int argc, char* argv[])
     }
 #ifdef USE_BUFFER
     /* free the App Allocated Buffers */
-    pInputBuffer = pInputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-    pOutputBuffer = pOutputBuffer-G722ENC_CACHE_ALIGN_OFFSET;
-    free(pOutputBuffer);
-    free(pInputBuffer);
-    pOutputBuffer = NULL;
-    pInputBuffer = NULL;
+    OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer, OMX_U8);
+    OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer, OMX_U8);
 #endif
 #endif  
     APP_DPRINT ("%d :: Sending the OMX_StateLoaded Command\n",__LINE__);
