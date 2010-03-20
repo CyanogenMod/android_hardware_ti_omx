@@ -220,6 +220,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     /*Allocate the memory for Component private data area*/
     OMX_MALLOC_GENERIC(pHandle->pComponentPrivate, G722ENC_COMPONENT_PRIVATE);
+
+    pComponentPrivate = pHandle->pComponentPrivate;
+
     ((G722ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->pHandle = pHandle;
     ((G722ENC_COMPONENT_PRIVATE *)
      pHandle->pComponentPrivate)->sPortParam.nPorts = 0x2;
@@ -407,6 +410,18 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     G722ENC_DPRINT("Leaving OMX_ComponentInit\n");
 
     if (OMX_ErrorNone != eError) {
+
+        /* Free previously allocated memory before bailing */
+        OMX_MEMFREE_STRUCT(pcm_ip);
+        OMX_MEMFREE_STRUCT(pcm_op);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pPortDef_ip);
+        OMX_MEMFREE_STRUCT(pPortDef_op);
+
         if ((NULL != pHandle) && (pComponentPrivate->bMutexInitDone == OMX_TRUE)) {
             pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
             pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
@@ -416,13 +431,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
             pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
 
             pComponentPrivate->bMutexInitDone = OMX_FALSE;
-
-            if (pHandle->pComponentPrivate) {
-                G722ENC_MEMPRINT("%d:::[FREE] %p\n", __LINE__, pHandle->pComponentPrivate);
-                free(pHandle->pComponentPrivate);
-                pHandle->pComponentPrivate = NULL;
-            }
         }
+        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
 
     }
 
