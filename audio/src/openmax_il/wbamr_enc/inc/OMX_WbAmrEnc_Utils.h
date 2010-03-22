@@ -683,6 +683,9 @@ typedef struct WBAMRENC_COMPONENT_PRIVATE {
 
     OMX_S32 nOutStandingEmptyDones;
 
+    // Flag to set when mutexes are initialized
+    OMX_BOOL bMutexInitialized;
+
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;
