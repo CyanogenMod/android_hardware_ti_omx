@@ -1131,9 +1131,16 @@ int RM_GetQos()
 
 #ifdef DVFS_ENABLED
         cpu_variant = get_omap_version();
-        maxMhz = get_curr_cpu_mhz(cpu_variant);
-        dsp_max_freq = get_dsp_max_freq();
-        op = rm_get_vdd1_constraint();
+        if (cpu_variant != OMAP_NOT_SUPPORTED) {
+           maxMhz = get_curr_cpu_mhz(cpu_variant);
+           dsp_max_freq = get_dsp_max_freq();
+           op = rm_get_vdd1_constraint();
+        }
+        else {
+            RM_EPRINT("OMAP NOT SUPPORTED, failed to get QOS!!\n");
+            FreeQos();
+            return QOS_DENY;
+        }
 #endif
         
         results = NULL;
