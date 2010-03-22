@@ -1187,16 +1187,21 @@ int RM_GetQos()
 
         /* Calculate the average */
         sum = 0;
+        RM_EPRINT("QOS snapshots:\n");
         for (i=0; i < cpuStruct.snapshotsCaptured; i++) {
             sum += cpuStruct.cpuLoadSnapshots[i];
+            RM_EPRINT("\tindex %d = %d MHz\n", i, cpuStruct.cpuLoadSnapshots[i]);
         }
         cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
-        cpuStruct.cyclesInUse = ((cpuStruct.averageCpuLoad * dsp_max_freq) / 100);
+
+        /* @BUG: cycles in use is calculated wrong, change it to most recent average we calculated. 
+           Now this member of the struct is redundant... */
+        cpuStruct.cyclesInUse = cpuStruct.averageCpuLoad;
         cpuStruct.cyclesAvailable = dsp_max_freq - cpuStruct.cyclesInUse;
         RM_EPRINT("Calculating QoS: \n\tdsp_max_freq = %d\n\tcyclesInUse = %d\n\n", dsp_max_freq, cpuStruct.cyclesInUse);
 
-        RM_EPRINT("QoS Results: \n\tmemoryAvailable = %d\n\tcyclesAvailable = %d\n\trequestedCycles = %d\n\n", 
-                   memoryAvailable, cpuStruct.cyclesAvailable, cmd_data.param2);
+        RM_EPRINT("QoS Results: \n\tmemoryAvailable = %d\n\tcyclesAvailable = %d\n\trequestedCycles = %d\n\tcurrentUse (snapshot) = %d\n\n", 
+                   memoryAvailable, cpuStruct.cyclesAvailable, cmd_data.param2, currentOverallUtilization);
 
         /* if memory is available and DSP cycles are available grant request */
         if (memoryAvailable && (cpuStruct.cyclesAvailable >= cmd_data.param2)) {                        
@@ -1224,12 +1229,11 @@ void *RM_FatalErrorWatchThread()
     DSP_HPROCESSOR hProc;
     struct DSP_NOTIFICATION* notification_mmufault;
     struct DSP_NOTIFICATION* notification_syserror ;
+
     int i;
 
-
-    RM_DPRINT("\n\n\nstarting dsp_monitor thread\n\n\n\n");
     status = DSPProcessor_Attach(0, NULL, &hProc);
-           
+    DSP_ERROR_EXIT(status, "DSP processor attach failed", EXIT);           
     notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
     if(notification_mmufault == NULL) {
         RM_DPRINT("%d :: malloc failed....\n",__LINE__);
@@ -1294,6 +1298,7 @@ void *RM_FatalErrorWatchThread()
     }
     }
 EXIT:    
+    RM_DPRINT("leaving dsp_monitor thread\n\n");
     return NULL;
 }
 

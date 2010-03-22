@@ -48,15 +48,7 @@
 
 #include <ResourceManagerAPI.h>
 
-#define DSP_ERROR_EXIT(err, msg, label)                \
-    if (DSP_FAILED (err)) {                        \
-        printf("\n****************RM ERROR : DSP ************************\n");\
-        printf("Error: %s : Err Num = %lx", msg, err);  \
-        printf("\n****************RM ERROR : DSP ************************\n");\
-        goto label;                               \
-    }                                              /**/
-
-#undef RM_DEBUG
+#define RM_DEBUG
 
 #include <utils/Log.h>
 #undef LOG_TAG
@@ -65,9 +57,23 @@
 
 #ifdef  RM_DEBUG
         #define RM_DPRINT LOGD
+#define DSP_ERROR_EXIT(err, msg, label)                \
+    if (DSP_FAILED (err)) {                        \
+        LOGD("\n****************RM ERROR : DSP ************************\n");\
+        LOGD("Error: %s : Err Num = %lx", msg, err);  \
+        LOGD("\n****************RM ERROR : DSP ************************\n");\
+        goto label;                               \
+    }                                              /**/
 //    fprintf(stdout,__VA_ARGS__)
 #else
         #define RM_DPRINT(...)
+#define DSP_ERROR_EXIT(err, msg, label)                \
+    if (DSP_FAILED (err)) {                        \
+        printf("\n****************RM ERROR : DSP ************************\n");\
+        printf("Error: %s : Err Num = %lx", msg, err);  \
+        printf("\n****************RM ERROR : DSP ************************\n");\
+        goto label;                               \
+    }                                              /**/
 #endif
 
 #define MAXSTREAMCOUNT	10
