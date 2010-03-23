@@ -517,7 +517,10 @@ int rm_set_min_scaling_freq(int MHz)
     /* for any MM case, set c-state to 2, unless no mm is active */
     int c_state = C_STATE_2;
     freq = rm_get_min_scaling_freq();
-    
+    if (freq < 0) {
+        RAM_DPRINT("min scaling freq sysfs is not supported\n");
+        return -1;
+    }
     if(MHz == 0)
     {
         /* clear constraints for idle MM case */
@@ -566,7 +569,10 @@ int rm_get_min_scaling_freq()
 {
     int min_scaling_freq = 0;
     FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq","r");
-    if (fp == NULL) RAM_DPRINT("open file failed\n");
+    if (fp == NULL) {
+        RAM_DPRINT("open file failed, unable to get min_scaling_freq\n");
+        return -1;
+    }
     fscanf(fp, "%d",&min_scaling_freq);
     fclose(fp);
     RAM_DPRINT("[rm_get_min_scaling_freq] = %d \n",min_scaling_freq);
