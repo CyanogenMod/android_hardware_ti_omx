@@ -375,21 +375,15 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
            break;
        case OMX_EventMark:
            break;
-		case OMX_EventBufferFlag:
-			APP_DPRINT( "%d :: App: EOS Event Received\n", __LINE__);
-            if((int)pEventData == OMX_BUFFERFLAG_EOS)
-            {
-                playCompleted = 1;
-				writeValue = 2;  
-				write(Event_Pipe[1], &writeValue, sizeof(OMX_U8));
-            }
-			if(nData2 == (OMX_U32)OMX_BUFFERFLAG_EOS) { 
-				if(nData1 == (OMX_U32)NULL)
-					puts("IN Buffer flag received!");
-				else if(nData1 == (OMX_U32)NULL)
-					puts("OUT Buffer flag received!");
-			}
-			break;
+       case OMX_EventBufferFlag:
+           APP_DPRINT( "%d :: App: EOS Event Received\n", __LINE__);
+           if((nData1 & 0x01) && (nData2 & (OMX_U32)OMX_BUFFERFLAG_EOS))
+           {
+               playCompleted = 1;
+               writeValue = 2;
+               write(Event_Pipe[1], &writeValue, sizeof(OMX_U8));
+           }
+           break;
        default:
            break;
    }

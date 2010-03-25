@@ -336,6 +336,16 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParams(OMX_COMPONENTTYPE* pComponent,
 
         pTemp->nFlags = NORMAL_BUFFER;
 
+        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
+                                 sizeof(WMADEC_UAlgOutBufParamStruct),
+                                 WMADEC_UAlgOutBufParamStruct);
+        if(NULL== pTemp_lcml->pOpParam){
+            WMADEC_CleanupInitParams((OMX_HANDLETYPE) pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
+        /*Initialize output IUALG parameters */
+        pTemp_lcml->pOpParam->ulFrameCount = 0;
+        pTemp_lcml->pOpParam->bLastBuffer = 0;
         pTemp++;
         pTemp_lcml++;
     }
@@ -626,6 +636,7 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf = 0;
+    OMX_U32 nOpBuf = 0;
     OMX_U16 i=0;
 
     OMX_MEMFREE_STRUCT(pComponentPrivate->strmAttr);
@@ -638,6 +649,7 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     }    
     
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
+    nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
 
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT];
     if(pTemp_lcml)
@@ -658,7 +670,13 @@ OMX_ERRORTYPE WMADEC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT]);
     OMX_PRCOMM2(pComponentPrivate->dbg, "freeing pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT] = %p",
                   pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
-                  
+
+    pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT];
+    for(i=0; i<nOpBuf; i++) {
+        OMX_PRBUFFER2(pComponentPrivate->dbg, ":: Freeing: pTemp_lcml->pOpParam = %p\n",pTemp_lcml->pOpParam);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam, WMADEC_UAlgOutBufParamStruct);
+        pTemp_lcml++;
+    }
     OMX_PRBUFFER2(pComponentPrivate->dbg, "%d:[FREE] %p",__LINE__,
                     pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT]);
                     
@@ -1669,6 +1687,10 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d Comp:: Sending Emptied Output buffer=%p to LCML",
                        __LINE__,pBufHeader);
 
+        eError = WMADECGetCorresponding_LCMLHeader(pComponentPrivate,
+                                                   pBufHeader->pBuffer,
+                                                   OMX_DirOutput,
+                                                   &pLcmlHdr);
 #ifdef __PERF_INSTRUMENTATION__
         PERF_SendingFrame(pComponentPrivate_CC->pPERFcomp,
                           PREF(pBufHeader,pBuffer),
@@ -1681,14 +1703,12 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                      if (!WMADEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)){
                         if(!pComponentPrivate->bDspStoppedWhileExecuting){
                             WMADEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput);
-                                    pBufHeader;
-                                pComponentPrivate->LastOutputBufferHdrQueued =  pBufHeader;
                                 eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                           EMMCodecOuputBuffer, 
                                                           (OMX_U8 *)pBufHeader->pBuffer, 
                                                           pBufHeader->nAllocLen,
                                                           pBufHeader->nAllocLen,
-                                                          NULL,
+                                                          (OMX_U8*)pLcmlHdr->pOpParam,
                                                           sizeof(WMADEC_UAlgOutBufParamStruct),
                                                           NULL);
 
@@ -2100,7 +2120,16 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                   PERF_BoundaryStart | PERF_BoundarySteadyState);
                 }
 #endif
-
+                if (pLcmlHdr->pOpParam->bLastBuffer){
+                    pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+                    pComponentPrivate_CC->cbInfo.EventHandler(pComponentPrivate_CC->pHandle,
+                                                           pComponentPrivate_CC->pHandle->pApplicationPrivate,
+                                                           OMX_EventBufferFlag,
+                                                           pLcmlHdr->buffer->nOutputPortIndex,
+                                                           pLcmlHdr->buffer->nFlags, NULL);
+                    pComponentPrivate_CC->bIsEOFSent = 0;
+                    pLcmlHdr->pOpParam->bLastBuffer=0;
+                }
                 OMX_PRBUFFER2(pComponentPrivate_CC->dbg, " OUTPUT RETURNING pBuffer->nFilledLen =%ld",pLcmlHdr->buffer->nFilledLen);
                 WMADECHandleDataBuf_FromLCML(pComponentPrivate_CC, pLcmlHdr);
             }
@@ -3254,8 +3283,6 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                       pComponentPrivate->pOutputBufHdrPending[i],
                                       OMX_DirOutput);
                                       
-                    pComponentPrivate->LastOutputBufferHdrQueued = 
-                        pComponentPrivate->pOutputBufHdrPending[i];
 
                     eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                               EMMCodecOuputBuffer,  
@@ -3773,6 +3800,16 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
             pTemp_lcml->buffer = pTemp;
             pTemp_lcml->eDir = OMX_DirOutput;
             pTemp->nFlags = NORMAL_BUFFER;
+            OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
+                                     sizeof(WMADEC_UAlgOutBufParamStruct),
+                                     WMADEC_UAlgOutBufParamStruct);
+            if(NULL== pTemp_lcml->pOpParam){
+                WMADEC_CleanupInitParams((OMX_HANDLETYPE) pComponent);
+                return OMX_ErrorInsufficientResources;
+            }
+            /*Initialize output IUALG parameters */
+            pTemp_lcml->pOpParam->ulFrameCount = 0;
+            pTemp_lcml->pOpParam->bLastBuffer = 0;
             pTemp++;
             pTemp_lcml++;
         }
@@ -3894,8 +3931,6 @@ OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData, struct OMX
 void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
     OMX_COMPONENTTYPE *pHandle = NULL;
-    OMX_U8 pending_buffers = OMX_FALSE;
-    OMX_U32 i;
     switch (arg)
     {
         case IUALG_WARN_CONCEALED:
@@ -3913,70 +3948,20 @@ void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
             {
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n", __LINE__);
                 pComponentPrivate->first_buffer = 1;
-                for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++)
-                {
-                    if (WMADEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput))
-                    {
-                        pComponentPrivate->lastout = pComponentPrivate->pOutputBufferList->pBufHdr[i];
-                    }
-                }
-                for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++)
-                {
-                    if (WMADEC_IsPending(pComponentPrivate,pComponentPrivate->pOutputBufferList->pBufHdr[i],OMX_DirOutput))
-                    {
-#ifdef __PERF_INSTRUMENTATION__
-                        PERF_SendingFrame(pComponentPrivate->pPERFcomp,
-                                PREF(pComponentPrivate->pOutputBufferList->pBufHdr[i], pBuffer),
-                                0,
-                                PERF_ModuleHLMM);
-#endif
-                        pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFilledLen = 0;
-                        if(pComponentPrivate->lastout == pComponentPrivate->pOutputBufferList->pBufHdr[i])
-                        {
-                            pComponentPrivate->pOutputBufferList->pBufHdr[i]->nFlags |= OMX_BUFFERFLAG_EOS;
-                        }
-                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                pComponentPrivate->pHandle->pApplicationPrivate,
-                                pComponentPrivate->pOutputBufferList->pBufHdr[i]);
-                        pComponentPrivate->nOutStandingFillDones++;
-                        pending_buffers = OMX_TRUE;
-                    }
-                    else
-                    {
-                        if((i == pComponentPrivate->pOutputBufferList->numBuffers-1) && !pending_buffers)
-                        {
-                            /*is last iteration and no pending buffers were found*/
-                            pending_buffers = OMX_FALSE;
-                        }
-                    }
-                }
-                if(!pComponentPrivate->dasfmode)
-                {
-                    if(!pending_buffers)
-                    {
-                        /*turning on EOS on last buffer queued (extra check)*/
-                        pComponentPrivate->LastOutputBufferHdrQueued->nFlags |=
-                            OMX_BUFFERFLAG_EOS;
-                        pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
-                                pComponentPrivate->pHandle->pApplicationPrivate,
-                                pComponentPrivate->LastOutputBufferHdrQueued);
-                   }
-                    pComponentPrivate->cbInfo.EventHandler(
-                            pComponentPrivate->pHandle,
-                            pComponentPrivate->pHandle->pApplicationPrivate,
-                            OMX_EventBufferFlag,
-                            pComponentPrivate->LastOutputBufferHdrQueued->nOutputPortIndex,
-                            pComponentPrivate->LastOutputBufferHdrQueued->nFlags, (OMX_PTR)OMX_BUFFERFLAG_EOS);
-
-                }
-                else
-                {
-                    pComponentPrivate->cbInfo.EventHandler(
-                            pComponentPrivate->pHandle,
-                            pComponentPrivate->pHandle->pApplicationPrivate,
-                            OMX_EventBufferFlag,
-                            (OMX_U32) NULL,
-                            OMX_BUFFERFLAG_EOS, (OMX_PTR)OMX_BUFFERFLAG_EOS);
+                OMX_PRDSP2(pComponentPrivate->dbg,  "IUALG_WARN_PLAYCOMPLETED!\n", __LINE__);
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       OMX_DirOutput,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+                if(pComponentPrivate->dasfmode){
+                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                                           OMX_EventBufferFlag,
+                                                           (OMX_U32)NULL,
+                                                           OMX_BUFFERFLAG_EOS,
+                                                           NULL);
                 }
             }
             break;
