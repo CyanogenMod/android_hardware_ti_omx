@@ -3088,6 +3088,7 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
 
         pComponentPrivate->nNumInputBufPending = 0;
         pComponentPrivate->nNumOutputBufPending = 0;
+        pComponentPrivate->first_buffer = 1;
         if(pComponentPrivate->dasfmode == 1)
         {
             OMX_U32 pValues[4];
