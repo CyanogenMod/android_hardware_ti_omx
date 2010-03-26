@@ -155,18 +155,6 @@ OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs,
         aOutputs->profile = (uint32)profile_idc;
         aOutputs->level = (uint32) level_idc;
 
-        /*When 720p and other profiles may be handled by other Video Decoder OMX Component,
-          this will let PV know that it will need to load other compponent*/
-        if ( 0 == oscl_strncmp (pComponentName, TI_VID_DEC, oscl_strlen (TI_VID_DEC)) )
-        {
-            if( ((width > WVGA_MAX_WIDTH) || (height > WVGA_MAX_HEIGHT)) ||
-                (profile_idc != H264_PROFILE_IDC_BASELINE) ||
-                entropy_coding_mode_flag )
-            {
-                return -1;
-            }
-        }
-
     }
     else if (aInputs->iMimeType == PVMF_MIME_WMV) //wmv
     {

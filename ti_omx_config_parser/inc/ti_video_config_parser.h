@@ -23,9 +23,6 @@
 #include "pvmf_format_type.h"
 #include "oscl_stdstring.h"
 
-#define WVGA_MAX_WIDTH 900
-#define WVGA_MAX_HEIGHT WVGA_MAX_WIDTH
-#define TI_VID_DEC "OMX.TI.Video.Decoder"
 typedef struct
 {
     uint8 *inPtr;
