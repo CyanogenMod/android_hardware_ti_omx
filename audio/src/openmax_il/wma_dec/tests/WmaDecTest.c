@@ -174,6 +174,8 @@ fd_set rfds;
 int done = 0;
 int whileloopdone = 0;
 int frameMode = 0;
+/* Flag to remember that file is re read again for decoding from beginning */
+OMX_U8 fileReRead =0;
 /******************************************************************************/
 OMX_S16 numInputBuffers = 0;
 OMX_S16 numOutputBuffers = 0;
@@ -700,6 +702,7 @@ printf("\n**********************************************************************
         whileloopdone = 0;
         if(j > 0) {
             printf ("=Decoding the file %d Time\n",j+1);
+            fileReRead =1;
             close(IpBuf_Pipe[0]);
             close(IpBuf_Pipe[1]);
             close(OpBuf_Pipe[0]);
@@ -1034,6 +1037,7 @@ printf("\n**********************************************************************
             whileloopdone = 0;
         if(i > 0) {
             printf ("Decoding the file %d Time\n",i+1);
+            fileReRead =1;
 
             close(IpBuf_Pipe[0]);
             close(IpBuf_Pipe[1]);
@@ -1218,10 +1222,10 @@ printf("\n**********************************************************************
                     break;
 
             case 2: /* Stop and play again */
-            case 4: /* Just Stop */
                     if(frmCount == 10) {
                         printf (" Sending Stop command to Codec \n");
                         StopComponent(pHandle);
+                        break;
                     }
                     if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
                        OMX_BUFFERHEADERTYPE* pBuffer;
@@ -1234,7 +1238,35 @@ printf("\n**********************************************************************
                        }
                     }
                     break;
+            case 4:
+                if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
 
+                    OMX_BUFFERHEADERTYPE* pBuffer;
+                    read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
+                    if(frmCount >= 5) {
+                        fprintf(stderr, "Shutting down ---------- \n");
+#ifdef OMX_GETTIME
+                        GT_START();
+                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
+                        GT_END("Call to SendCommand <OMX_StateIdle>");
+#else
+                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);;
+#endif
+                        if(error != OMX_ErrorNone) {
+                            fprintf (stderr,"Error from SendCommand-Idle(Stop) State function\n");
+                            goto EXIT;
+                        }
+                        done = 1;
+                    }
+                    else {
+                        error = send_input_buffer (pHandle, pBuffer, fIn);
+                        if (error != OMX_ErrorNone) {
+                            printf ("Error While reading input pipe\n");
+                            goto EXIT;
+                        }
+                    }
+                }
+                 break;
             case 3:
                     if (frmCount == 8) {
                         printf (" Sending Resume command to Codec \n");
@@ -1597,11 +1629,19 @@ int fill_data (OMX_BUFFERHEADERTYPE *pBuf,FILE *fIn)
     static OMX_U8 first_buff = 0;
     static int totalRead = 0;
     static int fileHdrReadFlag = 0;
-    static int ccnt = 1;
     static int payload=0;
     OMX_U8 temp = 0;
     nRead = 0;
     byteOffset = 0;
+    if(fileReRead)
+    {
+        first_cap = 0;
+        first_buff = 0;
+        totalRead = 0;
+        fileHdrReadFlag = 0;
+        payload=0;
+        fileReRead =0;
+    }
     if(frameMode)
     {
       /* TODO: Update framemode TC to match component */
@@ -1644,7 +1684,6 @@ int fill_data (OMX_BUFFERHEADERTYPE *pBuf,FILE *fIn)
     APP_DPRINT("%d :: App:: Read IpBuff = %p pBuf->nAllocLen = * %ld, nRead = %ld\n",
                    __LINE__, pBuf->pBuffer, pBuf->nAllocLen, nRead);
     APP_DPRINT("\n*****************************************************\n");    
-    ccnt++;
     return nRead;
 }
 
@@ -1661,10 +1700,15 @@ int fill_data_tc7 (OMX_BUFFERHEADERTYPE *pBuf,FILE *fIn)
     int nRead;
     static int totalRead = 0;
     static int fileHdrReadFlag = 0;
-    static int ccnt = 1;
     OMX_U8* tempBuffer; 
     OMX_U8* pBufferOffset;
 
+    if(fileReRead)
+    {
+        totalRead = 0;
+        fileHdrReadFlag = 0;
+        fileReRead =0;
+    }
     if (!fileHdrReadFlag) {
         nRead = fread(pBuf->pBuffer, 1,75 , fIn);
         tempBuffer = newmalloc(19500*sizeof(OMX_U8));
@@ -1689,7 +1733,6 @@ int fill_data_tc7 (OMX_BUFFERHEADERTYPE *pBuf,FILE *fIn)
 
     totalRead += nRead;
     pBuf->nFilledLen = nRead;
-    ccnt++;
     return nRead;
 }
 
