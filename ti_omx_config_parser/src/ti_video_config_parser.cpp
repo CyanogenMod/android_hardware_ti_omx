@@ -65,6 +65,9 @@ int32 GetNAL_Config(uint8** bitstream, int32* size);
 
 OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs, tiVideoConfigParserOutputs *aOutputs, char* pComponentName)
 {
+    //modify entropy only when required
+    aOutputs->entropy = 0;
+
     if (aInputs->iMimeType == PVMF_MIME_M4V) //m4v
     {
         mp4StreamType psBits;
@@ -154,6 +157,7 @@ OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs,
         aOutputs->height = (uint32)display_height;
         aOutputs->profile = (uint32)profile_idc;
         aOutputs->level = (uint32) level_idc;
+        aOutputs->entropy = (uint32) entropy_coding_mode_flag;
 
     }
     else if (aInputs->iMimeType == PVMF_MIME_WMV) //wmv
