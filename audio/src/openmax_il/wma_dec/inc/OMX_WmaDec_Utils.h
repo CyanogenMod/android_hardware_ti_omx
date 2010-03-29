@@ -465,6 +465,7 @@ typedef struct
 typedef struct {
     /* Number of frames in a buffer */
     unsigned long ulFrameCount;
+    OMX_U16 bLastBuffer;
 }WMADEC_UAlgOutBufParamStruct;
 /* =================================================================================== */
 /**
