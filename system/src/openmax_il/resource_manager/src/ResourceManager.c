@@ -93,7 +93,6 @@ bool stub_mode = 0;
 bool mmuRecoveryInProgress = 0;
 
 unsigned int totalCpu=0;
-unsigned int peakBufferCpu=0;
 unsigned int imageTotalCpu=0;
 unsigned int videoTotalCpu=0;
 unsigned int audioTotalCpu=0;
@@ -729,12 +728,8 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
             else {
                 RM_DPRINT("ERROR - unknown component type\n");
             }
-            if ((unsigned int)(componentList.component[index].componentCPU * 0.10) > peakBufferCpu)
-            {
-                peakBufferCpu = (unsigned int)componentList.component[index].componentCPU * 0.10;
-            }
             totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
-                       cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
+                       cameraTotalCpu + lcdTotalCpu;
             /* Inform the Resource Activity Monitor of the new CPU usage */
             RM_DPRINT("total CPU to set constraint = %d\n", totalCpu);
             rm_set_vdd1_constraint(totalCpu);        
@@ -764,13 +759,7 @@ void HandleStateSet(RESOURCEMANAGER_COMMANDDATATYPE cmd)
             
             /* Inform the Resource Activity Monitor of the new CPU usage */
             totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
-                       cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
-            if(totalCpu == peakBufferCpu)
-            {
-                peakBufferCpu = (unsigned int) 0;
-                totalCpu = audioTotalCpu + videoTotalCpu + imageTotalCpu +
-                           cameraTotalCpu + lcdTotalCpu + peakBufferCpu;
-            }
+                       cameraTotalCpu + lcdTotalCpu;
             
             rm_set_vdd1_constraint(totalCpu);
         }
