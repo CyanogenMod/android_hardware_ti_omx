@@ -187,17 +187,16 @@ int dsp_mhz_to_vdd1_opp(int MHz)
 
         case OMAP3630_CPU:
         if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_1]) {
-            /* MM should never use opp1, so skip to opp2 */
+            /* on 3630, opp1 is OK */
             vdd1_opp = OPERATING_POINT_1;
         }
         else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_2]) {
-            /* MM should never use opp1, so skip to opp2 */
             vdd1_opp = OPERATING_POINT_2;
         }
         else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_3]) {
             vdd1_opp = OPERATING_POINT_3;
         }
-        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_4]) {
+        else {
             vdd1_opp = OPERATING_POINT_4;
         }
         break;
@@ -675,7 +674,7 @@ int dsp_mhz_to_min_scaling_freq(int MHz)
         else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_3]) {
             freq = vdd1_dsp_mhz_3630[OPERATING_POINT_3];
         }
-        else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_4]) {
+        else {
             freq = vdd1_dsp_mhz_3630[OPERATING_POINT_4];
         }
         break;
