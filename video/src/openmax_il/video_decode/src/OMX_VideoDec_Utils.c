@@ -5335,6 +5335,9 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL){
                 pComponentPrivate->pTempBuffHead.nFlags = 0;
+                if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
+                    pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
+                }
                 pComponentPrivate->pTempBuffHead.nFilledLen = 0;
                 pComponentPrivate->pTempBuffHead.pBuffer = NULL;
                 
