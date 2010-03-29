@@ -363,7 +363,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     strncpy(pComponentPrivate->cComponentName, cVideoDecodeName, VIDDEC_MAX_NAMESIZE);
 
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pBufferRCV.sStructRCV,
-                             sizeof(VIDDEC_WMV_RCV_struct),
+                             VIDDEC_MULTIPLE16(sizeof(VIDDEC_WMV_RCV_struct)),
                              VIDDEC_WMV_RCV_struct);
     if (pComponentPrivate->pBufferRCV.sStructRCV == NULL) {
         OMX_TRACE4(pComponentPrivate->dbg, "Error: Malloc failed\n");
@@ -2949,6 +2949,7 @@ static OMX_ERRORTYPE VIDDEC_AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pTemp = (OMX_U8*)pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
 #ifdef VIDDEC_WMVPOINTERFIXED
     pTemp += VIDDEC_PADDING_FULL;
+    pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer = (OMX_U8*)pTemp;
     pCompPort->pBufferPrivate[pBufferCnt]->pTempBuffer = pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->pBuffer;
     pCompPort->pBufferPrivate[pBufferCnt]->pBufferHdr->nOffset = 0;
 #endif

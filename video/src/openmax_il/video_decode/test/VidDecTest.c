@@ -803,9 +803,9 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
                                 pAppData->bFirstBufferRead = OMX_TRUE;
                                 nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, nSizeToRead, pAppData->fIn);
                                 APP_DPRINT("-+- %x %x %x %x\n",
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0], 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1], 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2], 
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0],
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1],
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2],
                                     pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 3]);
                                 pAppData->nFileTotalRead += nRead;
                                 pBufferHeader->nFilledLen = nRead;
@@ -813,28 +813,25 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
                             else {
                                 nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, WMV_STARCODE_LENGHT, pAppData->fIn);
                                 APP_DPRINT("-- %x %x %x %x\n",
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0], 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1], 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2], 
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0],
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1],
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2],
                                     pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 3]);
-                                if (pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0] == 0 && 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1] == 0 && 
-                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2] == 1 && 
+                                if (pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 0] == 0 &&
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 1] == 0 &&
+                                    pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 2] == 1 &&
                                     pBufferHeader->pBuffer[(int)pBufferHeader->nOffset + 3] == 0xf) {
                                     OMX_U32 temptimeStamp = 0;
                                     fseek ( pAppData->fIn, -(WMV_STARCODE_LENGHT) , SEEK_CUR);
                                     nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, nSizeToRead, pAppData->fIn);
                                     pAppData->nFileTotalRead += nRead;
-                                    pBufferHeader->nFilledLen = 0;
-                                    nRead = fscanf ( pAppData->fBC, "%lu %lu %lu", &nVOPIndex, &nVOPType, &temptimeStamp);
-                                    nVOPTimeStamp = (OMX_TICKS)temptimeStamp;
-                                    nSizeToRead = nVOPIndex - pAppData->nFileTotalRead;
-                                    nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, WMV_STARCODE_LENGHT, pAppData->fIn);
+                                    pBufferHeader->nFilledLen = nRead;
                                 }
-                                nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, (nSizeToRead - WMV_STARCODE_LENGHT), pAppData->fIn);
-                                pAppData->nFileTotalRead += nRead + WMV_STARCODE_LENGHT;
-                                pBufferHeader->nFilledLen = nRead;
-                                
+                                else {
+                                    nRead = fread(pBufferHeader->pBuffer + pBufferHeader->nOffset, 1, (nSizeToRead - WMV_STARCODE_LENGHT), pAppData->fIn);
+                                    pAppData->nFileTotalRead += nRead + WMV_STARCODE_LENGHT;
+                                    pBufferHeader->nFilledLen = nRead;
+                                }
                             }
                         }
                         else {
@@ -2879,28 +2876,25 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) {
             FILE *fp = NULL;
             eError = WMVVIDDEC_Fill_Data(pAppData,pAppData->pInBuff[0]);
-            if(pAppData->nWMVFileType == WMV_ELEMSTREAM){
-                pAppData->pInBuff[0]->nFlags = pAppData->pInBuff[0]->nFlags & (~OMX_BUFFERFLAG_CODECCONFIG);
-            }
-            else{ /*WMV_RCVSTREAM*/
-            OMX_U32 * pWord = NULL;
-            /*Verify the size of the Codec Specific Data to avoid data corruption*/
-            if(pAppData->pInBuff[0]->nFilledLen > 51){
-                goto DEINIT;
-            }
-            /*Copy Codec Specific data to expected position in the buffer*/
-            for(i = 0; i < (pAppData->pInBuff[0]->nFilledLen); i++){
-                pAppData->pInBuff[0]->pBuffer[i+51] = pAppData->pInBuff[0]->pBuffer[i];
-            }
-            /*Update the filled Len*/
-            pAppData->pInBuff[0]->nFilledLen+=51;
-            /*Add resolution to the buffer so then the component could be able to parse*/
-            pWord = (pAppData->pInBuff[0]->pBuffer)+15;
-            *pWord = pAppData->nWidth;
+            if(pAppData->nWMVFileType != WMV_ELEMSTREAM){
+                OMX_U32 * pWord = NULL;
+                /*Verify the size of the Codec Specific Data to avoid data corruption*/
+                if(pAppData->pInBuff[0]->nFilledLen > 51){
+                    goto DEINIT;
+                }
+                /*Copy Codec Specific data to expected position in the buffer*/
+                for(i = 0; i < (pAppData->pInBuff[0]->nFilledLen); i++){
+                    pAppData->pInBuff[0]->pBuffer[i+51] = pAppData->pInBuff[0]->pBuffer[i];
+                }
+                /*Update the filled Len*/
+                pAppData->pInBuff[0]->nFilledLen+=51;
+                /*Add resolution to the buffer so then the component could be able to parse*/
+                pWord = (pAppData->pInBuff[0]->pBuffer)+15;
+                *pWord = pAppData->nWidth;
 
-            pWord = (pAppData->pInBuff[0]->pBuffer)+19;
-            *pWord = pAppData->nHeight;
-            strcpy((pAppData->pInBuff[0]->pBuffer)+27, "WMV3");
+                pWord = (pAppData->pInBuff[0]->pBuffer)+19;
+                *pWord = pAppData->nHeight;
+                strcpy((pAppData->pInBuff[0]->pBuffer)+27, "WMV3");
             }
         }
 #ifdef VIDDEC_SPARK_CODE
@@ -2914,8 +2908,10 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             goto DEINIT;
         }
         ++pAppData->nCurrentFrameIn;
-        APP_DPRINT("b Input Buff FRAME %d %x %x\n", (int)pAppData->nCurrentFrameIn,
-                                 (int)pAppData->pInBuff[0], (int)pAppData->pInBuff[0]->nFlags);
+        APP_DPRINT("b Input Buff FRAME %d %x %x s(%d 0x%x)\n", (int)pAppData->nCurrentFrameIn,
+                                 (int)pAppData->pInBuff[0], (int)pAppData->pInBuff[0]->nFlags,
+                                 (int)pAppData->pInBuff[0]->nFilledLen,
+                                 (int)pAppData->pInBuff[0]->nFilledLen);
         TickCounPropatation( pAppData, pAppData->pInBuff[0], pAppData->nCurrentFrameIn);
         if (pAppData->nTestCase == TESTCASE_TYPE_PROP_TICKCOUNT) {
             APP_PRINT("In TickCount %d for input Buffer 0x%x\n", (int)pAppData->pInBuff[0]->nTickCount,
@@ -2980,8 +2976,10 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                         goto DEINIT;
                     }
                     ++pAppData->nCurrentFrameIn;
-                    APP_DPRINT("a Input Buff FRAME %d %x %x\n", (int)pAppData->nCurrentFrameIn,
-                         (int)pAppData->pInBuff[i], (int)pAppData->pInBuff[i]->nFlags);
+                    APP_DPRINT("a Input Buff FRAME %d %x %x s(%d %x)\n", (int)pAppData->nCurrentFrameIn,
+                         (int)pAppData->pInBuff[i], (int)pAppData->pInBuff[i]->nFlags,
+                         (int)pAppData->pInBuff[i]->nFilledLen,
+                         (int)pAppData->pInBuff[i]->nFilledLen);
                     TickCounPropatation( pAppData, pAppData->pInBuff[i], pAppData->nCurrentFrameIn);
                     if (pAppData->nTestCase == TESTCASE_TYPE_PROP_TICKCOUNT) {
                         APP_PRINT("In TickCount %d for input Buffer 0x%x\n", (int)pAppData->pInBuff[i]->nTickCount,
@@ -3079,8 +3077,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", pBuffer->nTimeStamp, (unsigned int)pBuffer);
                         }
                     }
-                    APP_DPRINT(" Input Buff FRAME %d %x %x %x - %x\n", (int)pAppData->nCurrentFrameIn,
-                        (int)pBuffer, (int)pBuffer->nFlags, (int)pBuffer->nFilledLen, (int)pAppData->bInputEOS);
+                    APP_DPRINT(" Input Buff FRAME %d %x %x s(%d %x) - %x\n", (int)pAppData->nCurrentFrameIn,
+                        (int)pBuffer, (int)pBuffer->nFlags, (int)pBuffer->nFilledLen, (int)pBuffer->nFilledLen, (int)pAppData->bInputEOS);
                     if((pBuffer->nFlags & OMX_BUFFERFLAG_EOS)){
                             pAppData->bInputEOS = OMX_TRUE;
                     }
