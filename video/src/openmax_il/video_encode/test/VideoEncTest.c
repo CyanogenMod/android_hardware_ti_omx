@@ -397,6 +397,7 @@ typedef struct MYDATATYPE {
     OMX_U8 NalFormat;
     OMX_U8 bLastOutBuffer;
     OMX_U32  nQPIoF;
+    OMX_BOOL bFromPause;
 } MYDATATYPE;
 
 typedef struct EVENT_PRIVATE {
@@ -1569,6 +1570,7 @@ OMX_ERRORTYPE VIDENCTEST_PassToReady(MYDATATYPE* pAppData)
     pAppData->nOutBufferCount = NUM_OF_OUT_BUFFERS;
 
     pAppData->bLastOutBuffer = 0;
+    pAppData->bFromPause = OMX_FALSE;
 
 
 EXIT:
@@ -1669,11 +1671,13 @@ OMX_ERRORTYPE VIDENCTEST_Starting(MYDATATYPE* pAppData)
 
 
 
+    if(pAppData->bFromPause == OMX_FALSE) {
     for (nCounter = 0; nCounter < nBuffersToSend; nCounter++) {
         pAppData->pOutBuff[nCounter]->nFilledLen = 0;
         eError = pAppData->pComponent->FillThisBuffer(pHandle, pAppData->pOutBuff[nCounter]);
         VIDENCTEST_CHECK_EXIT(eError, "Error in FillThisBuffer");
         pAppData->nOutBufferCount--;
+        }
     }
 
     /* Send EmptyThisBuffer to OMX Video Encoder */
@@ -2470,6 +2474,7 @@ OMX_ERRORTYPE VIDENCTEST_Confirm(MYDATATYPE* pAppData)
             VIDENCTEST_CHECK_EXIT(eError, "Error at OMX_SendCommand function");
             break;
         case VIDENCTEST_PauseResume:
+            pAppData->bFromPause = OMX_TRUE;
         case VIDENCTEST_StopRestart:
             if (pAppData->bStop == OMX_TRUE) {
                 if(pAppData->eTypeOfTest == VIDENCTEST_StopRestart) {
