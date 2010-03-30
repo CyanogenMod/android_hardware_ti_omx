@@ -84,6 +84,9 @@ static int mDebugFps = 0;
 /*--------data declarations --------------------------------------------------*/
 
 /*--------function prototypes ------------------------------------------------*/
+OMX_ERRORTYPE VIDDEC_CheckSetParameter(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
+                                       OMX_PTR pCompParam,
+                                       OMX_INDEXTYPE nParamIndex);
 extern OMX_ERRORTYPE VIDDEC_Start_ComponentThread(OMX_HANDLETYPE pHandle);
 extern OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent);
 extern OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nPassing);
@@ -1161,6 +1164,82 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 EXIT:
     return eError;
 }
+
+/*----------------------------------------------------------------------------*/
+/**
+  *  VIDDEC_CheckSetParameter() checks when it is valid calling OMX_SetParameter
+  *
+  * This method will update application callbacks
+  * the application.
+  *
+  * @param pComponentPrivate         handle for this instance of the component
+  * @param pCompParam                pointer to the parameter structure
+  * @param nParamIndex               parameter index
+  *
+  * @retval OMX_NoError              Success, ready to roll
+  *         OMX_ErrorIncorrectStateOperation   if the checks fails
+  **/
+/*----------------------------------------------------------------------------*/
+
+OMX_ERRORTYPE VIDDEC_CheckSetParameter(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_PTR pCompParam, OMX_INDEXTYPE nParamIndex) {
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->eState == OMX_StateInvalid) {
+        eError = OMX_ErrorIncorrectStateOperation;
+        goto EXIT;
+    }
+
+    if (pComponentPrivate->eState != OMX_StateLoaded && pComponentPrivate->eState != OMX_StateWaitForResources) {
+        /*using OMX_CONFIG_ROTATIONTYPE because it is smallest structure that contains nPortIndex;*/
+        OMX_CONFIG_ROTATIONTYPE* pTempFormat = (OMX_CONFIG_ROTATIONTYPE*)pCompParam;
+
+        switch (nParamIndex) {
+            /*the indices corresponding to the parameter structures containing the field "nPortIndex"*/
+            case OMX_IndexParamCompBufferSupplier:
+            case OMX_IndexParamVideoPortFormat:
+            case OMX_IndexParamPortDefinition:
+            case OMX_IndexParamVideoWmv:
+            case OMX_IndexParamVideoMpeg4:
+            case OMX_IndexParamVideoMpeg2:
+            case OMX_IndexParamVideoAvc:
+            case OMX_IndexParamVideoH263:
+            case OMX_IndexConfigVideoMBErrorReporting:
+            case OMX_IndexParamCommonDeblocking:
+                if (pTempFormat->nPortIndex ==  pComponentPrivate->pInPortDef->nPortIndex) {
+                    if (pComponentPrivate->pInPortDef->bEnabled){
+                        if(eError != OMX_ErrorNone) {
+                            eError = OMX_ErrorIncorrectStateOperation;
+                            goto EXIT;
+                        }
+                    }
+                }
+                else if (pTempFormat->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
+                    if (pComponentPrivate->pOutPortDef->bEnabled){
+                        if(eError != OMX_ErrorNone) {
+                            eError = OMX_ErrorIncorrectStateOperation;
+                            goto EXIT;
+                        }
+                    }
+                }/*it cannot be -1 because structure assignment will happen on one port*/
+                else {
+                    eError = OMX_ErrorBadPortIndex;
+                }
+                break;
+            default:
+                /*all other cases where pCompParam is integer or it doesn't support nPortIndex*/
+                if (!(pComponentPrivate->pInPortDef->bEnabled == OMX_FALSE ||
+                    pComponentPrivate->pOutPortDef->bEnabled == OMX_FALSE)) {
+                    if(eError != OMX_ErrorNone) {
+                        eError = OMX_ErrorIncorrectStateOperation;
+                        goto EXIT;
+                    }
+                }
+        }
+    }
+EXIT:
+    return eError;
+}
+
 /*----------------------------------------------------------------------------*/
 /**
   *  VIDDEC_SetParameter() Sets application callbacks to the component
@@ -1192,13 +1271,12 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
     pHandle= (OMX_COMPONENTTYPE*)hComp;
     pComponentPrivate = pHandle->pComponentPrivate;
 
-    if (pComponentPrivate->eState != OMX_StateLoaded &&
-        pComponentPrivate->eState != OMX_StateWaitForResources &&
-        !(pComponentPrivate->pInPortDef->bEnabled == OMX_FALSE ||
-        pComponentPrivate->pOutPortDef->bEnabled == OMX_FALSE)) {
+    eError = VIDDEC_CheckSetParameter(pComponentPrivate, pCompParam, nParamIndex);
+    if(eError != OMX_ErrorNone) {
         eError = OMX_ErrorIncorrectStateOperation;
         goto EXIT;
     }
+
     switch (nParamIndex) {
         case OMX_IndexParamVideoPortFormat:
             {
