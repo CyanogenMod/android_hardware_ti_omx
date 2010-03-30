@@ -97,6 +97,13 @@ OMX_ERRORTYPE LCML_CallbackJpegDec(TUsnCodecEvent event,
 
 /*------------------------- Function Implementation ------------------*/
 
+static void msleep(int msec){
+    struct timespec req_sleep_time;
+    req_sleep_time.tv_nsec = (msec % 1000) * 1000000L;
+    req_sleep_time.tv_sec = msec / 1000;
+    nanosleep(&req_sleep_time, NULL);
+}
+
 /* ========================================================================== */
 /**
  * @fn GetLCMLHandleJpegDec - Implements the functionality to get LCML handle
@@ -1125,6 +1132,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
     LCML_CALLBACKTYPE cb;
     OMX_U8 nCount = 0;
     int    nBufToReturn;
+    int initMMCodecRetryCnt = -1;
 #ifdef RESOURCE_MANAGER_ENABLED
     OMX_U16 nMHzRM = 0;
     OMX_U32 lImageResolution = 0;
@@ -1156,6 +1164,14 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 #endif
 
             OMX_PRSTATE2(pComponentPrivate->dbg, "Transition state from loaded to idle\n");
+#ifdef USE_BOOST_API
+            eError = RMProxy_RequestBoost(RMPROXY_MAX_BOOST);
+            if ( eError != OMX_ErrorNone ) {
+                OMX_PRMGR4(pComponentPrivate->dbg, "OPP Boost Failed\n");
+                eError = OMX_ErrorInsufficientResources;
+                break;
+            }
+#endif
 
 #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
             pComponentPrivate->rmproxyCallback.RMPROXY_Callback = (void *)ResourceManagerCallback;
@@ -1210,8 +1226,17 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             if (pComponentPrivate->nIsLCMLActive == 1) {
 		OMX_PRDSP2(pComponentPrivate->dbg, "nIsLCMLActive is active\n");
             }
+
             /*calling initMMCodec to init codec with details filled earlier */
-            eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, NULL, &pLcmlHandle, NULL, &cb);
+            do{
+                if(initMMCodecRetryCnt != -1){ // InitMM failed once, so wait for a specified amount of time and try again
+                    OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed, retyring %d out of %d times...\n", initMMCodecRetryCnt+1, NUM_OF_INIT_RETRIES);
+                    msleep(TIME_BETWEEN_INIT_MS);
+                }
+                eError = LCML_InitMMCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, NULL, &pLcmlHandle, NULL, &cb);
+                initMMCodecRetryCnt++;
+            }while((initMMCodecRetryCnt < NUM_OF_INIT_RETRIES) && (eError != OMX_ErrorNone));
+
             if (eError != OMX_ErrorNone) {
 	        OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed...\n");
                 goto EXIT;
@@ -1557,6 +1582,14 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 		    OMX_PRMGR4(pComponentPrivate->dbg, "Cannot Free Resources\n");
                     break;
                 }
+            }
+#endif
+
+#ifdef USE_BOOST_API
+            eError = RMProxy_ReleaseBoost();
+            if (eError != OMX_ErrorNone) {
+                OMX_PRMGR4(pComponentPrivate->dbg, "Release Boost Failed\n");
+                break;
             }
 #endif
 

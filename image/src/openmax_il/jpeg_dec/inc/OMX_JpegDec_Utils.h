@@ -67,7 +67,13 @@
 #include <utils/Log.h>
 #define LOG_TAG "OMX_JPGDEC"
 
+/* disable resource manager */
 #ifdef RESOURCE_MANAGER_ENABLED
+#define USE_BOOST_API
+#undef RESOURCE_MANAGER_ENABLED
+#endif
+
+#if defined(RESOURCE_MANAGER_ENABLED) || defined(USE_BOOST_API)
 #include <ResourceManagerProxyAPI.h>
 #endif
 
@@ -289,6 +295,8 @@ do {					       \
 
 #define NUM_OF_BUFFERS 4
 #define NUM_OF_PORTS 2
+#define NUM_OF_INIT_RETRIES 1
+#define TIME_BETWEEN_INIT_MS 800
 
 #define OMX_JPEGDEC_NUM_DLLS (5)
 #ifdef UNDER_CE

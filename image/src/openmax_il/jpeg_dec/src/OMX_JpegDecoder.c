@@ -2159,8 +2159,6 @@ OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE hComponent)
     PERF_Done(pComponentPrivate->pPERF);
 #endif
 
-    Free_ComponentResourcesJpegDec(pHandle->pComponentPrivate);
-
 #ifdef RESOURCE_MANAGER_ENABLED
     eError= RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Decoder_COMPONENT, 0, 3456, NULL);
     if (eError != OMX_ErrorNone) {
@@ -2172,6 +2170,18 @@ OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE hComponent)
     }
 #endif
 
+#ifdef USE_BOOST_API
+    // if we are still in state where the boost was requested, release it
+    if(pComponentPrivate->nIsLCMLActive == 1)
+    {
+        eError = RMProxy_ReleaseBoost();
+        if (eError != OMX_ErrorNone) {
+            OMX_PRMGR4(pComponentPrivate->dbg, "Release Boost Failed\n");
+        }
+    }
+#endif
+
+    Free_ComponentResourcesJpegDec(pHandle->pComponentPrivate);
 EXIT:
     OMX_PRINT1(dbg, "Error from Component DeInit = %d\n",eError);
     OMX_DBG_CLOSE(dbg);
