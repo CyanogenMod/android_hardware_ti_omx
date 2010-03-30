@@ -1635,9 +1635,9 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             phandle = (LCML_DSP_INTERFACE *)(
                                              ((LCML_CODEC_INTERFACE *)pLcmlHandle->pCodecinterfacehandle)->pCodec);     
             
-            nFrames = (OMX_U8)(pBufHeader->nFilledLen / RTP_Framesize);
+            nFrames = (OMX_U8)(pBufHeader->nFilledLen / (RTP_Framesize*(pComponentPrivate->ftype+1)));
             frameType = pBufHeader->pBuffer;
-            frameType += RTP_Framesize - 1;
+            frameType += (RTP_Framesize*(pComponentPrivate->ftype+1)) - 1;
      
             if( (pLcmlHdr->pBufferParam->usNbFrames < nFrames) && 
                 (pLcmlHdr->pFrameParam != NULL)){
@@ -1652,7 +1652,7 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
             if(pLcmlHdr->pFrameParam == NULL ){
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam,
-                                      (sizeof(G711DEC_FrameStruct)*nFrames),
+                                      (sizeof(G711DEC_FrameStruct)*nFrames*(pComponentPrivate->ftype+1)),
                                       G711DEC_FrameStruct);
                 if (pLcmlHdr->pFrameParam == NULL) {
                     OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
@@ -1661,7 +1661,7 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                 }
 
                 eError = OMX_DmmMap(phandle->dspCodec->hProc, 
-                                    nFrames*sizeof(G711DEC_FrameStruct),
+                                    nFrames*(pComponentPrivate->ftype+1)*sizeof(G711DEC_FrameStruct),
                                     (void*)pLcmlHdr->pFrameParam, (pLcmlHdr->pDmmBuf));        
                 
                 if (eError != OMX_ErrorNone){
@@ -1694,8 +1694,8 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                               EMMCodecInputBuffer,  
                                               (OMX_U8 *)pBufHeader->pBuffer, 
-                                              STD_G711DEC_BUF_SIZE*nFrames,
-                                              STD_G711DEC_BUF_SIZE*nFrames,
+                                              STD_G711DEC_BUF_SIZE*nFrames*(pComponentPrivate->ftype+1),
+                                              STD_G711DEC_BUF_SIZE*nFrames*(pComponentPrivate->ftype+1),
                                               (OMX_U8 *) pLcmlHdr->pBufferParam,
                                               sizeof(G711DEC_ParamStruct),
                                               NULL);                                   
