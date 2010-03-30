@@ -1586,7 +1586,31 @@ int Aacenc_fdread;
 						if(audioinfo.dasfMode == 0) 
 						{
 					  	    APP_DPRINT("%d :: APP: AAC ENCODER RUNNING UNDER FILE 2 FILE MODE \n",__LINE__);
-					        if( FD_ISSET(IpBuf_Pipe[0], &rfds) ) 
+						    if(frmCnt == 20)
+							{
+								APP_DPRINT("%d :: APP: Sending Stop.........From APP \n",__LINE__);
+								APP_DPRINT("%d :: APP: Shutting down ---------- \n",__LINE__);
+#ifdef OMX_GETTIME
+								GT_START();
+#endif
+								error = OMX_SendCommand(*pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
+								if(error != OMX_ErrorNone)
+								{
+									APP_EPRINT("APP: Error from SendCommand-Idle(Stop) State function\n");
+									goto EXIT;
+								}
+								error = WaitForState(*pHandle, OMX_StateIdle);
+#ifdef OMX_GETTIME
+								GT_END("Call to SendCommand <OMX_StateIdle>");
+#endif
+								if(error != OMX_ErrorNone)
+								{
+									APP_EPRINT("APP: WaitForState reports an error \n");
+									goto EXIT;
+								}
+								done = 1;
+							}
+							else if( FD_ISSET(IpBuf_Pipe[0], &rfds) )
 							{
 					            OMX_BUFFERHEADERTYPE* pBuffer;
 					            read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
@@ -1594,33 +1618,7 @@ int Aacenc_fdread;
 								{
 						            APP_DPRINT("%d :: APP: Reading InputBuffer = %d from the input file nRead = %d\n",__LINE__, nIpBuffs, nRead);
 						            nRead = fread(pBuffer->pBuffer, 1, pBuffer->nAllocLen, fIn);
-						            if(frmCnt == 20) 
-									{
-						                APP_DPRINT("%d :: APP: Sending Stop.........From APP \n",__LINE__);
-						                APP_DPRINT("%d :: APP: Shutting down ---------- \n",__LINE__);
-									#ifdef OMX_GETTIME
-										GT_START(); 
-									#endif
-										error = OMX_SendCommand(*pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
-						                if(error != OMX_ErrorNone) 
-										{
-							               APP_EPRINT("APP: Error from SendCommand-Idle(Stop) State function\n");
-							                goto EXIT;
-										}
-										error = WaitForState(*pHandle, OMX_StateIdle);
-									#ifdef OMX_GETTIME
-										GT_END("Call to SendCommand <OMX_StateIdle>");
-									#endif
-										if(error != OMX_ErrorNone) 
-										{
-											APP_EPRINT("APP: WaitForState reports an error \n");
-											goto EXIT;
-										}
-						                done 				 = 1;
-						                pBuffer->nFlags 	 = OMX_BUFFERFLAG_EOS;
-						                pBuffer->nFilledLen = 0;
-									}
-									else if((nRead < pBuffer->nAllocLen) && (done == 0)) 
+						            if((nRead < pBuffer->nAllocLen) && (done == 0))
 									{
 							             APP_DPRINT("%d :: APP: Sending Last Input Buffer from TestApp(which can be zero or less than Buffer length)\n",__LINE__);
 							             done = 1;
@@ -1633,7 +1631,7 @@ int Aacenc_fdread;
 									nIpBuffs++;
 							        frmCnt++;
 								}
-							}
+                            }
 						} 
 						else 
 						{
