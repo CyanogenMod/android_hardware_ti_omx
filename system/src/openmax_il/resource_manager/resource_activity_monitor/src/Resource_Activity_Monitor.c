@@ -44,21 +44,19 @@ int bBoostOn = 0;
 */
 int rm_set_vdd1_constraint(int MHz)
 {
-    int vdd1_opp = 0;
+    int vdd1_opp = OPERATING_POINT_1;
     
 #ifdef DVFS_ENABLED
     
     char command[100];
-    int vdd2_opp = 1;
-    /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = C_STATE_2;
+    /* for any MM case, set c-state to 3, unless no mm is active */
+    int c_state = C_STATE_3;
     
     currentMHzConstraint = MHz;
     if(MHz == 0)
     {
         /* clear constraints for idle MM case */
         vdd1_opp = OPERATING_POINT_1;
-        vdd2_opp = OPERATING_POINT_2;
         
         /* set c-state back if no active MM */
         if (get_omap_version() == OMAP3630_CPU)
@@ -75,30 +73,17 @@ int rm_set_vdd1_constraint(int MHz)
     {
         vdd1_opp = dsp_mhz_to_vdd1_opp(MHz);
     }
-    
-    /* actually set the sysfs for vdd2_opp */
-    if(vdd1_opp > OPERATING_POINT_2)
-    {
-        vdd2_opp = OPERATING_POINT_3;
-    }
 
     /* plus one to convert zero based array indeces above */
     vdd1_opp++;
-    vdd2_opp++;
 
     if(!bBoostOn || (bBoostOn && rm_get_vdd1_constraint() < vdd1_opp))
     {
-        /* actually set the sysfs for vdd1 and vdd2 */
+        /* actually set the sysfs for vdd1 */
         RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
         strcpy(command,"echo ");
         strcat(command,ram_itoa(vdd1_opp));
         strcat(command," > /sys/power/vdd1_opp");
-        system(command);
-
-        RAM_DPRINT("[setting operating point] MHz = %d vdd2 = %d\n",MHz,vdd2_opp);
-        strcpy(command,"echo ");
-        strcat(command,ram_itoa(vdd2_opp));
-        strcat(command," > /sys/power/vdd2_opp");
         system(command);
 
         /* actually set the sysfs for cpuidle/max_state */
@@ -127,10 +112,7 @@ int rm_set_vdd1_constraint(int MHz)
 */
 int dsp_mhz_to_vdd1_opp(int MHz)
 {
-    /* initialize both vdd1 & vdd2 at 2
-     idea is to prohobit vdd1=1 during MM use cases */
-    unsigned int vdd1_opp = OPERATING_POINT_2;
-    unsigned int vdd2_opp = OPERATING_POINT_2;
+    unsigned int vdd1_opp = OPERATING_POINT_1;
     int cpu_variant = get_omap_version();
     
     switch (cpu_variant) {
@@ -208,10 +190,6 @@ int dsp_mhz_to_vdd1_opp(int MHz)
     } /* end switch */
     return vdd1_opp;
 }
-
-
-
-
 
 /*
    Description : This function will determine the current OMAP that is
