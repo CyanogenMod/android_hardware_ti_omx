@@ -118,6 +118,11 @@ int process_wma(appPrivateSt* appPrvt, OMX_U8* pBuf){
     static OMX_S16 buffer_state=0;
     OMX_S16 nBytesRead=0;
     OMX_U8 temp;
+    if(appPrvt->fileReRead){
+        buffer_state=0;
+        appPrvt->fileReRead=OMX_FALSE;
+    }
+
     if(buffer_state==0){
         nBytesRead = unparse_rca(pBuf, &payload);
         buffer_state=1;

@@ -122,6 +122,7 @@ typedef struct{
   alsaPrvtSt *alsaPrvt;
   OMX_U32 processed_buffers;
   OMX_U32 Device;
+  OMX_U8 fileReRead;
 }appPrivateSt;
 
 /** Initializes the event at a given value
