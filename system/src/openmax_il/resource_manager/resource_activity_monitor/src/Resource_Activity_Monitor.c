@@ -50,8 +50,8 @@ int rm_set_vdd1_constraint(int MHz)
     
     char command[100];
     int vdd2_opp = 1;
-    /* for any MM case, set c-state to 3, unless no mm is active */
-    int c_state = C_STATE_3;
+    /* for any MM case, set c-state to 2, unless no mm is active */
+    int c_state = C_STATE_2;
     
     currentMHzConstraint = MHz;
     if(MHz == 0)
@@ -538,7 +538,7 @@ int rm_set_min_scaling_freq(int MHz)
     
     char command[100];
     /* for any MM case, set c-state to 2, unless no mm is active */
-    int c_state = C_STATE_3;
+    int c_state = C_STATE_2;
     freq = rm_get_min_scaling_freq();
     
     if(MHz == 0)
