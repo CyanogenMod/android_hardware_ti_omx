@@ -959,7 +959,6 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                    NULL);
                             goto EXIT;
                         }
-                        pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                         OMX_PRDSP2(pComponentPrivate->dbg, ":: Algcontrol has been sent to DSP\n");
                         OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec START %d\n", __LINE__);
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
@@ -978,7 +977,6 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_PRDSP2(pComponentPrivate->dbg, ": Comp: Resume Command Came from App\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec\n");
                     OMX_PRDSP2(pComponentPrivate->dbg, ": MP3DECUTILS::About to call LCML_ControlCodec  START %d\n", __LINE__);
-                    pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStart,(void *)pArgs);
 
@@ -1049,6 +1047,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef RESOURCE_MANAGER_ENABLED         
                 rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_MP3_Decoder_COMPONENT, OMX_StateExecuting, 3456, NULL);
 #endif          
+                pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
                 pComponentPrivate->curState = OMX_StateExecuting;
 
 #ifdef __PERF_INSTRUMENTATION__
