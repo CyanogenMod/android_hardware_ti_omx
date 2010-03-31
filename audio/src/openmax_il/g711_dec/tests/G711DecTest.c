@@ -212,7 +212,6 @@ void ConfigureAudio();
  *  GLOBAL variables
  */
 /* ======================================================================= */
-FILE *inputToSN = NULL;
 OMX_S16 inputPortDisabled = 0;
 OMX_S16 outputPortDisabled = 0;
 OMX_S16 alternate = 0;
@@ -432,7 +431,7 @@ typedef struct G711DEC_FTYPES{
     unsigned short FrameSizeType;
     unsigned short NmuNLvl;
     unsigned short NoiseLp;
-    unsigned long  dBmNoise;
+    unsigned short  dBmNoise;
     unsigned short plc;
 }G711DEC_FTYPES;
 /* ----------------------------------------------------------------------------
@@ -708,11 +707,7 @@ int main(int argc, char* argv[])
                 goto EXIT;
             }
             error = TIOMX_Init();
-            inputToSN = fopen("outputSecondTime.log","w");
 
-        }
-        else {
-            inputToSN = fopen("outputFirstTime.log","w");
         }
 #ifdef DSP_RENDERING_ON  
         if((g711decfdwrite=open(FIFO1,O_WRONLY))<0)
@@ -1533,7 +1528,6 @@ int main(int argc, char* argv[])
         close(Event_Pipe[1]);
         APP_DPRINT ("%d Free Handle returned Successfully\n",__LINE__);
 
-        fclose(inputToSN);
         APP_DPRINT ("%d:: Free Handle returned Successfully \n\n\n\n",__LINE__);
 
     } /* For loop on testcnt1 ends here */
@@ -1588,9 +1582,6 @@ OMX_ERRORTYPE send_input_buffer(OMX_HANDLETYPE pHandle, OMX_BUFFERHEADERTYPE* pB
 
     else {
         pBuffer->nFilledLen = nRead;
-        for (i=0; i < nRead; i++) {
-            fprintf(inputToSN,"pBuffer->pBuffer[%d] = %x\n",i,pBuffer->pBuffer[i]);
-        }
         pBuffer->nTimeStamp = rand()%100;
         pBuffer->nTickCount = rand() % 70;
         TIME_PRINT("TimeStamp Input: %lld\n",pBuffer->nTimeStamp);
