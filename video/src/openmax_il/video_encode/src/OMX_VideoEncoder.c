@@ -379,6 +379,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->nQPI                 = 12;
     pComponentPrivate->nAIRRate             = 0;
     pComponentPrivate->ucUnrestrictedMV     = 0;
+    pComponentPrivate->nQpMax               = 31;
+    pComponentPrivate->nQpMin               = 2;
     pComponentPrivate->bHideEvents          = OMX_FALSE;
     pComponentPrivate->bHandlingFatalError  = OMX_FALSE;
     pComponentPrivate->bUnresponsiveDsp     = OMX_FALSE;
@@ -775,7 +777,7 @@ sDynamicFormat = getenv("FORMAT");
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pH264, OMX_VIDEO_PARAM_AVCTYPE);
     pComponentPrivate->pH264->nPortIndex                = VIDENC_OUTPUT_PORT;
     pComponentPrivate->pH264->nSliceHeaderSpacing       = 0;
-    pComponentPrivate->pH264->nPFrames                  = -1;
+    pComponentPrivate->pH264->nPFrames                  = pComponentPrivate->nIntraFrameInterval-1;
     pComponentPrivate->pH264->nBFrames                  = -1;
     pComponentPrivate->pH264->bUseHadamard              = OMX_TRUE; /*OMX_FALSE*/
     pComponentPrivate->pH264->nRefFrames                = 1; /*-1;  */
@@ -809,7 +811,7 @@ sDynamicFormat = getenv("FORMAT");
     pComponentPrivate->pMpeg4->nSliceHeaderSpacing  = 0;
     pComponentPrivate->pMpeg4->bSVH                 = OMX_FALSE;
     pComponentPrivate->pMpeg4->bGov                 = OMX_FALSE;
-    pComponentPrivate->pMpeg4->nPFrames             = -1;
+    pComponentPrivate->pMpeg4->nPFrames             = pComponentPrivate->nIntraFrameInterval-1;
     pComponentPrivate->pMpeg4->nBFrames             = -1;
     pComponentPrivate->pMpeg4->nIDCVLCThreshold     = 0;  /*-1*/
     pComponentPrivate->pMpeg4->bACPred              = OMX_TRUE;
@@ -828,7 +830,7 @@ sDynamicFormat = getenv("FORMAT");
     /* Set pH263 defaults */
     OMX_CONF_INIT_STRUCT(pComponentPrivate->pH263, OMX_VIDEO_PARAM_H263TYPE);
     pComponentPrivate->pH263->nPortIndex               = VIDENC_OUTPUT_PORT;
-    pComponentPrivate->pH263->nPFrames                 = 0;
+    pComponentPrivate->pH263->nPFrames                 = pComponentPrivate->nIntraFrameInterval-1;
     pComponentPrivate->pH263->nBFrames                 = 0;
     pComponentPrivate->pH263->eProfile                 = OMX_VIDEO_H263ProfileBaseline;
     pComponentPrivate->pH263->eLevel                   = OMX_VIDEO_H263Level10;
@@ -1492,11 +1494,11 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 eError = OMX_ErrorBadPortIndex;
             }
             break;
-            }
+        }
         case OMX_IndexParamVideoPortFormat:
             if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nPortIndex ==
                 pCompPortIn->pPortFormat->nPortIndex)
-        {
+            {
                 if (((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->nIndex < 3)
                 {
                     ((OMX_VIDEO_PARAM_PORTFORMATTYPE*)(ComponentParameterStructure))->eColorFormat =
@@ -1526,7 +1528,7 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 }
             }
             else
-        {
+            {
                 eError = OMX_ErrorBadPortIndex;
             }
             break;
@@ -1617,6 +1619,19 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             }
             break;
 
+        case OMX_IndexParamVideoIntraRefresh:
+            {
+                pTmp = memcpy(ComponentParameterStructure,
+                        pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
+                        sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));
+                if (pTmp == NULL)
+                {
+                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                                           pComponentPrivate->dbg, OMX_TRACE4,
+                                           "Failed to copy structure OMX_VIDEO_PARAM_INTRAREFRESHTYPE.\n");
+                }
+            }
+        break;
         case OMX_IndexParamVideoH263:
             if (((OMX_VIDEO_PARAM_H263TYPE*)(ComponentParameterStructure))->nPortIndex ==
                 pComponentPrivate->pH263->nPortIndex)
@@ -1657,85 +1672,86 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             break;
 
 
-    case OMX_IndexParamVideoProfileLevelQuerySupported:
-    {
-       VIDEO_PROFILE_LEVEL_TYPE* pProfileLevel = NULL;
-       OMX_VIDEO_PARAM_PROFILELEVELTYPE *pParamProfileLevel = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)ComponentParameterStructure;
-       pParamProfileLevel->nPortIndex = pCompPortOut->pPortDef->nPortIndex;
-         /* Choose table based on compression format */
-       switch(pCompPortOut->pPortDef->format.video.eCompressionFormat)
-       {
-          case OMX_VIDEO_CodingH263:
-             pProfileLevel = SupportedH263ProfileLevels;
-             break;
-          case OMX_VIDEO_CodingMPEG4:
-             pProfileLevel = SupportedMPEG4ProfileLevels;
-             break;
-           case OMX_VIDEO_CodingAVC:
-             pProfileLevel = SupportedAVCProfileLevels;
-             break;
-           default:
+        case OMX_IndexParamVideoProfileLevelQuerySupported:
+        {
+           VIDEO_PROFILE_LEVEL_TYPE* pProfileLevel = NULL;
+           OMX_VIDEO_PARAM_PROFILELEVELTYPE *pParamProfileLevel = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)ComponentParameterStructure;
+           pParamProfileLevel->nPortIndex = pCompPortOut->pPortDef->nPortIndex;
+             /* Choose table based on compression format */
+           switch(pCompPortOut->pPortDef->format.video.eCompressionFormat)
+           {
+              case OMX_VIDEO_CodingH263:
+                 pProfileLevel = SupportedH263ProfileLevels;
+                 break;
+              case OMX_VIDEO_CodingMPEG4:
+                 pProfileLevel = SupportedMPEG4ProfileLevels;
+                 break;
+               case OMX_VIDEO_CodingAVC:
+                 pProfileLevel = SupportedAVCProfileLevels;
+                 break;
+               default:
+                  eError = OMX_ErrorBadParameter;
+                  return eError;
+            }
+            /* Point to table entry based on index */
+            pProfileLevel += pParamProfileLevel->nProfileIndex;
+
+            /* -1 indicates end of table */
+            if(pProfileLevel->nProfile != -1) {
+               pParamProfileLevel->eProfile = pProfileLevel->nProfile;
+               pParamProfileLevel->eLevel = pProfileLevel->nLevel;
+               eError = OMX_ErrorNone;
+            }
+            else {
+               eError = OMX_ErrorNoMore;
+            }
+        }
+        break;
+
+        case OMX_IndexParamVideoProfileLevelCurrent:
+        {
+           OMX_VIDEO_PARAM_PROFILELEVELTYPE *pParamProfileLevel = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)  ComponentParameterStructure;
+           if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
+              pParamProfileLevel->eProfile = pComponentPrivate->pH264->eProfile;
+               pParamProfileLevel->eLevel = pComponentPrivate->pH264->eLevel;
+           }
+           else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
+              pParamProfileLevel->eProfile = pComponentPrivate->pMpeg4->eProfile;
+              pParamProfileLevel->eLevel = pComponentPrivate->pMpeg4->eLevel;
+
+           }
+           else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+              pParamProfileLevel->eProfile = pComponentPrivate->pH263->eProfile;
+              pParamProfileLevel->eLevel = pComponentPrivate->pH263->eLevel;
+           }
+           else {
               eError = OMX_ErrorBadParameter;
-              return eError;
-        }
-        /* Point to table entry based on index */
-        pProfileLevel += pParamProfileLevel->nProfileIndex;
+           }
 
-        /* -1 indicates end of table */
-        if(pProfileLevel->nProfile != -1) {
-           pParamProfileLevel->eProfile = pProfileLevel->nProfile;
-           pParamProfileLevel->eLevel = pProfileLevel->nLevel;
-           eError = OMX_ErrorNone;
         }
-        else {
-           eError = OMX_ErrorNoMore;
-        }
-    }
-    break;
-    case OMX_IndexParamVideoProfileLevelCurrent:
-    {
-       OMX_VIDEO_PARAM_PROFILELEVELTYPE *pParamProfileLevel = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)  ComponentParameterStructure;
-       if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-          pParamProfileLevel->eProfile = pComponentPrivate->pH264->eProfile;
-           pParamProfileLevel->eLevel = pComponentPrivate->pH264->eLevel;
-       }
-       else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
-          pParamProfileLevel->eProfile = pComponentPrivate->pMpeg4->eProfile;
-          pParamProfileLevel->eLevel = pComponentPrivate->pMpeg4->eLevel;
-
-       }
-       else if (pCompPortOut->pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
-          pParamProfileLevel->eProfile = pComponentPrivate->pH263->eProfile;
-          pParamProfileLevel->eLevel = pComponentPrivate->pH263->eLevel;
-       }
-       else {
-          eError = OMX_ErrorBadParameter;
-       }
-
-    }
-    break;
+        break;
 
         case OMX_IndexParamVideoErrorCorrection:
-                    {
-                    if (((OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE*)(ComponentParameterStructure))->nPortIndex ==
+            {
+                if (((OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE*)(ComponentParameterStructure))->nPortIndex ==
                         VIDENC_OUTPUT_PORT)
-                    {
-                        pTmp = memcpy(ComponentParameterStructure,
-                                      pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
-                                      sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
-                if (pTmp == NULL)
                 {
-                    OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
+                    pTmp = memcpy(ComponentParameterStructure,
+                        pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
+                        sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
+                    if (pTmp == NULL)
+                    {
+                        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE parameter.\n");
-                }
-            }
-                    else
-                    {
-                        eError = OMX_ErrorBadPortIndex;
                     }
-                    break;
                 }
+                else
+                {
+                    eError = OMX_ErrorBadPortIndex;
+                }
+                break;
+            }
 
         case VideoEncodeCustomParamIndexVBVSize:
             (*((OMX_U32*)ComponentParameterStructure)) = (OMX_U32)pComponentPrivate->nVBVSize;
@@ -1749,10 +1765,10 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomConfigIndexUnrestrictedMV:
             (*((OMX_U8*)ComponentParameterStructure)) = (OMX_U8)pComponentPrivate->ucUnrestrictedMV;
             break;
-       case VideoEncodeCustomParamIndexNALFormat:
-           (*((unsigned int*)ComponentParameterStructure)) = (unsigned int)pComponentPrivate->AVCNALFormat;
-           break;
-       case PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
+        case VideoEncodeCustomParamIndexNALFormat:
+            (*((unsigned int*)ComponentParameterStructure)) = (unsigned int)pComponentPrivate->AVCNALFormat;
+            break;
+        case PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX:
             pTmp = memcpy(ComponentParameterStructure,
             pComponentPrivate->pCapabilityFlags,
             sizeof(PV_OMXComponentCapabilityFlagsType));
@@ -1761,8 +1777,8 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                 OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
             }
             break;
-       //not supported yet
-       case OMX_IndexConfigCommonRotate:
+        //not supported yet
+        case OMX_IndexConfigCommonRotate:
            break;
         default:
             eError = OMX_ErrorUnsupportedIndex;
@@ -1801,7 +1817,6 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
 #ifdef __KHRONOS_CONF_1_1__
     OMX_PARAM_COMPONENTROLETYPE  *pRole = NULL;
-    OMX_VIDEO_PARAM_PROFILELEVELTYPE* sProfileLevel;
 #endif
     OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
 
@@ -1953,6 +1968,8 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                pComponentPrivate->nIntraFrameInterval  = pComponentPrivate->pMpeg4->nPFrames+1;
+
             }
             else
             {
@@ -2017,18 +2034,25 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             break;
         }
         case OMX_IndexParamVideoErrorCorrection:
-                {
-                       pTmp = memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
-                                     pCompParam,
-                                     sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
-                       if (pTmp == NULL)
-                        {
+        {
+            pTmp = memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pErrorCorrectionType,
+                    pCompParam,
+                    sizeof(OMX_VIDEO_PARAM_ERRORCORRECTIONTYPE));
+            if (pTmp == NULL)
+            {
                 OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
-                                       pComponentPrivate->dbg, OMX_TRACE4,
-                                       "Failed to copy parameter.\n");
-                        }
-                }
-                break;
+                        pComponentPrivate->dbg, OMX_TRACE4,
+                        "Failed to copy parameter.\n");
+            }
+        }
+        break;
+        case OMX_IndexParamVideoIntraRefresh:
+        {
+            memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
+                pCompParam,
+                sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));
+        }
+        break;
         case OMX_IndexParamVideoH263:
         {
             OMX_VIDEO_PARAM_H263TYPE* pComponentParam = (OMX_VIDEO_PARAM_H263TYPE*)pCompParam;
@@ -2043,6 +2067,7 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
                                            pComponentPrivate->dbg, OMX_TRACE4,
                                            "Failed to copy parameter.\n");
                 }
+                pComponentPrivate->nIntraFrameInterval  = pComponentPrivate->pH263->nPFrames+1;
             }
             else
             {
@@ -2336,15 +2361,15 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
             }
         }
     case OMX_IndexParamVideoIntraRefresh:
-             {
-                 pTmp = memcpy(ComponentConfigStructure,
-                               pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
-                               sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));
-                 if (pTmp == NULL)
+        {
+            pTmp = memcpy(ComponentConfigStructure,
+                    pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
+                    sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));
+            if (pTmp == NULL)
             {
                 OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorUndefined,
-                                       pComponentPrivate->dbg, OMX_TRACE4,
-                                       "Failed to copy structure OMX_VIDEO_PARAM_INTRAREFRESHTYPE.\n");
+                            pComponentPrivate->dbg, OMX_TRACE4,
+                            "Failed to copy structure OMX_VIDEO_PARAM_INTRAREFRESHTYPE.\n");
             }
         }
     break;
@@ -2442,6 +2467,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
             break;
         case VideoEncodeCustomConfigIndexIntraFrameInterval:
             pComponentPrivate->nIntraFrameInterval = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            pComponentPrivate->pH264->nPFrames = pComponentPrivate->nIntraFrameInterval-1;
+            pComponentPrivate->pH263->nPFrames = pComponentPrivate->nIntraFrameInterval-1;
+            pComponentPrivate->pMpeg4->nPFrames = pComponentPrivate->nIntraFrameInterval-1;
             break;
         case VideoEncodeCustomConfigIndexTargetFrameRate:
             pComponentPrivate->nTargetFrameRate = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
@@ -2514,7 +2542,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
     break;
     case OMX_IndexParamVideoIntraRefresh:
         {
-        memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
+            memcpy(pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pIntraRefreshType,
                 ComponentConfigStructure,
                 sizeof(OMX_VIDEO_PARAM_INTRAREFRESHTYPE));
         }

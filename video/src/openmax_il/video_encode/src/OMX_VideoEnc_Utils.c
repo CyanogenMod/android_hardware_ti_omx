@@ -2720,14 +2720,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulIntraFrameInterval = pComponentPrivate->nIntraFrameInterval;
 
     /*Set nQPI Value*/
-    if (pUalgInpParams->ulForceIFrame == OMX_TRUE)
-    {
-        pUalgInpParams->ulQPIntra = pComponentPrivate->nQPI;
-    }
-    else
-    {
-        pUalgInpParams->ulQPIntra    = 0;
-    }
+    pUalgInpParams->ulQPIntra = pComponentPrivate->nQPI;
 
     /*Set segment mode params*/
     if (pComponentPrivate->bMVDataEnable)
@@ -2761,20 +2754,8 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulQPInter           = 8;
     pUalgInpParams->ulLastFrame         = 0;
     pUalgInpParams->ulcapturewidth      = 0;
-    pUalgInpParams->ulQpMax             = 31;
-    pUalgInpParams->ulQpMin             = 2;
-
-    if((pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType == OMX_Video_ControlRateVariable) &&
-        (pPortDefIn->format.video.nFrameWidth >= 640 || pPortDefIn->format.video.nFrameHeight >= 480) &&
-        (pComponentPrivate->nTargetFrameRate <= 15)) {
-        pUalgInpParams->ulQpMax         = 18;
-        pUalgInpParams->ulQPIntra       = 4;
-    }
-    if((pPortDefIn->format.video.nFrameWidth >= 640 ||
-        pPortDefIn->format.video.nFrameHeight >= 480) && (pComponentPrivate->nTargetFrameRate > 15)) {
-        pUalgInpParams->ulACPred            = 0;
-        pUalgInpParams->ulAIRRate           = 0;
-    }
+    pUalgInpParams->ulQpMax             = pComponentPrivate->nQpMax;
+    pUalgInpParams->ulQpMin             = pComponentPrivate->nQpMin;
 
     ++pComponentPrivate->nFrameCnt;
 
@@ -3363,7 +3344,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     pCreatePhaseArgs->ucMVRange               = (pMotionVector->sXSearchRange > pMotionVector->sYSearchRange ? pMotionVector->sXSearchRange : pMotionVector->sYSearchRange);
     pCreatePhaseArgs->ucQPIFrame              = 28;
     pCreatePhaseArgs->ucProfile               = 66;
-    pCreatePhaseArgs->ulIntraFramePeriod      = 15;
+    pCreatePhaseArgs->ulIntraFramePeriod      = pComponentPrivate->nIntraFrameInterval;
 
     if (pH264->eLevel == OMX_VIDEO_AVCLevel1b)
     {
@@ -3423,16 +3404,14 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         pComponentPrivate->intra4x4EnableIdc = INTRA4x4_NONE;
         pComponentPrivate->nAIRRate = 0;
         if(pCreatePhaseArgs->ulTargetBitRate >= 4000000) {
-            pComponentPrivate->nIntraFrameInterval = 30;
             /* Encoding preset = 4 enables DSP side optimizations for high resolutions */
             pComponentPrivate->nEncodingPreset = 4;
-            pCreatePhaseArgs->ulIntraFramePeriod = 0;
         }
         /* Constant bit rate control enabled */
-        pCreatePhaseArgs->ucRateControlAlgorithm = 1;
+        /*pCreatePhaseArgs->ucRateControlAlgorithm = 1;*/
         /* Disable deblocking */
         pCreatePhaseArgs->ucDeblockingEnable  = 0;
-        pCreatePhaseArgs->ucLevel = 30;
+        /*pCreatePhaseArgs->ucLevel = 30;*/
     }
 
     pCreatePhaseArgs->usNalCallback = pComponentPrivate->AVCNALFormat;
@@ -3640,7 +3619,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     }
     else
     {
-            OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported YUV format.\n");
+        OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported YUV format.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
     if(pCompPortOut->pErrorCorrectionType->bEnableHEC)
@@ -3648,7 +3627,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     else
         pCreatePhaseArgs->ucHEC                   = 0;/**/
 
-        pCreatePhaseArgs->ucResyncMarker          = 0;/**/
+    pCreatePhaseArgs->ucResyncMarker          = 0;/**/
 
     if(pCompPortOut->pErrorCorrectionType->bEnableDataPartitioning)
         pCreatePhaseArgs->ucDataPartitioning      = 1;
@@ -3662,10 +3641,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
 
     pCreatePhaseArgs->ucFrameRate             = (OMX_U8) Q16Tof(pPortDefIn->format.video.xFramerate);
 
-   /* set run-time frame and bit rates to create-time values */
+    /* set run-time frame and bit rates to create-time values */
     pComponentPrivate->nTargetFrameRate       = pCreatePhaseArgs->ucFrameRate;
 
-     if (pVidParamBitrate->eControlRate == OMX_Video_ControlRateConstant)
+    if (pVidParamBitrate->eControlRate == OMX_Video_ControlRateConstant)
     {
         pCreatePhaseArgs->ucRateControlAlgorithm  = IVIDEO_LOW_DELAY;
     }
@@ -3680,7 +3659,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     else
     {
         OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported rate control algorithm.\n");
-    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
+        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
 
     pCreatePhaseArgs->ucQPFirstIFrame         = (OMX_U8)pQuantization->nQpI;
@@ -3719,7 +3698,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         }
         else
         {
-                OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported level.\n");
+            OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported level.\n");
             OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
         }
 #else
@@ -3792,12 +3771,19 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
     }
 
-    if ((pPortDefIn->format.video.nFrameWidth >= 640 ||
-        pPortDefIn->format.video.nFrameHeight >= 480) &&
-        pCreatePhaseArgs->ucFrameRate > 15)
+    if (pPortDefIn->format.video.nFrameWidth >= 640 || pPortDefIn->format.video.nFrameHeight >= 480)
     {
-        if(pCreatePhaseArgs->ulTargetBitRate >= 4000000) {
-            pComponentPrivate->nIntraFrameInterval = 30;
+        /*if((pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateType == OMX_Video_ControlRateVariable) &&
+            (pCreatePhaseArgs->ucFrameRate <= 15))
+        {
+            / * Force to consume more bits * /
+            pComponentPrivate->nQPI = 4;
+            pComponentPrivate->nQpMax = 18;
+        }*/
+        if((pCreatePhaseArgs->ucFrameRate > 15) && (pCreatePhaseArgs->ulTargetBitRate >= 2000000))
+        {
+            /* Improve performance */
+            pComponentPrivate->nQPI = 8;
         }
     }
     pLcmlDSP->pCrPhArgs = nArr;
