@@ -447,6 +447,7 @@ appPrivateSt* app_core_new(void){
   me->state = NULL;
   me->pause = NULL;
   me->processed_buffers = 0;
+  me->fileReRead = OMX_FALSE;
   return me;
 }
 

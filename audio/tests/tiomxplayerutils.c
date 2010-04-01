@@ -392,6 +392,7 @@ int send_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
       /*APP_DPRINT("Resetting eos_flag\n");*/
       drop_count = 0;
       eos_flag = OMX_FALSE;
+      first_buff= OMX_TRUE;
     }
   }
   return 0;
@@ -499,6 +500,7 @@ int test_repeat(appPrivateSt *appPrvt){
 
   for(i = 0;i < appPrvt->iterations;i++){
     sleep(1);
+    appPrvt->fileReRead=OMX_TRUE;
     APP_DPRINT("********PLAY FOR %d TIME********\n",(i+1));
 
     if((error = test_play(appPrvt))){
@@ -522,6 +524,7 @@ int test_repeat(appPrivateSt *appPrvt){
       return 1;
     }
 
+    event_reset(appPrvt->eos);
     appPrvt->done_flag = OMX_FALSE;
     rewind(infile);
 
