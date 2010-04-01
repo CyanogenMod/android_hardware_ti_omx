@@ -1430,6 +1430,8 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                     }
                     if(pCompAmrParam->eAMRDTXMode == OMX_AUDIO_AMRDTXasEFR) {
                         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: SetParameter OMX_IndexParamAudioAmr:: pCompAmrParam->eAMRDTXMode = XasEFR\n",__LINE__);
+                        pComponentPrivate->efrMode = 1;
+                        pComponentPrivate->amrParams->eAMRDTXMode = OMX_AUDIO_AMRDTXasEFR;
                     }  
                 }
                 else {
