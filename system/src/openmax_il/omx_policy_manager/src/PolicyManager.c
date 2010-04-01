@@ -486,23 +486,21 @@ int PopulatePolicyTable()
         fprintf (stderr, "[Policy Manager] Read Policy Table at: %s\n", tablefile);
         policytablefile  = fopen(tablefile,"r");
 
-
-        /* Initialize policy combination table */
-        for (i=0; i < OMX_POLICY_MAX_COMBINATIONS; i++) {
-            for (j=0; j < OMX_POLICY_MAX_COMBINATION_LENGTH; j++) {
-                policyCombinationTable[i].component[j].component = 0;
-                policyCombinationTable[i].component[j].priority = 0;
-            }
-            policyCombinationTable[i].bCombinationIsActive = 0;
-            policyCombinationTable[i].numComponentsInCombination = 0;
-        }
-
         if (policytablefile == NULL) {
             fprintf(stderr, "[Policy Manager] Could not open file. Run again\n");
             ret = -1;
             goto EXIT;
         }
         else {
+            /* Initialize policy combination table */
+            for (i=0; i < OMX_POLICY_MAX_COMBINATIONS; i++) {
+                for (j=0; j < OMX_POLICY_MAX_COMBINATION_LENGTH; j++) {
+                    policyCombinationTable[i].component[j].component = 0;
+                    policyCombinationTable[i].component[j].priority = 0;
+                }
+                policyCombinationTable[i].bCombinationIsActive = 0;
+                policyCombinationTable[i].numComponentsInCombination = 0;
+            }
             while (fgets(line,PM_MAXSTRINGLENGTH,policytablefile) != NULL) {
                 if ( combinationIndex >= OMX_POLICY_MAX_COMBINATIONS )
                 {
