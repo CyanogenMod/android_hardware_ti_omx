@@ -50,7 +50,7 @@ int rm_set_vdd1_constraint(int MHz)
     
     char command[100];
     /* for any MM case, set c-state to 3, unless no mm is active */
-    int c_state = C_STATE_3;
+    int c_state = C_STATE_2;
     
     currentMHzConstraint = MHz;
     if(MHz == 0)
