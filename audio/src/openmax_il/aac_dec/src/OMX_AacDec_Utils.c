@@ -3764,6 +3764,9 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
         case IAAC_WARN_ENABLEPS_NOTSET :
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Invalid value: Enable PS not set \n" ,__LINE__);
             break;
+        case IAAC_WARN_DATA_CORRUPT:
+            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: LCML_Callback: Algorithm error, stream corrupt \n" ,__LINE__);
+            break;
         case IUALG_WARN_CONCEALED:
         case IUALG_WARN_UNDERFLOW:
         case IUALG_WARN_OVERFLOW:

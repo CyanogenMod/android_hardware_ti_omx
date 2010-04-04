@@ -463,7 +463,8 @@ typedef enum{
     IAAC_WARN_INVALID_DNSAMPLESBR= 0x0800,
     IAAC_WARN_INVALID_ENABLEPS,
     IAAC_WARN_INVALID_DUALMONOMODE, /* Invalid dual mono rendering mode */
-    IAAC_WARN_ENABLEPS_NOTSET /* to indicate in case of PS stream and EnablePS not set */
+    IAAC_WARN_ENABLEPS_NOTSET, /* to indicate in case of PS stream and EnablePS not set */
+    IAAC_WARN_DATA_CORRUPT /*to indicate that the input buffer sent to DSP has corrupted data */
 }IAAC_WARN_MSG;
 
 /* ======================================================================= */
