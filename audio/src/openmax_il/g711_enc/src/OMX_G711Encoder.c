@@ -659,7 +659,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         break;
     case OMX_CommandFlush:
         G711ENC_DPRINT("%d :: OMX_CommandFlush SendCommand\n",__LINE__);
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && (OMX_S32)nParam != -1) {
             eError = OMX_ErrorBadPortIndex;
             G711ENC_DPRINT("%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
             return eError;
@@ -1521,6 +1521,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     else {
         eError = OMX_ErrorBadPortIndex;
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer,OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         G711ENC_DPRINT(" %d :: About to return OMX_ErrorBadPortIndex\n",__LINE__);
         return eError;
     }
