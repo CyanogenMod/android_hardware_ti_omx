@@ -237,7 +237,10 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirInput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct), ILBCENC_ParamStruct);
-
+        if(NULL == pTemp_lcml->pBufferParam){
+            ILBCENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
@@ -274,6 +277,10 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->eDir = OMX_DirOutput;
         
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(ILBCENC_ParamStruct),ILBCENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            ILBCENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
@@ -593,7 +600,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
     LCML_CALLBACKTYPE cb;
     LCML_DSP *pLcmlDsp = NULL;
     OMX_U32 pValues[4] = {0};
-    OMX_S32 commandData = 0;
+    OMX_U32 commandData = 0;
     OMX_U16 arr[100] = {0};
     char *p = "";
     OMX_U16 i = 0;
@@ -851,7 +858,9 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                         ILBCENC_DPRINT("%d ---- Comp: DASF Functionality is ON ---\n",__LINE__);
 
                         OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams, sizeof(ILBCENC_AudioCodecParams), ILBCENC_AudioCodecParams);
-
+                        if(NULL == pComponentPrivate->pParams){
+                            return OMX_ErrorInsufficientResources;
+                        }
                         pComponentPrivate->pParams->iAudioFormat = 1;
                         pComponentPrivate->pParams->iStrmId = pComponentPrivate->streamID;
                         pComponentPrivate->pParams->iSamplingRate = ILBCENC_SAMPLING_FREQUENCY;
@@ -1119,10 +1128,10 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     } else if (command == OMX_CommandPortDisable) {
         if (!pComponentPrivate->bDisableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
@@ -1165,7 +1174,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
 
-        if(commandData == -1) {
+        if((OMX_S32)commandData == -1) {
             if (!pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bPopulated &&
                 !pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bPopulated){
 
@@ -1193,7 +1202,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandPortEnable) {
         if (!pComponentPrivate->bEnableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* enable in port */
                 ILBCENC_DPRINT("setting input port to enabled\n");
                 pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bEnabled = OMX_TRUE;
@@ -1203,7 +1212,7 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                 ILBCENC_DPRINT("pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]\
 ->bEnabled = %d\n",pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bEnabled);
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal) {
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -1257,7 +1266,7 @@ T]->bEnabled = %d\n",pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bEnabled)
                 pComponentPrivate->bEnableCommandParam = commandData;
             }
         }
-        else if(commandData == -1){
+        else if((OMX_S32)commandData == -1){
             if (pComponentPrivate->curState == OMX_StateLoaded || 
                 (pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bPopulated && 
                 pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bPopulated)){
@@ -1291,7 +1300,7 @@ T]->bEnabled = %d\n",pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bEnabled)
 #endif  
 
     } else if (command == OMX_CommandFlush) {
-        if(commandData == 0x0 || commandData == -1){/*input*/
+        if(commandData == 0x0 || (OMX_S32)commandData == -1){/*input*/
             ILBCENC_DPRINT("Flushing input port %d\n",__LINE__);
             for (i=0; i < ILBCENC_MAX_NUM_OF_BUFS; i++) {
                 pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -1312,7 +1321,7 @@ T]->bEnabled = %d\n",pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bEnabled)
                                                    OMX_EventCmdComplete, OMX_CommandFlush,ILBCENC_INPUT_PORT, NULL);
         }
       
-        if(commandData == 0x1 || commandData == -1){/*output*/
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){/*output*/
             for (i=0; i < ILBCENC_MAX_NUM_OF_BUFS; i++) {
                 pComponentPrivate->pOutputBufHdrPending[i] = NULL;
             }
@@ -1534,6 +1543,11 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
             if(pLcmlHdr->pFrameParam==NULL ){
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames), ILBCENC_FrameStruct);
+                if(NULL == pLcmlHdr->pFrameParam){
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                    OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
+                    return OMX_ErrorInsufficientResources;
+                }
                 eError = OMX_DmmMap(phandle->dspCodec->hProc,
                                     nFrames*sizeof(ILBCENC_FrameStruct),
                                     (void*)pLcmlHdr->pFrameParam,
@@ -1642,6 +1656,11 @@ OMX_ERRORTYPE ILBCENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
         if(pLcmlHdr->pFrameParam==NULL ){
             OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam, (sizeof(ILBCENC_FrameStruct)*nFrames ), ILBCENC_FrameStruct);
+            if(NULL == pLcmlHdr->pFrameParam){
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer2);
+                return OMX_ErrorInsufficientResources;
+            }
             pLcmlHdr->pBufferParam->pParamElem = NULL;
 #ifndef UNDER_CE
             eError = OMX_DmmMap(phandle->dspCodec->hProc,
@@ -2578,7 +2597,11 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->eDir = OMX_DirInput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(ILBCENC_ParamStruct), ILBCENC_ParamStruct);
-        
+        if(NULL == pTemp_lcml->pBufferParam){
+            ILBCENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
+
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
@@ -2611,6 +2634,10 @@ OMX_ERRORTYPE ILBCENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->eDir = OMX_DirOutput;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(ILBCENC_ParamStruct),ILBCENC_ParamStruct);
+        if(NULL == pTemp_lcml->pBufferParam){
+            ILBCENC_CleanupInitParams(pComponent);
+            return OMX_ErrorInsufficientResources;
+        }
         pTemp_lcml->pBufferParam->usNbFrames=0;
         pTemp_lcml->pBufferParam->pParamElem=NULL;
         pTemp_lcml->pFrameParam=NULL;
