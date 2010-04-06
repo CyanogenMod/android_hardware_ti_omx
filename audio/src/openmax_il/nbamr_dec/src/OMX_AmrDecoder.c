@@ -233,7 +233,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bPortDefsAllocated = 0;
     pComponentPrivate->bCompThreadStarted = 0;
     pComponentPrivate->pHoldBuffer = NULL;
-    pComponentPrivate->bMutexInitialized = 0;
+    pComponentPrivate->bMutexInitialized = OMX_FALSE;
     pComponentPrivate->bDebugInitialized = 0;
 
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_NBAMRDEC");
@@ -479,7 +479,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
-    pComponentPrivate->bMutexInitialized = 1;
+    pComponentPrivate->bMutexInitialized = OMX_TRUE;
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT], OMX_PARAM_PORTDEFINITIONTYPE);
     if (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT] == NULL) {
@@ -1967,6 +1967,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     else {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - OMX_ErrorBadPortIndex\n", __LINE__);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
 #ifdef __PERF_INSTRUMENTATION__
         PERF_ReceivedBuffer(pComponentPrivate->pPERF,
                         (*pBuffer)->pBuffer, nSizeBytes,

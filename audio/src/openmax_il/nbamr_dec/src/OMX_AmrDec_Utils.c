@@ -526,8 +526,8 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         
     pComponentPrivate->bPortDefsAllocated = 0;
     /* Removing sleep() calls. */
-    if (pComponentPrivate->bMutexInitialized == 1) {
-        pComponentPrivate->bMutexInitialized = 0;
+    if (pComponentPrivate->bMutexInitialized) {
+        pComponentPrivate->bMutexInitialized = OMX_FALSE;
         OMX_PRDSP2(pComponentPrivate->dbg, "\n\n FreeCompResources: Destroying mutexes.\n\n");
         pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
         pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
@@ -670,7 +670,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_COMPONENTTYPE *pHandle;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState;
-    OMX_S32 commandData;
+    OMX_U32 commandData;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
 
     OMX_U16 i;
@@ -1419,7 +1419,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
         OMX_PRINT2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c ::\n",__LINE__);
         
         if (!pComponentPrivate->bDisableCommandPending) {                                                        
-        if(commandData == 0x0 || commandData == -1){   /*Input*/
+        if(commandData == 0x0 || (OMX_S32)commandData == -1){   /*Input*/
             /* disable port */
             pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled = OMX_FALSE;
             for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
@@ -1443,7 +1443,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }            
         }
-        if(commandData == 0x1 || commandData == -1){      /*Output*/
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){      /*Output*/
             char *pArgs = "";
             pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
             if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1496,7 +1496,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
             }
 
-     if(commandData == -1) {
+     if((OMX_S32)commandData == -1) {
                 if (!pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated && 
                 !pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated){
 
@@ -1519,7 +1519,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandPortEnable) {
         if(!pComponentPrivate->bEnableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* enable in port */
                 OMX_PRCOMM1(pComponentPrivate->dbg, "setting input port to enabled\n");
                 pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled = OMX_TRUE;
@@ -1530,7 +1530,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
                 }
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 char *pArgs = "";
                 /* enable out port */
                 if(pComponentPrivate->AlloBuf_waitingsignal){
@@ -1582,7 +1582,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bEnableCommandParam = commandData;
             }
         }
-        else if(commandData == -1) {
+        else if((OMX_S32)commandData == -1) {
             if (pComponentPrivate->curState == OMX_StateLoaded || 
                 (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated
                 && pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated)){
@@ -1614,7 +1614,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
        OMX_U32 aParam[3] = {0};
         OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
                     pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
-        if(commandData == 0x0 || commandData == -1) {
+        if(commandData == 0x0 || (OMX_S32)commandData == -1) {
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                 pComponentPrivate->first_buff = 0;
@@ -1641,7 +1641,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
             }
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
                        pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
@@ -1674,7 +1674,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
     }
-EXIT:
+
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Exiting NBAMRDECHandleCommand Function\n",__LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Returning %d\n",__LINE__,eError);
     if (eError != OMX_ErrorNone && eError != EXIT_COMPONENT_THRD) {

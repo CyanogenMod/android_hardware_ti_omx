@@ -714,7 +714,7 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     OMX_U32 nRuntimeOutputBuffers;
 
     // Flag to set when mutexes are initialized
-    OMX_U8 bMutexInitialized;
+    OMX_BOOL bMutexInitialized;
     /* Removing sleep() calls. Definition. */
     pthread_mutex_t AlloBuf_mutex;
     pthread_cond_t AlloBuf_threshold;
