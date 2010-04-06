@@ -706,7 +706,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         }
         break;
     case OMX_CommandFlush:
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && (OMX_S32)nParam != -1) {
             return OMX_ErrorBadPortIndex;
         }
 
@@ -1727,9 +1727,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
  EXIT:
     if (eError != OMX_ErrorNone) {
-        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer,OMX_U8);
+        if(NULL!=pBufferHeader) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer,OMX_U8);
+        }
         OMX_MEMFREE_STRUCT(pBufferHeader);
-        return eError;
     }
     OMX_PRINT1(pComponentPrivate->dbg, "AllocateBuffer returning %x\n",eError);
     return eError;
