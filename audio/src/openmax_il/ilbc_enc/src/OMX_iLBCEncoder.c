@@ -800,7 +800,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
         }
         break;
 
-    case OMX_IndexParamAudioILBC:
+    case (OMX_INDEXTYPE)OMX_IndexParamAudioILBC:
         if(((OMX_AUDIO_PARAM_GSMEFRTYPE *)(ComponentParameterStructure))->nPortIndex ==
                 pComponentPrivate->ilbcParams->nPortIndex){
             memcpy(ComponentParameterStructure, 
@@ -928,7 +928,7 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
         }
         break;
             
-    case OMX_IndexParamAudioILBC:
+    case (OMX_INDEXTYPE)OMX_IndexParamAudioILBC:
         ILBCENC_DPRINT("%d SetParameter OMX_IndexParamAudioILBC \n",__LINE__);
         pCompiLBCParam = (OMX_AUDIO_PARAM_GSMEFRTYPE *)pCompParam;
 	if (((ILBCENC_COMPONENT_PRIVATE *)
@@ -1126,7 +1126,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 #endif
     switch (nConfigIndex) {
 
-    case OMX_IndexCustomILBCENCModeConfig:
+    case (OMX_INDEXTYPE)OMX_IndexCustomILBCENCModeConfig:
         pTiDspDefinition = (TI_OMX_DSP_DEFINITION*)ComponentConfigStructure;
         if (pTiDspDefinition == NULL) {
             eError = OMX_ErrorBadParameter;
@@ -1154,7 +1154,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
         }
 
         break;
-    case  OMX_IndexCustomILBCENCDataPath:
+    case  (OMX_INDEXTYPE)OMX_IndexCustomILBCENCDataPath:
         customFlag = (OMX_S16*)ComponentConfigStructure;
         dataPath = *customFlag;            
         switch(dataPath) {
@@ -1588,7 +1588,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     
-    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes,OMX_U8);   
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes,OMX_U8);
+    if(NULL == pBufferHeader->pBuffer){
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+        return OMX_ErrorInsufficientResources;
+    }
 
     if (nPortIndex == ILBCENC_INPUT_PORT) {        
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1661,6 +1665,13 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 #endif
 
  EXIT:
+    if(eError != OMX_ErrorNone){
+        if(NULL != pBufferHeader){
+            OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer,OMX_U8);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+        }
+    }
+
     ILBCENC_DPRINT("%d Exiting AllocateBuffer\n",__LINE__);
     ILBCENC_DPRINT("%d Returning = 0x%x\n",__LINE__,eError);
     return eError;
