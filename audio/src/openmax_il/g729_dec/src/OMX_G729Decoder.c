@@ -457,6 +457,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) {
         G729DEC_DPRINT ("%d ::Error returned from loading ResourceManagerProxy thread\n",
                         __LINE__);
+        G729DEC_FreeCompResources(pHandle);
         return eError;
     }
 #endif
@@ -465,18 +466,22 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     if (eError != OMX_ErrorNone) {
         G729DEC_DPRINT ("%d ::Error returned from the Component\n",
                         __LINE__);
+        G729DEC_FreeCompResources(pHandle);
         return eError;
     }
     
 #ifdef DSP_RENDERING_ON
     if((pComponentPrivate->fdwrite=open(FIFO1,O_WRONLY))<0) {
         G729DEC_DPRINT("[G729 Dec Component] - failure to open WRITE pipe\n");
+        G729DEC_FreeCompResources(pHandle);
+        return OMX_ErrorInsufficientResources;
     }
 
     G729DEC_DPRINT ("%d ::OMX_ComponentInit\n", __LINE__);
     if((pComponentPrivate->fdread=open(FIFO2,O_RDONLY))<0) {
         G729DEC_DPRINT("[G729 Dec Component] - failure to open READ pipe\n");
-        return eError;
+        G729DEC_FreeCompResources(pHandle);
+        return OMX_ErrorInsufficientResources;
     }
 #endif    
  EXIT:
@@ -1676,6 +1681,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     else {
         eError = OMX_ErrorBadPortIndex;
+        OMX_MEMFREE_STRUCT(pBufferHeader->pBuffer);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         return eError;
     }
 
@@ -1691,8 +1698,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pBufferHeader->pAppPrivate = pAppPrivate;
     OMX_MALLOC_GENERIC(pBufferHeader->pInputPortPrivate, G729DEC_BufParamStruct);
     if(NULL == pBufferHeader->pInputPortPrivate){
-        OMX_MEMFREE_STRUCT(pBufferHeader);
         OMX_MEMFREE_STRUCT(pBufferHeader->pBuffer);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         return OMX_ErrorInsufficientResources;
     }
     ((G729DEC_BufParamStruct*)pBufferHeader->pInputPortPrivate)->bNoUseDefaults = OMX_FALSE; /* setting a flag to use defaults until client says otherwise */
@@ -1718,8 +1725,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
  EXIT:
      if(eError != OMX_ErrorNone){
-        OMX_MEMFREE_STRUCT(pBufferHeader);
-        OMX_MEMFREE_STRUCT(pBufferHeader->pBuffer);
+        if(NULL != pBufferHeader){
+            OMX_MEMFREE_STRUCT(pBufferHeader->pBuffer);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+        }
     }
     G729DEC_DPRINT("AllocateBuffer returning %d\n",eError);
     return eError;
