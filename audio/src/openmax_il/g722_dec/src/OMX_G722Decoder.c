@@ -428,17 +428,19 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         OMX_MEMFREE_STRUCT(pPortDef_op);
         OMX_MEMFREE_STRUCT(G722_ip);
         OMX_MEMFREE_STRUCT(G722_op);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_INPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_OUTPUT_PORT]);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        if (NULL != pComponentPrivate) {
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_INPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_OUTPUT_PORT]);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+            OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
 
-        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+        }
 
     }
     G722DEC_DPRINT ("Exiting OMX_ComponentInit\n");
@@ -519,7 +521,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         break;
     case OMX_CommandFlush:
         G722DEC_DPRINT("G722DEC: Entered switch - Command Flush\n");
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && (OMX_S32)nParam != -1) {
             G722D_OMX_ERROR_EXIT(eError,OMX_ErrorBadPortIndex,"OMX_ErrorBadPortIndex");
         }
         break;
@@ -1108,8 +1110,10 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     G722DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
+#ifdef DSP_RENDERING_ON
     OMX_AUDIO_CONFIG_MUTETYPE *pMuteStructure = NULL;
     OMX_AUDIO_CONFIG_VOLUMETYPE *pVolumeStructure = NULL;
+#endif
     TI_OMX_DSP_DEFINITION* pDspDefinition = NULL;
     OMX_S16* deviceString = NULL;
     TI_OMX_DATAPATH dataPath;

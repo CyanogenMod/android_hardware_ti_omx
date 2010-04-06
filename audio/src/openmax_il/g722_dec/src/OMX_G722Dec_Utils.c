@@ -209,9 +209,9 @@ OMX_ERRORTYPE G722DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
     G722D_LCML_BUFHEADERTYPE *pTemp_lcml = NULL;
     OMX_U32 size_lcml = 0;
     /*int inputPortFlag=0,outputPortFlag=0;*/
+#ifdef DSP_RENDERING_ON
     LCML_STRMATTR *strmAttr = NULL;
-    OMX_U8 *ptemp = NULL;
-
+#endif
     G722DEC_DPRINT(":: Entered Fill_LCMLInitParams");
 
     G722DEC_DPRINT("%d :: OMX_StateLoaded [G722D_INPUT_PORT]->bPopulated  %d \n",
@@ -441,7 +441,6 @@ OMX_ERRORTYPE G722DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
 
  EXIT:
     if(eError != OMX_ErrorNone){
-        OMX_MEMFREE_STRUCT(arr);
         G722DEC_CleanupInitParams(pComponent);
     }
     G722DEC_DPRINT("Exiting G722DEC_Fill_LCMLInitParams\n");
@@ -650,7 +649,8 @@ OMX_ERRORTYPE G722DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 /* ================================================================================ * */
 OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    OMX_U32 i = 0,ret = 0;
+    OMX_U32 i = 0;
+    int ret = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     char *pArgs = "damedesuStr";
     OMX_COMPONENTTYPE *pHandle =
@@ -1098,6 +1098,10 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
             case OMX_StateMax:
                 G722DEC_DPRINT(": HandleCommand: Cmd OMX_StateMax::\n");
                 break;
+
+            default:
+                G722DEC_DPRINT(": HandleCommand: InValid Command: 0x%x\n",commandedState);
+                break;
             } /* End of Switch */
         }
     }
@@ -1125,10 +1129,10 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 pComponentPrivate->pPortDef[G722D_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
-            if(commandData == -1){
+            if((OMX_S32)commandData == -1){
                 pComponentPrivate->pPortDef[G722D_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 char *pArgs = "damedesuStr";
                 pComponentPrivate->pPortDef[G722D_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1169,7 +1173,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bDisableCommandParam = commandData;
             }
         }
-        if(commandData == -1) {
+        if((OMX_S32)commandData == -1) {
             if (!pComponentPrivate->pPortDef[G722D_INPUT_PORT]->bPopulated &&
                 !pComponentPrivate->pPortDef[G722D_OUTPUT_PORT]->bPopulated){
                 /* return cmdcomplete event if inout & output unpopulated */
@@ -1189,7 +1193,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     }
     else if (command == OMX_CommandPortEnable) {
-        if(commandData == 0x0 || commandData == -1){
+        if(commandData == 0x0 || (OMX_S32)commandData == -1){
             /* enable in port */
             G722DEC_DPRINT("setting input port to enabled\n");
             pComponentPrivate->pPortDef[G722D_INPUT_PORT]->bEnabled = OMX_TRUE;
@@ -1203,7 +1207,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
             }
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             char *pArgs = "damedesuStr";
             /* enable out port */
             G722DEC_DPRINT("setting output port to enabled\n");
@@ -1246,7 +1250,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                        NULL);
                 break;
             }
-            else if(commandData == -1 && (pComponentPrivate->curState == OMX_StateLoaded ||
+            else if((OMX_S32)commandData == -1 && (pComponentPrivate->curState == OMX_StateLoaded ||
                                           (pComponentPrivate->pPortDef[G722D_INPUT_PORT]->bPopulated &&
                                            pComponentPrivate->pPortDef[G722D_OUTPUT_PORT]->bPopulated))) {
 
@@ -1268,7 +1272,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandFlush) {
         int j=0;
         G722DEC_DPRINT(":: Inside OMX_CommandFlush Command\n");
-        if(commandData == 0x0 || commandData == -1) {
+        if(commandData == 0x0 || (OMX_S32)commandData == -1) {
             for (i=0; i < MAX_NUM_OF_BUFS; i++) {
                 pComponentPrivate->pInputBufHdrPending[i] = NULL;
             }
@@ -1290,7 +1294,7 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
             pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                    OMX_EventCmdComplete, OMX_CommandFlush,G722D_INPUT_PORT, NULL);
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             G722DEC_DPRINT("Flusing output queue\n");
             for (i=0; i < MAX_NUM_OF_BUFS; i++) {
                 pComponentPrivate->pOutputBufHdrPending[i] = NULL;
@@ -1897,7 +1901,7 @@ OMX_HANDLETYPE G722DEC_GetLCMLHandle(G722DEC_COMPONENT_PRIVATE *pComponentPrivat
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     void *handle = NULL;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
-    char *error = NULL;
+    const char *error = NULL;
 
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
@@ -2210,6 +2214,7 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer,nIpBufSize,OMX_U8);
             if (pTemp->pBuffer == NULL) {
+                OMX_MEMFREE_STRUCT(pTemp);
                 G722DEC_CleanupInitParams(pComponent);
                 G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
                 return OMX_ErrorInsufficientResources;
@@ -2272,6 +2277,7 @@ OMX_ERRORTYPE G722DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         if (pComponentPrivate->bufAlloced == 0) {
             OMX_MALLOC_SIZE_DSPALIGN(pTemp->pBuffer,nOpBufSize,OMX_U8);
             if (pTemp->pBuffer == NULL) {
+                 OMX_MEMFREE_STRUCT(pTemp);
                  G722DEC_CleanupInitParams(pComponent);
                  G722DEC_DPRINT("%d :: Exiting AllocateBuffer\n",__LINE__);
                  return OMX_ErrorInsufficientResources;
