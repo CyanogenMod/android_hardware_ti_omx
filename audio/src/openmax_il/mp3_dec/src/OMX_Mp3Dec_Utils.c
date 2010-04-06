@@ -265,11 +265,18 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirInput;
         pTemp_lcml->pOtherParams[i] = NULL;
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
                              sizeof(MP3DEC_UAlgInBufParamStruct),
                              MP3DEC_UAlgInBufParamStruct);
-        pTemp_lcml->pIpParam->bLastBuffer = 0;
-        pTemp_lcml->pIpParam->ulFrameIndex = 0;
+        if (NULL == pTemp_lcml->pIpParam) {
+            MP3DEC_CleanupInitParams(pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+        else {
+            pTemp_lcml->pIpParam->bLastBuffer = 0;
+            pTemp_lcml->pIpParam->ulFrameIndex = 0;
+        }
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((MP3DEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -301,12 +308,19 @@ OMX_ERRORTYPE MP3DEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,LCML_DSP *plc
         pTemp_lcml->pBufHdr = pTemp;
         pTemp_lcml->eDir = OMX_DirOutput;
         pTemp_lcml->pOtherParams[i] = NULL;
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
                              sizeof(MP3DEC_UAlgOutBufParamStruct),
                              MP3DEC_UAlgOutBufParamStruct);
-        pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
-        pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
-        pTemp_lcml->pOpParam->ulFrameIndex = 0;
+        if (NULL == pTemp_lcml->pOpParam) {
+            MP3DEC_CleanupInitParams(pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+        else {
+            pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
+            pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
+            pTemp_lcml->pOpParam->ulFrameIndex = 0;
+        }
 
         pTemp->nFlags = NORMAL_BUFFER;
         ((MP3DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3270,8 +3284,14 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_S32 ind
             OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
                                  sizeof(MP3DEC_UAlgInBufParamStruct),
                                  MP3DEC_UAlgInBufParamStruct);
-            pTemp_lcml->pIpParam->bLastBuffer = 0;
-            pTemp_lcml->pIpParam->ulFrameIndex = 0;
+            if (NULL == pTemp_lcml->pIpParam) {
+                MP3DEC_CleanupInitParams(pHandle);
+                return OMX_ErrorInsufficientResources;
+            }
+            else {
+                pTemp_lcml->pIpParam->bLastBuffer = 0;
+                pTemp_lcml->pIpParam->ulFrameIndex = 0;
+            }
 
             pTemp->nFlags = NORMAL_BUFFER;
             ((MP3DEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3307,9 +3327,15 @@ OMX_ERRORTYPE MP3DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent, OMX_S32 ind
             OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
                                  sizeof(MP3DEC_UAlgOutBufParamStruct),
                                  MP3DEC_UAlgOutBufParamStruct);
-            pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
-            pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
-            pTemp_lcml->pOpParam->ulFrameIndex= 0;
+            if (NULL == pTemp_lcml->pOpParam) {
+                MP3DEC_CleanupInitParams(pHandle);
+                return OMX_ErrorInsufficientResources;
+            }
+            else {
+                pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
+                pTemp_lcml->pOpParam->ulIsLastBuffer = 0;
+                pTemp_lcml->pOpParam->ulFrameIndex = 0;
+            }
 
             pTemp->nFlags = NORMAL_BUFFER;
             ((MP3DEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
