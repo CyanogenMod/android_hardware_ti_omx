@@ -1965,7 +1965,19 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if (pComponentPrivate->curState == OMX_StateExecuting) {
                                 if (!NBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)) {
                                                 NBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
-                                                eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
+                                                if (pComponentPrivate->efrMode == 1)
+                                                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
+                                                                                                EMMCodecOuputBuffer,
+                                                                                                (OMX_U8 *)pBufHeader->pBuffer,
+                                                                                                NBAMRENC_OUTPUT_BUFFER_SIZE_EFR * nFrames,
+                                                                                                0,
+                                                                                                (OMX_U8 *) pLcmlHdr->pBufferParam,
+                                                                                                sizeof(NBAMRENC_ParamStruct),
+                                                                                                NULL);
+
+
+                                                else
+                                                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
                                                                                                 EMMCodecOuputBuffer,
                                                                                                 (OMX_U8 *)pBufHeader->pBuffer,
                                                                                                 NBAMRENC_OUTPUT_FRAME_SIZE * nFrames,
