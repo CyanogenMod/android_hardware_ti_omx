@@ -73,7 +73,7 @@ typedef enum _BOOST_LEVEL
 
 typedef enum _C_STATE
 {
-  C_STATE_1 = 1,
+  C_STATE_1 = 0,
   C_STATE_2,
   C_STATE_3,
   C_STATE_4,
