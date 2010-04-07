@@ -582,6 +582,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->pPPLibDynParams->ulPPLIBDithering=0;
     pComponentPrivate->pPPLibDynParams->ulPPLIBInHeight=0;
     pComponentPrivate->pPPLibDynParams->ulPPLIBInWidth=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBOutHeight=0;
+    pComponentPrivate->pPPLibDynParams->ulPPLIBOutWidth=0;
 #endif
 
 

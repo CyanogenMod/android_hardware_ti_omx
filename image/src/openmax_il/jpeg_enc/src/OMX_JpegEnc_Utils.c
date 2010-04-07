@@ -702,7 +702,8 @@ this option supportsonly up to 3 mega pixels
 		}
 	}
     else if (pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_90ROT_YUV422I ||
-            pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_270ROT_YUV422I){
+            pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_270ROT_YUV422I ||
+            pComponentPrivate->nConversionFlag == JPE_CONV_YUV422I_180ROT_YUV422I){
         if (pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatYCbYCr ||
                 pPortDefIn->format.image.eColorFormat == OMX_COLOR_FormatCbYCrY)
             ptCreateString[17] = pComponentPrivate->nConversionFlag;
@@ -744,7 +745,10 @@ this option supportsonly up to 3 mega pixels
         ptCreateStringPPLIB[12] = pPortDefIn->format.image.nFrameWidth;
 
     //MaxOutWidth
-    ptCreateStringPPLIB[13] = pPortDefIn->format.image.nFrameWidth;
+    if(pComponentPrivate->pPPLibDynParams->ulPPLIBOutWidth)
+        ptCreateStringPPLIB[13] = pComponentPrivate->pPPLibDynParams->ulPPLIBOutWidth;
+    else
+        ptCreateStringPPLIB[13] = pPortDefIn->format.image.nFrameWidth;
     //Input Format => 0:RGB24, 1:RGB16, 2:RGB12, 3:RGB8, 4:RGB4, 5:YUV422ILE, 6:YUV422IBE,
     //                7:422_IN_UY_WS, 8:422_IN_YU_WS, 9:YUV420P, 10:GRAY8, 11:GRAY4, 12:GRAY2_IN, 13:GRAY1
     if (pPortDefIn->format.image.eColorFormat ==  OMX_COLOR_FormatCbYCrY
@@ -1244,13 +1248,19 @@ OMX_ERRORTYPE SendDynamicPPLibParam(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
     ptInputParam[18] = 0;
 
     // LgUns ulOutHeight[0]; // picture buffer height
-    ptInputParam[19] = pPortDefIn->format.image.nFrameHeight;
+    if(pPPLibDynParams->ulPPLIBOutHeight)
+        ptInputParam[19] = pPPLibDynParams->ulPPLIBOutHeight;
+    else
+        ptInputParam[19] = pPortDefIn->format.image.nFrameHeight;
 
     // LgUns ulOutHeight[1]; // picture buffer height
     ptInputParam[20] = 0;
 
     // LgUns ulOutWidth[0]; // picture buffer width
-    ptInputParam[21] = pPortDefIn->format.image.nFrameWidth;
+    if(pPPLibDynParams->ulPPLIBOutWidth)
+        ptInputParam[21] = pPPLibDynParams->ulPPLIBOutWidth;
+    else
+        ptInputParam[21] = pPortDefIn->format.image.nFrameWidth;
 
     // LgUns ulOutWidth[1]; // picture buffer width
     ptInputParam[22] = 0;
