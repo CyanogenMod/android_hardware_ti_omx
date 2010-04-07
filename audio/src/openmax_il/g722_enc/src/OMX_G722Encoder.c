@@ -408,32 +408,30 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
  EXIT:
     G722ENC_DPRINT("Leaving OMX_ComponentInit\n");
-
-    if (OMX_ErrorNone != eError) {
-
-        /* Free previously allocated memory before bailing */
-        OMX_MEMFREE_STRUCT(pcm_ip);
-        OMX_MEMFREE_STRUCT(pcm_op);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInPortFormat);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutPortFormat);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-        OMX_MEMFREE_STRUCT(pPortDef_ip);
-        OMX_MEMFREE_STRUCT(pPortDef_op);
-
-        if ((NULL != pHandle) && (pComponentPrivate->bMutexInitDone == OMX_TRUE)) {
-            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+    if((OMX_ErrorNone != eError) && (pComponentPrivate != NULL)) {
+        if (pComponentPrivate->bMutexInitDone) {
             pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
             pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 
             pComponentPrivate->bMutexInitDone = OMX_FALSE;
         }
-        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
 
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInPortFormat);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G722ENC_OUTPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pPortDef[G722ENC_INPUT_PORT]);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->g722Params);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParams);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
+
+        OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
     }
 
     return eError;
@@ -502,7 +500,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
 
     case OMX_CommandFlush:
         G722ENC_DPRINT("%d :: G722ENC: Entered switch - Command Flush\n",__LINE__);
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && (OMX_S32)nParam != -1) {
             eError = OMX_ErrorBadPortIndex;
             goto EXIT;
         }
@@ -996,7 +994,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     G722ENC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
     OMX_COMPONENTTYPE* pHandle = (OMX_COMPONENTTYPE*)hComp;
     TI_OMX_DSP_DEFINITION* pDspDefinition = NULL;
+#ifdef DSP_RENDERING_ON
     OMX_AUDIO_CONFIG_VOLUMETYPE *pGainStructure = NULL;
+#endif
     OMX_S16 *customFlag = NULL;
     TI_OMX_DATAPATH dataPath;
     /*    OMX_S16* deviceString;*/
@@ -1468,6 +1468,7 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
     if(pBufferHeader->pBuffer == NULL) {
         G722ENC_DPRINT("%d :: %s OMX_ErrorInsufficientResources\n",__LINE__,__FUNCTION__);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         G722ENC_CleanupInitParams(pComponentPrivate->pHandle);
         return OMX_ErrorInsufficientResources;
     }
@@ -1531,6 +1532,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     G722ENC_DPRINT ("pComponentPrivate->pInputBufferList->numBuffers = %d\n", pComponentPrivate->pInputBufferList->numBuffers);
     G722ENC_DPRINT ("pComponentPrivate->pOutputBufferList->numBuffers = %d\n", pComponentPrivate->pOutputBufferList->numBuffers);
     G722ENC_DPRINT ("pComponentPrivate->curState = %d\n", pComponentPrivate->curState);
+
+    if ((eError != OMX_ErrorNone) && (NULL != pBufferHeader)) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer,OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+    }
+
     G722ENC_DPRINT("AllocateBuffer returning %d\n",eError);
     return eError;
 }
