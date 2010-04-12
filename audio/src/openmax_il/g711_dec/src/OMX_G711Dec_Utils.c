@@ -1216,6 +1216,11 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
         case OMX_StateMax:
             G711DEC_DPRINT("%d: G711DECHandleCommand: Cmd OMX_StateMax::\n",__LINE__);
             break;
+
+        default:
+            G711DEC_DPRINT("%d: G711DECHandleCommand: Invalid Command :0x%x\n",__LINE__,commandedState);
+            break;
+
         } /* End of Switch */
     }
     else if (command == OMX_CommandMarkBuffer) {
@@ -1227,12 +1232,12 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandPortDisable) {
         if (!pComponentPrivate->bDisableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* disable port */
                 pComponentPrivate->pPortDef[G711DEC_INPUT_PORT]->bEnabled = OMX_FALSE;
             }
             
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 char *pArgs = "damedesuStr";
                 pComponentPrivate->pPortDef[G711DEC_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 
@@ -1281,7 +1286,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
 
-        if(commandData == -1) {
+        if((OMX_S32)commandData == -1) {
             if (!pComponentPrivate->pPortDef[G711DEC_INPUT_PORT]->bPopulated &&
                 !pComponentPrivate->pPortDef[G711DEC_OUTPUT_PORT]->bPopulated){
 
@@ -1309,7 +1314,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandPortEnable) {
         if(!pComponentPrivate->bEnableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
                 /* enable in port */
                 G711DEC_DPRINT ("setting input port to enabled\n");
                 
@@ -1324,7 +1329,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 G711DEC_DPRINT ("pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = %d\n",
                                 pComponentPrivate->pPortDef[G711DEC_INPUT_PORT]->bEnabled);
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 /* Removing sleep() calls. */
                 if(pComponentPrivate->AlloBuf_waitingsignal)
                 {
@@ -1388,7 +1393,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bEnableCommandParam = commandData;
             }
         }
-        else if(commandData == -1 ){
+        else if((OMX_S32)commandData == -1 ){
             if (pComponentPrivate->curState == OMX_StateLoaded || 
                 (pComponentPrivate->pPortDef[G711DEC_INPUT_PORT]->bPopulated
                  && pComponentPrivate->pPortDef[G711DEC_OUTPUT_PORT]->bPopulated)){
@@ -1423,7 +1428,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif                 
     }
     else if (command == OMX_CommandFlush) {
-        if(commandData == 0x0 || commandData == -1){
+        if(commandData == 0x0 || (OMX_S32)commandData == -1){
             for (i=0; i < MAX_NUM_OF_BUFS; i++)
             {
                 pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -1447,7 +1452,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                    OMX_CommandFlush,
                                                    G711DEC_INPUT_PORT, NULL);
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             for (i=0; i < MAX_NUM_OF_BUFS; i++)
             {
                 pComponentPrivate->pOutputBufHdrPending[i] = NULL;
@@ -1843,7 +1848,8 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     G711DEC_DPRINT("%d : Exiting from  G711DECHandleDataBuf_FromApp \n",__LINE__);
     G711DEC_DPRINT("Returning error %d\n",eError);
 
-    if (eError != OMX_ErrorNone){
+    if ((eError != OMX_ErrorNone) && (NULL != pLcmlHdr)){
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
         OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, G711DEC_FrameStruct);
     }
     return eError;
@@ -2371,7 +2377,7 @@ OMX_HANDLETYPE G711DECGetLCMLHandle()
     void *handle = NULL;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
-    char *error = NULL;
+    const char *error = NULL;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     G711DEC_DPRINT("G711DECGetLCMLHandle %d\n",__LINE__);
@@ -2609,7 +2615,6 @@ OMX_ERRORTYPE  G711DECFill_LCMLInitParamsEx (OMX_HANDLETYPE  pComponent )
     OMX_U16 i = 0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
     OMX_S16 size_lcml = 0;
-    LCML_STRMATTR *strmAttr = NULL;
 
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     G711DEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
