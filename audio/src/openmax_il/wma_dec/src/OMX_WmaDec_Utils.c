@@ -758,8 +758,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_STATETYPE commandedState;
     OMX_U32 commandData;
     char *pArgs = "damedesuStr";
-    OMX_U16 i,j;
-    int numCalls;
+    OMX_U16 i;
 
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     LCML_DSP_INTERFACE *pLcmlHandle;
@@ -876,6 +875,11 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
             OMX_PRSTATE2(pComponentPrivate->dbg, "%d: WMADECHandleCommand: Cmd OMX_StateMax::",
                           __LINE__);
             break;
+
+        default :
+            OMX_ERROR4(pComponentPrivate->dbg, "%d: WMADECHandleCommand: Unexpected State ::0x%x",
+                          __LINE__,command);
+            break;
         } /* End of Switch */
 
     }
@@ -913,11 +917,11 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
             pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = OMX_FALSE;
         }            
         
-        if(commandData == -1){
+        if((OMX_S32)commandData == -1){
             /* disable port */
             pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = OMX_FALSE;
         }
-        if(commandData == 0x1 || commandData == -1)
+        if(commandData == 0x1 || (OMX_S32)commandData == -1)
         {
                 
             pComponentPrivate->pPortDef[OUTPUT_PORT]->bEnabled = OMX_FALSE;
@@ -983,7 +987,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
 
-        if(commandData == -1){
+        if((OMX_S32)commandData == -1){
             if (!pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated && 
                 !pComponentPrivate->pPortDef[OUTPUT_PORT]->bPopulated)
             {
@@ -1014,7 +1018,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandPortEnable) 
     {
         if(!pComponentPrivate->bEnableCommandPending){
-            if(commandData == 0x0 || commandData == -1)
+            if(commandData == 0x0 || (OMX_S32)commandData == -1)
             {
                 /* enable in port */
                 OMX_PRCOMM2(pComponentPrivate->dbg, "setting input port to enabled");
@@ -1022,7 +1026,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 OMX_PRCOMM2(pComponentPrivate->dbg, "pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = %d",
                               pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled);
             }
-            if(commandData == 0x1 || commandData == -1)
+            if(commandData == 0x1 || (OMX_S32)commandData == -1)
             {
                 /* enable out port */
                 char *pArgs = "damedesuStr";
@@ -1142,7 +1146,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bEnableCommandParam = commandData;
             }                
         }    
-        else if(commandData == -1 )
+        else if((OMX_S32)commandData == -1 )
         {
             if(pComponentPrivate->curState == OMX_StateLoaded || 
                (pComponentPrivate->pPortDef[INPUT_PORT]->bPopulated && 
@@ -1181,9 +1185,9 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandFlush)
     {
         OMX_U32 aParam[3] = {0};
-        if(commandData == 0x0 || commandData == -1)
+        if(commandData == 0x0 || (OMX_S32)commandData == -1)
         {
-            OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+            OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %d, handled ETB's = %d\n",
                         pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
 
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
@@ -1221,9 +1225,9 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
 
 
-        if(commandData == 0x1 || commandData == -1)
+        if(commandData == 0x1 || (OMX_S32)commandData == -1)
         {
-            OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+            OMX_PRCOMM1(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %d, handled FTB's = %d\n",
                         pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
 
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
@@ -1972,7 +1976,6 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     LCML_WMADEC_BUFHEADERTYPE *pLcmlHdr;
     WMADEC_COMPONENT_PRIVATE *pComponentPrivate_CC = NULL;      
     OMX_COMPONENTTYPE *pHandle                                     = NULL;
-    OMX_U8 pending_buffers = OMX_FALSE;
 #ifdef WMADEC_DEBUG
     LCML_DSP_INTERFACE *phandle;
 #endif
@@ -2483,7 +2486,7 @@ OMX_HANDLETYPE WMADECGetLCMLHandle(WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
     void *handle;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_HANDLETYPE pHandle = NULL;
-    char *error;
+    const char *error;
     OMX_ERRORTYPE eError;
 
     handle = dlopen("libLCML.so", RTLD_LAZY);
@@ -3704,7 +3707,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 nIpBuf,nIpBufSize,nOpBuf,nOpBufSize;
-    OMX_U16 i,j;
+    OMX_U16 i;
     OMX_BUFFERHEADERTYPE *pTemp;
     int size_lcml;
     LCML_WMADEC_BUFHEADERTYPE *pTemp_lcml = NULL;
@@ -3726,7 +3729,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "nIpBuf = %ld",nIpBuf);
     OMX_PRBUFFER1(pComponentPrivate->dbg, "nOpBuf = %ld",nOpBuf);
-    if(indexport == 0 || indexport == -1){
+    if(indexport == 0 || (OMX_S32)indexport == -1){
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Comp: OMX_WmaDecUtils.c",__LINE__);
         size_lcml = nIpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
         OMX_MALLOC_SIZE(pTemp_lcml, size_lcml, LCML_WMADEC_BUFHEADERTYPE);
@@ -3769,7 +3772,7 @@ OMX_ERRORTYPE WMADECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
             pTemp_lcml++;
         }
     }
-    if(indexport == 1 || indexport == -1){
+    if(indexport == 1 || (OMX_S32)indexport == -1){
         /* Allocate memory for all output buffer headers..
          * This memory pointer will be sent to LCML */
         size_lcml = nOpBuf * sizeof(LCML_WMADEC_BUFHEADERTYPE);
@@ -3948,7 +3951,6 @@ void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
             {
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n", __LINE__);
                 pComponentPrivate->first_buffer = 1;
-                OMX_PRDSP2(pComponentPrivate->dbg,  "IUALG_WARN_PLAYCOMPLETED!\n", __LINE__);
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventBufferFlag,
