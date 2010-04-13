@@ -356,16 +356,16 @@ int get_curr_cpu_mhz(int omapVersion){
             maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_1];
         }
         else if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_2]) {
-            maxMhz = vdd1_dsp_mhz_3430[OPERATING_POINT_2];
+            maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_2];
         }
         else if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_3]) {
             maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_3];
         }
-        else if (cur_freq == vdd1_mpu_mhz_3430[OPERATING_POINT_4]) {
+        else if (cur_freq == vdd1_mpu_mhz_3630[OPERATING_POINT_4]) {
             maxMhz = vdd1_dsp_mhz_3630[OPERATING_POINT_4];
         }
         else {
-            RAM_DPRINT("Read incorrect frequency from sysfs 3430\n");
+            RAM_DPRINT("Read incorrect frequency from sysfs 3630\n");
             return NULL;
         }
     }
