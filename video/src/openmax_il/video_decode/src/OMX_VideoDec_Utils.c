@@ -5025,9 +5025,14 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 OMX_PRINT1(pComponentPrivate->dbg, "AVC: bConfigBufferCompleateAVC == FALSE!");
                 goto EXIT;
             }
-            OMX_VidDec_Return (pComponentPrivate, VIDDEC_OUTPUT_PORT, OMX_TRUE);
             eError = OMX_ErrorNone;
         }
+        OMX_VidDec_Return (pComponentPrivate, VIDDEC_OUTPUT_PORT, OMX_TRUE);
+    }
+    else if (pComponentPrivate->bParserEnabled &&
+            pComponentPrivate->bFirstHeader == OMX_FALSE) {
+        pComponentPrivate->bFirstHeader = OMX_TRUE;
+        OMX_VidDec_Return (pComponentPrivate, VIDDEC_OUTPUT_PORT, OMX_TRUE);
     }
 #endif
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
