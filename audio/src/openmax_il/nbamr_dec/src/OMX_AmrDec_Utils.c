@@ -3337,6 +3337,7 @@ OMX_HANDLETYPE NBAMRDECGetLCMLHandle(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate
     OMX_ERRORTYPE eError;
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECGetLCMLHandle\n",__LINE__);
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: dlopen() failed...\n",__LINE__);
@@ -3344,11 +3345,14 @@ OMX_HANDLETYPE NBAMRDECGetLCMLHandle(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate
         return pHandle;
     }
 
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = (void*)dlerror()) != NULL) 
-    {
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
-        fputs((void*)error, stderr);
+    if(NULL == fpGetHandle){
+        if ((error = (void*)dlerror()) != NULL)
+        {
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
+            fputs((void*)error, stderr);
+        }
         /* Close the handle opened already */
         dlclose(handle);
         return pHandle;
