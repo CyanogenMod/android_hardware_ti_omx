@@ -566,20 +566,26 @@ OMX_ERRORTYPE iLBCDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_MEMFREE_STRUCT(pComponentPrivate->iLBCParams);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pcmParams);
         OMX_MEMFREE_STRUCT(pComponentPrivate->sPortParam);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
     }
         
     pComponentPrivate->bPortDefsAllocated = 0;
 
-    /* Removing sleep() calls. */
-    iLBCDEC_DPRINT("\n\n FreeCompResources: Destroying mutexes.\n\n");
-    pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+    if (pComponentPrivate->bMutexInitialized) {
+        iLBCDEC_DPRINT("\n\n FreeCompResources: Destroying mutexes.\n\n");
+        pComponentPrivate->bMutexInitialized = OMX_FALSE;
+
+        pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
     
-    pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-    pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
+        pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
     
-    pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-    pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+        pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
+        pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+    }
 
     return eError;
 }
@@ -709,7 +715,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_COMPONENTTYPE *pHandle = NULL;
     OMX_COMMANDTYPE command;
     OMX_STATETYPE commandedState = OMX_StateInvalid;
-    OMX_S32 commandData = 0;
+    OMX_U32 commandData = 0;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
 
     OMX_U16 i = 0;
@@ -937,8 +943,12 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         } 
 
                         OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->pParams,
-                                               sizeof(iLBCD_AudioCodecParams),
-                                               iLBCD_AudioCodecParams);
+                                                 sizeof(iLBCD_AudioCodecParams),
+                                                 iLBCD_AudioCodecParams);
+                        if (pComponentPrivate->pParams == NULL) {
+                            iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+                            return OMX_ErrorInsufficientResources;
+                        }
                         /* Configure audio codec params */
                         pComponentPrivate->pParams->unAudioFormat = 1; /* iLBC mono */
                         pComponentPrivate->pParams->ulSamplingFreq =
@@ -1280,6 +1290,9 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 iLBCDEC_DPRINT("%d :: %s: Cmd OMX_StateMax::\n",
                               __LINE__,__FUNCTION__);
                 break;
+
+            default:
+                break;
             } /* End of Switch */
         }
     }
@@ -1294,7 +1307,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
         iLBCDEC_DPRINT("%d :: %s ::\n",__LINE__,__FUNCTION__);
         
         if (!pComponentPrivate->bDisableCommandPending) { 
-            if(commandData == 0x0 || commandData == -1){   /*Input*/
+            if(commandData == 0x0 || commandData == OMX_ALL){   /*Input*/
                 /* disable port */
                 pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled = OMX_FALSE;
                 for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
@@ -1315,7 +1328,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
                 }           
             }
-            if(commandData == 0x1 || commandData == -1){      /*Output*/
+            if(commandData == 0x1 || commandData == OMX_ALL){      /*Output*/
                 char *pArgs = "";
                 pComponentPrivate->pPortDef[iLBCD_OUTPUT_PORT]->bEnabled = OMX_FALSE;
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1364,7 +1377,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
 
-        if(commandData == -1) {
+        if(commandData == OMX_ALL) {
             if (!pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bPopulated && 
                 !pComponentPrivate->pPortDef[iLBCD_OUTPUT_PORT]->bPopulated){
 
@@ -1392,7 +1405,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     }
     else if (command == OMX_CommandPortEnable) {
-        if(commandData == 0x0 || commandData == -1){
+        if(commandData == 0x0 || commandData == OMX_ALL){
             /* enable in port */
             iLBCDEC_DPRINT("%d :: %s :: setting input port to enabled\n", __LINE__,__FUNCTION__);
             pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled = OMX_TRUE;
@@ -1405,7 +1418,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
 
             iLBCDEC_DPRINT("%d :: %s :: pComponentPrivate->pPortDef[iLBCDEC_INPUT_PORT]->bEnabled = %d\n",__LINE__,__FUNCTION__, pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bEnabled);
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || commandData == OMX_ALL){
             /* enable out port */
             if(pComponentPrivate->AlloBuf_waitingsignal) {
                 pComponentPrivate->AlloBuf_waitingsignal = 0;
@@ -1450,7 +1463,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                        NULL);
                 break;
             }
-            else if(commandData == -1 && 
+            else if(commandData == OMX_ALL &&
                     (pComponentPrivate->curState == OMX_StateLoaded || 
                      (pComponentPrivate->pPortDef[iLBCD_INPUT_PORT]->bPopulated 
                       && pComponentPrivate->pPortDef[iLBCD_OUTPUT_PORT]->bPopulated))){
@@ -1473,7 +1486,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
     }
     else if (command == OMX_CommandFlush) {
-        if(commandData == 0x0 || commandData == -1){
+        if(commandData == 0x0 || commandData == OMX_ALL){
             for (i=0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
                 iLBCDEC_DPRINT("%d :: %s :: Calling EmptyBufferDone\n",__LINE__,
                         __FUNCTION__);
@@ -1491,7 +1504,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                    iLBCD_INPUT_PORT,
                                                    NULL);
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || commandData == OMX_ALL){
 
             /* return all output buffers */
             for (i=0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
@@ -1597,12 +1610,16 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                              pLcmlHdr->pDmmBuf->pReserved);
                 pLcmlHdr->pBufferParam->pParamElem = NULL;
 
-                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, OMX_U8);
+                OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, iLBCDEC_FrameStruct);
             }
             if(pLcmlHdr->pFrameParam == NULL ){
                 OMX_MALLOC_SIZE_DSPALIGN(pLcmlHdr->pFrameParam,
-                                       sizeof(iLBCDEC_FrameStruct)*nFrames,
-                                       OMX_U8);
+                                         sizeof(iLBCDEC_FrameStruct)*nFrames,
+                                         iLBCDEC_FrameStruct);
+                if (pLcmlHdr->pFrameParam == NULL) {
+                    iLBCDEC_EPRINT ("%d :: %s OMX_ErrorInsufficientResources\n",  __LINE__,__FUNCTION__);
+                    return OMX_ErrorInsufficientResources;
+                }
                 eError = OMX_DmmMap(phandle->dspCodec->hProc, 
                                 nFrames*sizeof(iLBCDEC_FrameStruct),
                                 (void*)pLcmlHdr->pFrameParam, 
@@ -1733,7 +1750,7 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
 
  EXIT:
-    if (eError != OMX_ErrorNone) {
+    if (eError != OMX_ErrorNone && pLcmlHdr != NULL) {
         OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, iLBCDEC_FrameStruct);
     }
     iLBCDEC_DPRINT("%d :: %s :: Exiting\n",__LINE__,__FUNCTION__);
@@ -2436,7 +2453,6 @@ OMX_ERRORTYPE iLBCDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent)
     OMX_U16 i = 0;
     OMX_BUFFERHEADERTYPE *pTemp = NULL;
     OMX_U32 size_lcml = 0;
-    LCML_STRMATTR *strmAttr = NULL;
 
     LCML_DSP_INTERFACE *pHandle = (LCML_DSP_INTERFACE *)pComponent;
     iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate = NULL;
