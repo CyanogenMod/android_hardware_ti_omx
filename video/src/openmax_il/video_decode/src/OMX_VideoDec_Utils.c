@@ -748,7 +748,7 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsMovableInputBuffers = OMX_FALSE;
             pComponentPrivate->pPVCapabilityFlags->iOMXComponentSupportsPartialFrames = OMX_FALSE;
-            pComponentPrivate->pPVCapabilityFlags->iOMXComponentCanHandleIncompleteFrames = OMX_FALSE;
+            pComponentPrivate->pPVCapabilityFlags->iOMXComponentCanHandleIncompleteFrames = OMX_TRUE;
 
 
             if (pComponentPrivate->ProcessMode == 0 && pComponentPrivate->H264BitStreamFormat == 0) {
