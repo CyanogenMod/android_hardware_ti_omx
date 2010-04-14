@@ -1072,7 +1072,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 phandle->commStruct->iBufferPtr = (OMX_U32) pDmmBuf->pMapped;
                 /* storing reserve address for buffer */
                 pDmmBuf->bufReserved = pDmmBuf->pReserved;
-                if(phandle->mapped_buffer_count <= MAX_DMM_BUFFERS)
+                if(phandle->mapped_buffer_count < MAX_DMM_BUFFERS)
                 {
                     phandle->mapped_dmm_buffers[phandle->mapped_buffer_count++] = *pDmmBuf;
                 }
