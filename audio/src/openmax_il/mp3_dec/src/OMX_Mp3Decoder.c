@@ -1767,8 +1767,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     OMX_PRBUFFER2(dbg, ":: Freeing: pComponentPrivate = %p\n",pComponentPrivate);
     OMX_PRINT1(dbg, "::*********** ComponentDeinit is Done************** \n");
  EXIT:
-    OMX_DBG_CLOSE(dbg);
-    OMX_MEMFREE_STRUCT(pComponentPrivate);
+    if (NULL != pComponentPrivate) {
+        OMX_DBG_CLOSE(dbg);
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+    }
     return eError;
 }
 
