@@ -744,7 +744,7 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
         if (tComponentName[i][0] == NULL) {
             break;
         }
-        if (numFiles <= MAX_TABLE_SIZE){
+        if (numFiles < MAX_TABLE_SIZE){
             for (j = 0; j < numFiles; j ++) {
                 if (!strcmp(componentTable[j].name, tComponentName[i][0])) {
                     /* insert the role */
