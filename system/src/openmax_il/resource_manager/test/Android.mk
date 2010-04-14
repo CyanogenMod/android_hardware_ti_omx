@@ -8,7 +8,7 @@ LOCAL_SRC_FILES:= \
 	rm_api_test.c \
 
 LOCAL_C_INCLUDES := \
-        $(TI_OMX_SYSTEM)/resource_manager/resource_activity_monitor/inc	\
+    $(TI_OMX_SYSTEM)/resource_manager/resource_activity_monitor/inc	\
 	$(TI_OMX_SYSTEM)/common/inc \
 	$(TI_OMX_COMP_C_INCLUDES)
         

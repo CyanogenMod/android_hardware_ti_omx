@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2001-2008 Texas Instruments - http://www.ti.com/
  *
@@ -21,15 +20,6 @@
 *  Use of this software is controlled by the terms and conditions found
 *  in the license agreement under which this software has been supplied.
 * =========================================================================== */
-/**
-* @file AacDecTest.c
-*
-* This file contains the test application code that invokes the component.
-*
-* @path  $(CSLPATH)\OMAPSW_MPU\linux\audio\src\openmax_il\aac_dec\tests
-*
-* @rev  1.0
-*/
 /* ----------------------------------------------------------------------------
 *!
 *! Test Case definition:
@@ -47,42 +37,7 @@
 *  INCLUDE FILES
 ****************************************************************/
 /* ----- system and platform files ----------------------------*/
-
-
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <linux/vt.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <pthread.h>
-#include <stdio.h>
-
-#include <Resource_Activity_Monitor.h>
-
-
-#undef APP_DEBUG
-
-#ifdef APP_DEBUG
-#define APP_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
-#else
-#define APP_DPRINT(...)
-#endif
-
-#ifdef APP_MEMCHECK
-#define APP_MEMPRINT(...)    fprintf(stderr,__VA_ARGS__)
-#else
-#define APP_MEMPRINT(...)
-#endif
-
-
-#define APP_OUTPUT_FILE "rm_test_results.txt"
-#define SLEEP_TIME 5
+#include <rm_test.h>
 
 
 /* safe routine to get the maximum of 2 integers */
