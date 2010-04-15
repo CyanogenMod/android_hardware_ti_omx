@@ -1198,11 +1198,11 @@ OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 
 /*  =========================================================================*/
 /*  func    AACDEC_HandleUSNError
-/*
-/*  desc    Handles error messages returned by the dsp
-/*
-/*@return n/a
-/*
+ *
+ *  desc    Handles error messages returned by the dsp
+ *
+ *  @return n/a
+ */
 /*  =========================================================================*/
 void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 

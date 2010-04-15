@@ -262,9 +262,15 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
                              sizeof(AACDEC_UAlgInBufParamStruct),
                              AACDEC_UAlgInBufParamStruct);
-        pTemp_lcml->pIpParam->bLastBuffer = 0;
-        pTemp_lcml->pIpParam->bConcealBuffer = 0;
-        pTemp_lcml->pIpParam->ulFrameIndex = 0;
+        if (NULL == pTemp_lcml->pIpParam) {
+            AACDEC_CleanupInitParams(pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+        else {
+            pTemp_lcml->pIpParam->bLastBuffer = 0;
+            pTemp_lcml->pIpParam->bConcealBuffer = 0;
+            pTemp_lcml->pIpParam->ulFrameIndex = 0;
+        }
 
         pTemp->nFlags = NORMAL_BUFFER_AACDEC;
         ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -298,10 +304,16 @@ OMX_ERRORTYPE AACDEC_Fill_LCMLInitParams(OMX_HANDLETYPE pComponent,
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,
                              sizeof(AACDEC_UAlgOutBufParamStruct),
                              AACDEC_UAlgOutBufParamStruct);
-        pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
-        pTemp_lcml->pOpParam->isLastBuffer = 0;
-        pTemp_lcml->pOpParam->ulFrameIndex = 0;
-		
+        if (NULL == pTemp_lcml->pOpParam) {
+            AACDEC_CleanupInitParams(pHandle);
+            return OMX_ErrorInsufficientResources;
+        }
+        else {
+            pTemp_lcml->pOpParam->ulFrameCount = DONT_CARE;
+            pTemp_lcml->pOpParam->isLastBuffer = 0;
+            pTemp_lcml->pOpParam->ulFrameIndex = 0;
+        }
+
         pTemp->nFlags = NORMAL_BUFFER_AACDEC;
         ((AACDEC_COMPONENT_PRIVATE *)pTemp->pPlatformPrivate)->pHandle = pHandle;
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d ::Comp:  >>>>>>>>>>>>> OutBuffHeader[%d] = %p\n",
@@ -529,7 +541,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_STATETYPE commandedState;
     OMX_U32 commandData;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
-    OMX_U32 ret = 0;
+    int ret = 0;
     OMX_U16 arr[10];
     OMX_U32 aParam[3] = {0};
     int inputPortFlag = 0;
@@ -1298,6 +1310,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             case OMX_StateMax:
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d: HandleCommand: Cmd OMX_StateMax::\n",__LINE__);
                 break;
+
+            default:
+                OMX_PRDSP2(pComponentPrivate->dbg, "%d: HandleCommand: Invalid state 0x%x\n",__LINE__,commandedState);
+                break;
             } /* End of Switch */
         }
     }
@@ -1328,11 +1344,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bEnabled = OMX_FALSE;
             }
-            if(commandData == -1){
+            if((OMX_S32)commandData == -1){
                 pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bEnabled = OMX_FALSE;
             }
-            if(commandData == 0x1 || commandData == -1){
-                char *pArgs = "";
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 pComponentPrivate->pPortDef[OUTPUT_PORT_AACDEC]->bEnabled = OMX_FALSE;
             }
         }
@@ -1379,7 +1394,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
             }
         }
         
-        if(commandData == -1) {
+        if((OMX_S32)commandData == -1) {
             if (!pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bPopulated &&
                 !pComponentPrivate->pPortDef[OUTPUT_PORT_AACDEC]->bPopulated){
 
@@ -1408,7 +1423,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     else if (command == OMX_CommandPortEnable) {
         OMX_PRCOMM2(pComponentPrivate->dbg, "received port enable command\n");
         if(!pComponentPrivate->bEnableCommandPending) {
-            if(commandData == 0x0 || commandData == -1){
+            if(commandData == 0x0 || (OMX_S32)commandData == -1){
 
                 OMX_PRCOMM2(pComponentPrivate->dbg, "setting input port to enabled\n");
                 pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bEnabled = OMX_TRUE;
@@ -1419,7 +1434,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->AlloBuf_waitingsignal = 0;
                 }
             }
-            if(commandData == 0x1 || commandData == -1){
+            if(commandData == 0x1 || (OMX_S32)commandData == -1){
                 char *pArgs = "";
 
                 
@@ -1558,7 +1573,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->bEnableCommandParam = commandData;
                 }
             }
-            else if(commandData == -1) {
+            else if((OMX_S32)commandData == -1) {
                 if (pComponentPrivate->curState == OMX_StateLoaded ||
                     (pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->bPopulated &&
                      pComponentPrivate->pPortDef[OUTPUT_PORT_AACDEC]->bPopulated)){
@@ -1665,7 +1680,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
     }
     else if (command == OMX_CommandFlush) {
         pComponentPrivate->bFlushing = OMX_TRUE;
-        if(commandData == 0x0 || commandData == -1) {
+        if(commandData == 0x0 || (OMX_S32)commandData == -1) {
             OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n", pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
@@ -1720,7 +1735,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bFlushInputPortCommandPending = OMX_TRUE;
             }
         }
-        if(commandData == 0x1 || commandData == -1){
+        if(commandData == 0x1 || (OMX_S32)commandData == -1){
             OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n", pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers) {
                 pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
@@ -1925,11 +1940,6 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     char *pArgs = "";
     OMX_U32 pValues[4];
     OMX_U32 pValues1[4];
-    int iObjectType = 0;
-    int iSampleRateIndex = 0;
-    OMX_U32 nBitPosition = 0;
-    OMX_U8* pHeaderStream = (OMX_U8*)pBufHeader->pBuffer;
-    OMX_U32 i = 0;
 
     pBufHeader->pPlatformPrivate  = pComponentPrivate;
     eError = AACDEC_GetBufferDirection(pBufHeader, &eDir);
@@ -2475,7 +2485,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     OMX_U8 *pBuffer = args[1];
     AACD_LCML_BUFHEADERTYPE *pLcmlHdr;
     OMX_COMPONENTTYPE *pHandle = NULL;
-    LCML_DSP_INTERFACE *pLcmlHandle;
     AACDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 	OMX_U16 i;
 
@@ -2483,8 +2492,6 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     OMX_ERRORTYPE rm_error = OMX_ErrorNone;
 #endif
     static double time_stmp = 0;
-    FILE * fOutAAC = NULL; 
-    FILE * fOutPCM = NULL; 
 
     pComponentPrivate = (AACDEC_COMPONENT_PRIVATE*)((LCML_DSP_INTERFACE*)args[6])->pComponentPrivate;
 
@@ -3054,7 +3061,7 @@ OMX_HANDLETYPE AACDEC_GetLCMLHandle(AACDEC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     void *handle;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
-    char *error;
+    const char *error;
 
     dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
@@ -3172,7 +3179,7 @@ void AACDEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
     OMX_U32 nOpBuf = 0;
     OMX_U32 i=0;
 
-    if(indexport == 0 || indexport == -1){
+    if(indexport == 0 || (OMX_S32)indexport == -1){
         nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
         pTemp_lcml = pComponentPrivate->pLcmlBufHeader[INPUT_PORT_AACDEC];
         for(i=0; i<nIpBuf; i++) {
@@ -3186,7 +3193,7 @@ void AACDEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 indexport)
                       pComponentPrivate->pLcmlBufHeader[INPUT_PORT_AACDEC]);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pLcmlBufHeader[INPUT_PORT_AACDEC]);
 
-    }else if(indexport == 1 || indexport == -1){
+    }else if(indexport == 1 || (OMX_S32)indexport == -1){
         nOpBuf = pComponentPrivate->nRuntimeOutputBuffers;
         pTemp_lcml = pComponentPrivate->pLcmlBufHeader[OUTPUT_PORT_AACDEC];
         for(i=0; i<nOpBuf; i++) {
@@ -3524,7 +3531,7 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
     OMX_PRBUFFER2(pComponentPrivate->dbg, "Output Buffer Size = %ld\n",nOpBufSize);
 
 
-    if(indexport == 0 || indexport == -1){
+    if(indexport == 0 || (OMX_S32)indexport == -1){
 
         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: bufAlloced = %lu\n",__LINE__,pComponentPrivate->bufAlloced);
         size_lcml = nIpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
@@ -3555,9 +3562,14 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
             OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam,
                                    sizeof(AACDEC_UAlgInBufParamStruct),
                                    AACDEC_UAlgInBufParamStruct);
-
-            pTemp_lcml->pIpParam->bLastBuffer = 0;
-            pTemp_lcml->pIpParam->ulFrameIndex = 0;
+            if (NULL == pTemp_lcml->pIpParam) {
+                AACDEC_CleanupInitParams(pHandle);
+                return OMX_ErrorInsufficientResources;
+            }
+            else {
+                pTemp_lcml->pIpParam->bLastBuffer = 0;
+                pTemp_lcml->pIpParam->ulFrameIndex = 0;
+            }
 
             pTemp->nFlags = NORMAL_BUFFER_AACDEC;
             ((AACDEC_COMPONENT_PRIVATE *) pTemp->pPlatformPrivate)->pHandle = pHandle;
@@ -3570,7 +3582,7 @@ OMX_ERRORTYPE AACDECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent,OMX_U32 inde
             pTemp_lcml++;
         }
     }
-    if(indexport == 1 || indexport == -1){
+    if(indexport == 1 || (OMX_S32)indexport == -1){
 
         size_lcml = nOpBuf * sizeof(AACD_LCML_BUFHEADERTYPE);
         OMX_MALLOC_SIZE(pTemp_lcml,size_lcml,AACD_LCML_BUFHEADERTYPE);
@@ -3696,10 +3708,12 @@ void SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
     OMX_COMPONENTTYPE *pHandle = NULL;
+#ifndef ANDROID
     OMX_U8 pending_buffers = OMX_FALSE;
     OMX_U32 i;
     OMX_U32 pValues[4];
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+#endif
     switch (arg)
     {
         case IAAC_WARN_SBR_PRESENT:

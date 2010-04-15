@@ -575,7 +575,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         }
         break;
     case OMX_CommandFlush:
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && (OMX_S32)nParam != -1) {
             AACDEC_OMX_ERROR_EXIT(eError,OMX_ErrorBadPortIndex,"OMX_ErrorBadPortIndex");
         }
         break;
