@@ -1236,74 +1236,109 @@ void *RM_FatalErrorWatchThread()
     DSP_HPROCESSOR hProc;
     struct DSP_NOTIFICATION* notification_mmufault;
     struct DSP_NOTIFICATION* notification_syserror ;
-
     int i;
-
-    status = DSPProcessor_Attach(0, NULL, &hProc);
-    DSP_ERROR_EXIT(status, "DSP processor attach failed", EXIT);           
-    notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
-    if(notification_mmufault == NULL) {
-        RM_DPRINT("%d :: malloc failed....\n",__LINE__);
-    }
-    else
-    {
-        memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
-    }
-
-    status = DSPProcessor_RegisterNotify(hProc, DSP_MMUFAULT, DSP_SIGNALEVENT, notification_mmufault);
-    DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", EXIT);
-    notificationObjects[0] =  notification_mmufault;
-
-    notification_syserror = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
-    if(notification_syserror == NULL) {
-        RM_EPRINT("%d :: malloc failed....\n",__LINE__);
-    }
-    else
-    {
-        memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
-    }
-            
-    status = DSPProcessor_RegisterNotify(hProc, DSP_SYSERROR, DSP_SIGNALEVENT, notification_syserror);
-    DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", EXIT);
-    notificationObjects[1] =  notification_syserror;
+    unsigned int uProcId = 0;	/* default proc ID is 0. */
+    unsigned int numProcs = 0;
 
     while (1) {
-    status = DSPManager_WaitForEvents(notificationObjects, 2, &index, 1000000);
-    RM_DPRINT("listening...\n");
-    if (DSP_SUCCEEDED(status)) {
-        if (index == 0 || index == 1){
-            /* exception received - start telling all components to close */
-            RM_EPRINT("DSP ERROR [%d] ... starting to preempt MM components\n",index);
-            mmuRecoveryInProgress = 1;
-            for(i=0; i < componentList.numRegisteredComponents; i++) {
-                cmd_data.rm_status = RM_RESOURCEFATALERROR;
-
-                cmd_data.hComponent = componentList.component[i].componentHandle;
-                cmd_data.nPid = componentList.component[i].nPid;
-                RM_SetStatus(cmd_data.hComponent, cmd_data.nPid,RM_WaitingForClient);  
-                int preemptpipe = RM_GetPipe(cmd_data.hComponent,cmd_data.nPid);
-                if (write(preemptpipe,&cmd_data,sizeof(cmd_data)) < 0){
-                    RM_DPRINT("Didn't write pipe\n");
-                }
-                else {
-                    RM_DPRINT("Wrote RMProxy pipe, cleaned [%d] components\n", i+1);
-                }
+    /* this outer loop is used to re-register and 
+       continue monitoring for faults after an error
+       occurs */
+        status = DspManager_Open(0, NULL);
+        if (DSP_FAILED(status)) {
+            fprintf(stderr, "DSPManager_Open failed \n");
+            return -1;
+        }
+        while (DSP_SUCCEEDED(DSPManager_EnumProcessorInfo(index,&dspInfo,
+            (unsigned int)sizeof(struct DSP_PROCESSORINFO),&numProcs))) {
+            if ((dspInfo.uProcessorType == DSPTYPE_55) ||
+                (dspInfo.uProcessorType == DSPTYPE_64)) {
+                uProcId = index;
+                status = DSP_SOK;
+                break;
             }
-
+            index++;
+        }
+        status = DSPProcessor_Attach(uProcId, NULL, &hProc);
+        DSP_ERROR_EXIT(status, "DSP processor attach failed", EXIT);
+        notification_mmufault = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+        if(notification_mmufault == NULL) {
+            RM_EPRINT("%d :: malloc failed....exiting rm-dsp-monitor-thread\n",__LINE__);
             /* detach processor from gpp */
             status = DSPProcessor_Detach(hProc);
             DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
             status = DspManager_Close(0, NULL);
             DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
-            while (componentList.numRegisteredComponents != 0) {
-                sleep(1);
-            }
-
-            /* should be safe to unblock new requests now */
-            mmuRecoveryInProgress = 0;
+            return NULL;
         }
-    }
-    }
+        else
+        {
+            memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
+        }
+
+        status = DSPProcessor_RegisterNotify(hProc, DSP_MMUFAULT, DSP_SIGNALEVENT, notification_mmufault);
+        DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", EXIT);
+        notificationObjects[0] =  notification_mmufault;
+
+        notification_syserror = (struct DSP_NOTIFICATION*)malloc(sizeof(struct DSP_NOTIFICATION));
+        if(notification_syserror == NULL) {
+            RM_EPRINT("%d :: malloc failed....exiting rm-dsp-monitor-thread\n",__LINE__);
+            /* free the first notification object */
+            free(notification_mmufault);
+            /* detach processor from gpp */
+            status = DSPProcessor_Detach(hProc);
+            DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
+            status = DspManager_Close(0, NULL);
+            DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
+            return NULL;
+        }
+        else
+        {
+            memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
+        }
+        
+        status = DSPProcessor_RegisterNotify(hProc, DSP_SYSERROR, DSP_SIGNALEVENT, notification_syserror);
+        DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", EXIT);
+        notificationObjects[1] =  notification_syserror;
+
+        while (1) {
+            status = DSPManager_WaitForEvents(notificationObjects, 2, &index, 1000000);
+            if (DSP_SUCCEEDED(status)) {
+                if (index == 0 || index == 1){
+                    /* exception received - start telling all components to close */
+                    RM_EPRINT("DSP ERROR [%d] ... starting to preempt MM components\n",index);
+                    mmuRecoveryInProgress = 1;
+                    for(i=0; i < componentList.numRegisteredComponents; i++) {
+                        cmd_data.rm_status = RM_RESOURCEFATALERROR;
+                        cmd_data.hComponent = componentList.component[i].componentHandle;
+                        cmd_data.nPid = componentList.component[i].nPid;
+                        RM_SetStatus(cmd_data.hComponent, cmd_data.nPid,RM_WaitingForClient);  
+                        int preemptpipe = RM_GetPipe(cmd_data.hComponent,cmd_data.nPid);
+                        if (write(preemptpipe,&cmd_data,sizeof(cmd_data)) < 0){
+                            RM_EPRINT("Didn't write pipe\n");
+                        }
+                        else {
+                            RM_EPRINT("Wrote RMProxy pipe, cleaned [%d] components\n", i+1);
+                        }
+                    }
+
+                    /* detach processor from gpp */
+                    status = DSPProcessor_Detach(hProc);
+                    DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
+                    status = DspManager_Close(0, NULL);
+                    DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
+                    while (componentList.numRegisteredComponents != 0) {
+                        RM_DPRINT("waiting for all component connections to be closed...\n");
+                        sleep(1);
+                    }
+
+                    /* should be safe to unblock new requests now */
+                    mmuRecoveryInProgress = 0;
+                    break; //continue at start of outer while loop to continue monitoring
+                }
+            }
+        } //end inner while(1)
+    } // end outer while(1)
 EXIT:    
     RM_DPRINT("leaving dsp_monitor thread\n\n");
     return NULL;
