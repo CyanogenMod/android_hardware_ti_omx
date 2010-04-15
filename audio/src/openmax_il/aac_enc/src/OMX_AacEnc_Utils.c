@@ -2974,6 +2974,7 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     char *error;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering AACENCGetLCMLHandle..\n",__LINE__);
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         fputs(dlerror(), stderr);
@@ -2981,9 +2982,12 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
         return pHandle;
     }
 
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = dlerror()) != NULL) {
-        fputs(error, stderr);
+    if(NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+        }
         dlclose(handle);
         OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting AACENCGetLCMLHandle..\n",__LINE__);
         return pHandle;
