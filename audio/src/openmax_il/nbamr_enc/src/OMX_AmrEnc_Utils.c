@@ -2704,16 +2704,20 @@ OMX_HANDLETYPE NBAMRENC_GetLCMLHandle(AMRENC_COMPONENT_PRIVATE *pComponentPrivat
     const char *error;
 
     OMX_PRINT1 (pComponentPrivate->dbg, "%d :: Entering NBAMRENC_GetLCMLHandle..\n",__LINE__);
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: dlopen() failed...\n",__LINE__);
         fputs(dlerror(), stderr);
         return pHandle;
     }
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = dlerror()) != NULL) {
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
-        fputs(error, stderr);
+    if(NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL) {
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
+            fputs(error, stderr);
+        }
         /* Close the handle opened already */
         dlclose(handle);
         return pHandle;
