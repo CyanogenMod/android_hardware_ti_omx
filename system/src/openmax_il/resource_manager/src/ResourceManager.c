@@ -1163,6 +1163,7 @@ int RM_GetQos()
             results = malloc(NumFound * sizeof (struct QOSDATA *));
             if (!results) {
                 RM_DPRINT("FAILED (out of memory)\n\n");
+                return QOS_DENY;
             }
 
             /* Get processor usage */

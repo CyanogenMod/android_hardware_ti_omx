@@ -550,14 +550,17 @@ int RMProxy_CheckForStubMode()
     if (qosdllname == NULL) /*is the var defined? */
     {
         stubMode = 1;
+        RMPROXY_DPRINT("Failed to get QOS DLL file name by RM: falling back to stub mode\n");
+        return stubMode;
     }
     if( (fp = fopen(qosdllname, "r")) == NULL) {
         stubMode = 1;
-        }
+        RMPROXY_DPRINT("Failed to open QOS DLL by RM: falling back to stub mode\n");
+    }
     else {
         stubMode = 0; //file exists, so no need to use stub implementation
         fclose(fp);
-        }
+    }
 
     return stubMode;
 }
