@@ -2890,6 +2890,7 @@ OMX_HANDLETYPE WBAMRENC_GetLCMLHandle(WBAMRENC_COMPONENT_PRIVATE *pComponentPriv
     const char *error;
 
     OMX_PRINT1(pComponentPrivate->dbg, "Entering\n");
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
 
     if (!handle) {
@@ -2898,13 +2899,16 @@ OMX_HANDLETYPE WBAMRENC_GetLCMLHandle(WBAMRENC_COMPONENT_PRIVATE *pComponentPriv
         return pHandle;
     }
 
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
 
-    if ((error = dlerror()) != NULL) {
-        OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
+    if( NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL) {
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: Error from dlsym()... close the DL Handle...\n",__LINE__);
+            fputs(error, stderr);
+        }
         /* Close the handle opened already */
         dlclose(handle);
-        fputs(error, stderr);
         return pHandle;
     }
 
