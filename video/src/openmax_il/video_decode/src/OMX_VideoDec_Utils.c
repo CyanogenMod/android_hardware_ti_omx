@@ -1692,7 +1692,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
             aParam[0] = USN_STRMCMD_FLUSH;
             aParam[1] = VIDDEC_INPUT_PORT;
             aParam[2] = 0;
-            OMX_PRINT1(pComponentPrivate->dbg, "Sending Flush to DSP 0x%lx\n", VIDDEC_INPUT_PORT);
+            OMX_PRINT1(pComponentPrivate->dbg, "Sending Flush to DSP 0x%lx\n", (unsigned long int)VIDDEC_INPUT_PORT);
             VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
             pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
@@ -1726,7 +1726,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
             aParam[0] = USN_STRMCMD_FLUSH;
             aParam[1] = VIDDEC_OUTPUT_PORT;
             aParam[2] = 0;
-            OMX_PRINT1(pComponentPrivate->dbg, "Sending Flush to DSP 0x%lx\n", VIDDEC_OUTPUT_PORT);
+            OMX_PRINT1(pComponentPrivate->dbg, "Sending Flush to DSP 0x%lx\n", (unsigned long int)VIDDEC_OUTPUT_PORT);
             VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
             pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,EMMCodecControlStrmCtrl, (void*)aParam);
