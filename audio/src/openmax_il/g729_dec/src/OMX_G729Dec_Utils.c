@@ -1998,6 +1998,7 @@ OMX_HANDLETYPE G729DECGetLCMLHandle(G729DEC_COMPONENT_PRIVATE* pComponentPrivate
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     G729DEC_DPRINT("G729DECGetLCMLHandle %d\n",__LINE__);
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         if ((error = dlerror()) != NULL)
@@ -2005,9 +2006,13 @@ OMX_HANDLETYPE G729DECGetLCMLHandle(G729DEC_COMPONENT_PRIVATE* pComponentPrivate
         return pHandle;
     }
 
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = dlerror()) != NULL) {
-        fputs(error, stderr);
+    if(NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+        }
+        dlclose(handle);
         return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
