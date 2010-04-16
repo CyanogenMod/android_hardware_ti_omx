@@ -2302,28 +2302,33 @@ OMX_HANDLETYPE G729ENC_GetLCMLHandle(G729ENC_COMPONENT_PRIVATE *pComponentPrivat
     void *handle = NULL;
     char *error = NULL;
     
-    G729ENC_DPRINT("Entering\n");
+    G729ENC_DPRINT("Entering GetLCMLHandle \n");
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle)
     {
         fputs(dlerror(), stderr);
-        goto EXIT;
+        return pHandle;
     }
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = dlerror()) != NULL)
-    {
-        fputs(error, stderr);
-        goto EXIT;
+    if(NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL)
+        {
+            fputs(error, stderr);
+        }
+        dlclose(handle);
+        return pHandle;
     }
     eError = (*fpGetHandle)(&pHandle);
     if(eError != OMX_ErrorNone)
     {
         eError = OMX_ErrorUndefined;
         G729ENC_EPRINT("OMX_ErrorUndefined.\n");
+        dlclose(handle);
         pHandle = NULL;
-        goto EXIT;
+        return pHandle;
     }
- EXIT:
+
     G729ENC_DPRINT("Exiting.");
     return pHandle;
 }
