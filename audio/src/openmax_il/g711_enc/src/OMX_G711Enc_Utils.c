@@ -2084,15 +2084,19 @@ OMX_HANDLETYPE G711ENC_GetLCMLHandle(G711ENC_COMPONENT_PRIVATE *pComponentPrivat
     void *handle = NULL;
     const char *error = NULL;
     G711ENC_DPRINT("%d :: Entering G711ENC_GetLCMLHandle..\n",__LINE__);
+    dlerror();
     handle = dlopen("libLCML.so", RTLD_LAZY);
     if (!handle) {
         if ((error = dlerror()) != NULL)
             fputs(error, stderr);
         return pHandle;
     }
+    dlerror();
     fpGetHandle = dlsym (handle, "GetHandle");
-    if ((error = dlerror()) != NULL) {
-        fputs(error, stderr);
+    if(NULL == fpGetHandle){
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+        }
         dlclose(handle);
         return pHandle;
     }
