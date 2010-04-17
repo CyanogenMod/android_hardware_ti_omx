@@ -72,3 +72,20 @@
 
 #define APP_OUTPUT_FILE "rm_test_results.txt"
 #define SLEEP_TIME 5
+
+
+int verify_get_omap_version();
+
+/*
+@input: takes number of times to perform transition between MIN and MAX vdd1_opp
+@output: return number of successful transitions beween min and max vdd1_opp
+*/
+int verify_opp1_minmax(int loopCount, int omapv);
+
+
+
+
+
+
+
+
