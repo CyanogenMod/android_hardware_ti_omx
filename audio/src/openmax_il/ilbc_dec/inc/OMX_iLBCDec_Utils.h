@@ -735,7 +735,7 @@ typedef struct iLBCDEC_COMPONENT_PRIVATE
     OMX_U32 nRuntimeOutputBuffers; /* OK */
     
     // Flag to set when mutexes are initialized
-    OMX_U8 bMutexInitialized;
+    OMX_BOOL bMutexInitialized;
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
     OMX_U8 AlloBuf_waitingsignal;

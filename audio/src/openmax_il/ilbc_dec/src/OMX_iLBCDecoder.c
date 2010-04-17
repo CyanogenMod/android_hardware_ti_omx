@@ -215,7 +215,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pComponentPrivate = pHandle->pComponentPrivate;
     pComponentPrivate->pHandle = pHandle;
-    pComponentPrivate->bMutexInitialized = 0;
+    pComponentPrivate->bMutexInitialized = OMX_FALSE;
 
     OMX_MALLOC_GENERIC(iLBC_ip,OMX_AUDIO_PARAM_ILBCTYPE);
     OMX_MALLOC_GENERIC(iLBC_op,OMX_AUDIO_PARAM_PCMMODETYPE);
@@ -335,7 +335,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
-    pComponentPrivate->bMutexInitialized = 1;
+    pComponentPrivate->bMutexInitialized = OMX_TRUE;
 
     OMX_MALLOC_GENERIC(pPortDef_ip,OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_MALLOC_GENERIC(pPortDef_op,OMX_PARAM_PORTDEFINITIONTYPE);
@@ -409,31 +409,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 EXIT:
     if(OMX_ErrorNone != eError) {
         iLBCDEC_EPRINT(":: ********* ERROR: Freeing Other Malloced Resources\n");
-        OMX_MEMFREE_STRUCT(iLBC_ip);
-        OMX_MEMFREE_STRUCT(iLBC_op);
-        if (pComponentPrivate != NULL) {
-            if (pComponentPrivate->bMutexInitialized) {
-               /* Removing sleep() calls. */
-               iLBCDEC_DPRINT("\n\n FreeCompResources: Destroying mutexes.\n\n");
- 
-               pComponentPrivate->bMutexInitialized = 0;   
-
-               pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);   
-               pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);   
-
-               pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);   
-               pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);   
-
-               pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);   
-               pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);   
-            } 
-
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-            OMX_MEMFREE_STRUCT(pHandle->pComponentPrivate);
-        }
-        OMX_MEMFREE_STRUCT(pPortDef_ip);
-        OMX_MEMFREE_STRUCT(pPortDef_op);
+        iLBCDEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
     }
 
     iLBCDEC_DPRINT ("%d :: %s :: returning %d\n", __LINE__,__FUNCTION__,eError);
@@ -597,7 +575,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
         break;
     case OMX_CommandFlush:
         iLBCDEC_DPRINT ("%d :: %s ::\n",__LINE__,__FUNCTION__);
-        if(nParam > 1 && nParam != -1) {
+        if(nParam > 1 && nParam != OMX_ALL) {
             eError = OMX_ErrorBadPortIndex;
             goto EXIT;
         }
@@ -1531,9 +1509,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     /* close the pipe handles */
     iLBCDEC_FreeCompResources(pHandle);
         
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-    OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
+    // Free pComponentPrivate
     OMX_MEMFREE_STRUCT(pComponentPrivate);
     iLBCDEC_DPRINT ("%d :: %s \n",__LINE__,__FUNCTION__);
       
@@ -1618,10 +1594,17 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader,OMX_BUFFERHEADERTYPE);
+    if (pBufferHeader == NULL) {
+        iLBCDEC_EPRINT(":: ********* ERROR: OMX_ErrorInsufficientResources\n");
+        return OMX_ErrorInsufficientResources;
+    }
 
-    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer,
-                           nSizeBytes,
-                           OMX_U8);
+    OMX_MALLOC_SIZE_DSPALIGN(pBufferHeader->pBuffer, nSizeBytes, OMX_U8);
+    if (pBufferHeader->pBuffer == NULL) {
+        iLBCDEC_EPRINT(":: ********* ERROR: OMX_ErrorInsufficientResources\n");
+        OMX_MEMFREE_STRUCT(pBufferHeader);
+        return OMX_ErrorInsufficientResources;
+    }
 
     if (nPortIndex == iLBCD_INPUT_PORT) {
         pBufferHeader->nInputPortIndex = nPortIndex;
@@ -1654,6 +1637,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         pBufferHeader->nOutputPortIndex = nPortIndex; 
 
         OMX_MALLOC_GENERIC(pBufferHeader->pOutputPortPrivate,iLBCDEC_BUFDATA);
+        if (pBufferHeader->pOutputPortPrivate == NULL) {
+            iLBCDEC_EPRINT(":: ********* ERROR: OMX_ErrorInsufficientResources\n");
+            OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+            OMX_MEMFREE_STRUCT(pBufferHeader);
+            return OMX_ErrorInsufficientResources;
+        }
 
         pComponentPrivate->pOutputBufferList->pBufHdr[pComponentPrivate->pOutputBufferList->numBuffers] = pBufferHeader;
         pComponentPrivate->pOutputBufferList->bBufferPending[pComponentPrivate->pOutputBufferList->numBuffers] = 0;
@@ -1670,6 +1659,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         }
     }
     else {
+        iLBCDEC_DPRINT("%d :: %s :: ERROR OMX_ErrorBadPortIndex\n",__LINE__,__FUNCTION__);
+        OMX_MEMFREE_STRUCT_DSPALIGN(pBufferHeader->pBuffer, OMX_U8);
+        OMX_MEMFREE_STRUCT(pBufferHeader);
         eError = OMX_ErrorBadPortIndex;
         goto EXIT;
     }
@@ -1699,10 +1691,6 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     *pBuffer = pBufferHeader;
 
  EXIT:
-    if (eError == OMX_ErrorInsufficientResources){
-        OMX_MEMFREE_STRUCT(pBufferHeader);
-
-    }
     iLBCDEC_DPRINT("%d :: %s :: AllocateBuffer returning %d\n",__LINE__,
                   __FUNCTION__,eError);
     return eError;
