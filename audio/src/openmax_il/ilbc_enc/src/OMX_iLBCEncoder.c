@@ -1697,120 +1697,83 @@ static OMX_ERRORTYPE FreeBuffer(
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     ILBCENC_COMPONENT_PRIVATE * pComponentPrivate = NULL;
-    OMX_BUFFERHEADERTYPE* buff = NULL;
-    int i = 0;
-    int inputIndex = -1;
-    int outputIndex = -1;
+    OMX_BUFFERHEADERTYPE* buffHdr = NULL;
+    OMX_U32 i;
+    int bufferIndex = -1;
+    ILBCENC_BUFFERLIST *pBufferList = NULL;
+    OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = NULL;
     OMX_COMPONENTTYPE *pHandle = NULL;
 
     pComponentPrivate = (ILBCENC_COMPONENT_PRIVATE *)
                                 (((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
 
     pHandle = (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
-
     ILBCENC_DPRINT("%d Entering FreeBuffer\n", __LINE__);
-    for (i=0; i < ILBCENC_MAX_NUM_OF_BUFS; i++) {
-        buff = pComponentPrivate->pInputBufferList->pBufHdr[i];
-        if (buff == pBuffer) {
-            ILBCENC_DPRINT("%d Found matching input buffer\n",__LINE__);
-            ILBCENC_DPRINT("%d buff = %p\n",__LINE__,buff);
-            ILBCENC_DPRINT("%d pBuffer = %p\n",__LINE__,pBuffer);
-            inputIndex = i;
+
+    if (nPortIndex != OMX_DirInput && nPortIndex != OMX_DirOutput) {
+        ILBCENC_EPRINT("%d :: Error - Unknown port index %ld\n", __LINE__, nPortIndex);
+        return OMX_ErrorBadParameter;
+    }
+
+    pBufferList = ((nPortIndex == OMX_DirInput)? pComponentPrivate->pInputBufferList: pComponentPrivate->pOutputBufferList);
+    pPortDef = pComponentPrivate->pPortDef[nPortIndex];
+    for (i=0; i < pPortDef->nBufferCountActual; i++) {
+        buffHdr = pBufferList->pBufHdr[i];
+        if (buffHdr == pBuffer) {
+            ILBCENC_DPRINT("%d Found matching %s buffer\n", __LINE__, (nPortIndex == OMX_DirInput)? "input": "output");
+            ILBCENC_DPRINT("%d buffHdr = %p\n", __LINE__, buffHdr);
+            ILBCENC_DPRINT("%d pBuffer = %p\n", __LINE__, pBuffer);
+            bufferIndex = i;
             break;
         }
         else {
-            ILBCENC_DPRINT("%d This is not a match\n",__LINE__);
-            ILBCENC_DPRINT("%d buff = %p\n",__LINE__,buff);
-            ILBCENC_DPRINT("%d pBuffer = %p\n",__LINE__,pBuffer);
+            ILBCENC_DPRINT("%d This is not a match\n", __LINE__);
+            ILBCENC_DPRINT("%d buffHdr = %p\n", __LINE__, buffHdr);
+            ILBCENC_DPRINT("%d pBuffer = %p\n", __LINE__, pBuffer);
         }
     }
 
-    for (i=0; i < ILBCENC_MAX_NUM_OF_BUFS; i++) {
-        buff = pComponentPrivate->pOutputBufferList->pBufHdr[i];
-        if (buff == pBuffer) {
-            ILBCENC_DPRINT("%d Found matching output buffer\n",__LINE__);
-            ILBCENC_DPRINT("%d buff = %p\n",__LINE__,buff);
-            ILBCENC_DPRINT("%d pBuffer = %p\n",__LINE__,pBuffer);
-            outputIndex = i;
-            break;
-        }
-        else {
-            ILBCENC_DPRINT("%d This is not a match\n",__LINE__);
-            ILBCENC_DPRINT("%d buff = %p\n",__LINE__,buff);
-            ILBCENC_DPRINT("%d pBuffer = %p\n",__LINE__,pBuffer);
-        }
+    if (bufferIndex == -1) {
+        ILBCENC_EPRINT("%d :: Error - could not find match for buffer %p\n", __LINE__, pBuffer);
+        return OMX_ErrorBadParameter;
     }
 
-
-    if (inputIndex != -1) {
-        if (pComponentPrivate->pInputBufferList->bufferOwner[inputIndex] == 1) {
-            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer, OMX_U8);
-        }
+    if (pBufferList->bufferOwner[bufferIndex] == 1) {
+        OMX_MEMFREE_STRUCT_DSPALIGN(buffHdr->pBuffer, OMX_U8);
+    }
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_SendingBuffer(pComponentPrivate->pPERF,
-                       pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->pBuffer,
-                       pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]->nAllocLen,
-                       PERF_ModuleMemory );
-#endif
-        
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList->pBufHdr[inputIndex]);
-
-            pComponentPrivate->pInputBufferList->numBuffers--;
-        if (pComponentPrivate->pInputBufferList->numBuffers <
-            pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->nBufferCountMin) {
-
-            pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bPopulated = OMX_FALSE;
-            }
-        if(pComponentPrivate->pPortDef[ILBCENC_INPUT_PORT]->bEnabled &&
-               pComponentPrivate->bLoadedCommandPending == OMX_FALSE &&
-                (pComponentPrivate->curState == OMX_StateIdle ||
-                pComponentPrivate->curState == OMX_StateExecuting ||
-                pComponentPrivate->curState == OMX_StatePause)) {
-            pComponentPrivate->cbInfo.EventHandler( pHandle,
-                                                    pHandle->pApplicationPrivate,
-                                                    OMX_EventError,
-                                                    OMX_ErrorPortUnpopulated,
-                                                    nPortIndex,
-                                                    NULL);
-        }
-    }
-    else if (outputIndex != -1) {
-         if (pComponentPrivate->pOutputBufferList->bufferOwner[outputIndex] == 1) {
-            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer, OMX_U8);
-        }
-
-#ifdef __PERF_INSTRUMENTATION__
-    PERF_SendingBuffer(pComponentPrivate->pPERF,
-                       pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pBuffer,
-                       pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->nAllocLen,
+                       buffHdr->pBuffer,
+                       buffHdr->nAllocLen,
                        PERF_ModuleMemory );
 #endif
 
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]->pOutputPortPrivate);
-        OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList->pBufHdr[outputIndex]);
-
-        pComponentPrivate->pOutputBufferList->numBuffers--;
-        if (pComponentPrivate->pOutputBufferList->numBuffers <
-            pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->nBufferCountMin) {
-            pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bPopulated = OMX_FALSE;
-        }
-        if( pComponentPrivate->pPortDef[ILBCENC_OUTPUT_PORT]->bEnabled &&
-            pComponentPrivate->bLoadedCommandPending == OMX_FALSE &&
-            (pComponentPrivate->curState == OMX_StateIdle ||
-            pComponentPrivate->curState == OMX_StateExecuting ||
-            pComponentPrivate->curState == OMX_StatePause)) {
-            pComponentPrivate->cbInfo.EventHandler( pHandle,
-                                                    pHandle->pApplicationPrivate,
-                                                    OMX_EventError,
-                                                    OMX_ErrorPortUnpopulated,
-                                                    nPortIndex,
-                                                    NULL);
-        }
+    if (nPortIndex == OMX_DirOutput) {
+        OMX_MEMFREE_STRUCT(buffHdr->pOutputPortPrivate);
     }
-    else {
-        ILBCENC_EPRINT("%d Returning OMX_ErrorBadParameter\n",__LINE__);
-        eError = OMX_ErrorBadParameter;
+
+    ILBCENC_DPRINT("%d: Freeing: %p Buf Header\n\n", __LINE__, buffHdr);
+    OMX_MEMFREE_STRUCT(pBufferList->pBufHdr[bufferIndex]);
+    pBufferList->numBuffers--;
+
+    if (pBufferList->numBuffers < pPortDef->nBufferCountMin) {
+        ILBCENC_DPRINT("%d :: %s ::setting port %d populated to OMX_FALSE\n", __LINE__, __FUNCTION__, nPortIndex);
+        pPortDef->bPopulated = OMX_FALSE;
+    }
+
+    ILBCENC_DPRINT("%d ::numBuffers = %d nBufferCountMin = %ld\n", __LINE__, pBufferList->numBuffers, pPortDef->nBufferCountMin);
+    if (pPortDef->bEnabled &&
+        pComponentPrivate->bLoadedCommandPending == OMX_FALSE &&
+        (pComponentPrivate->curState == OMX_StateIdle ||
+         pComponentPrivate->curState == OMX_StateExecuting ||
+         pComponentPrivate->curState == OMX_StatePause)) {
+        pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                               pHandle->pApplicationPrivate,
+                                               OMX_EventError,
+                                               OMX_ErrorPortUnpopulated,
+                                               nPortIndex,
+                                               NULL);
     }
     
     pthread_mutex_lock(&pComponentPrivate->ToLoaded_mutex);
