@@ -1017,10 +1017,12 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                     if(bufType == EMMCodecInputBuffer)
                     {
                         if(bufferSizeUsed) {
-                            /* Issue a memory flush for input buffer to ensure cache coherency */
+                            /* Issue a memory flush for input buffer to ensure cache coherency
+                             *  INVALIDATE_TRESHOLD is set to invalidate and write back only the bufferSizeUsed (DSPMSG_WRBK_INVALIDATE_MEM)
+                             *  or the entire cache (DSPMSG_WRBK_INV_ALL). DSP will read the data in this buffer   */
                             status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc,
-                                      pDmmBuf->pAllocated, bufferSizeUsed,
-				      (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_INVALIDATE_MEM);
+                                    pDmmBuf->pAllocated, bufferSizeUsed,
+                                    (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_WRBK_INVALIDATE_MEM);
                             if(DSP_FAILED(status))
                             {
                                 goto MUTEX_UNLOCK;
@@ -1041,6 +1043,10 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                         }
                         else
                         {
+                            /*This call is the same as DSPProcessor_FlushMemory
+                             * with the last parameter set to DSPMSG_IVALIDATE_MEM.  In this case the write
+                             * back is not necessary as dsp will write out this buffer without using
+                             * pre-existing information */
                             status = DSPProcessor_InvalidateMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen);
                             if(DSP_FAILED(status))
                             {
