@@ -562,6 +562,7 @@ void HandleFreeResource(RESOURCEMANAGER_COMMANDDATATYPE cmd)
     {
         policy_data.PM_Cmd = PM_FreePolicy;
         policy_data.hComponent = cmd.hComponent;
+        policy_data.param1 = cmd.param1;
         policy_data.nPid = cmd.nPid;
         if (write(pmfdwrite,&policy_data,sizeof(policy_data)) < 0)
             RM_DPRINT ("[Resource Manager] - failure write data to the policy manager\n");
