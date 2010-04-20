@@ -396,18 +396,6 @@ void GrantPolicy(OMX_HANDLETYPE hComponent, OMX_U8 aComponentIndex, OMX_U8 aPrio
     response_data.nPid = aPid;
     response_data.PM_Cmd = PM_GRANTPOLICY;
     write(fdwrite, &response_data, sizeof(response_data));
-    for(i=0; i < registeredComponents; i++) {
-        if (activeComponentList[i].component == aComponentIndex) {
-            match = i;
-            break;
-        }
-    }
-    if (match == -1) {
-        /*just add the component to the active list once */
-        activeComponentList[registeredComponents].component = aComponentIndex;
-        activeComponentList[registeredComponents].priority = aPriority;
-    }
-
     match = -1;
 
     for (i=0; i < registeredComponents; i++) {
@@ -420,6 +408,8 @@ void GrantPolicy(OMX_HANDLETYPE hComponent, OMX_U8 aComponentIndex, OMX_U8 aPrio
     if (match == -1) {
         /* do not add the same component twice */
 
+        activeComponentList[registeredComponents].component = aComponentIndex;
+        activeComponentList[registeredComponents].priority = aPriority;
         pComponentList[registeredComponents].componentHandle = hComponent;
         pComponentList[registeredComponents++].nPid = aPid;
     }
