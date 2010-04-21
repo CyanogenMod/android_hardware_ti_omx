@@ -1764,7 +1764,7 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
 
     iLBCDEC_DPRINT("%d: Freeing: %p Buf Header\n\n", __LINE__, buffHdr);
     OMX_MEMFREE_STRUCT(pBufferList->pBufHdr[bufferIndex]);
-    pComponentPrivate->pInputBufferList->numBuffers--;
+    pBufferList->numBuffers--;
 
     iLBCDEC_DPRINT("%d ::numBuffers = %d nBufferCountMin = %ld\n", __LINE__, pBufferList->numBuffers, pPortDef->nBufferCountMin);
     if (pBufferList->numBuffers < pPortDef->nBufferCountActual) {

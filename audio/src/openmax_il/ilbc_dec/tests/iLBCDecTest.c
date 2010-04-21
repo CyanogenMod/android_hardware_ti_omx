@@ -173,7 +173,7 @@ OMX_ERRORTYPE        testCases_3_10_11         (OMX_HANDLETYPE *, int, OMX_S16 *
 
 OMX_ERRORTYPE        sendInputBuffer           (OMX_HANDLETYPE *pHandle, fd_set *rfds, int tcID, FILE *fIn, int *frmCount,  struct timeval *tv, int nInBufSize, int *count);
 OMX_ERRORTYPE        send_input_buffer         (OMX_HANDLETYPE, OMX_BUFFERHEADERTYPE *, FILE *, int, OMX_S16);
-OMX_ERRORTYPE        omxFreeBuffers            (OMX_HANDLETYPE *pHandle, int nBuffs, OMX_BUFFERHEADERTYPE *pBufferHeader  [], char *sBuffTypeMsg);
+OMX_ERRORTYPE        omxFreeBuffers            (OMX_HANDLETYPE *pHandle, int nBuffs, OMX_BUFFERHEADERTYPE *pBufferHeader  [], OMX_U32 nPortIndex);
 
 void                 getString_OMX_State       (char *ptrString, OMX_STATETYPE state);
 void                 printTestCaseInfo         (int);
@@ -544,13 +544,13 @@ int main(int argc, char* argv[])
 
 #ifndef USE_BUFFER                
         /* newfree buffers */
-        error = omxFreeBuffers (&pHandle, numInputBuffers, pInputBufferHeader, "Input");
+        error = omxFreeBuffers (&pHandle, numInputBuffers, pInputBufferHeader, OMX_DirInput);
         if((error != OMX_ErrorNone)) {
             APP_DPRINT ("%d:: Error in Free Input Buffers function\n",__LINE__);
             exit (1);
         }
         
-        error = omxFreeBuffers (&pHandle, numOutputBuffers, pOutputBufferHeader, "Output");
+        error = omxFreeBuffers (&pHandle, numOutputBuffers, pOutputBufferHeader, OMX_DirOutput);
         if((error != OMX_ErrorNone)) {
             APP_DPRINT ("%d:: Error in Free Output Buffers function\n",__LINE__);
             exit (1);
@@ -1365,14 +1365,14 @@ OMX_ERRORTYPE iLBCSetOutputPort (OMX_HANDLETYPE *pHandle, int iSampRate)
 /**
  *
  */
-OMX_ERRORTYPE omxFreeBuffers (OMX_HANDLETYPE *pHandle, int nBuffs, OMX_BUFFERHEADERTYPE *pBufferHeader  [], char *sBuffTypeMsg)
+OMX_ERRORTYPE omxFreeBuffers (OMX_HANDLETYPE *pHandle, int nBuffs, OMX_BUFFERHEADERTYPE *pBufferHeader  [], OMX_U32 nPortIndex)
 {
     int i = 0;
     OMX_ERRORTYPE error = OMX_ErrorNone;
     
     for (i=0; i<nBuffs; i++) {
-        APP_DPRINT("%d :: App: Freeing %p %s BufHeader\n",__LINE__,pBufferHeader[i], sBuffTypeMsg);
-        error = OMX_FreeBuffer(*pHandle,OMX_DirInput,pBufferHeader[i]);
+        APP_DPRINT("%d :: App: Freeing %p BufHeader of Port %d\n", __LINE__, pBufferHeader[i], nPortIndex);
+        error = OMX_FreeBuffer(*pHandle, nPortIndex, pBufferHeader[i]);
         if((error != OMX_ErrorNone)) {
             APP_DPRINT ("%d:: Error in Free Handle function\n",__LINE__);
             return (error);
