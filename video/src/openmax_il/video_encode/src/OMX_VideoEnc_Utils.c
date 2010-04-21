@@ -2502,7 +2502,7 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledInBuf(VIDENC_COMPONENT_PRIVATE* pComponen
         /*  Reference or input frame rate*1000 */
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.videncDynamicParams.refFrameRate = (OMX_U32)(Q16Tof(pPortDefIn->format.video.xFramerate)*1000.0);
         /*  Target frame rate * 1000           */
-        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.videncDynamicParams.targetFrameRate = pComponentPrivate->nTargetFrameRate;
+        ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.videncDynamicParams.targetFrameRate = (OMX_U32)(Q16Tof(pPortDefIn->format.video.xFramerate)*1000.0);;
         /*  Target bit rate in bits per second */
         ((H264VE_GPP_SN_UALGInputParams*)pUalgInpParams)->H264VENC_TI_DYNAMICPARAMS.videncDynamicParams.targetBitRate = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate;
         /*  I frame interval e.g. 30           */
@@ -2703,8 +2703,8 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pUalgInpParams, 1, 1);
 
     pUalgInpParams->ulFrameIndex         = pComponentPrivate->nFrameCnt;
-    pUalgInpParams->ulTargetFrameRate    = pComponentPrivate->nTargetFrameRate;
-    pUalgInpParams->ulTargetBitRate      = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate;
+    pUalgInpParams->ulTargetFrameRate    = (OMX_U32)Q16Tof(pPortDefIn->format.video.xFramerate);
+    pUalgInpParams->ulTargetBitRate      = pCompPortOut->pBitRateTypeConfig->nEncodeBitrate;
     pUalgInpParams->ulGenerateHeader     = 0;
     pUalgInpParams->ulForceIFrame        = pComponentPrivate->bForceIFrame;
     pUalgInpParams->ulResyncInterval     = pCompPortOut->pErrorCorrectionType->nResynchMarkerSpacing;
@@ -2794,9 +2794,9 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     OMX_PRDSP1(pComponentPrivate->dbg,
                "TargetFrameRate -> %d\n\
                TargetBitRate   -> %d\n\
-               QPI             -> %d\n", pComponentPrivate->nTargetFrameRate,
+               QPI             -> %d\n", (int)Q16Tof(pPortDefIn->format.video.xFramerate),
                (int)pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pBitRateTypeConfig->nEncodeBitrate,
-               pComponentPrivate->nQPI);
+               (int)pComponentPrivate->nQPI);
 
     printMpeg4UAlgInParam(pUalgInpParams, 0, &pComponentPrivate->dbg);
     OMX_CONF_CIRCULAR_BUFFER_MOVE_TAIL(pBufHead,
@@ -3282,10 +3282,6 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     pCreatePhaseArgs->ulBitstreamBuffSize     = pComponentPrivate->nOutBufferSize;
     pCreatePhaseArgs->ulFrameRate             = (unsigned int)(Q16Tof(pPortDefIn->format.video.xFramerate)*1000.0);
 
-    /* set run-time frame and bit rates to create-time values */
-    pComponentPrivate->nTargetFrameRate       = pCreatePhaseArgs->ulFrameRate;
-
-
     if (pPortDefIn->format.video.eColorFormat == OMX_COLOR_FormatYUV420Planar)
     {
         pCreatePhaseArgs->ucYUVFormat         = 0;
@@ -3640,9 +3636,6 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         pCreatePhaseArgs->ucReversibleVLC         = 0;/**/
 
     pCreatePhaseArgs->ucFrameRate             = (OMX_U8) Q16Tof(pPortDefIn->format.video.xFramerate);
-
-    /* set run-time frame and bit rates to create-time values */
-    pComponentPrivate->nTargetFrameRate       = pCreatePhaseArgs->ucFrameRate;
 
     if (pVidParamBitrate->eControlRate == OMX_Video_ControlRateConstant)
     {

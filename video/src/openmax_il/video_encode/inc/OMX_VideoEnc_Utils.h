@@ -95,7 +95,7 @@
     #define GPP_PRIVATE_NODE_HEAP
 #endif
 
-#define VIDENC_NUM_CUSTOM_INDEXES 24
+#define VIDENC_NUM_CUSTOM_INDEXES 23
 
 #if 1
     #define __KHRONOS_CONF__
@@ -119,6 +119,8 @@
 #define  VIDENC_TIMEOUT_USEC 0;
 #define WVGA_MAX_WIDTH 864
 #define WVGA_MAX_HEIGHT WVGA_MAX_WIDTH
+
+#define DEFAULT_FRAMERATE 15.0
 
 /*
 * Definition of capabilities index and structure
@@ -463,7 +465,6 @@ typedef enum VIDENC_CUSTOM_INDEX
     VideoEncodeCustomParamIndexDeblockFilter,
     VideoEncodeCustomConfigIndexForceIFrame,
     VideoEncodeCustomConfigIndexIntraFrameInterval,
-    VideoEncodeCustomConfigIndexTargetFrameRate,
     VideoEncodeCustomConfigIndexQPI,
     VideoEncodeCustomConfigIndexAIRRate,
     VideoEncodeCustomConfigIndexUnrestrictedMV,
@@ -618,7 +619,6 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_U32 nCounter;
     /* these are duplicates */
     unsigned int nIntraFrameInterval;  /* should be OMX_VIDEO_CONFIG_AVCINTRAPERIOD */
-    unsigned int nTargetFrameRate;  /* should be OMX_CONFIG_FRAMERATETYPE */
     unsigned int nQPI;              /* same as OMX_VIDEO_PARAM_QUANTIZATIONTYPE */
     unsigned int nAIRRate;          /* same as OMX_VIDEO_PARAM_INTRAREFRESHTYPE */
     OMX_U32 nMIRRate;
