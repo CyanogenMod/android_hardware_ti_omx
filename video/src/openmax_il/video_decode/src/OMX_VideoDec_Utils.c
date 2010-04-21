@@ -4469,8 +4469,14 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 nCroppedHeight = nHeight;
             }
             else {
-                nCroppedWidth = nWidth - nCropWidth;
-                nCroppedHeight = nHeight - nCropHeight;
+                if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
+                    nCroppedWidth = nWidth - nCropWidth;
+                    nCroppedHeight = nHeight - nCropHeight;
+                }
+                else if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT420) {
+                    nCroppedWidth = nWidth;
+                    nCroppedHeight = nHeight;
+                }
             }
             if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nCroppedWidth ||
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nCroppedHeight) {
