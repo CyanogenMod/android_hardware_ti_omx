@@ -879,7 +879,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
 #ifdef VIDDEC_SPARK_CODE
         case VIDDEC_INIT_SPARK:
             pComponentPrivate->pInPortFormat->nPortIndex                     = VIDDEC_INPUT_PORT;
-            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_H263;
+            pComponentPrivate->pInPortFormat->nIndex                        = VIDDEC_DEFAULT_INPUT_INDEX_SPARK;
             pComponentPrivate->pInPortFormat->eCompressionFormat            = OMX_VIDEO_CodingUnused;
             pComponentPrivate->pInPortFormat->eColorFormat                  = OMX_COLOR_FormatUnused;
 #ifdef KHRONOS_1_1
