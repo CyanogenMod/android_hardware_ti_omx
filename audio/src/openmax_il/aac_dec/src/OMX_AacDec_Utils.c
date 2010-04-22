@@ -2069,7 +2069,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                 switch(pComponentPrivate->aacParams->eAACProfile){
                     case OMX_AUDIO_AACObjectLTP:
-                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  0;
+                        pComponentPrivate->AACDEC_UALGParam->iEnablePS =  1;
                         pComponentPrivate->AACDEC_UALGParam->DownSampleSbr = 1;
                         break;
                     case OMX_AUDIO_AACObjectHE_PS:
