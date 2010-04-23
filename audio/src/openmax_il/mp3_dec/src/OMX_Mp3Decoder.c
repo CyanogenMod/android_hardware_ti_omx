@@ -469,7 +469,6 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
 #ifdef RESOURCE_MANAGER_ENABLED
     eError = RMProxy_NewInitalize();
-    /*eError = RMProxy_Initalize();*/
     if (eError != OMX_ErrorNone) {
         OMX_ERROR4(pComponentPrivate->dbg, ":Error returned from loading ResourceManagerProxy thread\n");
         goto EXIT;
