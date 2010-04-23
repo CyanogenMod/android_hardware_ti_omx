@@ -4276,7 +4276,8 @@ void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONE
     else {
         if (pCompPort->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
         {
-            pCompPort->nBufferSize = GetMaxAVCBufferSize(pCompPort->format.video.nFrameWidth, pCompPort->format.video.nFrameHeight);
+            pCompPort->nBufferSize = GetMaxAVCBufferSize(pCompPort->format.video.nFrameWidth, 
+                                    pCompPort->format.video.nFrameHeight, pCompPort->format.video.nBitrate);
         }
         else
         {/*coding Mpeg4 or H263*/
@@ -4288,8 +4289,9 @@ void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONE
     }
 }
 
-OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height)
+OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height, OMX_U32 bitrate)
 {
+#if 0
     OMX_U32 MaxCPB;
     OMX_U32 nMacroBlocks;
 
@@ -4319,8 +4321,15 @@ OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height)
     /* MaxCPB are in units of 1200 bits i.e. 150 bytes */
     /* Return  buffer size in bytes*/
     /*Last patch to improve the performance*/
-    /*return (150 * MaxCPB);*/
-    return (width * height) / 2;
+    return (150 * MaxCPB);
+#endif
+
+    if(bitrate < 4000000) {
+        return (width * height) / 2;
+    }
+    else {
+        return (width * height);
+    }
 }
 OMX_U32 OMX_VIDENC_GetDefaultBitRate(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
 {

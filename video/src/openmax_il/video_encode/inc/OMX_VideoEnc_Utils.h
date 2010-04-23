@@ -770,7 +770,7 @@ void OMX_VIDENC_FatalErrorRecover(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
 void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
-OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height);
+OMX_U32 GetMaxAVCBufferSize(OMX_U32 width, OMX_U32 height, OMX_U32 bitrate);
 
 OMX_U32 OMX_VIDENC_GetDefaultBitRate(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
 
