@@ -1215,4 +1215,14 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 /*=======================================================================*/
 void SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate);
 
+/*  =========================================================================*/
+/*  func    AACDEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void AACDEC_FatalErrorRecover(AACDEC_COMPONENT_PRIVATE *pComponentPrivate);
 #endif
