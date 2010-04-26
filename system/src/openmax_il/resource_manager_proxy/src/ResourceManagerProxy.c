@@ -798,6 +798,22 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     RM_Error = NULL;
                 }
             }
+            else if (rm_data.rm_status == RM_RESOURCEFATALERROR) {
+                if (!RM_Error) {
+                    RM_Error = malloc(sizeof(OMX_ERRORTYPE));
+                    if (NULL != RM_Error)
+                        *RM_Error = OMX_RmProxyCallback_FatalError;
+                }
+                cmd_data->hComponent = rm_data.hComponent;
+                if (NULL != core)
+                {
+                    RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
+                    free (core);
+                    core = NULL;
+                    free (RM_Error);
+                    RM_Error = NULL;
+                }
+            }
             else if (rm_data.rm_status == RM_GRANT) {
 #ifndef __ENABLE_RMPM_STUB__
                 /* if not in stub mode... */
