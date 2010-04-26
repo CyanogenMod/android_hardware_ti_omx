@@ -7713,7 +7713,12 @@ EXIT:
 void VIDDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 {
     VIDDEC_COMPONENT_PRIVATE *pCompPrivate = NULL;
-    pCompPrivate = NULL;
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
+
+    pCompPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        VIDDEC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
 
@@ -8345,6 +8350,79 @@ EXIT:
     return eError;
 }
 
+OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
+{
+    OMX_ERRORTYPE eError = OMX_ErrorUndefined;
+    LCML_DSP_INTERFACE *pLcmlHandle = NULL;
+    OMX_PRDSP1(pComponentPrivate->dbg, "+++ENTERING\n");
+    if(pComponentPrivate->pModLCML == NULL){
+        goto EXIT;
+    }
+    if (!(pComponentPrivate->eState == OMX_StateLoaded) &&
+        !(pComponentPrivate->eState == OMX_StateWaitForResources)) {
+        pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+            pComponentPrivate->pLCML != NULL){
+            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                      EMMCodecControlDestroy, NULL);
+            /*intentionally skip error checking on codec destroy since an error is actually
+              expected*/
+            OMX_PRDSP2(pComponentPrivate->dbg,
+                       "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",
+                       pLcmlHandle);
+            pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
+            OMX_PRDSP1(pComponentPrivate->dbg,
+                       "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",
+                        pLcmlHandle);
+
+            if(pComponentPrivate->pModLCML != NULL){
+                dlclose(pComponentPrivate->pModLCML);
+                pComponentPrivate->pModLCML = NULL;
+                pComponentPrivate->pLCML = NULL;
+                pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
+            }
+            pComponentPrivate->bLCMLHalted = OMX_TRUE;
+        }
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_H264_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+                    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+                    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_H263_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+                    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_MPEG2_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+                    else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_WMV_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+#ifdef VIDDEC_SPARK_CODE
+                    else if (VIDDEC_SPARKCHECK) {
+                        eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_MPEG4_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
+                    }
+#endif
+
+    if (eError != OMX_ErrorNone){
+        OMX_ERROR4(pComponentPrivate->dbg, "::RMProxy_FreeResource failed in FatalErrorRecover\n");
+    }
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+    /* regardless of success from above,
+       still send the Invalid State error to client */
+    eError = VIDDEC_Handle_InvalidState(pComponentPrivate);
+
+EXIT:
+    OMX_PRDSP1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
+    return eError;
+}
 
 
 /* ========================================================================== */
