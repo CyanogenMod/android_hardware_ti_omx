@@ -1251,7 +1251,7 @@ void *RM_FatalErrorWatchThread()
             /* DspManager_Open will fail until the bridge driver
                is in a valid state again */
             if (DSP_FAILED(status)){
-                RM_EPRINT("DSPManager_Open failed \n");
+                RM_EPRINT("DSPManager_Open failed, waiting for bridge driver \n");
                 sleep(1);
             }
             else {
