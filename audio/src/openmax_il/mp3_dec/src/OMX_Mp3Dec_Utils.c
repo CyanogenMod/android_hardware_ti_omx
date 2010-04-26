@@ -3526,7 +3526,6 @@ void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateInvalid &&
         pComponentPrivate->curState != OMX_StateLoaded) {
         eError = LCML_ControlCodec(((
                  LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
