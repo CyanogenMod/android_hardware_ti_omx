@@ -5243,6 +5243,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             ret = write(pComponentPrivate->free_inpBuf_Q[1], &pBuffHead, sizeof(pBuffHead));
             if(ret == -1){
                 OMX_PRCOMM4(pComponentPrivate->dbg, "writing to the input pipe %x (%d)\n", OMX_ErrorInsufficientResources,ret);
+                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventError,
@@ -5821,6 +5822,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             ret = write(pComponentPrivate->free_inpBuf_Q[1], &pBuffHead, sizeof(pBuffHead));
             if(ret == -1){
                 OMX_PRCOMM4(pComponentPrivate->dbg, "writing to the input pipe %x (%d)\n", OMX_ErrorInsufficientResources,ret);
+                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventError,
@@ -7479,6 +7481,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                             nRetVal = write(pComponentPrivate->free_inpBuf_Q[1], &pBuffHead, sizeof(pBuffHead));
                             if(nRetVal == -1){
                                 OMX_PRCOMM4(pComponentPrivate->dbg, "writing to the input pipe %x (%lu)\n", OMX_ErrorInsufficientResources,nRetVal);
+                                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                                 DecrementCount (&(pComponentPrivate->nCountInputBFromDsp), &(pComponentPrivate->mutexInputBFromDSP));
                                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -7617,6 +7620,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                             nRetVal = write(pComponentPrivate->free_inpBuf_Q[1], &pBuffHead, sizeof(pBuffHead));
                             if(nRetVal == -1){
                                 OMX_PRCOMM4(pComponentPrivate->dbg, "writing to the input pipe %x (%lu)\n", OMX_ErrorInsufficientResources,nRetVal);
+                                pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                                 DecrementCount (&(pComponentPrivate->nCountInputBFromDsp), &(pComponentPrivate->mutexInputBFromDSP));
                                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
