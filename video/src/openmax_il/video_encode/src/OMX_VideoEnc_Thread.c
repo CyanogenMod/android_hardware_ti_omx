@@ -304,6 +304,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     eError = OMX_VIDENC_Process_FilledInBuf(pComponentPrivate);
                     if (eError != OMX_ErrorNone)
                     {
+                        OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
                         OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,
                                                  OMX_EventError,
                                                  OMX_ErrorUndefined,
@@ -322,6 +323,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     eError = OMX_VIDENC_Process_FreeOutBuf(pComponentPrivate);
                     if (eError != OMX_ErrorNone)
                     {
+                        OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
                         OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,
                                                  OMX_EventError,
                                                  OMX_ErrorUndefined,

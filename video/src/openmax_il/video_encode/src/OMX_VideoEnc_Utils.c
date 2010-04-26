@@ -523,7 +523,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)USN_ERR_UNKNOWN_MSG) && (argsCb[5] == (void*)NULL))
         {
-            OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState, pComponentPrivate);
+            OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
         }
         else
         {
@@ -548,7 +548,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)USN_ERR_UNKNOWN_MSG) && (argsCb[5] == (void*)NULL))
         {
-            OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState, pComponentPrivate);
+            OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
         }
         else
         {
@@ -573,7 +573,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleLcmlEvent(VIDENC_COMPONENT_PRIVATE* pComponentPri
 #ifdef DSP_MMU_FAULT_HANDLING
         if((argsCb[4] == (void *)NULL) && (argsCb[5] == (void*)NULL))
         {
-            OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState, pComponentPrivate);
+            OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
         }
         else
         {
@@ -4168,9 +4168,103 @@ void OMX_VIDENC_ResourceManagerCallBack(RMPROXY_COMMANDDATATYPE cbData)
         OMX_PRSTATE2(pCompPrivate->dbg, "Send command to Executing from RM CallBack\n");
         OMX_SendCommand(pHandle, Cmd, OMX_StateExecuting, NULL);
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError)
+    {
+        OMX_ERROR4(pCompPrivate->dbg, "Fatal Error from DSP via RM\n");
+        OMX_VIDENC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
 
+void OMX_VIDENC_FatalErrorRecover(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
+{
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+    LCML_DSP_INTERFACE* pLcmlHandle = NULL;
+    OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = NULL;
+    OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut = NULL;
+
+    if(pComponentPrivate == NULL)
+    {
+        return NULL;
+    }
+    else {
+        OMX_ERROR4(pComponentPrivate->dbg, "Starting Fatal Error Recovery\n");
+        pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+        pPortDefIn = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortDef;
+        pPortDefOut = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortDef;
+
+        /* Make sure the DSP node has been deleted */
+        if (pLcmlHandle->dspCodec->hNode != NULL)
+        {
+            OMX_ERROR4(pComponentPrivate->dbg, "component=%x EMMCodecControlDestroy for hNode=%x\n",
+                       pComponentPrivate->pHandle, pLcmlHandle->dspCodec->hNode);
+            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                         EMMCodecControlDestroy,
+                                         NULL);
+        }
+        /*intentionally skip error checking here */
+         OMX_TRACE2(pComponentPrivate->dbg,"Atempting to Unload LCML");
+        /*Unload LCML */
+        if(pComponentPrivate->pModLcml != NULL)
+        {
+            OMX_TRACE2(pComponentPrivate->dbg,"Unloading LCML");
+            dlclose(pComponentPrivate->pModLcml);
+            pComponentPrivate->pModLcml = NULL;
+            pComponentPrivate->pLCML = NULL;
+        }
+        pComponentPrivate->bCodecStarted = OMX_FALSE;
+        pComponentPrivate->bCodecLoaded = OMX_FALSE;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+        if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
+        {
+            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                            RMProxy_FreeResource,
+                                            OMX_H264_Encode_COMPONENT,
+                                            0,
+                                            3456,
+                                            NULL);
+        }
+        else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
+        {
+            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                            RMProxy_FreeResource,
+                                            OMX_MPEG4_Encode_COMPONENT,
+                                            0,
+                                            3456,
+                                            NULL);
+        }
+        else if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
+        {
+            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                            RMProxy_FreeResource,
+                                            OMX_H263_Encode_COMPONENT,
+                                            0,
+                                            3456,
+                                            NULL);
+        }
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,
+                                     OMX_EventError,
+                                     OMX_ErrorHardware,
+                                     OMX_TI_ErrorMajor,
+                                     NULL);
+        }
+
+        /* Deinitialize Resource Manager */
+        eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_VIDEO);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_PRMGR4(pComponentPrivate->dbg, "Error returned from destroy ResourceManagerProxy thread\n");
+            eError = OMX_ErrorUndefined;
+        }
+#endif
+        eError = OMX_StateInvalid;
+        OMX_VIDENC_HandleError(pComponentPrivate, eError);
+    }
+
+}
 void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONENT_PRIVATE* pCompPrivate)
 {
 
