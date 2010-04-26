@@ -1471,6 +1471,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     pComponentPrivate->nEmptyBufferDoneCount++;
 
                     // }
+                    pComponentPrivate->first_buffer = 1;
                     pComponentPrivate->bConfigData = 0;
                     return eError;
                 }
@@ -3952,7 +3953,6 @@ void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 
             {
                 OMX_PRDSP2(pComponentPrivate->dbg, "%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n", __LINE__);
-                pComponentPrivate->first_buffer = 1;
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        OMX_EventBufferFlag,
