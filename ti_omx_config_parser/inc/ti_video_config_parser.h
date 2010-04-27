@@ -23,6 +23,9 @@
 #include "pvmf_format_type.h"
 #include "oscl_stdstring.h"
 
+#ifdef TARGET_OMAP4
+#define TI_VID_DEC "OMX.TI.DUCATI1.VIDEO.H264D"
+#endif
 typedef struct
 {
     uint8 *inPtr;
@@ -37,6 +40,10 @@ typedef struct _tiVideoConfigParserOutputs
     uint32 profile;
     uint32 level;
     uint32 entropy;
+    uint32 dispwidth;
+    uint32 dispheight;
+    uint32 displeft;
+    uint32 disptop;
 } tiVideoConfigParserOutputs;
 
 OSCL_IMPORT_REF int16 ti_video_config_parser(

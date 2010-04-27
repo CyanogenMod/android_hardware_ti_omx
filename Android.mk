@@ -1,6 +1,19 @@
-
 ifdef HARDWARE_OMX
+ifeq ($(TARGET_BOARD_PLATFORM),omap4)
+LOCAL_PATH := $(call my-dir)
+TI_OMX_TOP := $(LOCAL_PATH)
 
+#call to plugin
+include $(TI_OMX_TOP)/core_plugin/Android.mk
+
+#call to ti_omx_config_parser
+include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
+
+#call to ducati domx
+include $(TI_OMX_TOP)/ducati/Android.mk
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),omap3)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -142,5 +155,6 @@ include $(TI_OMX_TOP)/core_plugin/Android.mk
 #call to ti_omx_config_parser
 include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
 
+endif
 endif
 
