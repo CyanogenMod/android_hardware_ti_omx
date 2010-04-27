@@ -151,6 +151,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+void NBAMRDEC_FatalErrorRecover(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate);
 void NBAMRDEC_HandleUSNError (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
 #endif
