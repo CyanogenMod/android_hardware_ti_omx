@@ -316,7 +316,12 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_RM_FREQ_MPEG4_QCIF                     30
 #define VIDDEC_RM_FREQ_MPEG4_CIF                      80
 #define VIDDEC_RM_FREQ_MPEG4_VGA                      165
-#define VIDDEC_RM_FREQ_MPEG4_720P                     401
+
+/* Removing 720P since it will be in different piece of code
+   Calculating the value for WVGA from Codec Data Sheet
+   The worse case requirement is 186 Mhz, with 10% margin it will be 210Mhz */
+
+#define VIDDEC_RM_FREQ_MPEG4_WVGA                     210
 
 #define VIDDEC_RM_FREQ_MPEG2_QCIF                     30
 #define VIDDEC_RM_FREQ_MPEG2_CIF                      80

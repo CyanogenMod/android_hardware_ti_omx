@@ -79,7 +79,7 @@ OMX_U32 VIDDEC_GetRMFrequency(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 if ((OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameHeight > VIDDEC_D1MAX_HEIGHT ||
                     (OMX_U16)pComponentPrivate->pInPortDef->format.video.nFrameWidth > VIDDEC_D1MAX_WIDTH)
                 {
-                    nReturnValue = VIDDEC_RM_FREQ_MPEG4_720P;
+                    nReturnValue = VIDDEC_RM_FREQ_MPEG4_WVGA;
                 }
                 else
                 {
