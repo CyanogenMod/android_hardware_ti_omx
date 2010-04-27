@@ -3859,6 +3859,7 @@ void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     }
 
 }
+#endif
 
 void AACDEC_FatalErrorRecover(AACDEC_COMPONENT_PRIVATE *pComponentPrivate){
     char *pArgs = "";
@@ -3895,4 +3896,3 @@ void AACDEC_FatalErrorRecover(AACDEC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
-#endif
