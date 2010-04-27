@@ -1124,13 +1124,8 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                             if (eError != OMX_ErrorNone)
                             {
                                 OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN QUEUEBUFFER  :%x",eError);
-                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               OMX_ErrorHardware,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
-                                 return OMX_ErrorHardware;
+                                WMADEC_FatalErrorRecover(pComponentPrivate);
+                                return OMX_ErrorHardware;
                             }                                           
                             pComponentPrivate->lcml_nCntIp++;                   
 
@@ -1589,15 +1584,9 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 OMX_ERROR4(pComponentPrivate->dbg, "ERROR IN QUEUEBUFFER");
                                 OMX_ERROR4(pComponentPrivate->dbg, "%d ::IssuingDSP IP: Error Occurred",
                                                __LINE__);
+                                WMADEC_FatalErrorRecover(pComponentPrivate);
                                 eError = OMX_ErrorHardware;
-                                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
                                 return eError;
-
                             }                                           
                             pComponentPrivate->lcml_nCntIp++;
                         }
@@ -1707,32 +1696,25 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                      if (!WMADEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)){
                         if(!pComponentPrivate->bDspStoppedWhileExecuting){
                             WMADEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput);
-                                eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                          EMMCodecOuputBuffer, 
-                                                          (OMX_U8 *)pBufHeader->pBuffer, 
-                                                          pBufHeader->nAllocLen,
-                                                          pBufHeader->nAllocLen,
-                                                          (OMX_U8*)pLcmlHdr->pOpParam,
-                                                          sizeof(WMADEC_UAlgOutBufParamStruct),
-                                                          NULL);
-
-                                if (eError != OMX_ErrorNone )
-                                {
-                                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
-                                                   __LINE__);
-                                    eError = OMX_ErrorHardware;
-                                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
-                                    return eError;
-
-                                }
-                            pComponentPrivate->lcml_nOpBuf++;
+                            eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                                      EMMCodecOuputBuffer, 
+                                                      (OMX_U8 *)pBufHeader->pBuffer, 
+                                                      pBufHeader->nAllocLen,
+                                                      pBufHeader->nAllocLen,
+                                                      (OMX_U8*)pLcmlHdr->pOpParam,
+                                                      sizeof(WMADEC_UAlgOutBufParamStruct),
+                                                      NULL);
+                            if (eError != OMX_ErrorNone )
+                            {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
+                                               __LINE__);
+                                WMADEC_FatalErrorRecover(pComponentPrivate);
+                                eError = OMX_ErrorHardware;
+                                return eError;
                             }
+                            pComponentPrivate->lcml_nOpBuf++;
                         }
+                    }
                 } else{
                      pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
 		   OMX_PRBUFFER2(pComponentPrivate->dbg, "Don't queue while doing a reconfig:: output buffer, num pending = %ld", pComponentPrivate->nNumOutputBufPending);
@@ -3263,6 +3245,14 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                               (OMX_U8 *) pLcmlHdr->pIpParam,
                                               sizeof(WMADEC_UAlgInBufParamStruct),
                                               NULL);
+                    if (eError != OMX_ErrorNone )
+                    {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
+                                   __LINE__);
+                        WMADEC_FatalErrorRecover(pComponentPrivate);
+                        eError = OMX_ErrorHardware;
+                        return eError;
+                    }
                 }
             }
         }
@@ -3299,6 +3289,14 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
                                               NULL,
                                               sizeof(WMADEC_UAlgOutBufParamStruct),
                                               NULL);
+                    if (eError != OMX_ErrorNone )
+                    {
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
+                                   __LINE__);
+                        WMADEC_FatalErrorRecover(pComponentPrivate);
+                        eError = OMX_ErrorHardware;
+                        return eError;
+                    }
                 }
             }
         }
@@ -4029,7 +4027,57 @@ void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 
     }
-
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError){
+        OMX_ERROR4(pCompPrivate->dbg,
+                   "%d ::received Fatal Error Notice from RM\n",__LINE__);
+        WMADEC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
 
+/*  =========================================================================*/
+/*  func    WMADEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::Initiate error recovery\n",__LINE__);
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_WMA_Decoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    WMADEC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
+}

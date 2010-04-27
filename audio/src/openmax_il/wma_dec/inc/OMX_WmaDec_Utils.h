@@ -1233,5 +1233,16 @@ void WMADEC_HandleUSNError (WMADEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  =========================================================================*/
+/*  func    WMADEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif
 
