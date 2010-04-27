@@ -182,6 +182,18 @@ OMX_U32 G729DEC_IsPending(G729DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_BUFF
 OMX_ERRORTYPE G729DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 OMX_U32 G729DEC_IsValid(G729DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 OMX_ERRORTYPE G729DEC_TransitionToIdle(G729DEC_COMPONENT_PRIVATE *pComponentPrivate);
+/*  ==============================================================*/
+/* G729DEC_FatalErrorRecover
+*
+* @desc    handles the clean up and sets OMX_StateInvalid in reaction to fatal errors
+*
+* @param pComponentPrivate    Component private data
+*
+* @return n/a
+*/
+/* ===============================================================*/
+
+void G729DEC_FatalErrorRecover(G729DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /*--------macros ----------------------------------------------*/
 
