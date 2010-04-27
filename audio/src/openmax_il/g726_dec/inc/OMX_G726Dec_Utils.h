@@ -901,4 +901,17 @@ OMX_U32 G726DEC_IsValid(G726DEC_COMPONENT_PRIVATE *pComponentPrivate,
 void G726DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  ==============================================================*/
+/* G726DEC_FatalErrorRecover
+*
+* @desc    handles the clean up and sets OMX_StateInvalid in reaction to fatal errors
+*
+* @param pComponentPrivate    Component private data
+*
+* @return n/a
+*/
+/* ===============================================================*/
+
+void G726DEC_FatalErrorRecover(G726DEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif
