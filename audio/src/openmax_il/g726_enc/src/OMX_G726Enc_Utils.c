@@ -1298,7 +1298,8 @@ OMX_ERRORTYPE G726ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                        sizeof(G726ENC_ParamStruct),
                                                        NULL);
                             if (eError != OMX_ErrorNone) {
-                            G726ENC_DPRINT("OMX_ErrorHardware Occurred!!!!!!!!\n");                                       
+                                G726ENC_DPRINT("OMX_ErrorHardware Occurred!!!!!!!!\n");
+                                G726ENC_FatalErrorRecover(pComponentPrivate);
                                 eError = OMX_ErrorHardware;
                                 goto EXIT;
                             }
@@ -1372,6 +1373,7 @@ OMX_ERRORTYPE G726ENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                    NULL);
                         if (eError != OMX_ErrorNone ) {
                             G726ENC_DPRINT ("%d :: IssuingDSP OP: Error Occurred\n",__LINE__);
+                            G726ENC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
                             goto EXIT;
                         }
@@ -2118,5 +2120,59 @@ void G726ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                                             OMX_EventResourcesAcquired, 
                                             0, 0, NULL);
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        G726ENC_EPRINT("%d :RM Fatal Error:\n",__LINE__);
+        G726ENC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
+
+/*  ==============================================================*/
+/* G726ENC_FatalErrorRecover
+*
+* @desc    handles the clean up and sets OMX_StateInvalid in reaction to fatal errors
+*
+* @param pComponentPrivate    Component private data
+*
+* @return n/a
+*/
+/* ===============================================================*/
+
+void G726ENC_FatalErrorRecover(G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+
+        G726ENC_DPRINT("%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_G726_Encoder_COMPONENT, 0, 1234, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        G726ENC_EPRINT("::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    G726ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    G726ENC_DPRINT("Completed FatalErrorRecover \\nEntering Invalid State\n");
+}
+
+

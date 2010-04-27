@@ -911,6 +911,19 @@ OMX_U32 G726ENC_IsValid(G726ENC_COMPONENT_PRIVATE *pComponentPrivate,
 void G726ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  ==============================================================*/
+/* G726ENC_FatalErrorRecover
+*
+* @desc    handles the clean up and sets OMX_StateInvalid in reaction to fatal errors
+*
+* @param pComponentPrivate    Component private data
+*
+* @return n/a
+*/
+/* ===============================================================*/
+
+void G726ENC_FatalErrorRecover(G726ENC_COMPONENT_PRIVATE *pComponentPrivate);
+
 /* ======================================================================= */
 /** OMX_G726ENC_INDEXAUDIOTYPE  Defines the custom configuration settings
 *                              for the component
