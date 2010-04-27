@@ -3520,6 +3520,7 @@ void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         MP3DEC_FatalErrorRecover(pCompPrivate);
     }
 }
+#endif
 
 void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
     char *pArgs = "";
@@ -3556,4 +3557,3 @@ void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
-#endif
