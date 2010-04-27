@@ -369,4 +369,6 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
 void WBAMRDEC_HandleUSNError (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
+void WBAMRDEC_FatalErrorRecover(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif
