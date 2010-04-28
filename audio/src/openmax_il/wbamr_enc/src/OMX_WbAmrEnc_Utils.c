@@ -1166,6 +1166,11 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                                                           (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                           sizeof(WBAMRENC_ParamStruct),
                                                           NULL);
+                                if (eError != OMX_ErrorNone)
+                                {
+                                    WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                                    return eError;
+                                }
                             }
                         }
 
@@ -1183,6 +1188,11 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                                                           (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                           sizeof(WBAMRENC_ParamStruct),
                                                           NULL);
+                                if (eError != OMX_ErrorNone)
+                                {
+                                    WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                                    return eError;
+                                }
                             }
                         }
 
@@ -1981,9 +1991,10 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                    sizeof(WBAMRENC_ParamStruct),
                                                    NULL);
 
-                        if (eError != OMX_ErrorNone) {
-                            eError = OMX_ErrorHardware;
-                            goto EXIT;
+                        if (eError != OMX_ErrorNone)
+                        {
+                            WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
                         }
 
                         pComponentPrivate->lcml_nCntIp++;
@@ -2112,10 +2123,12 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                            sizeof(WBAMRENC_ParamStruct),
                                            NULL);
 
-                if (eError != OMX_ErrorNone ) {
+                if (eError != OMX_ErrorNone)
+                {
                     OMX_ERROR4(pComponentPrivate->dbg, "IssuingDSP OP: Error Occurred\n");
+                    WBAMRENC_FatalErrorRecover(pComponentPrivate);
                     eError = OMX_ErrorHardware;
-                    goto EXIT;
+                    return eError;
                 }
 
                 pComponentPrivate->lcml_nOpBuf++;
@@ -3347,8 +3360,11 @@ void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData) {
             pHandle, pHandle->pApplicationPrivate,
             OMX_EventResourcesAcquired, 0, 0,
             NULL);
-
-
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        OMX_ERROR4(pCompPrivate->dbg,
+                   "%d ::RM detected fatal error\n",__LINE__);
+        WBAMRENC_FatalErrorRecover(pCompPrivate);
     }
 
 }
@@ -3409,4 +3425,42 @@ void WBAMRENC_HandleUSNError (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX
             break;
     }
 }
+
+void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_WBAMR_Encoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
+}
+
 

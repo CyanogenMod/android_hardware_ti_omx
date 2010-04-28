@@ -1009,7 +1009,7 @@ void WBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 
 void WBAMRENC_HandleUSNError (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
-
+void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 typedef enum {
     ALGCMD_BITRATE = IUALG_CMD_USERSETCMDSTART,
