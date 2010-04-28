@@ -617,6 +617,7 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 /*  =========================================================================*/
 void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
+void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #endif
 

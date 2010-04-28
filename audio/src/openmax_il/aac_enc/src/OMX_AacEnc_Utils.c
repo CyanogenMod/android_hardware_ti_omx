@@ -1278,12 +1278,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                                             NULL);
                                if(eError != OMX_ErrorNone){
                                    OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
-                                   pComponentPrivate->cbInfo.EventHandler (pHandle, 
-                                                pHandle->pApplicationPrivate,
-                                                OMX_EventError, 
-                                                eError,
-                                                OMX_TI_ErrorSevere,
-                                                NULL);
+                                   AACENC_FatalErrorRecover(pComponentPrivate);
                                    return eError;
                                }
                         }
@@ -1311,12 +1306,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                                              NULL);
                                 if(eError != OMX_ErrorNone){
                                    OMX_ERROR4(pComponentPrivate->dbg, "%d:: Error: LCML QUEUE BUFFER\n",__LINE__);
-                                   pComponentPrivate->cbInfo.EventHandler (pHandle, 
-                                                pHandle->pApplicationPrivate,
-                                                OMX_EventError, 
-                                                eError,
-                                                OMX_TI_ErrorSevere,
-                                                NULL);
+                                   AACENC_FatalErrorRecover(pComponentPrivate);
                                    return eError;
                                }
                             }
@@ -2026,13 +2016,8 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                         if (eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: SetBuff: IP: Error Occurred\n",__LINE__);
+                            AACENC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
-                            pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                    pComponentPrivate->pHandle->pApplicationPrivate,
-                                    OMX_EventError,
-                                    eError,
-                                    OMX_TI_ErrorSevere,
-                                    NULL);
                             return eError;
                         }
                         pComponentPrivate->lcml_nIpBuf++;
@@ -2217,21 +2202,23 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                                       (OMX_U8 *)pLcmlHdr->pOpParam,
                                                       sizeof(AACENC_UAlgOutBufParamStruct),
                                                       NULL);
-                            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: UTIL: Queuing Ouput buffer buffer \n",__LINE__);
+                            OMX_PRBUFFER2(pComponentPrivate->dbg,
+                                          "%d :: UTIL: Queuing Ouput buffer buffer \n",
+                                          __LINE__);
                             if (eError != OMX_ErrorNone ) 
                             {
-                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: Issuing DSP OP: Error Occurred\n",__LINE__);
+                                OMX_ERROR4(pComponentPrivate->dbg,
+                                           "%d :: UTIL: Issuing DSP OP: Error Occurred\n",
+                                           __LINE__);
                                 eError = OMX_ErrorHardware;
-                                pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                        OMX_EventError,
-                                        eError,
-                                        OMX_TI_ErrorSevere,
-                                        NULL);
+                                AACENC_FatalErrorRecover(pComponentPrivate);
                                 return eError;
                             }
-                            pComponentPrivate->lcml_nOpBuf++; 
-                            OMX_PRBUFFER2(pComponentPrivate->dbg, "%d :: UTIL: tlcml_nOpBuf count : %d\n",__LINE__, (int)pComponentPrivate->lcml_nOpBuf);
+                            pComponentPrivate->lcml_nOpBuf++;
+                            OMX_PRBUFFER2(pComponentPrivate->dbg,
+                                          "%d :: UTIL: tlcml_nOpBuf count : %d\n",
+                                          __LINE__,
+                                         (int)pComponentPrivate->lcml_nOpBuf);
                         }      
                   }
                   else if (pComponentPrivate->curState == OMX_StatePause) 
@@ -2254,9 +2241,8 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                     {
                         AACENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                         pComponentPrivate->LastOutputBufferHdrQueued = pBufHeader;
-			if (pLcmlHdr != NULL) {
-			    pLcmlHdr->pOpParam->unNumFramesEncoded = 0; /* Resetting the value  for each time*/
-
+                        if (pLcmlHdr != NULL) {
+                            pLcmlHdr->pOpParam->unNumFramesEncoded = 0; /* Resetting the value  for each time*/
                             eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
                                                       EMMCodecOuputBuffer,
                                                       (OMX_U8 *)pBufHeader->pBuffer,
@@ -2267,20 +2253,20 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                                       NULL);
                             if (eError != OMX_ErrorNone )
                             {
-                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: Issuing DSP OP: Error Occurred\n",__LINE__);
+                                OMX_ERROR4(pComponentPrivate->dbg,
+                                           "%d :: UTIL: Issuing DSP OP: Error Occurred\n",
+                                           __LINE__);
+                                AACENC_FatalErrorRecover(pComponentPrivate);
                                 eError = OMX_ErrorHardware;
-                                pComponentPrivate->cbInfo.EventHandler (pComponentPrivate->pHandle,
-                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                        OMX_EventError,
-                                        eError,
-                                        OMX_TI_ErrorSevere,
-                                        NULL);
                                 return eError;
                             }
                             pComponentPrivate->lcml_nOpBuf++;
-                            OMX_PRDSP2(pComponentPrivate->dbg, "%d :: UTIL: lcml_nOpBuf count : %d\n",__LINE__, (int)pComponentPrivate->lcml_nOpBuf);
+                            OMX_PRDSP2(pComponentPrivate->dbg,
+                                       "%d :: UTIL: lcml_nOpBuf count : %d\n",
+                                       __LINE__,
+                                       (int)pComponentPrivate->lcml_nOpBuf);
                         }
-		    }
+                    }
                 }
                 else 
                 {
@@ -3533,3 +3519,40 @@ void AACENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 }
 #endif
+
+void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_AAC_Encoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    AACENC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
+}
