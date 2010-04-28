@@ -1083,6 +1083,11 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                     (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                     sizeof(NBAMRENC_ParamStruct),
                                                     NULL);
+                        if (eError != OMX_ErrorNone)
+                        {
+                            NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
+                        }
                     }
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
@@ -1099,6 +1104,11 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                     (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                     sizeof(NBAMRENC_ParamStruct),
                                                     NULL);
+                        if (eError != OMX_ErrorNone)
+                        {
+                            NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
+                        }
                     }
                 }
                 pComponentPrivate->nNumOutputBufPending = 0;
@@ -1848,26 +1858,26 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         pComponentPrivate->IpBufindex %= pComponentPrivate->pPortDef[OMX_DirOutput]->nBufferCountActual;
 
                         if (pComponentPrivate->curState == OMX_StateExecuting) {
-                                if(!pComponentPrivate->bDspStoppedWhileExecuting) 
-                                {
-                                        if (!NBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
-                                                NBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
-
-                                                eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
-                                                                                                EMMCodecInputBuffer,
-                                                                                                (OMX_U8 *)pBufHeader->pBuffer,
-                                                                                                pBufHeader->nAllocLen,
-                                                                                                pBufHeader->nFilledLen,
-                                                                                                (OMX_U8 *) pLcmlHdr->pBufferParam,
-                                                                                                sizeof(NBAMRENC_ParamStruct),
-                                                                                                NULL);
-                                                if (eError != OMX_ErrorNone) {
-                                                        eError = OMX_ErrorHardware;
-                                                        goto EXIT;
-                                                }
-                                                pComponentPrivate->lcml_nIpBuf++;
-                                        }
+                            if(!pComponentPrivate->bDspStoppedWhileExecuting) 
+                            {
+                                if (!NBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirInput)) {
+                                    NBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
+                                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
+                                                               EMMCodecInputBuffer,
+                                                               (OMX_U8 *)pBufHeader->pBuffer,
+                                                               pBufHeader->nAllocLen,
+                                                               pBufHeader->nFilledLen,
+                                                               (OMX_U8 *) pLcmlHdr->pBufferParam,
+                                                               sizeof(NBAMRENC_ParamStruct),
+                                                               NULL);
+                                    if (eError != OMX_ErrorNone)
+                                    {
+                                        NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                                        return eError;
                                     }
+                                    pComponentPrivate->lcml_nIpBuf++;
+                                }
+                            }
                         }
                         else if(pComponentPrivate->curState == OMX_StatePause){
                                 pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
@@ -1966,30 +1976,37 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 if (!NBAMRENC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)) {
                                                 NBAMRENC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                                                 if (pComponentPrivate->efrMode == 1)
-                                                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
-                                                                                                EMMCodecOuputBuffer,
-                                                                                                (OMX_U8 *)pBufHeader->pBuffer,
-                                                                                                NBAMRENC_OUTPUT_BUFFER_SIZE_EFR * nFrames,
-                                                                                                0,
-                                                                                                (OMX_U8 *) pLcmlHdr->pBufferParam,
-                                                                                                sizeof(NBAMRENC_ParamStruct),
-                                                                                                NULL);
+                                                    eError = LCML_QueueBuffer(
+                                                             pLcmlHandle->pCodecinterfacehandle,
+                                                             EMMCodecOuputBuffer,
+                                                             (OMX_U8 *)pBufHeader->pBuffer,
+                                                             NBAMRENC_OUTPUT_BUFFER_SIZE_EFR * nFrames,
+                                                             0,
+                                                             (OMX_U8 *) pLcmlHdr->pBufferParam,
+                                                             sizeof(NBAMRENC_ParamStruct),
+                                                             NULL);
 
 
                                                 else
-                                                    eError = LCML_QueueBuffer( pLcmlHandle->pCodecinterfacehandle,
-                                                                                                EMMCodecOuputBuffer,
-                                                                                                (OMX_U8 *)pBufHeader->pBuffer,
-                                                                                                NBAMRENC_OUTPUT_FRAME_SIZE * nFrames,
-                                                                                                0,
-                                                                                                (OMX_U8 *) pLcmlHdr->pBufferParam,
-                                                                                                sizeof(NBAMRENC_ParamStruct),
-                                                                                                NULL);
-                                                OMX_PRBUFFER1(pComponentPrivate->dbg, "After QueueBuffer Line %d\n",__LINE__);
+                                                    eError = LCML_QueueBuffer(
+                                                             pLcmlHandle->pCodecinterfacehandle,
+                                                             EMMCodecOuputBuffer,
+                                                             (OMX_U8 *)pBufHeader->pBuffer,
+                                                             NBAMRENC_OUTPUT_FRAME_SIZE * nFrames,
+                                                             0,
+                                                             (OMX_U8 *) pLcmlHdr->pBufferParam,
+                                                             sizeof(NBAMRENC_ParamStruct),
+                                                             NULL);
+
+                                                OMX_PRBUFFER1(pComponentPrivate->dbg,
+                                                              "After QueueBuffer Line %d\n",
+                                                               __LINE__);
                                                 if (eError != OMX_ErrorNone ) {
-                                                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Issuing DSP OP: Error Occurred\n",__LINE__);
-                                                        eError = OMX_ErrorHardware;
-                                                        goto EXIT;
+                                                    OMX_ERROR4(pComponentPrivate->dbg,
+                                                               "%d :: Issuing DSP OP: Error Occurred\n",
+                                                                __LINE__);
+                                                    NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                                                    return eError;
                                                 }
                                                 pComponentPrivate->lcml_nOpBuf++;
                                                 pComponentPrivate->num_Op_Issued++;
@@ -3170,6 +3187,11 @@ void NBAMRENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                             NULL);
 
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        OMX_ERROR4(pCompPrivate->dbg,
+                   "%d ::RM detected fatal error\n",__LINE__);
+        NBAMRENC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
 
@@ -3229,5 +3251,42 @@ void NBAMRENC_HandleUSNError (AMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U
         default:
             break;
     }
+}
+
+void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_NBAMR_Encoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
 }
 

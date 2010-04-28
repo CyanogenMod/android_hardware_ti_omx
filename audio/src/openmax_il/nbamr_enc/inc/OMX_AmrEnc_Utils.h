@@ -1135,6 +1135,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
 void NBAMRENC_HandleUSNError (AMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
+void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 typedef enum
 {
