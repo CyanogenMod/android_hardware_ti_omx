@@ -18,9 +18,9 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../../domx \
 	$(LOCAL_PATH)/../../../omx_core/inc \
 	$(LOCAL_PATH)/../../../mm_osal/inc \
-	$(LOCAL_PATH)/../../../mmplatform \
+	$(LOCAL_PATH)/../../../../mmplatform \
 	hardware/ti/tiler/memmgr \
-	hardware/ti/tiler/d2c \
+	hardware/ti/syslink/syslink/d2c \
 	hardware/ti/syslink/syslink/api/include \
 
 LOCAL_CFLAGS := -pipe -fomit-frame-pointer -Wall  -Wno-trigraphs -Werror-implicit-function-declaration  -fno-strict-aliasing -mapcs -mno-sched-prolog -mabi=aapcs-linux -mno-thumb-interwork -msoft-float -Uarm -DMODULE -D__LINUX_ARM_ARCH__=7  -fno-common -DLINUX -fpic

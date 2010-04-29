@@ -73,11 +73,7 @@ typedef OMX_ERRORTYPE (*PROXY_FILLBUFFER_DONE)(OMX_HANDLETYPE hComponent, OMX_U3
 typedef OMX_ERRORTYPE (*PROXY_EVENTHANDLER)(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
                                              OMX_EVENTTYPE eEvent, OMX_U32 nData1,
                                              OMX_U32 nData2, OMX_PTR pEventData);
-#ifdef _Android
-typedef RPC_OMX_ERRORTYPE (*COMPONENTPRIVATE_GetParameter)(OMX_IN  OMX_HANDLETYPE hComponent,
-                                              OMX_IN  OMX_INDEXTYPE nParamIndex,
-                                              OMX_INOUT OMX_PTR pComponentParameterStructure);
-#endif
+
 /*******************************************************************************
 * Structures
 *******************************************************************************/
@@ -118,9 +114,7 @@ typedef struct PROXY_COMPONENT_PRIVATE {
 	PROXY_FILLBUFFER_DONE proxyFillBufferDone;
 	PROXY_EVENTHANDLER proxyEventHandler;
         OMX_U32 nNumOfLines[PROXY_MAXNUMOFPORTS];
-#ifdef _Android
-	COMPONENTPRIVATE_GetParameter componentprivateGetParameters;
-#endif
+
 }PROXY_COMPONENT_PRIVATE;
 
 
@@ -128,5 +122,6 @@ typedef struct PROXY_COMPONENT_PRIVATE {
 * Functions
 *******************************************************************************/
 OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent);
+OMX_ERRORTYPE PROXY_GetParameter(OMX_IN  OMX_HANDLETYPE hComponent,OMX_IN  OMX_INDEXTYPE nParamIndex,OMX_INOUT OMX_PTR pParamStruct);
 
 #endif

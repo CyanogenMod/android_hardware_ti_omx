@@ -113,7 +113,7 @@ typedef enum TIMM_OSAL_TRACEGRP_TYPE
 * are enabled.
 */
 #ifndef TIMM_OSAL_DEBUG_TRACE_LEVEL
-#define TIMM_OSAL_DEBUG_TRACE_LEVEL 1
+#define TIMM_OSAL_DEBUG_TRACE_LEVEL 4
 #endif
 
 /**

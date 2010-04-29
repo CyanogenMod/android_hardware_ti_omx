@@ -37,13 +37,6 @@
 #include <timm_osal_interfaces.h>
 #include <MultiProc.h>
 
-#ifdef _Android
-#include <utils/Log.h>
-#undef LOG_TAG
-#define LOG_TAG "OMX_RPCSTUB"
-//#define DOMX_DEBUG LOGD
-#endif
-
 /******************************************************************
  *   EXTERNS
  ******************************************************************/
@@ -126,13 +119,11 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx, OMX_STRING cComponentNam
 
     CallingCore = MultiProc_getId(NULL);
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_HANDLE].rpcFxnIdx;
-    DOMX_DEBUG("function index received");
 
     //Allocating remote command message
     RPC_getPacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], nPacketSize, pPacket);
     pRPCMsg = (RPC_OMX_MESSAGE*)(&pPacket->data);
     pMsgBody = &pRPCMsg->msgBody[0];
-    DOMX_DEBUG("message body received");
 
     //Marshalled:[>offset(cParameterName)|>pAppData|>CallingCore|>offset(CallingCorercmServerName)|
     //>--cComponentName--|>--CallingCorercmServerName--|
@@ -897,10 +888,19 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_BUFFERHEADERTYP
 
     DOMX_DEBUG("\n pBufferHdr = %x BufHdrRemote %x",pBufferHdr,BufHdrRemote);
 
+//#ifdef _Android
+#if 0
+       //Workaround since messages getting lost in syslink communication
+	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+
+	*eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
+
+	RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+#else
     RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
 
     *eCompReturn = OMX_ErrorNone;//pRPCMsg->msgHeader.nOMXReturn;
-
+#endif
 EXIT:
     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
     return eRPCError;
