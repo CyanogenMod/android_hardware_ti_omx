@@ -50,6 +50,10 @@ typedef struct
     OMX_U32 height;
     OMX_U32 profile;
     OMX_U32 level;
+    OMX_U32 dispwidth;
+    OMX_U32 dispheight;
+    OMX_U32 displeft;
+    OMX_U32 disptop;
 } VideoOMXConfigParserOutputs;
 
 #endif

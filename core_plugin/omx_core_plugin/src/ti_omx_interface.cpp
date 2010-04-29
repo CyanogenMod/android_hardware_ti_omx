@@ -112,7 +112,11 @@ class TIOMXInterface : public OMXInterface
                 pOMX_GetRolesOfComponent = (tpOMX_GetRolesOfComponent)dlsym(ipHandle, "TIOMX_GetRolesOfComponent");
                 pOMX_SetupTunnel = (tpOMX_SetupTunnel)dlsym(ipHandle, "TIOMX_SetupTunnel");
                 pOMXConfigParser = (tpOMXConfigParser)dlsym(ipHandle, "TIOMXConfigParserRedirect");
+#ifdef TARGET_OMAP4
+                pOMX_GetContentPipe = (tpOMX_GetContentPipe)dlsym(ipHandle, "TIOMX_GetContentPipe");		
+#else
                 pOMX_GetContentPipe = NULL; // (tpOMX_GetContentPipe)dlsym(ipHandle, "OMX_GetContentPipe");
+#endif
             }
         };
 
