@@ -80,10 +80,10 @@ int rm_set_vdd1_constraint(int MHz)
     if(!bBoostOn || (bBoostOn && rm_get_vdd1_constraint() < vdd1_opp))
     {
         /* actually set the sysfs for vdd1 */
-        RAM_DPRINT("[setting operating point] MHz = %d vdd1 = %d\n",MHz,vdd1_opp);
+        RAM_DPRINT("[setting operating point] MHz = %d vdd1_dsp = %d\n",MHz,vdd1_opp);
         strcpy(command,"echo ");
         strcat(command,ram_itoa(vdd1_opp));
-        strcat(command," > /sys/power/vdd1_opp");
+        strcat(command," > /sys/power/dsp_opp");
         system(command);
 
         /* actually set the sysfs for cpuidle/max_state */
@@ -181,6 +181,7 @@ int dsp_mhz_to_vdd1_opp(int MHz)
         else {
             vdd1_opp = OPERATING_POINT_4;
         }
+        /* OPP5 should not be requested via sys/power/dsp_opp */
         break;
 
         default:
@@ -219,7 +220,7 @@ int get_omap_version()
         cpu_variant = OMAP3440_CPU;
     }
     else if (dsp_max_freq == vdd1_dsp_mhz_3630[OPERATING_POINT_4]){
-        /* 3630 has 4 OPPs */
+        /* 3630 has 5 OPPs, but OPP5 is 45MHz on DSP, so max will be OPP4 */
         cpu_variant = OMAP3630_CPU;
     }
     else {
@@ -398,7 +399,7 @@ int get_curr_cpu_mhz(int omapVersion){
 int rm_get_vdd1_constraint()
 {
     int vdd1_opp = 0;
-    FILE *fp = fopen("/sys/power/vdd1_opp","r");
+    FILE *fp = fopen("/sys/power/dsp_opp","r");
     if (fp == NULL) {
         RAM_DPRINT("open file failed\n");
     } else {
@@ -437,7 +438,9 @@ void rm_request_boost(int level)
                 break;
 
             case OMAP3630_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -1];
+                /* the -2 handles the odd case where opp frequencies are not sorted,
+                   the true MAX is opp4=800MHz */
+                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -2];
                 break;
                 
             case OMAP3430_CPU:
@@ -462,7 +465,8 @@ void rm_request_boost(int level)
                 break;
 
             case OMAP3630_CPU:
-                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -2];
+                /* the -2 handles the odd case where opp frequencies are not sorted */
+                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -3];
                 break;
                 
             case OMAP3430_CPU:

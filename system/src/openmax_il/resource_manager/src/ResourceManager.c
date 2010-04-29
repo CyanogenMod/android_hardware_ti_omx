@@ -1130,7 +1130,6 @@ int RM_GetQos()
             cpuStruct.cpuLoadSnapshots[i] = 0;
         }
 
-#ifdef DVFS_ENABLED
         cpu_variant = get_omap_version();
         if (cpu_variant != OMAP_NOT_SUPPORTED) {
            maxMhz = get_curr_cpu_mhz(cpu_variant);
@@ -1142,7 +1141,6 @@ int RM_GetQos()
             FreeQos();
             return QOS_DENY;
         }
-#endif
         
         results = NULL;
         NumFound = 0;
@@ -1150,8 +1148,8 @@ int RM_GetQos()
         if (DSP_SUCCEEDED(status)) 
         {
             /* get the dsp load from the Qos call without a DSP wake up*/
-            currentOverallUtilization = dsp_currload * maxMhz / dsp_max_freq;
-            RM_DPRINT("GetProcLoadStat API used.\n\n");
+            currentOverallUtilization = dsp_currload;
+            RM_DPRINT("GetProcLoadStat: dsp_currload = %d.\n\n", dsp_currload);
         }
         else 
         {
@@ -1175,7 +1173,7 @@ int RM_GetQos()
                 NumFound = 0;
             }
             p = (struct  QOSRESOURCE_PROCESSOR *) results[0];
-            currentOverallUtilization = p->currentLoad * maxMhz / dsp_max_freq;
+            currentOverallUtilization = p->currentLoad;
         }
         /* we are done with the bridge handle, let's free it */
         FreeQos();
@@ -1202,14 +1200,12 @@ int RM_GetQos()
         }
         cpuStruct.averageCpuLoad = sum / cpuStruct.snapshotsCaptured;
 
-        /* @BUG: cycles in use is calculated wrong, change it to most recent average we calculated. 
-           Now this member of the struct is redundant... */
-        cpuStruct.cyclesInUse = cpuStruct.averageCpuLoad;
+        cpuStruct.cyclesInUse = currentOverallUtilization;
         cpuStruct.cyclesAvailable = dsp_max_freq - cpuStruct.cyclesInUse;
         RM_EPRINT("Calculating QoS: \n\tdsp_max_freq = %d\n\tcyclesInUse = %d\n\n", dsp_max_freq, cpuStruct.cyclesInUse);
 
-        RM_EPRINT("QoS Results: \n\tmemoryAvailable = %d\n\tcyclesAvailable = %d\n\trequestedCycles = %d\n\tcurrentUse (snapshot) = %d\n\n", 
-                   memoryAvailable, cpuStruct.cyclesAvailable, cmd_data.param2, currentOverallUtilization);
+        RM_EPRINT("QoS Results: \n\tmemoryAvailable = %d\n\tcyclesAvailable = %d\n\trequestedCycles = %d\n", 
+                   memoryAvailable, cpuStruct.cyclesAvailable, cmd_data.param2);
 
         /* if memory is available and DSP cycles are available grant request */
         if (memoryAvailable && (cpuStruct.cyclesAvailable >= cmd_data.param2)) {                        
