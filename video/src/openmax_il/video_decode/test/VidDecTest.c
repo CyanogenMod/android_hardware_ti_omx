@@ -2103,7 +2103,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     }
 #endif
     else if(atoi(argv[1]) == 3 || atoi(argv[1]) == 4 || atoi(argv[1]) == 5 || atoi(argv[1]) == 9 ||
-            atoi(argv[1]) == 6 || atoi(argv[1]) == 7 || atoi(argv[1]) == 8 || atoi(argv[1]) == 11 || atoi(argv[1]) == 12){
+            atoi(argv[1]) == 6 || atoi(argv[1]) == 7 || atoi(argv[1]) == 8 || atoi(argv[1]) == 11 ||
+            atoi(argv[1]) == 12 || atoi(argv[1]) == 13){
         bDoPauseResume        = OMX_FALSE;
         bDoStopResume       = OMX_FALSE;
     }
@@ -2349,7 +2350,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         else if(pAppData->nTestCase == 3 || pAppData->nTestCase == 4 || pAppData->nTestCase == 5 ||
                 pAppData->nTestCase == 6 || pAppData->nTestCase == 7 || pAppData->nTestCase == 8 ||
                 pAppData->nTestCase == 11 || pAppData->nTestCase == 9 ||
-                pAppData->nTestCase == TESTCASE_TYPE_PLAYAFTEREOS) {
+                pAppData->nTestCase == TESTCASE_TYPE_PLAYAFTEREOS || 
+                pAppData->nTestCase == TESTCASE_TYPE_DERINGINGENABLE) {
             bDoPauseResume        = OMX_FALSE;
             bDoStopResume       = OMX_FALSE;
         }
@@ -2588,7 +2590,17 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             }
         }
 #endif
-
+        if (pAppData->nTestCase == TESTCASE_TYPE_DERINGINGENABLE) {
+            OMX_CONFIG_IMAGEFILTERTYPE pDeringingParamType;
+            CONFIG_SIZE_AND_VERSION(pDeringingParamType);
+            pDeringingParamType.nPortIndex = 1; 
+            pDeringingParamType.eImageFilter = OMX_ImageFilterDeRing;
+            eError = OMX_SetParameter (pHandle, OMX_IndexConfigCommonImageFilter, &pDeringingParamType);
+            if (eError != OMX_ErrorNone && eError != OMX_ErrorUnsupportedIndex) {
+                ERR_PRINT ("Error in Enabling Deringing %X\n", eError);
+                goto FREEHANDLES;
+            }
+        }
 #ifdef KHRONOS_1_1
  #ifdef TEST_ROLES
         if(pHandle != NULL){

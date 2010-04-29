@@ -355,6 +355,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     OMX_MALLOC_STRUCT(pComponentPrivate->pH263, OMX_VIDEO_PARAM_H263TYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     OMX_MALLOC_STRUCT(pComponentPrivate->pWMV, OMX_VIDEO_PARAM_WMVTYPE,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     OMX_MALLOC_STRUCT(pComponentPrivate->pDeblockingParamType, OMX_PARAM_DEBLOCKINGTYPE, pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
+    OMX_MALLOC_STRUCT(pComponentPrivate->pDeringingParamType, OMX_CONFIG_IMAGEFILTERTYPE, pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
     OMX_MALLOC_STRUCT(pComponentPrivate->pPVCapabilityFlags, PV_OMXComponentCapabilityFlagsType, pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]); 
 
     OMX_MALLOC_STRUCT_SIZED(pComponentPrivate->cComponentName, char, VIDDEC_MAX_NAMESIZE + 1,pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0]);
@@ -1148,6 +1149,11 @@ static OMX_ERRORTYPE VIDDEC_GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
             memcpy(ComponentParameterStructure, pComponentPrivate->pDeblockingParamType, sizeof(OMX_PARAM_DEBLOCKINGTYPE));
             break;
         }
+        case OMX_IndexConfigCommonImageFilter: /**< reference: OMX_CONFIG_IMAGEFILTERTYPE */
+        {
+            memcpy(ComponentParameterStructure, pComponentPrivate->pDeringingParamType, sizeof(OMX_CONFIG_IMAGEFILTERTYPE));
+            break;
+        }
 #ifdef ANDROID
         /* Opencore specific */
         case (OMX_INDEXTYPE) PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX: /** Obtain the capabilities of the OMX component **/
@@ -1205,20 +1211,17 @@ OMX_ERRORTYPE VIDDEC_CheckSetParameter(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
             case OMX_IndexParamVideoH263:
             case OMX_IndexConfigVideoMBErrorReporting:
             case OMX_IndexParamCommonDeblocking:
+            case OMX_IndexConfigCommonImageFilter:
                 if (pTempFormat->nPortIndex ==  pComponentPrivate->pInPortDef->nPortIndex) {
                     if (pComponentPrivate->pInPortDef->bEnabled){
-                        if(eError != OMX_ErrorNone) {
-                            eError = OMX_ErrorIncorrectStateOperation;
-                            goto EXIT;
-                        }
+                        eError = OMX_ErrorIncorrectStateOperation;
+                        goto EXIT;
                     }
                 }
                 else if (pTempFormat->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
                     if (pComponentPrivate->pOutPortDef->bEnabled){
-                        if(eError != OMX_ErrorNone) {
-                            eError = OMX_ErrorIncorrectStateOperation;
-                            goto EXIT;
-                        }
+                        eError = OMX_ErrorIncorrectStateOperation;
+                        goto EXIT;
                     }
                 }/*it cannot be -1 because structure assignment will happen on one port*/
                 else {
@@ -1598,6 +1601,34 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 OMX_PRINT4(pComponentPrivate->dbg, "Not setting deblocking to measure fps \n");
                 eError = OMX_ErrorUnsupportedIndex;
                 break;
+            }
+        }
+        case OMX_IndexConfigCommonImageFilter: /**< reference: OMX_CONFIG_IMAGEFILTERTYPE */
+        {
+            OMX_CONFIG_IMAGEFILTERTYPE* pDeringingParamType = pCompParam;
+            if (pDeringingParamType->nPortIndex == VIDDEC_OUTPUT_PORT) {
+                switch (pDeringingParamType->eImageFilter) {
+                    case OMX_ImageFilterNone:
+                    case OMX_ImageFilterDeRing:
+                    {
+                        switch (pComponentPrivate->pInPortDef->format.video.eCompressionFormat) {
+                            case OMX_VIDEO_CodingMPEG4:
+                            case OMX_VIDEO_CodingH263:
+                                memcpy (pComponentPrivate->pDeringingParamType, pDeringingParamType, sizeof(OMX_CONFIG_IMAGEFILTERTYPE));
+                                break;
+                            default:
+                                eError = OMX_ErrorUnsupportedIndex;
+                                break;
+                        }
+                        break;
+                    }
+                    default:
+                        eError = OMX_ErrorUnsupportedIndex;
+                        break;
+                    }
+            }
+            else {
+                eError = OMX_ErrorUnsupportedIndex;
             }
         }
 
@@ -2446,6 +2477,10 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     if(pComponentPrivate->pDeblockingParamType != NULL) {
         free(pComponentPrivate->pDeblockingParamType);
         pComponentPrivate->pDeblockingParamType = NULL;
+    }
+    if(pComponentPrivate->pDeringingParamType != NULL) {
+        free(pComponentPrivate->pDeringingParamType);
+        pComponentPrivate->pDeringingParamType = NULL;
     }
 #ifdef ANDROID
     if(pComponentPrivate->pPVCapabilityFlags != NULL) {

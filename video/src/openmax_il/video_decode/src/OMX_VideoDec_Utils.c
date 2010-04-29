@@ -793,7 +793,10 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             OMX_CONF_INIT_STRUCT(pComponentPrivate->pDeblockingParamType, OMX_PARAM_DEBLOCKINGTYPE, pComponentPrivate->dbg);
             pComponentPrivate->pDeblockingParamType->nPortIndex = VIDDEC_OUTPUT_PORT; 
             pComponentPrivate->pDeblockingParamType->bDeblocking = OMX_FALSE;
-
+            /* Set default deringing value for default*/
+            OMX_CONF_INIT_STRUCT(pComponentPrivate->pDeringingParamType, OMX_CONFIG_IMAGEFILTERTYPE, pComponentPrivate->dbg);
+            pComponentPrivate->pDeringingParamType->nPortIndex = VIDDEC_OUTPUT_PORT;
+            pComponentPrivate->pDeringingParamType->eImageFilter = OMX_ImageFilterNone;
 
         case VIDDEC_INIT_VARS:
             /* Set the process mode to zero, frame = 0, stream = 1 */
@@ -870,6 +873,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               pComponentPrivate->pInPortDef->format.video.nFrameHeight *
                                                                               VIDDEC_FACTORFORMAT420;
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_FALSE;
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput = OMX_FALSE;
             break;
 #ifdef VIDDEC_SPARK_CODE
@@ -891,6 +895,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               pComponentPrivate->pInPortDef->format.video.nFrameHeight *
                                                                               VIDDEC_FACTORFORMAT420;
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_FALSE;
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput = OMX_TRUE;
             break;
 #endif
@@ -919,6 +924,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               pComponentPrivate->pInPortDef->format.video.nFrameHeight *
                                                                               VIDDEC_FACTORFORMAT420;
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_TRUE; /* Always enable */
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput                                = OMX_FALSE;
             break;
 
@@ -946,6 +952,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               pComponentPrivate->pInPortDef->format.video.nFrameHeight *
                                                                               VIDDEC_FACTORFORMAT420;
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_FALSE; /*TODO: Verify with algo team*/
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput                                = OMX_FALSE;
             break;
 
@@ -976,6 +983,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
                                                                               pComponentPrivate->pInPortDef->format.video.nFrameHeight *
                                                                               VIDDEC_FACTORFORMAT420;
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_FALSE;
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput                                = OMX_FALSE;
             break;
 
@@ -1002,6 +1010,7 @@ case VIDDEC_INIT_IDLEEXECUTING:
 
             pComponentPrivate->nWMVFileType                                 = VIDDEC_WMV_RCVSTREAM; /* RCVSTREAM must be the default value*/
             pComponentPrivate->pDeblockingParamType->bDeblocking            = OMX_TRUE; /* Always enable */
+            pComponentPrivate->pDeringingParamType->eImageFilter            = OMX_ImageFilterNone;
             pComponentPrivate->bIsSparkInput                                = OMX_FALSE;
             break;
 
@@ -2209,6 +2218,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                  OMX_PRSTATE4(pComponentPrivate->dbg, "OMX_ErrorSameState 0x%x\n",eError);
             }
             else if (pComponentPrivate->eState == OMX_StateIdle || pComponentPrivate->eState == OMX_StatePause) {
+                char value[PROPERTY_VALUE_MAX];
+                OMX_U32 nDeringing = 0;
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
                 pComponentPrivate->bIsPaused = 0;
                 pComponentPrivate->bFirstBuffer = 1;
@@ -2229,6 +2240,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Start... 0x%x\n",eError);
                         break;
                     }
+                }
+                /*get deringing property*/
+                property_get("deringing.video.enabled", value, "0");
+                nDeringing = atoi(value);
+                if (nDeringing != OMX_FALSE) {
+                    pComponentPrivate->pDeringingParamType->eImageFilter = OMX_ImageFilterDeRing;
                 }
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Start;
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC &&
@@ -7887,6 +7904,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     void* p = NULL;
    VIDDEC_fpo fpGetHandle;
    char* error = NULL;
+    char value[PROPERTY_VALUE_MAX];
+    OMX_U32 nDeringing = 0;
 
    if(pComponentPrivate->pModLCML != NULL){
         eError = VIDDEC_UnloadCodec(pComponentPrivate);
@@ -7901,6 +7920,12 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         }
     }
 
+    /*get deringing property*/
+    property_get("deringing.video.enabled", value, "0");
+    nDeringing = atoi(value);
+    if (nDeringing != OMX_FALSE) {
+        pComponentPrivate->pDeringingParamType->eImageFilter = OMX_ImageFilterDeRing;
+    }
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
     if (!pComponentPrivate->pModLCML) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -8148,6 +8173,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         pDynParams->ulDecodeHeader = 0;
         pDynParams->ulFrameSkipMode = 0;
         pDynParams->ulPPType = 0;
+
         pDynParams->ulPpNone = 0;
         if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
             pDynParams->ulDyna_chroma_format = MP2VIDDEC_YUVFORMAT_INTERLEAVED422;
@@ -8567,14 +8593,23 @@ OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPri
        bDisDeblocking = OMX_TRUE;
        OMX_PRINT4(pComponentPrivate->dbg, "D1 or higher resolution: Disable Deblocking!! \n");
     }
-
+    /* Postprocessing options:
+     * Deactivated: ulPPType = 0x0;
+     * DeBlocking: ulPPType |= 0x1;
+     * DeRinging: UlPPType |= 0x2;
+     * All post processing options have direct impact
+     * in the processing load. For that reason we limit
+     * the usage only for some resolutions.
+    */
+    pDynParams->ulPPType = 0; /* Disable */
     if(pComponentPrivate->pDeblockingParamType->bDeblocking && bDisDeblocking == OMX_FALSE){
-        pDynParams->ulPPType = 1; /* Enable deblocking filter*/
+        pDynParams->ulPPType |= 1; /* Enable deblocking filter*/
     }
-    else{
-        pDynParams->ulPPType = 0; /* Disable */
+    if (pComponentPrivate->pDeringingParamType->eImageFilter == OMX_ImageFilterDeRing &&
+        IS_DERINGING_SUPPORTED) {
+        pDynParams->ulPPType |= 2; /* Enable deringing filter*/
     }
-    
+
     cmdValues[0] = IUALG_CMD_SETSTATUS;
     cmdValues[1] = (OMX_U32)(pDynParams);
     cmdValues[2] = sizeof(MP4VDEC_UALGDynamicParams);

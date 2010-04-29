@@ -838,6 +838,7 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_VIDEO_PARAM_MPEG2TYPE* pMpeg2; /* OMX_IndexParamVideoMpeg2 */
     OMX_PORT_PARAM_TYPE* pPortParamType;
     OMX_PARAM_DEBLOCKINGTYPE* pDeblockingParamType;
+    OMX_CONFIG_IMAGEFILTERTYPE* pDeringingParamType;
 #ifdef __STD_COMPONENT__
     OMX_PORT_PARAM_TYPE* pPortParamTypeAudio;
     OMX_PORT_PARAM_TYPE* pPortParamTypeImage;
@@ -1249,7 +1250,14 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
  #define FOURCC_WMV1     VIDDEC_FOURCC('W','M','V','1')
  #define FOURCC_WVC1     VIDDEC_FOURCC('W','V','C','1')
  
- 
+ /*macro to indicate when to enable deringing*/
+#define DERINGINGMAXWIDTH 352
+#define DERINGINGMAXHEIGHT 288
+#define IS_DERINGING_SUPPORTED  \
+    ((pComponentPrivate->pInPortDef->format.video.nFrameWidth * \
+    pComponentPrivate->pInPortDef->format.video.nFrameHeight) <= \
+    (DERINGINGMAXWIDTH * DERINGINGMAXWIDTH))
+
 /*-------function prototypes -------------------------------------------------*/
 typedef OMX_ERRORTYPE (*VIDDEC_fpo)(OMX_HANDLETYPE);
 
