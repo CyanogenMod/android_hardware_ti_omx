@@ -7743,6 +7743,7 @@ void VIDDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
 
     pCompPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    pCompPrivate->nLastErrorSeverity = OMX_TI_ErrorCritical;
     if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
         VIDDEC_FatalErrorRecover(pCompPrivate);
     }
@@ -8422,6 +8423,7 @@ OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
+    if(pComponentPrivate->eRMProxyState == VidDec_RMPROXY_State_Registered){
     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                         eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_H264_Decode_COMPONENT, VIDDEC_GetRMFrequency(pComponentPrivate), VIDDEC_MEMUSAGE, &(pComponentPrivate->rmproxyCallback));
                     }
@@ -8446,9 +8448,12 @@ OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
     if (eError != OMX_ErrorNone){
         OMX_ERROR4(pComponentPrivate->dbg, "::RMProxy_FreeResource failed in FatalErrorRecover\n");
     }
+    }
+    if(pComponentPrivate->eRMProxyState != VidDec_RMPROXY_State_Unload){
     eError = RMProxy_Deinitalize();
     if (eError != OMX_ErrorNone) {
         OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+        }
     }
 #endif
     /* regardless of success from above,
