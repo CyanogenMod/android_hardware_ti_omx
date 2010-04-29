@@ -3279,27 +3279,50 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
             OMX_PRMGR2(pComponentPrivate->dbg, "OMX_RmProxyCallback_ResourcesAcquired.\n");
         }            
 	}
-	else if (RM_Error == OMX_RmProxyCallback_FatalError){
-        
-		/* Deinitialize the component...no error should be returned from
-		 * this function. It should clean the system as much as possible */
-		if ( pComponentPrivate->pLCML != NULL && pComponentPrivate->isLCMLActive) {
-                	LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
-                     	dlclose(pComponentPrivate->pDllHandle);
-                	pComponentPrivate->pLCML = NULL;
-                	pComponentPrivate->isLCMLActive = 0;
-		}
-
-		pComponentPrivate->nCurState = OMX_StateInvalid;
-		pComponentPrivate->cbInfo.EventHandler(pHandle,
-											   pHandle->pApplicationPrivate,
-											   OMX_EventError,
-											   OMX_ErrorInvalidState,
-											   OMX_TI_ErrorSevere,
-											   NULL);
-	}
+    else if (RM_Error == OMX_RmProxyCallback_FatalError) {
+        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+    }
 }
 #endif
+
+void Jpeg_Enc_FatalErrorRecover(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->nCurState != OMX_StateWaitForResources &&
+        pComponentPrivate->nCurState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        pComponentPrivate->pLCML = NULL;
+        dlclose(pComponentPrivate->pDllHandle);
+        pComponentPrivate->isLCMLActive = 0;
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->nCurState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
+}
 
 void LinkedList_Create(LinkedList *LinkedList) {
     LinkedList->pRoot = NULL;
