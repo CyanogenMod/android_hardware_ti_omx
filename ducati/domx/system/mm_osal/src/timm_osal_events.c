@@ -77,8 +77,8 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventCreate(TIMM_OSAL_PTR *pEvents)
 		/*TIMM_OSAL_Free(plEvent);*/
 	}
 	else {
-		*pEvents = (TIMM_OSAL_PTR)plEvent;
-		bReturnStatus = TIMM_OSAL_ERR_NONE;
+    	*pEvents = (TIMM_OSAL_PTR)plEvent;
+ 		bReturnStatus = TIMM_OSAL_ERR_NONE;
 	}
 EXIT:
     if ((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != plEvent)) {

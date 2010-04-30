@@ -48,15 +48,8 @@
 #include "omx_rpc_internal.h"
 #include "omx_rpc_utils.h"
 #include "mmplatform.h"
-
-#ifdef _Android
-#include <utils/Log.h>
-#undef LOG_TAG
-#define LOG_TAG "OMX_RPC"
-//#define DOMX_DEBUG LOGD
-#endif
-
- /* **************************** MACROS DEFINES *************************** */
+ 
+/* **************************** MACROS DEFINES *************************** */
 #define DO_SPIN 0
 
 /* ******************************* EXTERNS ********************************* */
@@ -126,8 +119,7 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName, RPC_OMX_HANDLE* ph
     RPC_OMX_ERRORTYPE rpcError = RPC_OMX_ErrorNone;
     OMX_STRING rcmServerName;
     RPC_OMX_CONTEXT *pRPCCtx = NULL;
-
-	DOMX_DEBUG("RPC_InstanceInit +");
+    
     status = mmplatform_init(2);
     if(status < 0)
     {
@@ -268,7 +260,7 @@ EXIT:
         pRPCCtx->ClientHndl[RCM_DEFAULT_CLIENT] = NULL;
         return RPC_OMX_ErrorUndefined;
     }
-	DOMX_DEBUG("RPC_InstanceInit -");
+    
     return RPC_OMX_ErrorNone;
 }
 

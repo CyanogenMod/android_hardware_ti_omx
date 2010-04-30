@@ -71,23 +71,6 @@ goto EXIT; }
 /******************************************************************
  *   MACROS - COMMON MARSHALLING UTILITIES
  ******************************************************************/
-#if 0
-	#define RPC_SETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
-	*((TYPE *) ((OMX_U32)MSGBODY+POS)) = VALUE; \
-	POS+=sizeof(TYPE);
-
-	#define RPC_SETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) \
-	*((TYPE *) ((OMX_U32)MSGBODY+POS)) = OFFSET; \
-	POS+=sizeof(TYPE);
-
-	#define RPC_SETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
-	TIMM_OSAL_Memcpy((OMX_U8*) ((OMX_U32)MSGBODY+POS),PTR,SIZE);
-
-	#define RPC_SETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
-	*((TYPE *) ((OMX_U32)MSGBODY+POS)) = *PSTRUCT;
-
-#else
-
 	#define RPC_SETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
 	{ \
 		TYPE temp = VALUE; \
@@ -112,32 +95,10 @@ goto EXIT; }
 		TIMM_OSAL_Memcpy((OMX_U8*) (MSGBODY+POS),PSTRUCT,sizeof(TYPE)); \
 	} \
 
-#endif
 
 /******************************************************************
  *   MACROS - COMMON UNMARSHALLING UTILITIES
  ******************************************************************/
-#if 0
-
-#define RPC_GETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
-VALUE = *((TYPE *) ((OMX_U32)MSGBODY+POS)); \
-POS+=sizeof(TYPE);
-
-#define RPC_GETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) \
-OFFSET = *((TYPE *) ((OMX_U32)MSGBODY+POS)); \
-POS+=sizeof(TYPE);
-
-#define RPC_GETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
-TIMM_OSAL_Memcpy(PTR,(OMX_U8*) ((OMX_U32)MSGBODY+POS),SIZE);
-
-#define RPC_GETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
-*PSTRUCT = *((TYPE *) ((OMX_U32)MSGBODY+POS));
-
-#define RPC_GETFIELDPATCHED(MSGBODY, OFFSET, PTR, TYPE) \
-PTR = (TYPE *) (MSGBODY+OFFSET);
-
-#else
-
 	#define RPC_GETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
 	{ \
 		TYPE temp; \
@@ -169,8 +130,6 @@ PTR = (TYPE *) (MSGBODY+OFFSET);
 	{ \
 		PTR = (TYPE *) (MSGBODY+OFFSET); \
 	} \
-
-#endif
 
 /******************************************************************
  *   FUNCTIONS

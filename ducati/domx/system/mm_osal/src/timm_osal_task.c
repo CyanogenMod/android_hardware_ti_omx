@@ -207,9 +207,12 @@ EXIT:
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_SleepTask (TIMM_OSAL_U32 mSec)
 {
     TIMM_OSAL_S32 nReturn;
-
-    usleep(1000 * mSec);
-    nReturn = 0;
+#ifdef _Android
+	usleep(1000 * mSec); // android function doesnt return value
+    nReturn =0;
+#else
+    nReturn = usleep(1000 * mSec);
+#endif
     if(nReturn == 0)
         return TIMM_OSAL_ERR_NONE;
     else
