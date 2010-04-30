@@ -107,6 +107,7 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
     VIDDDEC_Enum_MemLevel4
 }VIDDEC_ENUM_MEMLEVELS;
 
+#define MAX_RESOLUTION 414720 /* 864x480(WVGA) - 720x576(D1-PAL) */
 #include "LCML_DspCodec.h"
 #include "LCML_Types.h"
 #include "LCML_CodecInterface.h"

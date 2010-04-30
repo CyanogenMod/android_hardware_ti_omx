@@ -1381,6 +1381,14 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
                                             pPortDef->format.video.nFrameHeight;
                     OMX_PRINT1(pComponentPrivate->dbg, "Set i/p size: %dx%d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight);
+                    if ((pPortDefParam->format.video.nFrameWidth * pPortDefParam->format.video.nFrameHeight) > MAX_RESOLUTION)
+                    {
+                        /*if the resolution is not supported this is the place
+                         * to reject the creation of an instance.  This code is reached when 720p
+                         * decoder max instances were reached and TI Video Decoder is picked up. */
+                        eError = OMX_ErrorUnsupportedSetting;
+                        goto EXIT;
+                    }
                 }
                 else if (pComponentParam->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
