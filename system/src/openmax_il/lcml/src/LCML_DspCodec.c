@@ -1587,9 +1587,15 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     LCML_DSP_INTERFACE *codec;
 
-    OMX_PRINT1 ((struct OMX_TI_Debug)(((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg), "%d :: LCML:: FreeResources\n",__LINE__);
+    OMX_PRINT1((struct OMX_TI_Debug)
+              (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg),
+              "%d :: LCML:: FreeResources\n",__LINE__);
     if(hInterface->dspCodec != NULL)
     {
+        /* we must guarantee that hNode is cleaned up,
+           or else we risk a leak. also, dsp error recovery
+           will be blocked unless this handle is freed */
+        LCML_FREE(hInterface->dspCodec->hNode);
         LCML_FREE(hInterface->dspCodec);
         hInterface->dspCodec = NULL;
     }
@@ -1599,7 +1605,6 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
         pthread_mutex_destroy(&codec->m_isStopped_mutex);
         pthread_mutex_lock(&codec->mutex);
 
-        OMX_PRINT1 ((struct OMX_TI_Debug)(((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg), "%d :: LCML:: FreeResources\n",__LINE__);
         if(codec->g_aNotificationObjects[0]!= NULL)
         {
             LCML_FREE(codec->g_aNotificationObjects[0]);
