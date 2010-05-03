@@ -342,11 +342,11 @@ int main()
                         if(write(RM_GetPipe(globalrequest_cmd_data.hComponent,globalrequest_cmd_data.nPid),
                                  &globalrequest_cmd_data, sizeof(globalrequest_cmd_data)) < 0)
                         {
-                            RM_DPRINT ("[Resource Manager] - failure write data back to component\n");
+                            RM_EPRINT ("[Resource Manager] - failure write data back to component\n");
                         }
                         else
                         {
-                            RM_DPRINT ("[Resource Manager] -Denied request due to pending DSP recovery\n");
+                            RM_EPRINT ("[Resource Manager] -Denied request due to pending DSP recovery\n");
                         }   
                     }
 
@@ -1237,7 +1237,7 @@ void *RM_FatalErrorWatchThread()
     DSP_HPROCESSOR hProc;
     struct DSP_NOTIFICATION* notification_mmufault;
     struct DSP_NOTIFICATION* notification_syserror ;
-    int i;
+    int i, dspAttempts=0;
     unsigned int uProcId = 0;	/* default proc ID is 0. */
     unsigned int numProcs = 0;
 
@@ -1245,11 +1245,23 @@ void *RM_FatalErrorWatchThread()
     /* this outer loop is used to re-register and 
        continue monitoring for faults after an error
        occurs */
-        status = DspManager_Open(0, NULL);
-        if (DSP_FAILED(status)) {
-            fprintf(stderr, "DSPManager_Open failed \n");
-            return -1;
-        }
+
+        do {
+            status = DspManager_Open(0, NULL);
+            /* DspManager_Open will fail until the bridge driver
+               is in a valid state again */
+            if (DSP_FAILED(status)){
+                RM_EPRINT("DSPManager_Open failed \n");
+                sleep(1);
+            }
+            else {
+                /* should be safe to unblock new requests now */
+                mmuRecoveryInProgress = 0;
+                dspAttempts = 0;
+                break; //RM is now open for business again
+            }
+        } while(++dspAttempts < MAX_TRIES);
+
         while (DSP_SUCCEEDED(DSPManager_EnumProcessorInfo(index,&dspInfo,
             (unsigned int)sizeof(struct DSP_PROCESSORINFO),&numProcs))) {
             if ((dspInfo.uProcessorType == DSPTYPE_55) ||
@@ -1323,18 +1335,31 @@ void *RM_FatalErrorWatchThread()
                         }
                     }
 
-                    /* detach processor from gpp */
-                    status = DSPProcessor_Detach(hProc);
-                    DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
+                    /* dsp close ensures that the dsp resources are freed by bridge */
                     status = DspManager_Close(0, NULL);
                     DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
+                    RM_EPRINT("dsp manager close %d\n", status);
+
+                    /* this loop should_ be required, but seems that opencore
+                       does NOT DeInit the components as expected, so this
+                       condition never becomes true, to work around this
+                       we'll break after waiting a few moments for the client
+                       to respond, this will work only because OMX components
+                       implementing RM_Callback for fatal error will call
+                       EMM_CodecDestroy and free resources and enter OMX_StateInvalid */
+                    int maxTries = 5;
+                    struct timespec tv;
+                    tv.tv_sec = 0;
+                    tv.tv_nsec = 20000;
+                    int n = 0;
                     while (componentList.numRegisteredComponents != 0) {
                         RM_DPRINT("waiting for all component connections to be closed...\n");
-                        sleep(1);
+                        RM_DPRINT("\tcurrently %d pending\n", componentList.numRegisteredComponents);
+                        RM_DPRINT("\tpending[0] componentHandle == %p\n", componentList.component[0].componentHandle);
+                        n = nanosleep(&tv, NULL);
+                        if (!(--maxTries))
+                            break;
                     }
-
-                    /* should be safe to unblock new requests now */
-                    mmuRecoveryInProgress = 0;
                     break; //continue at start of outer while loop to continue monitoring
                 }
             }

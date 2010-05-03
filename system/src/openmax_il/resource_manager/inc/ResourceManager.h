@@ -79,6 +79,7 @@
 #define MAXSTREAMCOUNT	10
 #define RESOURCEMANAGERID 7
 #define RM_MAXCOMPONENTS 100
+#define MAX_TRIES 10
 
 #define RM_IMAGE 1
 #define RM_VIDEO 2
