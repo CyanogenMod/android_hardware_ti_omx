@@ -959,4 +959,15 @@ void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
 *  =========================================================================*/
 void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
+/*  =========================================================================*/
+/*  func    MP3DEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif

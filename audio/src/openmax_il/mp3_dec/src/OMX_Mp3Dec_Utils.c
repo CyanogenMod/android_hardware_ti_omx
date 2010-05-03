@@ -2179,12 +2179,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
  EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, ": Exiting from  HandleDataBuf_FromApp: %x \n",eError);
     if (eError != OMX_ErrorNone ) {
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
+        MP3DEC_FatalErrorRecover(pComponentPrivate);
     }
     return eError;
 }
@@ -3520,5 +3515,46 @@ void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                                            OMX_EventResourcesAcquired, 0,0,
                                            NULL);
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        OMX_ERROR4(pCompPrivate->dbg, "%d :RM Fatal Error:\n",__LINE__);
+        MP3DEC_FatalErrorRecover(pCompPrivate);
+    }
+}
+
+void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateInvalid &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_MP3_Decoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    MP3DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
 }
 #endif
