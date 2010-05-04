@@ -859,4 +859,16 @@ void          *iLBCDEC_ComponentThread             (void *);
 void           iLBCD_ResourceManagerCallback       (RMPROXY_COMMANDDATATYPE);
 #endif
 void           printEmmEvent                       (TUsnCodecEvent);
+
+/*  =========================================================================*/
+/*  func    iLBCDEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*   @return n/a
+*
+*  =========================================================================*/
+void iLBCDEC_FatalErrorRecover(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif

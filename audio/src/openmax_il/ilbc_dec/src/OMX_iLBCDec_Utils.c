@@ -836,23 +836,6 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         goto EXIT;
                     }
                     iLBCDEC_DPRINT ("%d :: %s\n",__LINE__,__FUNCTION__);
-                    pComponentPrivate->pLcmlHandle = 
-                        (LCML_DSP_INTERFACE *)pLcmlHandle;
-                    /*filling create phase params */
-                    /*cb.LCML_Callback = (void *) iLBCDECLCML_Callback;*/
-                    iLBCDEC_DPRINT("%d :: %s :: Calling LCML_InitMMCodec...\n", __LINE__,__FUNCTION__);
-
-                    /* TeeDN will be default for decoder component */
-                    iLBCDEC_DPRINT("%d :: %s :: iLBC decoder support TeeDN\n", __LINE__,__FUNCTION__);
-                    eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE *)
-                                                 pLcmlHandle)->pCodecinterfacehandle,
-                                                p,&pLcmlHandle,(void *)p,&cb, 
-                                                (OMX_STRING)pComponentPrivate->sDeviceString);
-            
-                    if(eError != OMX_ErrorNone) {
-                        iLBCDEC_EPRINT("%d :: %s :: Error returned from LCML_Init function\n",__LINE__,__FUNCTION__);
-                        goto EXIT;
-                    }
 #ifdef RESOURCE_MANAGER_ENABLED
                     /* need check the resource with RM */
                     iLBCDEC_DPRINT("%d %s Calling RMProxy_NewSendCommand\n", __LINE__,__FUNCTION__);
@@ -865,24 +848,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                        iLBCDEC_CPU_LOAD,
                                                        3456,
                                                        &(pComponentPrivate->rmproxyCallback));
-                        if(rm_error == OMX_ErrorNone) {
-                            /* resource is available */
-                            iLBCDEC_DPRINT("%d %s Resource available, set component to OMX_StateIdle\n",__LINE__,__FUNCTION__);
-                            pComponentPrivate->curState = OMX_StateIdle;
-                            pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                               pHandle->pApplicationPrivate,
-                                                               OMX_EventCmdComplete, 
-                                                               OMX_CommandStateSet,
-                                                               pComponentPrivate->curState,
-                                                               NULL);
-                            rm_error = RMProxy_NewSendCommand(pHandle,
-                                                               RMProxy_StateSet,
-                                                               OMX_ILBC_Decoder_COMPONENT,
-                                                               OMX_StateIdle,
-                                                               3456,
-                                                               NULL);
-                        }
-                        else if(rm_error == OMX_ErrorInsufficientResources) {
+                        if (rm_error == OMX_ErrorInsufficientResources) {
                             /* resource is not available, need set state to 
                                OMX_StateWaitForResources */
                             iLBCDEC_DPRINT("%d :: %s Resource not available, set component to OMX_StateWaitForResources\n", __LINE__,__FUNCTION__);
@@ -893,28 +859,54 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                    OMX_CommandStateSet,
                                                                    pComponentPrivate->curState,
                                                                    NULL);
+                            return rm_error;
+                        }
+                        else if (rm_error != OMX_ErrorNone) {
+                            /* resource is not available, need set state to
+                               OMX_StateInvalid */
+                            iLBCDEC_DPRINT("%d :: %s Resource not available, set component to OMX_StateInvalid\n", __LINE__,__FUNCTION__);
+                            eError = OMX_ErrorInsufficientResources;
+                            pComponentPrivate->curState = OMX_StateInvalid;
+                            pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                                   pHandle->pApplicationPrivate,
+                                                                   OMX_EventError,
+                                                                   eError,
+                                                                   OMX_TI_ErrorSevere,
+                                                                   NULL);
+                            return eError;
                         }
                     }
-                    else{
-                        rm_error = RMProxy_NewSendCommand( pHandle,
-                                                           RMProxy_StateSet,
-                                                           OMX_ILBC_Decoder_COMPONENT,
-                                                           OMX_StateIdle,
-                                                           3456,
-                                                           NULL);
-                        pComponentPrivate->curState = OMX_StateIdle;
+#endif
+                    iLBCDEC_DPRINT ("%d :: %s\n",__LINE__,__FUNCTION__);
+                    pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
+                    /*filling create phase params */
+                    /*cb.LCML_Callback = (void *) iLBCDECLCML_Callback;*/
+                    iLBCDEC_DPRINT("%d :: %s :: Calling LCML_InitMMCodec...\n", __LINE__,__FUNCTION__);
 
-                        pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                               pHandle->pApplicationPrivate,
-                                                               OMX_EventCmdComplete, 
-                                                               OMX_CommandStateSet,
-                                                               pComponentPrivate->curState,
-                                                               NULL);
+                    /* TeeDN will be default for decoder component */
+                    iLBCDEC_DPRINT("%d :: %s :: iLBC decoder support TeeDN\n", __LINE__,__FUNCTION__);
+                    eError = LCML_InitMMCodecEx(((LCML_DSP_INTERFACE *)
+                                                 pLcmlHandle)->pCodecinterfacehandle,
+                                                p,&pLcmlHandle,(void *)p,&cb,
+                                                (OMX_STRING)pComponentPrivate->sDeviceString);
+
+                    if(eError != OMX_ErrorNone) {
+                        iLBCDEC_EPRINT("%d :: %s :: Error returned from LCML_Init function\n",__LINE__,__FUNCTION__);
+                        iLBCDEC_FatalErrorRecover(pComponentPrivate);
+                        goto EXIT;
                     }
-#else
+#ifdef RESOURCE_MANAGER_ENABLED
+                    /* resource is available */
+                    iLBCDEC_DPRINT("%d %s Resource available, set component to OMX_StateIdle\n",__LINE__,__FUNCTION__);
+                    rm_error = RMProxy_NewSendCommand(pHandle,
+                                                      RMProxy_StateSet,
+                                                      OMX_ILBC_Decoder_COMPONENT,
+                                                      OMX_StateIdle,
+                                                      3456,
+                                                      NULL);
+#endif
                     iLBCDEC_DPRINT("%d :: %s :: Setting to OMX_StateIdle\n", __LINE__,__FUNCTION__);
                     pComponentPrivate->curState = OMX_StateIdle;
-#endif
                     pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete, 
@@ -989,17 +981,17 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     iLBCDEC_DPRINT("%d :: %s :: Setting to OMX_StateIdle\n",
                                   __LINE__,__FUNCTION__);
 
-                    pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
                     rm_error = RMProxy_NewSendCommand(pHandle,
                                                    RMProxy_StateSet,
-                                                   OMX_NBAMR_Decoder_COMPONENT,
+                                                   OMX_ILBC_Decoder_COMPONENT,
                                                    OMX_StateIdle,
                                                    NEWSENDCOMMAND_MEMORY,
                                                    NULL);                    
 #endif
                     iLBCDEC_DPRINT ("%d :: %s :: The component is stopped\n",
                                    __LINE__,__FUNCTION__);
+                    pComponentPrivate->curState = OMX_StateIdle;
                     pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                             pHandle->pApplicationPrivate,
                                                             OMX_EventCmdComplete,
@@ -1089,6 +1081,11 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                       sizeof(iLBCDEC_ParamStruct),
                                                       NULL);
+                            if (eError != OMX_ErrorNone) {
+                                iLBCDEC_EPRINT("%d :: %s Queue Input buffer, error\n", __LINE__, __FUNCTION__);
+                                iLBCDEC_FatalErrorRecover(pComponentPrivate);
+                                goto EXIT;
+                            }
                         }
                     }
                     pComponentPrivate->nNumInputBufPending = 0;
@@ -1116,6 +1113,11 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                       sizeof(iLBCDEC_ParamStruct),
                                                       NULL);
+                            if (eError != OMX_ErrorNone) {
+                                iLBCDEC_EPRINT("%d :: %s Queue Output buffer, error\n", __LINE__, __FUNCTION__);
+                                iLBCDEC_FatalErrorRecover(pComponentPrivate);
+                                goto EXIT;
+                            }
                         }
                     
                     }
@@ -1136,7 +1138,7 @@ OMX_U32 iLBCDEC_HandleCommand (iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef RESOURCE_MANAGER_ENABLED
                 rm_error = RMProxy_NewSendCommand(pHandle, 
                                                RMProxy_StateSet,
-                                               OMX_NBAMR_Decoder_COMPONENT,
+                                               OMX_ILBC_Decoder_COMPONENT,
                                                OMX_StateExecuting,
                                                NEWSENDCOMMAND_MEMORY,
                                                NULL);
@@ -1626,6 +1628,7 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                 (pLcmlHdr->pDmmBuf));
                 if (eError != OMX_ErrorNone){
                     iLBCDEC_EPRINT("%d :: %s :: Error: OMX_DmmMap.\n", __LINE__,__FUNCTION__);
+                    iLBCDEC_FatalErrorRecover(pComponentPrivate);
                     goto EXIT;
                 }
                 pLcmlHdr->pBufferParam->pParamElem = 
@@ -1666,6 +1669,8 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                   sizeof(iLBCDEC_ParamStruct),
                                                   NULL);
                         if (eError != OMX_ErrorNone) {
+                            iLBCDEC_EPRINT("%d :: %s Queue Output buffer, error\n", __LINE__, __FUNCTION__);
+                            iLBCDEC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
                             goto EXIT;
                         }
@@ -1731,8 +1736,9 @@ OMX_ERRORTYPE iLBCDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                   sizeof(iLBCDEC_ParamStruct),
                                                   pBufHeader->pBuffer);
 
-                        if (eError != OMX_ErrorNone ) {
-                            iLBCDEC_EPRINT ("%d :: %s Issuing DSP OP: Error Occurred\n",__LINE__,__FUNCTION__);
+                        if (eError != OMX_ErrorNone) {
+                            iLBCDEC_EPRINT("%d :: %s Queue Output buffer, error\n", __LINE__, __FUNCTION__);
+                            iLBCDEC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
                             goto EXIT;
                         }
@@ -1955,15 +1961,15 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     else if(event == EMMCodecProcessingStoped) {
         iLBCDEC_DPRINT("%d :: %s :: pComponentPrivate->bNoIdleOnStop = %ld\n", __LINE__,__FUNCTION__, pComponentPrivate->bNoIdleOnStop);
 /*>>>>>>>>> LCML >>>>>>>>>>>*/
-        pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
         rm_error = RMProxy_NewSendCommand(pHandle, 
                                        RMProxy_StateSet, 
-                                       OMX_NBAMR_Decoder_COMPONENT, 
+                                       OMX_ILBC_Decoder_COMPONENT,
                                        OMX_StateIdle,
                                        NEWSENDCOMMAND_MEMORY,
                                        NULL);
 #endif
+        pComponentPrivate->curState = OMX_StateIdle;
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventCmdComplete,
@@ -2032,6 +2038,14 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 goto EXIT;
             }
             iLBCDEC_DPRINT("%d :: Codec has been Stopped here\n",__LINE__);
+#ifdef RESOURCE_MANAGER_ENABLED
+            rm_error = RMProxy_NewSendCommand(pHandle,
+                                              RMProxy_StateSet,
+                                              OMX_ILBC_Decoder_COMPONENT,
+                                              OMX_StateIdle,
+                                              NEWSENDCOMMAND_MEMORY,
+                                              NULL);
+#endif
             pComponentPrivate->curState = OMX_StateIdle;
             pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                    OMX_EventCmdComplete, 
@@ -2055,6 +2069,14 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     goto EXIT;
                 }
                 iLBCDEC_DPRINT("%d :: Codec has been Stopped here\n",__LINE__);
+#ifdef RESOURCE_MANAGER_ENABLED
+                rm_error = RMProxy_NewSendCommand(pHandle,
+                                                  RMProxy_StateSet,
+                                                  OMX_ILBC_Decoder_COMPONENT,
+                                                  OMX_StateIdle,
+                                                  NEWSENDCOMMAND_MEMORY,
+                                                  NULL);
+#endif
                 pComponentPrivate->curState = OMX_StateIdle;
                 pComponentPrivate->cbInfo.EventHandler(
                                                        pHandle, pHandle->pApplicationPrivate,
@@ -2067,7 +2089,7 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             iLBCDEC_DPRINT( "Algorithm error. Overflow, sending to Idle\n" );
 #ifdef RESOURCE_MANAGER_ENABLED         
             rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, 
-                                           OMX_NBAMR_Decoder_COMPONENT, 
+                                           OMX_ILBC_Decoder_COMPONENT,
                                            OMX_StateIdle,
                                            NEWSENDCOMMAND_MEMORY,
                                            NULL);
@@ -2077,7 +2099,7 @@ OMX_ERRORTYPE iLBCDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             iLBCDEC_DPRINT( "Algorithm error. Underflow, sending to Idle\n" );
 #ifdef RESOURCE_MANAGER_ENABLED         
             rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, 
-                                           OMX_NBAMR_Decoder_COMPONENT,
+                                           OMX_ILBC_Decoder_COMPONENT,
                                            OMX_StateIdle,
                                            NEWSENDCOMMAND_MEMORY,
                                            NULL);
@@ -2666,8 +2688,47 @@ void iLBCD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                                             0,
                                             NULL);
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
+        iLBCDEC_EPRINT("%d :RM Fatal Error:\n", __LINE__);
+        iLBCDEC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
+
+void iLBCDEC_FatalErrorRecover(iLBCDEC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        iLBCDEC_EPRINT ("%d ::EMMCodecControlDestroy: error = %d\n", __LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+                                    RMProxy_FreeResource,
+                                    OMX_ILBC_Decoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        iLBCDEC_EPRINT ("%d ::RMProxy_Deinitalize error = %d\n", __LINE__, eError);
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                           pComponentPrivate->pHandle->pApplicationPrivate,
+                                           OMX_EventError,
+                                           OMX_ErrorInvalidState,
+                                           OMX_TI_ErrorSevere,
+                                           NULL);
+    iLBCDEC_CleanupInitParams(pComponentPrivate->pHandle);
+    iLBCDEC_DPRINT ("%d ::Completed FatalErrorRecover Entering Invalid State\n", __LINE__);
+}
+
 /** ========================================================================
 *  OMX_DmmUnMap () method is used to de-allocate the memory using DMM.
 *
@@ -2708,16 +2769,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle,
 
     return (OMX_ErrorNone);
 }
-/**
- *
- */
-void PCMDEC_ResourceManagerCallback(OMX_HANDLETYPE phandle)
-{
-    printf("PCMDEC_ResourceManagerCallback\n");
-}
-/**
- *
- */
+
 void printEmmEvent (TUsnCodecEvent event)
 {
     switch(event) {
