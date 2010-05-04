@@ -20,7 +20,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(LOCAL_PATH)/Config.mk
 LOCAL_SRC_FILES:= \
-	omx_proxy_sample.c
+	omx_proxy_camera.c
 LOCAL_MODULE:= libOMX.TI.DUCATI1.VIDEO.CAMERA
 include $(BUILD_SHARED_LIBRARY)
 
