@@ -644,6 +644,7 @@ OMX_ERRORTYPE GetLCMLHandleJpegDec(OMX_HANDLETYPE pComponent);
 OMX_ERRORTYPE HandleInternalFlush(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1);
 OMX_BOOL IsTIOMXComponent(OMX_HANDLETYPE hComp);
 void* OMX_JpegDec_Thread (void* pThreadData);
+void JpegDec_FatalErrorRecover(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, const char* error_msg);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
