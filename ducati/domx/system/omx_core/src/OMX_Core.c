@@ -206,6 +206,7 @@ OMX_ERRORTYPE OMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentName,
     /* Get a function pointer to the "OMX_ComponentInit" function.  If
      * there is an error, we can't go on, so set the error code and exit */
     pComponentInit = dlsym(pModules[i], "OMX_ComponentInit");
+    pErr = dlerror();
     if( (pErr != NULL) || (pComponentInit == NULL) ) {
         err = OMX_ErrorInvalidComponent;
         goto EXIT;
