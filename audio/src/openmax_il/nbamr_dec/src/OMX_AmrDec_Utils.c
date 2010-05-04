@@ -1117,6 +1117,11 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                        (OMX_U8 *) pLcmlHdr->pBufferParam,
                                        sizeof(NBAMRDEC_ParamStruct),
                                        NULL);
+                        if(eError != OMX_ErrorNone)
+                        {
+                            NBAMRDEC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
+                        }
                     }
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
@@ -1138,6 +1143,11 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                        (OMX_U8 *) pLcmlHdr->pBufferParam,
                                        sizeof(NBAMRDEC_ParamStruct),
                                        NULL);
+                        if(eError != OMX_ErrorNone)
+                        {
+                            NBAMRDEC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
+                        }
                     }
                     
                 }
@@ -2525,18 +2535,12 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                                     sizeof(NBAMRDEC_ParamStruct), 
                                                     NULL);
                     if (eError != OMX_ErrorNone) {
+                        NBAMRDEC_FatalErrorRecover(pComponentPrivate);
                         // Free memories allocated
                         OMX_MEMFREE_STRUCT(TOCframetype);
                         OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
                         OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
                         OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
-
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                            pComponentPrivate->pHandle->pApplicationPrivate,
-                                                            OMX_EventError,
-                                                            OMX_ErrorHardware,
-                                                            OMX_TI_ErrorSevere,
-                                                            NULL);
                         return OMX_ErrorHardware;
                     }
                     pComponentPrivate->lcml_nCntIp++;
@@ -2726,16 +2730,11 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                                           NULL);
                 if (eError != OMX_ErrorNone ) {
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: IssuingDSP OP: Error Occurred\n",__LINE__);
+                    NBAMRDEC_FatalErrorRecover(pComponentPrivate);
                     // Free memories allocated
                     OMX_MEMFREE_STRUCT(TOCframetype);
                     OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
 
-                    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               OMX_ErrorHardware,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
                     return OMX_ErrorHardware;
                 }
                 pComponentPrivate->lcml_nOpBuf++;
@@ -3802,8 +3801,47 @@ void NBAMR_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
                             OMX_EventResourcesAcquired, 0,0,
                             NULL);
     }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError){
+        NBAMRDEC_FatalErrorRecover(pCompPrivate);
+    }
 }
 #endif
+
+void NBAMRDEC_FatalErrorRecover(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_NBAMR_Decoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
+    OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
+               \nEntering Invalid State\n");
+}
 
 void NBAMRDEC_HandleUSNError (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
