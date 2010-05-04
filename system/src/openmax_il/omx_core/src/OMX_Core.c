@@ -48,54 +48,54 @@ ComponentTable componentTable[MAX_TABLE_SIZE];
 char * sRoleArray[60][20];
 char compName[60][200];
 
-char *tComponentName[MAXCOMP][2] = {
+char *tComponentName[MAXCOMP][3] = {
     /*video and image components */
-    {"OMX.TI.JPEG.decoder", "image_decoder.jpeg" },
-    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg"},
-    {"OMX.TI.Video.Decoder", "video_decoder.h263"},
-    {"OMX.TI.Video.Decoder", "video_decoder.avc"},
-    {"OMX.TI.Video.Decoder", "video_decoder.mpeg2"},
-    {"OMX.TI.Video.Decoder", "video_decoder.mpeg4"},
-    {"OMX.TI.720P.Decoder", "video_decoder.mpeg4"},
-    {"OMX.TI.720P.Decoder", "video_decoder.avc"},
-    {"OMX.TI.Video.Decoder", "video_decoder.wmv"},
-    {"OMX.TI.Video.encoder", "video_encoder.mpeg4"},
-    {"OMX.TI.720P.Encoder", "video_encoder.mpeg4"},
-    {"OMX.TI.Video.encoder", "video_encoder.h263"},
-    {"OMX.TI.Video.encoder", "video_encoder.avc"},
-    {"OMX.TI.720P.Encoder", "video_encoder.avc"},
-    {"OMX.TI.VPP", "iv_renderer.yuv.overlay"},
-    {"OMX.TI.Camera", "camera.yuv"},
+    {"OMX.TI.JPEG.decoder", "image_decoder.jpeg", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.JPEG.encoder", "image_encoder.jpeg", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.Decoder", "video_decoder.h263", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.Decoder", "video_decoder.avc", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.Decoder", "video_decoder.mpeg2", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.Decoder", "video_decoder.mpeg4", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.720P.Decoder", "video_decoder.mpeg4", MAX_720P_CONCURRENT_INSTANCES},
+    {"OMX.TI.720P.Decoder", "video_decoder.avc", MAX_720P_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.Decoder", "video_decoder.wmv", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.encoder", "video_encoder.mpeg4", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.720P.Encoder", "video_encoder.mpeg4", MAX_720P_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.encoder", "video_encoder.h263", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Video.encoder", "video_encoder.avc", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.720P.Encoder", "video_encoder.avc", MAX_720P_CONCURRENT_INSTANCES},
+    {"OMX.TI.VPP", "iv_renderer.yuv.overlay", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.Camera", "camera.yuv", MAX_CONCURRENT_INSTANCES},
     
     /* Speech components */
-    {"OMX.TI.G729.encode", NULL},
-    {"OMX.TI.G729.decode", NULL},	
-    {"OMX.TI.G722.encode", NULL},
-    {"OMX.TI.G722.decode", NULL},
-    {"OMX.TI.G711.encode", NULL},
-    {"OMX.TI.G711.decode", NULL},
+    {"OMX.TI.G729.encode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G729.decode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G722.encode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G722.decode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G711.encode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G711.decode", NULL, MAX_CONCURRENT_INSTANCES},
 /*  {"OMX.TI.G723.encode", NULL},
     {"OMX.TI.G723.decode", NULL},
 */
-    {"OMX.TI.G726.encode", NULL},
-    {"OMX.TI.G726.decode", NULL},
-    {"OMX.TI.ILBC.decode", NULL},
-    {"OMX.TI.ILBC.encode", NULL},
+    {"OMX.TI.G726.encode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.G726.decode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.ILBC.decode", NULL, MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.ILBC.encode", NULL, MAX_CONCURRENT_INSTANCES},
 /*  {"OMX.TI.GSMFR.encode", NULL},
     {"OMX.TI.GSMFR.decode", NULL},
 */
-    {"OMX.TI.AMR.encode", "audio_encoder.amrnb"},
-    {"OMX.TI.AMR.decode", "audio_decoder.amrnb"},
-    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb"},
-    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb"},
+    {"OMX.TI.AMR.encode", "audio_encoder.amrnb", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.AMR.decode", "audio_decoder.amrnb", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.WBAMR.encode", "audio_encoder.amrwb", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.WBAMR.decode", "audio_decoder.amrwb", MAX_CONCURRENT_INSTANCES},
 
     /* Audio components */
-    {"OMX.TI.MP3.decode", "audio_decoder.mp3"},
-    {"OMX.TI.AAC.encode", "audio_encoder.aac"},
-    {"OMX.TI.AAC.decode", "audio_decoder.aac"},
-    {"OMX.ITTIAM.AAC.decode", "audio_decoder.aac"},
-    {"OMX.ITTIAM.AAC.encode", "audio_encoder.aac"},
-    {"OMX.TI.WMA.decode", "audio_decoder.wma"},
+    {"OMX.TI.MP3.decode", "audio_decoder.mp3", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.AAC.encode", "audio_encoder.aac", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.AAC.decode", "audio_decoder.aac", MAX_CONCURRENT_INSTANCES},
+    {"OMX.ITTIAM.AAC.decode", "audio_decoder.aac", MAX_CONCURRENT_INSTANCES},
+    {"OMX.ITTIAM.AAC.encode", "audio_encoder.aac", MAX_CONCURRENT_INSTANCES},
+    {"OMX.TI.WMA.decode", "audio_decoder.wma", MAX_CONCURRENT_INSTANCES},
 /*  {"OMX.TI.PCM.encode", NULL},
     {"OMX.TI.PCM.decode", NULL},     
     {"OMX.TI.RAG.decode", "audio_decoder.ra"},
@@ -104,7 +104,7 @@ char *tComponentName[MAXCOMP][2] = {
 */
 
     /* terminate the table */
-    {NULL, NULL},
+    {NULL, NULL, NULL},
 };
 
 
@@ -215,7 +215,7 @@ OMX_ERRORTYPE TIOMX_GetHandle( OMX_HANDLETYPE* pHandle, OMX_STRING cComponentNam
         if (strcmp(componentTable[refIndex].name, cComponentName) == 0) {
 
             /* check if the component is already loaded */
-            if (componentTable[refIndex].refCount >= MAX_CONCURRENT_INSTANCES) {
+            if (componentTable[refIndex].refCount >= componentTable[refIndex].maxinstances) {
                 err = OMX_ErrorInsufficientResources;
                 LOGE("Max instances of component %s already created.\n", cComponentName);
                 goto UNLOCK_MUTEX;
@@ -765,6 +765,7 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
                 strcpy(compName[numFiles], tComponentName[i][0]);
                 componentTable[numFiles].name = compName[numFiles];
                 componentTable[numFiles].refCount = 0; //initialize reference counter.
+                componentTable[numFiles].maxinstances= tComponentName[i][2];
                 numFiles ++;
             }
         }
