@@ -260,24 +260,17 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     eError = VIDDEC_HandleDataBuf_FromDsp(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled DSP output buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing dsp Responses");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
+
                     }
                 }
                 if (FD_ISSET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds)) {
                     eError = VIDDEC_HandleFreeDataBuf(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free input buffers\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing free input buffer");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                 }
                 if (pComponentPrivate->bDynamicConfigurationInProgress) {
@@ -289,12 +282,8 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled input buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing input buffer");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                 }
                 if (pComponentPrivate->bDynamicConfigurationInProgress || !pComponentPrivate->bFirstHeader) {
@@ -304,12 +293,8 @@ void* OMX_VidDec_Thread (void* pThreadData)
                     eError = VIDDEC_HandleFreeOutputBufferFromApp(pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free output buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing free output buffer");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                 }
             }
@@ -387,13 +372,9 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
                 if (FD_ISSET(pComponentPrivate->free_inpBuf_Q[VIDDEC_PIPE_READ], &rfds) && !bReturnOnlyOne) {
                     eError = VIDDEC_HandleFreeDataBuf (pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
-                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free input buffers\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing free input buffer");
+                        OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling free input buffer\n");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                     pComponentPrivate->bPipeCleaned = OMX_TRUE;
                     /*doing continue to return buffers from DSP and then component ones*/
@@ -404,12 +385,8 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
                     eError = VIDDEC_HandleDataBuf_FromApp (pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled input buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing input buffer");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                     pComponentPrivate->bPipeCleaned = OMX_TRUE;
                     /*doing continue to return buffers from DSP and then component ones*/
@@ -473,12 +450,8 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
                     eError = VIDDEC_HandleDataBuf_FromDsp (pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while handling filled DSP output buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing dsp Responses");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                     pComponentPrivate->bPipeCleaned = OMX_TRUE;
                     /*doing continue to return buffers from DSP and then component ones*/
@@ -490,12 +463,8 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
                     eError = VIDDEC_HandleFreeOutputBufferFromApp (pComponentPrivate);
                     if (eError != OMX_ErrorNone) {
                         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error while processing free output buffer\n");
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               eError,
-                                                               OMX_TI_ErrorSevere,
-                                                               "Error from Component Thread while processing free output buffer");
+                        //recover
+                        VIDDEC_FatalErrorRecover(pComponentPrivate);
                     }
                     pComponentPrivate->bPipeCleaned = OMX_TRUE;
                     /*doing continue to return buffers from DSP and then component ones*/
