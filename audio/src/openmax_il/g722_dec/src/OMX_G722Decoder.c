@@ -313,6 +313,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->bIdleCommandPending = OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
+    pComponentPrivate->bPreempted = OMX_FALSE;
+
     OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
 
@@ -403,6 +405,19 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pComponentPrivate->bBufferIsAllocated = 1;
     pComponentPrivate->bPortDefsAllocated = 1;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewInitalize();
+    G722DEC_DPRINT("%d :: [G722 Component] - OMX_ComponentInit\n", __LINE__);
+    if (eError != OMX_ErrorNone) {
+        G722DEC_DPRINT("%d :: [G722 Component] - Error returned from loading ResourceManagerProxy thread\n", __LINE__);
+        // Free Component resources
+        G722DEC_FreeCompResources(pHandle);
+        // Free pComponentPrivate
+        OMX_MEMFREE_STRUCT(pComponentPrivate);
+        return eError;
+    }
+#endif
 
 #ifdef DSP_RENDERING_ON
     if((G722d_fdwrite=open(FIFO1,O_WRONLY))<0) {
@@ -1501,6 +1516,17 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 #ifdef DSP_RENDERING_ON
         close(G722d_fdwrite);
     close(G722d_fdread);
+#endif
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_G722_Decoder_COMPONENT, 0, 3456, NULL);
+    if (eError != OMX_ErrorNone) {
+        G722DEC_DPRINT("%d :: Error returned from destroy ResourceManagerProxy thread\n",__LINE__);
+    }
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        G722DEC_DPRINT("%d :: Error from RMProxy_Deinitalize\n", __LINE__);
+    }
 #endif
 
     pComponentPrivate->bExitCompThrd = 1;
