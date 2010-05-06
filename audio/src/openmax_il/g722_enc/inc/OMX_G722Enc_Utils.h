@@ -54,6 +54,10 @@
 
 #include <TIDspOmx.h>
 
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 /* ComponentThread constant */
 #define EXIT_COMPONENT_THRD  10
 /* ======================================================================= */
@@ -99,6 +103,14 @@
  */
 /* ======================================================================= */
 #define OMX_G722ENC_SN_PRIORITY (10)
+
+/* ======================================================================= */
+/**
+ * @def    G722ENC_CPU   TBD, 50MHz for the moment
+ */
+/* ======================================================================= */
+#define G722ENC_CPU (50)
+
 
 /* ======================================================================= */
 /**
@@ -544,6 +556,11 @@ typedef struct G722ENC_COMPONENT_PRIVATE
     OMX_BOOL bPreempted;
     OMX_BOOL bMutexInitDone;
 
+    /** Pointer to RM callback **/
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+
 } G722ENC_COMPONENT_PRIVATE;
 
 /* ===========================================================  */
@@ -911,5 +928,22 @@ OMX_U32 G722ENC_IsValid(G722ENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pB
 /*================================================================== */
 OMX_ERRORTYPE G722ENC_TransitionToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate);
 
+#ifdef RESOURCE_MANAGER_ENABLED
+/***********************************
+ *  Callback to the RM                                       *
+ ***********************************/
+void G722ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
+
+/*  =========================================================================*/
+/*  func    G722ENC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void G722ENC_FatalErrorRecover(G722ENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /*void printEmmEvent (TUsnCodecEvent event);*/
