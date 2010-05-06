@@ -673,8 +673,6 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     } else {
                         RMPROXY_DPRINT("[RM_PROXY] - WRITE pipe opened successfully\n");
                     }
-
-
                     
                     rm_data.hComponent = cmd_data->hComponent;
                     rm_data.nPid = getpid();
@@ -689,7 +687,6 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
 #ifdef __PERF_INSTRUMENTATION__
                     PERF_SendingCommand(pPERFproxy, rm_data.RM_Cmd, rm_data.param1, PERF_ModuleHLMM);
 #endif
-
 
                     /*  RMProxy_itoa((int)cmd_data.hComponent,handleString);*/
                     RMProxy_itoa((int)rm_data.nPid,handleString);
@@ -708,9 +705,10 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     RMPROXY_DPRINT("[RM_Proxy] - try to open the IN Pipe, RM_SERVER_OUT for PID %d\n", (int)getpid());
                     RMPROXY_DPRINT("namedPipeName = %s\n", (char*)namedPipeName);
                     while((RMProxyfdread=open(namedPipeName, O_RDONLY )) < 0)
-//                     if ((RMProxyfdread=open(namedPipeName, O_RDONLY ))<0)
                     {
-                        RMPROXY_DPRINT("[RM_Proxy] - waiting on pipe creation [RMProxyfdread=%d], [errno=%d]\n", RMProxyfdread, errno);
+                        RMPROXY_DPRINT("[RM_Proxy] - waiting on pipe creation\
+                                        [RMProxyfdread=%d],\
+                                        [errno=%d]\n", RMProxyfdread, errno);
                         sleep(.05);
                     }
                     readPipeOpened = 1;
@@ -728,14 +726,23 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                     
                     
                 }
-                RM_RequestResource(cmd_data->hComponent, cmd_data->param1, cmd_data->param2, cmd_data->param3, cmd_data->nPid, cmd_data->sem, cmd_data->RM_Error);
+                RM_RequestResource(cmd_data->hComponent,
+                                   cmd_data->param1,
+                                   cmd_data->param2,
+                                   cmd_data->param3,
+                                   cmd_data->nPid,
+                                   cmd_data->sem,
+                                   cmd_data->RM_Error);
                 numClients++;
 
                 break;
 
             case RMProxy_WaitForResource:
                     RMPROXY_DPRINT("RMProxy_Thread %d\n",__LINE__);
-                RM_WaitForResource(cmd_data->hComponent, cmd_data->param1, cmd_data->sem, cmd_data->RM_Error);
+                RM_WaitForResource(cmd_data->hComponent,
+                                   cmd_data->param1,
+                                   cmd_data->sem,
+                                   cmd_data->RM_Error);
                 break;
 
                 // clean
@@ -786,11 +793,10 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 
             }
             else if (rm_data.rm_status == RM_PREEMPT) {
-                if (!RM_Error) {
+                if (!RM_Error)
                     RM_Error = malloc(sizeof(OMX_ERRORTYPE));
-                    if (NULL != RM_Error)
-                        *RM_Error = OMX_RmProxyCallback_ResourcesPreempted;
-                }
+                if (NULL != RM_Error)
+                    *RM_Error = OMX_RmProxyCallback_ResourcesPreempted;
                 cmd_data->hComponent = rm_data.hComponent;
                 if (NULL != core)
                 {
@@ -802,11 +808,10 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 }
             }
             else if (rm_data.rm_status == RM_RESOURCEFATALERROR) {
-                if (!RM_Error) {
+                if (!RM_Error)
                     RM_Error = malloc(sizeof(OMX_ERRORTYPE));
-                    if (NULL != RM_Error)
-                        *RM_Error = OMX_RmProxyCallback_FatalError;
-                }
+                if (NULL != RM_Error)
+                    *RM_Error = OMX_RmProxyCallback_FatalError;
                 cmd_data->hComponent = rm_data.hComponent;
                 if (NULL != core)
                 {
@@ -838,11 +843,10 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
             }
             else if (rm_data.rm_status == RM_RESOURCEACQUIRED) {
                 RMPROXY_DPRINT("Got RM_RESOURCEACQUIRED\n");
-                if (!RM_Error) {
+                if (!RM_Error)
                     RM_Error = malloc(sizeof(OMX_ERRORTYPE));
-                    if ( NULL != RM_Error)
-                        *RM_Error = OMX_RmProxyCallback_ResourcesAcquired;
-                }
+                if ( NULL != RM_Error)
+                    *RM_Error = OMX_RmProxyCallback_ResourcesAcquired;
                 if (NULL != core)
                 {
                     RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
