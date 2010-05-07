@@ -74,9 +74,6 @@
 /* Log for Android system*/
 #include <utils/Log.h>
 
-#define AMRNB_DEC_ROLE "audio_decoder.amrnb"
-
-
 /****************************************************************
 *  EXTERNAL REFERENCES NOTE : only use if not found in header file
 ****************************************************************/

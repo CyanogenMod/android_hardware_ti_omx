@@ -737,40 +737,37 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             NULL);
                 }
                 else if (pComponentPrivate->curState == OMX_StateLoaded || pComponentPrivate->curState == OMX_StateWaitForResources) {
-        while (1) {
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: In while loop OMX_StateLoaded [NBAMRDEC_INPUT_PORT]->bPopulated  %d \n",__LINE__,pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated);
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: In while loop OMX_StateLoaded [NBAMRDEC_INPUT_PORT]->bEnabled    %d \n",__LINE__,pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled);
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: In while loop OMX_StateLoaded [NBAMRDEC_OUTPUT_PORT]->bPopulated %d \n",__LINE__,pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated);
-            OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: In while loop OMX_StateLoaded [NBAMRDEC_OUTPUT_PORT]->bEnabled   %d \n",__LINE__,pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled);
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: curState = %d \n", __LINE__, pComponentPrivate->curState);
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: [NBAMRDEC_INPUT_PORT]->bPopulated %d \n", __LINE__, pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated);
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: [NBAMRDEC_INPUT_PORT]->bEnabled %d \n", __LINE__, pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled);
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: [NBAMRDEC_OUTPUT_PORT]->bPopulated %d \n", __LINE__, pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated);
+                    OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: [NBAMRDEC_OUTPUT_PORT]->bEnabled %d \n", __LINE__, pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled);
 #ifdef __PERF_INSTRUMENTATION__
             PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundarySetup);
 #endif
 
-            if (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated &&  pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled)  {
-                inputPortFlag = 1;
-            }
+                    if (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated &&  pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled)  {
+                        inputPortFlag = 1;
+                    }
 
-            if (!pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated && !pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled) {
-                inputPortFlag = 1;
-            }
+                    if (!pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated && !pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled) {
+                        inputPortFlag = 1;
+                    }
 
-            if (pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated && pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled) {
-                outputPortFlag = 1;
-            }
+                    if (pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated && pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled) {
+                        outputPortFlag = 1;
+                    }
 
-            if (!pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated && !pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled) {
-                outputPortFlag = 1;
-            }
+                    if (!pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated && !pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled){
+                        outputPortFlag = 1;
+                    }
 
-            if (inputPortFlag && outputPortFlag) {
-                break;
-            }
-            pComponentPrivate->InLoaded_readytoidle = 1;
-            pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
-            pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
-            pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-            break; 
-        }
+                    if (!inputPortFlag || !outputPortFlag) {
+                        pComponentPrivate->InLoaded_readytoidle = 1;
+                        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
+                        pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
+                        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+                    }
  
                 OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Inside NBAMRDECHandleCommand\n",__LINE__);
                 cb.LCML_Callback = (void *) NBAMRDECLCML_Callback;
@@ -1062,11 +1059,10 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 /* Sending commands to DSP via LCML_ControlCodec third argument
                 is not used for time being */
                 pComponentPrivate->nFillBufferDoneCount = 0;  
-                pComponentPrivate->bStopSent=0;
-
                 pComponentPrivate->nEmptyBufferDoneCount = 0;  
                 pComponentPrivate->nEmptyThisBufferCount = 0;
-                pComponentPrivate->nFillBufferDoneCount =0;
+                pComponentPrivate->nFillThisBufferCount = 0;
+                pComponentPrivate->bStopSent=0;
  
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                 EMMCodecControlStart, (void *)p);
@@ -1231,19 +1227,13 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #ifdef __PERF_INSTRUMENTATION__
             PERF_Boundary(pComponentPrivate->pPERFcomp,PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif            
-            while (1) {
 
-                
-                if (!pComponentPrivate->pInputBufferList->numBuffers &&
-                    !pComponentPrivate->pOutputBufferList->numBuffers) {
-
-                        break;
-                    }
-                    pComponentPrivate->InIdle_goingtoloaded = 1;
-                    pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
-                    pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
-                    pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-                    break;
+            if (pComponentPrivate->pInputBufferList->numBuffers ||
+                pComponentPrivate->pOutputBufferList->numBuffers) {
+                pComponentPrivate->InIdle_goingtoloaded = 1;
+                pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
+                pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
+                pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
             }
 
            /* Now Deinitialize the component No error should be returned from
@@ -1992,7 +1982,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 else 
                 {
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: NBAMRDECHandleDataBuf_FromApp - reading NBAMRDEC_NONMIMEMODE\n",__LINE__);
-                    frameLength = STD_NBAMRDEC_BUF_SIZE;  /*/ non Mime mode*/
+                    frameLength = bufSize;  /*/ non Mime mode*/
                     nFrames = (OMX_U8)(pBufHeader->nFilledLen / frameLength);
                 }
 
@@ -2131,7 +2121,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                 }
                 else 
                 {
-                    frameLength = STD_NBAMRDEC_BUF_SIZE;
+                    frameLength = bufSize;
                 }
                 
                 nFrames = (OMX_U8)(pComponentPrivate->nHoldLength / frameLength);
