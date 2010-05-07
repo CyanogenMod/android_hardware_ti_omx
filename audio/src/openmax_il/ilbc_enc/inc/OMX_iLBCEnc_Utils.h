@@ -1035,6 +1035,16 @@ OMX_U32 ILBCENC_IsValid(ILBCENC_COMPONENT_PRIVATE *pComponentPrivate,
  void ILBCENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  =========================================================================*/
+/*  func    ILBCENC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*   @return n/a
+*
+*  =========================================================================*/
+void ILBCENC_FatalErrorRecover(ILBCENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /* ================================================================================= */
 /**
