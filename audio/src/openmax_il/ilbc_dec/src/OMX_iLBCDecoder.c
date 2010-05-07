@@ -1486,7 +1486,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
 #endif
 
 #ifdef RESOURCE_MANAGER_ENABLED
-    eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_NBAMR_Decoder_COMPONENT, 0, NEWSENDCOMMAND_MEMORY, NULL);
+    eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource, OMX_ILBC_Decoder_COMPONENT, 0, NEWSENDCOMMAND_MEMORY, NULL);
 
     if (eError != OMX_ErrorNone) {
          iLBCDEC_EPRINT ("%d :: %s :: Error returned from destroy ResourceManagerProxy thread\n", __LINE__,__FUNCTION__);
