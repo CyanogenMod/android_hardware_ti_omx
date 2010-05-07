@@ -517,7 +517,6 @@ int main(int argc, char* argv[])
 
             error = OMX_GetState(pHandle, &state);/**/
             retval = 1;
-            fseek(fIn, 0, SEEK_SET);
             while (1) {
                 if ( (error == OMX_ErrorNone) && (state != OMX_StateIdle)){
                     error = testCases (pHandle, &rfds, command, fIn, fOut, &frmCount, NULL, &tv, gDasfMode, pInputBufferHeader, nInBufSize, &count, numInputBuffers, pOutputBufferHeader, numOutputBuffers);
