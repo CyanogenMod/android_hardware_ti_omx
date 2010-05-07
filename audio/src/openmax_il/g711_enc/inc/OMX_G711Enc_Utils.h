@@ -1036,4 +1036,17 @@ void* G711ENC_CompThread(void* pThreadData);
 void G711ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  ==============================================================*/
+/* G711ENC_FatalErrorRecover
+*
+* @desc    handles the clean up and sets OMX_StateInvalid in reaction to fatal errors
+*
+* @param pComponentPrivate    Component private data
+*
+* @return n/a
+*/
+/* ===============================================================*/
+
+void G711ENC_FatalErrorRecover(G711ENC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif  /* OMX_G711ENC_UTILS__H */
