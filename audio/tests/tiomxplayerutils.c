@@ -451,17 +451,7 @@ int test_play(appPrivateSt *appPrvt){
   int i;
   OMX_ERRORTYPE error = OMX_ErrorNone;
 
-  APP_DPRINT("Change state to Executing\n");
-  error = OMX_SendCommand(appPrvt->phandle,
-                          OMX_CommandStateSet,
-                          OMX_StateExecuting,
-                          NULL);
-  if(error != OMX_ErrorNone){
-    return 1;
-  }
-  error = WaitForState(appPrvt->phandle,
-                       OMX_StateExecuting,
-                       appPrvt->state);
+  error = SetOMXState(appPrvt, OMX_StateExecuting);
   if(error != OMX_ErrorNone){
     return 1;
   }
@@ -530,17 +520,7 @@ int test_repeat(appPrivateSt *appPrvt){
 
   }
 
-  APP_DPRINT("Change state to Pause\n");
-  error = OMX_SendCommand(appPrvt->phandle,
-                          OMX_CommandStateSet,
-                          OMX_StatePause,
-                          NULL);
-  if(error != OMX_ErrorNone){
-    return 1;
-  }
-  error = WaitForState(appPrvt->phandle,
-                       OMX_StatePause,
-                       appPrvt->state);
+  error = SetOMXState(appPrvt, OMX_StatePause);
   if(error != OMX_ErrorNone){
     return 1;
   }
@@ -559,21 +539,11 @@ int test_pause_resume(appPrivateSt *appPrvt){
   int error = 0;
 
   sleep(1);
-  APP_DPRINT("Change state to Executing\n");
-  error = OMX_SendCommand(appPrvt->phandle,
-                          OMX_CommandStateSet,
-                          OMX_StateExecuting,
-                          NULL);
-  if(error != OMX_ErrorNone){
-    return 1;
-  }
-  error = WaitForState(appPrvt->phandle,
-                       OMX_StateExecuting,
-                       appPrvt->state);
-  if(error != OMX_ErrorNone){
-    return 1;
-  }
 
+  error = SetOMXState(appPrvt, OMX_StateExecuting);
+  if(error != OMX_ErrorNone){
+    return 1;
+  }
   for (i=0; i < appPrvt->out_port->nBufferCountActual; i++) {
     APP_DPRINT( "Send OUT buffer %p\n",appPrvt->out_buffers[i]);
     error = OMX_FillThisBuffer(appPrvt->phandle,appPrvt->out_buffers[i]);
@@ -601,17 +571,8 @@ int test_pause_resume(appPrivateSt *appPrvt){
   if(error != OMX_ErrorNone){
       return 1;
   }
-  APP_DPRINT("Change state to Pause\n");
-  error = OMX_SendCommand(appPrvt->phandle,
-                          OMX_CommandStateSet,
-                          OMX_StatePause,
-                          NULL);
-  if(error != OMX_ErrorNone){
-      return 1;
-  }
-  error = WaitForState(appPrvt->phandle,
-                       OMX_StatePause,
-                       appPrvt->state);
+
+  error = SetOMXState(appPrvt,OMX_StatePause);
   if(error != OMX_ErrorNone){
       return 1;
   }
@@ -619,16 +580,8 @@ int test_pause_resume(appPrivateSt *appPrvt){
   sleep(3);
 
   APP_DPRINT("Resume Playback\n");
-  error = OMX_SendCommand(appPrvt->phandle,
-                          OMX_CommandStateSet,
-                          OMX_StateExecuting,
-                          NULL);
-  if(error != OMX_ErrorNone){
-    return 1;
-  }
-  error = WaitForState(appPrvt->phandle,
-                       OMX_StateExecuting,
-                       appPrvt->state);
+
+  error = SetOMXState(appPrvt, OMX_StateExecuting);
   if(error != OMX_ErrorNone){
     return 1;
   }
@@ -653,6 +606,25 @@ int test_pause_resume(appPrivateSt *appPrvt){
   event_block(appPrvt->eos);
 
   return 0;
+}
+
+int SetOMXState(appPrivateSt *appPrvt,OMX_STATETYPE DesiredState){
+    int error =0;
+    APP_DPRINT("Change state to %d \n",DesiredState);
+    error = OMX_SendCommand(appPrvt->phandle,
+                            OMX_CommandStateSet,
+                            DesiredState,
+                            NULL);
+    if(error != OMX_ErrorNone){
+        return error;
+    }
+    error = WaitForState(appPrvt->phandle,
+                         DesiredState,
+                         appPrvt->state);
+    if(error != OMX_ErrorNone){
+        return error;
+    }
+    return error;
 }
 
 void alsa_setAudioParams(appPrivateSt *appPrvt) {

@@ -448,6 +448,7 @@ appPrivateSt* app_core_new(void){
   me->pause = NULL;
   me->processed_buffers = 0;
   me->fileReRead = OMX_FALSE;
+  me->commFunc =NULL;
   return me;
 }
 
@@ -742,13 +743,25 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
       alsa_setAudioParams(appPrvt) ;
     }
 
+    /*Adding keyboard listener*/
+    error = pthread_create (&appPrvt->commFunc, NULL, TIOMX_CommandListener, appPrvt);
+    if (error != OMX_ErrorNone) {
+        error = OMX_ErrorBadParameter;
+        APP_DPRINT("Error in OMX_SetParameter-%d\n",error);
+        return 1;
+    }
     return 0;
 }
 
 static int free_app_resources(appPrivateSt* appPrvt)
 {
   OMX_ERRORTYPE error = OMX_ErrorNone;
-
+  appPrvt->comthrdstop=1;
+  pthread_join (appPrvt->commFunc,
+                               (void*)&error);
+  if (0 != error) {
+      APP_DPRINT("Error when trying to stop command listener thread \n");
+  }
   /* Free allocated resources */
   APP_DPRINT("Free pcm params\n");
   free(appPrvt->pcm);
