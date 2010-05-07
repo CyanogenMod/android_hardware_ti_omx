@@ -740,4 +740,15 @@ OMX_ERRORTYPE G711DECFill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 OMX_U32 G711DEC_IsValid(G711DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
 OMX_ERRORTYPE G711DEC_TransitionToIdle(G711DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
+/*  =========================================================================*/
+/*  func    G711DEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void G711DEC_FatalErrorRecover(G711DEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 #endif /* OMX_G711DECODER_H*/
