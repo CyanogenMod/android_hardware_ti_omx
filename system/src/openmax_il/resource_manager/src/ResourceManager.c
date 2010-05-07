@@ -1112,17 +1112,52 @@ int RM_GetQos()
 
     if (!stub_mode)
     {
+        struct QOSDATA *data;
+        struct QOSRESOURCE_MEMORY *request;
+        int found = 0;
 
-        /* check available memory */
-        m= (struct QOSRESOURCE_MEMORY *)DSPData_Create(QOSDataType_Memory_DynAlloc);
-        if (m) {
-            m->align = 4;
-            m->heapId = KAllHeaps;
-            m->size = cmd_data.param3;
-            memoryAvailable = DSPQos_TypeSpecific((struct QOSDATA *)registry,
-	                                       QOS_FN_HasAvailableResource, (unsigned int)(struct QOSDATA *)m);
-            status = DSPData_Delete((struct QOSDATA *) m);
+        for (data = registry->ResourceRegistry; data;
+                                      data = data->Next) {
+            if (data->Id == QOSDataType_Memory_DynAlloc) {
+                request = (struct QOSRESOURCE_MEMORY *)data;
+                if (request->heapId == KAllHeaps){
+                    found = 1;
+                    break;
+                }
+            }
         }
+        if(found == 0){
+            RM_EPRINT("RM_GetQos failed, request->heapId not found\n");
+            FreeQos();
+            return QOS_DENY;
+        }
+
+        /* do not need to check DSP if reqested heap is 0 */
+        if (cmd_data.param3 > 0) {
+            status = QosTI_DspMsg(QOS_TI_GETMEMSTAT,
+                request->heapId, USED_HEAPSIZE, ((DWORD *)
+                &request->size), ((DWORD *)&request->allocated));
+
+            if (DSP_SUCCEEDED(status)) {
+                status = QosTI_DspMsg(QOS_TI_GETMEMSTAT,
+                    request->heapId, LARGEST_FREE_BLOCKSIZE,
+                    NULL, ((DWORD *)&request->largestfree));
+
+                if (DSP_SUCCEEDED(status)) { /* 4 bytes alignment */
+                    if (request->size > (cmd_data.param3 + 4))
+                        memoryAvailable = true;
+                } else { /*DSP return defined in dspbridge/api/inc/errbase.h */
+                    RM_EPRINT ("QOS_TI_GETMEMSTAT return ERR(0x%x)\n", (unsigned int)status);
+                    FreeQos();
+                    return QOS_DENY;
+                }
+            } else {
+                RM_EPRINT("QOS_TI_GETMEMSTAT return ERR(0x%x)\n", (unsigned int)status);
+                FreeQos();
+                return QOS_DENY;
+            }
+       } else
+            memoryAvailable = true;
 
         RM_DPRINT("getting iva load: stub mode is %d\n", stub_mode);
         /* initialize array */
