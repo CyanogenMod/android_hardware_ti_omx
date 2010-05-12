@@ -2721,26 +2721,25 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         }
  #endif
 #endif
-
-    /* Get video color format*/
-    OMX_VIDEO_PARAM_PORTFORMATTYPE VideoPortFormat;
-    CONFIG_SIZE_AND_VERSION(VideoPortFormat);
-    VideoPortFormat.nPortIndex = pAppData->nOutputPortIndex;
-
-    eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamVideoPortFormat, &VideoPortFormat);
-    if (eError!= OMX_ErrorNone) {
-        ERR_PRINT("Problem getting video port format\n");
-        goto FREEHANDLES;
-    }
-
-    CONFIG_SIZE_AND_VERSION(VideoPortFormat);
-    VideoPortFormat.eColorFormat = pAppData->eColorFormat;
-    eError = OMX_SetParameter(pAppData->pHandle, OMX_IndexParamVideoPortFormat, &VideoPortFormat);
-    if (eError != OMX_ErrorNone) {
-        ERR_PRINT("Problem setting video port format\n");
-        goto FREEHANDLES;
-    }
-
+        {
+            #define VIDDEC_MAXCOLORFORMAT 3
+            OMX_U32 nCount = 0;
+            /* Get video color format*/
+            OMX_VIDEO_PARAM_PORTFORMATTYPE VideoPortFormat;
+            CONFIG_SIZE_AND_VERSION(VideoPortFormat);
+            VideoPortFormat.nPortIndex = pAppData->nOutputPortIndex;
+            for ( nCount = 0; nCount <= VIDDEC_MAXCOLORFORMAT; nCount++) {
+                VideoPortFormat.nIndex = nCount;
+                eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamVideoPortFormat, &VideoPortFormat);
+                if (VideoPortFormat.eColorFormat == pAppData->eColorFormat) {
+                    break;
+                }
+            }
+            if (eError != OMX_ErrorNone) {
+                ERR_PRINT("Problem setting video port format %x\n", eError);
+                goto FREEHANDLES;
+            }
+        }
         /*initialize the portdefs for application*/
         if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                 pAppData->eCompressionFormat == OMX_VIDEO_CodingH263) {
