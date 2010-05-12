@@ -47,6 +47,10 @@
 
 #include <pthread.h>
 
+#ifdef RESOURCE_MANAGER_ENABLED
+#include <ResourceManagerProxyAPI.h>
+#endif
+
 /*#define G722DEC_DEBUG  **/         /* See all debug statement of the component */
 /*#define G722DEC_MEMDETAILS */     /* See memory details of the component */
 /*#define G722DEC_BUFDETAILS */     /* See buffers details of the component */
@@ -141,6 +145,12 @@
     (_s_)->nVersion.s.nRevision = 0x0;          \
     (_s_)->nVersion.s.nStep = 0x0
 
+/* ======================================================================= */
+/**
+ *   @def    G722DEC_CPU_LOAD                    CPU Load in MHz
+ */
+/* ======================================================================= */
+#define G722DEC_CPU_LOAD 10
     
 /* ======================================================================= */
 /** OMX_G722DEC_INDEXAUDIOTYPE  Defines the custom configuration settings
@@ -479,7 +489,13 @@ typedef struct G722DEC_COMPONENT_PRIVATE
     /** Index to arrTimestamp[], used for input buffer timestamps */ 
     OMX_U8 IpBufindex; 
     /** Index to arrTimestamp[], used for output buffer timestamps */ 
-    OMX_U8 OpBufindex; 
+    OMX_U8 OpBufindex;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    RMPROXY_CALLBACKTYPE rmproxyCallback;
+#endif
+    OMX_BOOL bPreempted;
+
 } G722DEC_COMPONENT_PRIVATE;
 
 
@@ -721,6 +737,30 @@ OMX_ERRORTYPE G722DEC_FreeCompResources(OMX_HANDLETYPE pComponent);
  */
 /* ================================================================================ * */
 void G722DEC_CleanupInitParams(OMX_HANDLETYPE pComponent);
+
+/* =================================================================================== */
+/*
+ * G722DEC_ResourceManagerCallback() Callback from Resource Manager
+ *
+ * @param cbData    RM Proxy command data
+ *
+ * @return None
+ */
+/* =================================================================================== */
+#ifdef RESOURCE_MANAGER_ENABLED
+void G722DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
+#endif
+
+/*  =========================================================================*/
+/*  func    G722DEC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*   @return n/a
+*
+*  =========================================================================*/
+void G722DEC_FatalErrorRecover(G722DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 /* ================================================================================= * */
 /**
