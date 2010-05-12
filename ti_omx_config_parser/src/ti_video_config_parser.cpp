@@ -163,7 +163,7 @@ OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs,
         aOutputs->displeft = 36;
         aOutputs->disptop = 24;
 
-#ifdef __ENABLE_DUCATI_HACK__
+#ifdef __ENABLE_DUCATI_WA__
 #define     PADX    32
 #define     PADY    24
 		aOutputs->width  = ((aOutputs->width   + (2*PADX) + 127) & 0xFFFFFF80);
