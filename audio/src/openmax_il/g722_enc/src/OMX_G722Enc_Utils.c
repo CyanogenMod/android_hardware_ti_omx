@@ -1067,7 +1067,8 @@ OMX_ERRORTYPE G722ENC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             if (eError != OMX_ErrorNone) {
                                 G722ENC_DPRINT ("%d ::Comp: SetBuff: IP: Error Occurred\n",__LINE__);
                                 eError = OMX_ErrorHardware;
-                                goto EXIT;
+                                G722ENC_FatalErrorRecover(pComponentPrivate);
+                                return eError;
                             }
                         }
                     }
@@ -1170,7 +1171,8 @@ OMX_ERRORTYPE G722ENC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if (eError != OMX_ErrorNone ) {
                             G722ENC_DPRINT ("%d :: Comp:: SetBuff OP: Error Occurred\n",__LINE__);
                             eError = OMX_ErrorHardware;
-                            goto EXIT;
+                            G722ENC_FatalErrorRecover(pComponentPrivate);
+                            return eError;
                         }
                         pComponentPrivate->lcml_nOpBuf++;
                     }
@@ -1198,7 +1200,8 @@ OMX_ERRORTYPE G722ENC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     if (eError != OMX_ErrorNone ) {
                         G722ENC_DPRINT ("%d :: Comp:: SetBuff: OP: Error Occurred\n",__LINE__);
                         eError = OMX_ErrorHardware;
-                        goto EXIT;
+                        G722ENC_FatalErrorRecover(pComponentPrivate);
+                        return eError;
                     }
         
                     pComponentPrivate->lcml_nOpBuf++;
@@ -1427,6 +1430,15 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             pComponentPrivate_CC->bIdleCommandPending = OMX_TRUE;
             pComponentPrivate_CC->curState = OMX_StateIdle;
 
+#ifdef RESOURCE_MANAGER_ENABLED
+            eError = RMProxy_NewSendCommand(pComponentPrivate_CC->pHandle,
+                                            RMProxy_StateSet,
+                                            OMX_G722_Encoder_COMPONENT,
+                                            OMX_StateIdle,
+                                            1234,
+                                            NULL);
+#endif
+
             if (pComponentPrivate_CC->bPreempted == 0) {
                 pComponentPrivate_CC->cbInfo.EventHandler(pHandle,
                                                           pHandle->pApplicationPrivate,
@@ -1459,7 +1471,16 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             G722ENC_DPRINT ("%d :: Comp: Inside the G722ENC_LCML_Callback: USN_DSPMSG_ERROR \n", __LINE__);
             pLcmlHandle = (LCML_DSP_INTERFACE *)pComponentPrivate_CC->pLcmlHandle;
             G722ENC_DPRINT("Setting current state Idle Line %d\n",__LINE__);
+#ifdef RESOURCE_MANAGER_ENABLED
+            eError = RMProxy_NewSendCommand(pComponentPrivate_CC->pHandle,
+                                            RMProxy_StateSet,
+                                            OMX_G722_Encoder_COMPONENT,
+                                            OMX_StateIdle,
+                                            1234,
+                                            NULL);
+#endif
             pComponentPrivate_CC->curState = OMX_StateIdle;
+
             pComponentPrivate_CC->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                       OMX_EventCmdComplete, OMX_CommandStateSet,
                                                       pComponentPrivate_CC->curState, NULL);
@@ -1489,6 +1510,15 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     
     }
     else if (event == EMMCodecProcessingPaused) {
+#ifdef RESOURCE_MANAGER_ENABLED
+        eError = RMProxy_NewSendCommand(pComponentPrivate_CC->pHandle,
+                                        RMProxy_StateSet,
+                                        OMX_G722_Encoder_COMPONENT,
+                                        OMX_StatePause,
+                                        1234,
+                                        NULL);
+#endif
+
         pComponentPrivate_CC->curState = OMX_StatePause;
         pComponentPrivate_CC->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                   OMX_EventCmdComplete, OMX_CommandStateSet,
@@ -1644,7 +1674,9 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
     LCML_DSP *pLcmlDsp =  NULL;
     char *p = "damedesuStr";
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
-
+#ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE rm_error = OMX_ErrorNone;
+#endif
 
 #ifdef G722ENC_DEBUG
     LCML_CODEC_INTERFACE *pp = NULL;
@@ -1707,6 +1739,36 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
             goto EXIT;
         }
 
+#ifdef __PERF_INSTRUMENTATION__
+        PERF_Boundary(pComponentPrivate->pPERFcomp,
+                      PERF_BoundaryComplete | PERF_BoundarySetup);
+#endif
+
+#ifdef RESOURCE_MANAGER_ENABLED
+         /* Need check the resource with RM */
+         pComponentPrivate->rmproxyCallback.RMPROXY_Callback =
+                      (void *) G722ENC_ResourceManagerCallback;
+         if (pComponentPrivate->curState != OMX_StateWaitForResources) {
+             rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource,
+                                               OMX_G722_Encoder_COMPONENT,
+                                               G722ENC_CPU,
+                                               1234,
+                                               &(pComponentPrivate->rmproxyCallback));
+             if(rm_error == OMX_ErrorInsufficientResources) {
+                 /* resource is not available, need set state to OMX_StateWaitForResources */
+                 pComponentPrivate->curState = OMX_StateWaitForResources;
+                 pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                         pHandle->pApplicationPrivate,
+                                                         OMX_EventCmdComplete,
+                                                         OMX_CommandStateSet,
+                                                         pComponentPrivate->curState,
+                                                         NULL);
+                  G722ENC_DPRINT("%d :: Comp: OMX_ErrorInsufficientResources\n", __LINE__);
+                  return rm_error;
+             }
+         }
+#endif
+
         pComponentPrivate->pLcmlHandle = (LCML_DSP_INTERFACE *)pLcmlHandle;
         cb.LCML_Callback = (void *) G722ENC_LCML_Callback;
 
@@ -1717,8 +1779,28 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
         if(eError != OMX_ErrorNone)
         {
             G722ENC_DPRINT("from LCML_Init().\n");
+            G722ENC_FatalErrorRecover(pComponentPrivate);
             goto EXIT;
         }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+        if (rm_error == OMX_ErrorNone){
+            rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet,
+                                              OMX_G722_Encoder_COMPONENT,
+                                              OMX_StateIdle, 1234, NULL);
+        }
+        else {
+            eError = OMX_ErrorInsufficientResources;
+            pComponentPrivate->curState = OMX_StateInvalid;
+            pComponentPrivate->cbInfo.EventHandler(pHandle,
+                                                   pHandle->pApplicationPrivate,
+                                                   OMX_EventError,
+                                                   eError,
+                                                   OMX_TI_ErrorSevere,
+                                                   NULL);
+        }
+
+#endif
 
 #ifdef HASHINGENABLE
         /* Enable the Hashing Code */
@@ -1727,20 +1809,20 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
             G722ENC_DPRINT("Failed to set Mapping State\n");
             goto EXIT;
         }
-#endif                        
+#endif
+
         pComponentPrivate->curState = OMX_StateIdle;
-                        
+
 #ifdef __PERF_INSTRUMENTATION__
         PERF_Boundary(pComponentPrivate->pPERFcomp,
                       PERF_BoundaryComplete | PERF_BoundarySetup);
 #endif
-        pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                               pHandle->pApplicationPrivate,
-                                               OMX_EventCmdComplete,
-                                               OMX_CommandStateSet,
-                                               pComponentPrivate->curState,
-                                               NULL);
-
+        pComponentPrivate->cbInfo.EventHandler( pHandle,
+                                                pHandle->pApplicationPrivate,
+                                                OMX_EventCmdComplete,
+                                                OMX_CommandStateSet,
+                                                pComponentPrivate->curState,
+                                                NULL);
 
     } 
     else if (pComponentPrivate->curState == OMX_StateExecuting) {
@@ -1786,6 +1868,13 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
         G722ENC_DPRINT("%d: G722ENCUTILS::About to call LCML_ControlCodec\n",__LINE__);
         pComponentPrivate->curState = OMX_StateIdle;
         G722ENC_DPRINT ("%d :: The component is stopped\n",__LINE__);
+#ifdef RESOURCE_MANAGER_ENABLED
+        rm_error = RMProxy_NewSendCommand(pHandle,
+                                          RMProxy_StateSet,
+                                          OMX_G722_Encoder_COMPONENT,
+                                          OMX_StateIdle, 1234, NULL);
+#endif
+
         pComponentPrivate->cbInfo.EventHandler(pHandle, pHandle->pApplicationPrivate,
                                                OMX_EventCmdComplete, OMX_CommandStateSet, pComponentPrivate->curState, NULL);
     
@@ -1920,6 +2009,9 @@ OMX_ERRORTYPE G722ENC_CommandToExecuting(G722ENC_COMPONENT_PRIVATE *pComponentPr
         (OMX_COMPONENTTYPE *) pComponentPrivate->pHandle;
     OMX_HANDLETYPE pLcmlHandle = pComponentPrivate->pLcmlHandle;
     G722ENC_LCML_BUFHEADERTYPE *pLcmlHdr = NULL;
+#ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE rm_error = OMX_ErrorNone;
+#endif
 
     G722ENC_DPRINT("%d: G722ENC_HandleCommand: Cmd Executing \n",__LINE__);
     pComponentPrivate->bBypassDSP = 0;
@@ -2043,6 +2135,15 @@ OMX_ERRORTYPE G722ENC_CommandToExecuting(G722ENC_COMPONENT_PRIVATE *pComponentPr
         goto EXIT;
     }
     pComponentPrivate->curState = OMX_StateExecuting;
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    rm_error = RMProxy_NewSendCommand(pHandle,
+                                      RMProxy_StateSet,
+                                      OMX_G722_Encoder_COMPONENT,
+                                      OMX_StateExecuting, 1234, NULL);
+#endif
+
+
     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                            pHandle->pApplicationPrivate,
                                            OMX_EventCmdComplete,
@@ -2104,6 +2205,15 @@ OMX_ERRORTYPE G722ENC_CommandToPause(G722ENC_COMPONENT_PRIVATE *pComponentPrivat
     }
 
     pComponentPrivate->curState = OMX_StatePause;
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate_CC->pHandle,
+                                    RMProxy_StateSet,
+                                    OMX_G722_Encoder_COMPONENT,
+                                    OMX_StatePause,
+                                    1234,
+                                    NULL);
+#endif
+
     /*    pComponentPrivate->cbInfo.EventHandler(pHandle,
           pHandle->pApplicationPrivate,
           OMX_EventCmdComplete,
@@ -2430,5 +2540,73 @@ OMX_U32 G722ENC_IsValid(G722ENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pB
         }
     }
     return found;
+}
+
+#ifdef RESOURCE_MANAGER_ENABLED
+void G722ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
+{
+    OMX_COMMANDTYPE Cmd = OMX_CommandStateSet;
+    OMX_STATETYPE state = OMX_StateIdle;
+    OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)cbData.hComponent;
+    G722ENC_COMPONENT_PRIVATE *pCompPrivate = NULL;
+
+    pCompPrivate = (G722ENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+
+    if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesPreempted){
+        if (pCompPrivate->curState == OMX_StateExecuting ||
+            pCompPrivate->curState == OMX_StatePause) {
+
+            write (pCompPrivate->cmdPipe[1], &Cmd, sizeof(Cmd));
+            write (pCompPrivate->cmdDataPipe[1], &state ,sizeof(OMX_U32));
+
+            pCompPrivate->bPreempted = 1;
+        }
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_ResourcesAcquired){
+        pCompPrivate->cbInfo.EventHandler ( pHandle,
+                                            pHandle->pApplicationPrivate,
+                                            OMX_EventResourcesAcquired,
+                                            0, 0, NULL);
+    }
+    else if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError){
+        G722ENC_FatalErrorRecover(pCompPrivate);
+    }
+}
+#endif
+
+void G722ENC_FatalErrorRecover(G722ENC_COMPONENT_PRIVATE *pComponentPrivate){
+    char *pArgs = "";
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+
+    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
+        pComponentPrivate->curState != OMX_StateInvalid &&
+        pComponentPrivate->curState != OMX_StateLoaded) {
+        eError = LCML_ControlCodec(((
+                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                 EMMCodecControlDestroy, (void *)pArgs);
+        G722ENC_DPRINT("%d :: EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+    }
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
+             RMProxy_FreeResource,
+             OMX_G722_Encoder_COMPONENT, 0, 3456, NULL);
+
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        G722ENC_DPRINT("%d :: From RMProxy_Deinitalize\n",__LINE__);
+    }
+#endif
+
+    pComponentPrivate->curState = OMX_StateInvalid;
+    pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       OMX_ErrorInvalidState,
+                                       OMX_TI_ErrorSevere,
+                                       NULL);
+    G722ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    G722ENC_DPRINT("%d :: Completed FatalErrorRecover \
+                   \nEntering Invalid State\n",__LINE__);
 }
 

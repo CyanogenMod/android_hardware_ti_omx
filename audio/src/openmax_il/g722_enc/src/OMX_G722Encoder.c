@@ -368,6 +368,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     }
     pComponentPrivate->bCompThreadStarted = 1;
 
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewInitalize();
+    G722ENC_DPRINT("%d :: OMX_ComponentInit\n", __LINE__);
+    if (eError != OMX_ErrorNone) {
+        G722ENC_DPRINT("%d :: Error returned from loading ResourceManagerProxy thread\n",__LINE__);
+        G722Enc_FreeCompResources(hComp);
+        return eError;
+    }
+#endif
+
 #ifdef DSP_RENDERING_ON
     if((pComponentPrivate->fdwrite=open(G722ENC_FIFO1,O_WRONLY))<0) {
         G722ENC_DPRINT("[G722 Component] - failure to open WRITE pipe\n");
@@ -1379,6 +1389,22 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
     close(pComponentPrivate->fdwrite);
     close(pComponentPrivate->fdread);
 #endif
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    eError = RMProxy_NewSendCommand(pHandle, RMProxy_FreeResource,
+                                    OMX_G722_Encoder_COMPONENT,
+                                    0, 1234, NULL);
+    if (eError != OMX_ErrorNone) {
+        G722ENC_DPRINT ("%d ::Error returned from destroy ResourceManagerProxy thread\n",
+                        __LINE__);
+    }
+    eError = RMProxy_Deinitalize();
+    if (eError != OMX_ErrorNone) {
+        G722ENC_DPRINT("%d :: Error from RMProxy_Deinitalize\n",__LINE__);
+        return eError;
+    }
+#endif
+
 
     if (eError != OMX_ErrorNone) {
         G722ENC_DPRINT ("%d ::Error returned from destroy\
