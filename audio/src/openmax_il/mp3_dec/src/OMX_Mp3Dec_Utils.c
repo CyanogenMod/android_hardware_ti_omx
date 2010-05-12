@@ -2157,6 +2157,14 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                             pComponentPrivate->lcml_nCntOp++;
                             pComponentPrivate->lcml_nOpBuf++;
                             pComponentPrivate->num_Op_Issued++;
+                        }else{
+                            OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s DSP is stopping, returning output buffer \n",
+                                      __LINE__, __FUNCTION__);
+                            pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
+                                                                  pComponentPrivate->pHandle->pApplicationPrivate,
+                                                                  pBufHeader);
+                            pComponentPrivate->nFillBufferDoneCount++;
+                            SignalIfAllBuffersAreReturned(pComponentPrivate);
                         }
                     }
                        
