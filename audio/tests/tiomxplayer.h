@@ -123,6 +123,8 @@ typedef struct{
   OMX_U32 processed_buffers;
   OMX_U32 Device;
   OMX_U8 fileReRead;
+  volatile OMX_U8 comthrdstop;
+  pthread_t commFunc;
 }appPrivateSt;
 
 /** Initializes the event at a given value
@@ -347,4 +349,20 @@ int process_wma(appPrivateSt* appPrvt, OMX_U8* buffer);
  * The data received is in RCA format
  */
 int unparse_rca (OMX_U8* pBuffer, int * payload);
+
+/** Process CommandListener
+ *
+ * @param
+ *
+ * Thread that waits for user commands
+ */
+void* TIOMX_CommandListener();
+
+/** Process SetState
+ *
+ * @param appPrvt Aplication private variables
+ *
+ * Transition to a desired state
+ */
+int SetOMXState(appPrivateSt *appPrvt,OMX_STATETYPE DesiredState);
 #endif

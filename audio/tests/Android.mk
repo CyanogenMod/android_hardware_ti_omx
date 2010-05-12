@@ -9,6 +9,7 @@ LOCAL_SRC_FILES:= \
 	tiomxplayerutils.c \
 	speechutils.c \
 	audioutils.c \
+	commlistenerthrd.c
 
 LOCAL_CFLAGS := $(TI_OMX_CFLAGS) -DOMX_DEBUG 	-fPIC -D_POSIX_SOURCE \
 	-DALSA_CONFIG_DIR=\"/system/usr/share/alsa\" \
