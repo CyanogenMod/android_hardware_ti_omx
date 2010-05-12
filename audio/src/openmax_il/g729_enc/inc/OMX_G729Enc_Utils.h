@@ -1115,5 +1115,17 @@ OMX_ERRORTYPE G729ENC_TransitionToIdle(G729ENC_COMPONENT_PRIVATE *pComponentPriv
 void G729ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 #endif
 
+/*  =========================================================================*/
+/*  func    G729ENC_FatalErrorRecover
+*
+*   desc    handles the clean up and sets OMX_StateInvalid
+*           in reaction to fatal errors
+*
+*@return n/a
+*
+*  =========================================================================*/
+void G729ENC_FatalErrorRecover(G729ENC_COMPONENT_PRIVATE *pComponentPrivate);
+
+
 #endif  /* OMX_G729ENC_UTILS__H */
 
