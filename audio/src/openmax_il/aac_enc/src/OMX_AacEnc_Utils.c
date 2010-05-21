@@ -647,6 +647,9 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 
+    pthread_mutex_destroy(&pComponentPrivate->bufferReturned_mutex);
+    pthread_cond_destroy(&pComponentPrivate->bufferReturned_condition);
+
 
     OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
@@ -1779,7 +1782,9 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: AACENC: Inside OMX_CommandFlush Command \n",__LINE__);
             if(commandData == 0x0 || commandData == -1) 
             {
-                if (pComponentPrivate->nUnhandledEmptyThisBuffers == 0)  {
+                OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+                           pComponentPrivate->EmptythisbufferCount, pComponentPrivate->nHandledEmptyThisBuffers);
+                if (pComponentPrivate->EmptythisbufferCount == pComponentPrivate->nHandledEmptyThisBuffers) {
                     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
                     pComponentPrivate->nOutStandingFillDones = 0;
                     aParam[0] = USN_STRMCMD_FLUSH; 
@@ -1820,6 +1825,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                                pComponentPrivate->pHandle->pApplicationPrivate,
                                pComponentPrivate->pInputBufferList->pBufHdr[i]
                                );
+                AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate,OMX_DirInput);
              }
              pComponentPrivate->cbInfo.EventHandler(pHandle,
                                                     pHandle->pApplicationPrivate,
@@ -1834,7 +1840,9 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
         {
             if(commandData == 0x1 || commandData == -1)
             {
-                if (pComponentPrivate->nUnhandledFillThisBuffers == 0)  {
+                OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+                           pComponentPrivate->FillthisbufferCount, pComponentPrivate->nHandledFillThisBuffers);
+                if (pComponentPrivate->FillthisbufferCount == pComponentPrivate->nHandledFillThisBuffers) {
                     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
                     pComponentPrivate->nOutStandingEmptyDones=0;
                     OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: AACENCHandleCommand::Flushing ouput queue \n",__LINE__);
@@ -1877,6 +1885,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                                   pComponentPrivate->pHandle->pApplicationPrivate,
                                   pComponentPrivate->pOutputBufferList->pBufHdr[i]
                                   );
+                 AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate,OMX_DirOutput);
             }
             pComponentPrivate->cbInfo.EventHandler( pHandle,
                                                     pHandle->pApplicationPrivate,
@@ -1945,7 +1954,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
 
     if (eDir == OMX_DirInput) 
     {
-        pComponentPrivate->nUnhandledEmptyThisBuffers--;
+        pComponentPrivate->nHandledEmptyThisBuffers++;
         OMX_PRBUFFER1(pComponentPrivate->dbg, "%d :: UTIL:  Buffer Dir = input\n",__LINE__);
         pPortDefIn = pComponentPrivate->pPortDef[OMX_DirInput];
         if ((pBufHeader->nFilledLen > 0) || (pBufHeader->nFlags & OMX_BUFFERFLAG_EOS)) 
@@ -2037,6 +2046,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                pBufHeader
                                                );
+                    AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate,OMX_DirInput);
                     pComponentPrivate->nOutStandingEmptyDones--;
                 }
             }
@@ -2065,8 +2075,8 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                        pComponentPrivate->pOutputBufferList->pBufHdr[0]
                                        );
+            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
             pComponentPrivate->nOutStandingFillDones--;
-            pComponentPrivate->FillbufferdoneCount++;
             OMX_PRBUFFER1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->FillbufferdoneCount = %ld \n",__LINE__,pComponentPrivate->FillbufferdoneCount);
             OMX_PRBUFFER1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->FillthisbufferCount = %ld \n",__LINE__,pComponentPrivate->FillthisbufferCount);
             
@@ -2084,7 +2094,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                        pComponentPrivate->pInputBufferList->pBufHdr[0]
                                        );
             pComponentPrivate->nOutStandingEmptyDones--;
-            pComponentPrivate->EmptybufferdoneCount++;
+            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate,OMX_DirInput);
             OMX_PRBUFFER1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->EmptybufferdoneCount = %ld \n",__LINE__,pComponentPrivate->EmptybufferdoneCount);
             OMX_PRBUFFER1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->EmptythisbufferCount = %ld \n",__LINE__,pComponentPrivate->EmptythisbufferCount);
         }
@@ -2146,7 +2156,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
         OMX_PRDSP1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->bBypassDSP  = %ld\n",__LINE__, pComponentPrivate->bBypassDSP);
         OMX_PRSTATE1(pComponentPrivate->dbg, "%d :: UTIL: pComponentPrivate->curState = %d\n",__LINE__,pComponentPrivate->curState);
 
-        pComponentPrivate->nUnhandledFillThisBuffers--;
+        pComponentPrivate->nHandledFillThisBuffers++;
 
 #ifdef ANDROID
         if (pComponentPrivate->bFirstOutputBuffer){
@@ -2158,6 +2168,7 @@ OMX_ERRORTYPE AACENCHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader, AACE
                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                    pBufHeader
                                    );
+            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
             pComponentPrivate->bFirstOutputBuffer = 0;
             return eError;
         }
@@ -2507,7 +2518,7 @@ pHandle = pComponentPrivate_CC->pHandle;
             pComponentPrivate_CC->cbInfo.EmptyBufferDone (pComponentPrivate_CC->pHandle,
                                                        pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                                        pLcmlHdr->buffer);
-            pComponentPrivate_CC->EmptybufferdoneCount++;
+            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC,OMX_DirInput);
             pComponentPrivate_CC->nOutStandingEmptyDones--;
             pComponentPrivate_CC->lcml_nIpBuf--;
 
@@ -2595,8 +2606,7 @@ pHandle = pComponentPrivate_CC->pHandle;
                                pHandle->pApplicationPrivate,
                                pLcmlHdr->buffer
                                );
-            
-            pComponentPrivate_CC->FillbufferdoneCount++;
+            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirOutput);
             pComponentPrivate_CC->nOutStandingFillDones--;
             pComponentPrivate_CC->lcml_nOpBuf--;
             }
@@ -2632,6 +2642,7 @@ pHandle = pComponentPrivate_CC->pHandle;
                                            pComponentPrivate_CC->pHandle,
                                            pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                            pComponentPrivate_CC->pInputBufHdrPending[i]);
+                            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC,OMX_DirInput);
                             pComponentPrivate_CC->pInputBufHdrPending[i] = NULL;
                          }
                          pComponentPrivate_CC->nNumInputBufPending=0;
@@ -2672,6 +2683,7 @@ pHandle = pComponentPrivate_CC->pHandle;
                                            pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                            pComponentPrivate_CC->pOutputBufHdrPending[i]
                                            );
+                            AACENC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirOutput);
                             pComponentPrivate_CC->pOutputBufHdrPending[i] = NULL;
                          }
                          pComponentPrivate_CC->nNumOutputBufPending=0;
@@ -2698,6 +2710,15 @@ pHandle = pComponentPrivate_CC->pHandle;
     
     else if(event == EMMCodecProcessingStoped) 
     {
+        OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder received stop ack, waiting for all outstanding buffers to be returned",__LINE__);
+        pthread_mutex_lock(&pComponentPrivate_CC->bufferReturned_mutex);
+        while (pComponentPrivate_CC->EmptythisbufferCount != pComponentPrivate_CC->EmptybufferdoneCount ||
+               pComponentPrivate_CC->FillthisbufferCount  != pComponentPrivate_CC->FillbufferdoneCount) {
+            pthread_cond_wait(&pComponentPrivate_CC->bufferReturned_condition, &pComponentPrivate_CC->bufferReturned_mutex);
+        }
+        pthread_mutex_unlock(&pComponentPrivate_CC->bufferReturned_mutex);
+        OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder has returned all buffers",__LINE__);
+
         pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex);
         if(pComponentPrivate_CC->codecStop_waitingsignal == 0){
             pComponentPrivate_CC->codecStop_waitingsignal = 1;             
@@ -3559,4 +3580,32 @@ void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate){
     AACENC_CleanupInitParams(pComponentPrivate->pHandle);
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
+}
+/* ========================================================================== */
+/**
+ * @SignalIfAllBuffersAreReturned() This function send signals if OMX returned all buffers to app
+ *
+ * @param AACENC_COMPONENT_PRIVATE *pComponentPrivate
+ *
+ * @pre None
+ *
+ * @post None
+ *
+ * @return None
+*/
+/* ========================================================================== */
+void AACENC_SignalIfAllBuffersAreReturned(AACENC_COMPONENT_PRIVATE *pComponentPrivate,
+                                          OMX_U8 counterport)
+{
+    pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex);
+    if(!counterport)
+        pComponentPrivate->EmptybufferdoneCount++;
+    else
+        pComponentPrivate->FillbufferdoneCount++;
+    if ((pComponentPrivate->EmptythisbufferCount == pComponentPrivate->EmptybufferdoneCount) &&
+        (pComponentPrivate->FillthisbufferCount ==   pComponentPrivate->FillbufferdoneCount)) {
+        pthread_cond_broadcast(&pComponentPrivate->bufferReturned_condition);
+        OMX_PRINT2(pComponentPrivate->dbg, "Sending pthread signal that OMX has returned all buffers to app",__LINE__);
+    }
+    pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
 }

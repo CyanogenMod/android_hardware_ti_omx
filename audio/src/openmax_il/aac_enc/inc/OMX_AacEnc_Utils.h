@@ -509,9 +509,12 @@ typedef struct AACENC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-    
-    OMX_U8 nUnhandledFillThisBuffers;
-    OMX_U8 nUnhandledEmptyThisBuffers;
+    /* pthread variable to indicate OMX returned all buffers to app*/
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
+
+    OMX_U8 nHandledFillThisBuffers;
+    OMX_U8 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
     
@@ -616,6 +619,19 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent);
 */
 /*  =========================================================================*/
 void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
+
+/*=======================================================================*/
+/** @fn AACENC_SignalIfAllBuffersAreReturned
+ * @brief Sends pthread signal to indicate OMX has returned all buffers to app
+ *
+ * @param  none
+ *
+ * @Return none
+ *
+ */
+/*=======================================================================*/
+void AACENC_SignalIfAllBuffersAreReturned(AACENC_COMPONENT_PRIVATE *pComponentPrivate,
+                                          OMX_U8 counterport);
 
 void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate);
 

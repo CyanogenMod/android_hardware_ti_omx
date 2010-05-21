@@ -315,8 +315,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bLoadedCommandPending        = OMX_FALSE;
     pComponentPrivate->bFirstOutputBuffer = 1;
 
-    pComponentPrivate->nUnhandledFillThisBuffers=0;
-    pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
+    pComponentPrivate->nHandledFillThisBuffers=0;
+    pComponentPrivate->nHandledEmptyThisBuffers = 0;
     
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
@@ -365,7 +365,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
-    
+
+    pthread_mutex_init(&pComponentPrivate->bufferReturned_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->bufferReturned_condition, NULL);
+
     pComponentPrivate->bMutexInit = 1;
 
     /* port definition, input port */
@@ -1485,7 +1488,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pComponentPrivate->pMarkData = pBuffer->pMarkData;
     pComponentPrivate->hMarkTargetComponent = pBuffer->hMarkTargetComponent;
 
-    pComponentPrivate->nUnhandledEmptyThisBuffers++;
 
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer, sizeof(OMX_BUFFERHEADERTYPE*));
     if (ret == -1) 
@@ -1595,7 +1597,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
         pComponentPrivate->pMarkData = NULL;
     }
 
-    pComponentPrivate->nUnhandledFillThisBuffers++;
 
     ret = write (pComponentPrivate->dataPipe[1], &pBuffer, sizeof (OMX_BUFFERHEADERTYPE*));
     if (ret == -1) 
