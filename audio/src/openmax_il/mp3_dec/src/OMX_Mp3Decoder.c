@@ -311,9 +311,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->nNumOutputBufPending = 0;
     pComponentPrivate->nNumOutputBufPause = 0;
     pComponentPrivate->SendAfterEOS = 0;    
-    pComponentPrivate->nUnhandledFillThisBuffers=0;
     pComponentPrivate->nHandledFillThisBuffers=0;
-    pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
     pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
@@ -373,6 +371,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_mutex_init(&pComponentPrivate->InIdle_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
+
+    pthread_mutex_init(&pComponentPrivate->bufferReturned_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->bufferReturned_condition, NULL);
 
     OMX_MALLOC_GENERIC(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     OMX_MALLOC_GENERIC(pPortDef_op, OMX_PARAM_PORTDEFINITIONTYPE);
@@ -1547,7 +1548,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     if (ret == -1) {
         MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
     }else{
-        pComponentPrivate->nUnhandledEmptyThisBuffers++;
         pComponentPrivate->nEmptyThisBufferCount++;
     }
     
@@ -1674,7 +1674,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     if (nRet == -1) {
         MP3D_OMX_ERROR_EXIT(eError,OMX_ErrorHardware,"write failed: OMX_ErrorHardware");
     }else{
-        pComponentPrivate->nUnhandledFillThisBuffers++;
         pComponentPrivate->nFillThisBufferCount++;
     }
 
