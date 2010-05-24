@@ -351,13 +351,6 @@
 #define STEREO_INTERLEAVED_STREAM_AACDEC     2
 #define STEREO_NONINTERLEAVED_STREAM_AACDEC  3
 
-/* ======================================================================= */
-/**
- * pthread variable to indicate OMX returned all buffers to app 
- */
-/* ======================================================================= */
-pthread_mutex_t bufferReturned_mutex; 
-pthread_cond_t bufferReturned_condition;
 
 /**
  *
@@ -804,9 +797,11 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     pthread_cond_t codecFlush_threshold;
     OMX_U8 codecFlush_waitingsignal;
 
-    OMX_U32 nUnhandledFillThisBuffers;
+    /* pthread variable to indicate OMX returned all buffers to app */
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
+
     OMX_U32 nHandledFillThisBuffers;
-    OMX_U32 nUnhandledEmptyThisBuffers;
     OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
@@ -1207,13 +1202,13 @@ OMX_U32 AACDEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
 /*=======================================================================*/
-/*! @fn SignalIfAllBuffersAreReturned 
+/*! @fn AACDEC_SignalIfAllBuffersAreReturned
  * @brief Sends pthread signal to indicate OMX has returned all buffers to app 
  * @param  none 
  * @Return void 
  */
 /*=======================================================================*/
-void SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate);
+void AACDEC_SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 counterport);
 
 /*  =========================================================================*/
 /*  func    AACDEC_FatalErrorRecover

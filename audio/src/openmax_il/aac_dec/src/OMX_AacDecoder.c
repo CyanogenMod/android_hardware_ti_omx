@@ -296,9 +296,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->strmAttr = NULL;
     pComponentPrivate->bDisableCommandParam = 0;
     pComponentPrivate->bEnableCommandParam = 0;
-    pComponentPrivate->nUnhandledFillThisBuffers = 0;
     pComponentPrivate->nHandledFillThisBuffers = 0;
-    pComponentPrivate->nUnhandledEmptyThisBuffers = 0;
     pComponentPrivate->nHandledEmptyThisBuffers = 0;
     pComponentPrivate->SendAfterEOS = 1;    
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
@@ -374,6 +372,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
     pComponentPrivate->codecFlush_waitingsignal = 0;
 
+    pthread_mutex_init(&pComponentPrivate->bufferReturned_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->bufferReturned_condition, NULL);
 
     /* Set input port defaults */
     pPortDef_ip->nSize                              = sizeof (OMX_PARAM_PORTDEFINITIONTYPE);
@@ -1508,7 +1508,6 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     }
     else
     {
-        pComponentPrivate->nUnhandledEmptyThisBuffers++;
         pComponentPrivate->nEmptyThisBufferCount++;
     }
 
@@ -1613,7 +1612,6 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     }
     else
     {
-        pComponentPrivate->nUnhandledFillThisBuffers++;
         pComponentPrivate->nFillThisBufferCount++;
     }
 
