@@ -40,10 +40,6 @@ typedef struct _tiVideoConfigParserOutputs
     uint32 profile;
     uint32 level;
     uint32 entropy;
-    uint32 dispwidth;
-    uint32 dispheight;
-    uint32 displeft;
-    uint32 disptop;
 } tiVideoConfigParserOutputs;
 
 OSCL_IMPORT_REF int16 ti_video_config_parser(
