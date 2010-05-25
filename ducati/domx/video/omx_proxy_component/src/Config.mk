@@ -6,12 +6,12 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../inc \
 	$(LOCAL_PATH)/../../../system/domx/ \
 	$(LOCAL_PATH)/../../../system/domx/omx_rpc/inc/ \
-	$(LOCAL_PATH)/../../../system/mm_osal/inc/ \
-	$(LOCAL_PATH)/../../../system/omx_core/inc/ \
+	hardware/ti/omx/ducati/system-omx/system/mm_osal/inc/ \
+	hardware/ti/omx/ducati/system-omx/system/omx_core/inc/ \
 	hardware/ti/syslink/syslink/api/include \
 	hardware/ti/tiler/memmgr \
 	hardware/ti/syslink/syslink/d2c
-	
+
 LOCAL_SHARED_LIBRARIES := \
 		libOMX_CoreOsal \
 		libipcutils \
@@ -25,7 +25,7 @@ LOCAL_SHARED_LIBRARIES := \
 		liblog	\
 		libmemmgr \
 		libd2cmap \
-		
+
 LOCAL_STATIC_LIBRARIES := \
 		libomx_proxy_common \
 		libomx_rpc \

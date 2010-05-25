@@ -18,6 +18,7 @@ libomx_rpc_la_LIBADD        = \
 libomx_rpc_la_CFLAGS        = \
 	-I$(top_srcdir)/system/domx \
 	-I$(top_srcdir)/system/domx/omx_rpc/inc \
+	-I$(top_srcdir)/mmplatform/ \
 	$(MMOSAL_CFLAGS) \
 	$(OMXCORE_CFLAGS) \
 	$(SYSLINK_CFLAGS)

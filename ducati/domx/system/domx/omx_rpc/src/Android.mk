@@ -16,8 +16,8 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../ \
 	$(LOCAL_PATH)/../../omx_rpc/inc \
 	$(LOCAL_PATH)/../../../domx \
-	$(LOCAL_PATH)/../../../omx_core/inc \
-	$(LOCAL_PATH)/../../../mm_osal/inc \
+	hardware/ti/omx/ducati/system-omx/system/omx_core/inc \
+	hardware/ti/omx/ducati/system-omx/system/mm_osal/inc \
 	$(LOCAL_PATH)/../../../../mmplatform \
 	hardware/ti/tiler/memmgr \
 	hardware/ti/syslink/syslink/d2c \

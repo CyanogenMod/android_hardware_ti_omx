@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) Texas Instruments - http://www.ti.com/
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 /*=========================================================================
  *             Texas Instruments OMAP(TM) Platform Software
  *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
@@ -11,7 +30,7 @@
  *         This file contains methods that provides the functionality for
  *         the OpenMAX1.1 DOMX Framework RPC.
  *
- *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc
+ *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc 
  *
  *  @rev 1.0
  */
@@ -23,11 +42,11 @@
  *!
  *! 19-August-2009 B Ravi Kiran ravi.kiran@ti.com: Initial Version
  *================================================================*/
-
-
+ 
+ 
 #ifndef OMX_RPC_SKELH
 #define OMX_RPC_SKELH
-
+ 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -35,12 +54,12 @@ extern "C" {
 /******************************************************************
  *   INCLUDE FILES
  ******************************************************************/
-
+ 
 #include "../inc/omx_rpc_internal.h"
 #include "../inc/omx_rpc_stub.h"
 
-RPC_OMX_ERRORTYPE RPC_SKEL_EmptyBufferDone(UInt32 size, UInt32 *data);
-RPC_OMX_ERRORTYPE RPC_SKEL_FillBufferDone(UInt32 size, UInt32 *data);
+RPC_OMX_ERRORTYPE RPC_SKEL_EmptyBufferDone(UInt32 size, UInt32 *data); 
+RPC_OMX_ERRORTYPE RPC_SKEL_FillBufferDone(UInt32 size, UInt32 *data); 
 RPC_OMX_ERRORTYPE RPC_SKEL_EventHandler(UInt32 size, UInt32 *data);
 
 /*Empty SKEL*/

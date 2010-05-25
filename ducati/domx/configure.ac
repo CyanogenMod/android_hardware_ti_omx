@@ -93,10 +93,12 @@ system/domx/omx_rpc/src/Makefile
 video/omx_proxy_component/src/Makefile
 test/camera/Makefile
 test/h264dec/Makefile
+test/mpeg4dec/Makefile
 test/h264play/Makefile
 test/h264play2/Makefile
 test/h264enc/Makefile
 test/jpegdec/Makefile
 test/sample_proxy/Makefile
+test/mpeg4enc/Makefile
 ])
 AC_OUTPUT

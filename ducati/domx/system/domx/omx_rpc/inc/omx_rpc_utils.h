@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) Texas Instruments - http://www.ti.com/
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 /*=========================================================================
  *             Texas Instruments OMAP(TM) Platform Software
  *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
@@ -11,7 +30,7 @@
  *         This file contains methods that provides the functionality for
  *         the OpenMAX1.1 DOMX Framework RPC.
  *
- *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc
+ *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc 
  *
  *  @rev 1.0
  */
@@ -55,9 +74,11 @@ extern "C" {
 #define RPC_require RPC_paramCheck
 #define RPC_ensure  RPC_paramCheck
 
-#define RPC_paramCheck(C,V,S)  if (!(C)) { eRPCError = V;\
-TIMM_OSAL_TraceFunction("##Error:: %s::in %s::line %d \n",S,__FUNCTION__, __LINE__); \
-goto EXIT; }
+#define RPC_paramCheck(C, V, S) do { \
+    if (!(C)) { eRPCError = V;\
+    TIMM_OSAL_TraceFunction("##Error:: %s::in %s::line %d \n",S,__FUNCTION__, __LINE__); \
+    goto EXIT; } \
+    } while(0)
 
 /* ************************* OFFSET DEFINES ******************************** */
 #define GET_PARAM_DATA_OFFSET    (sizeof(RPC_OMX_HANDLE) + sizeof(OMX_INDEXTYPE) + sizeof(OMX_U32) /*4 bytes for offset*/ )
@@ -66,70 +87,48 @@ goto EXIT; }
 /******************************************************************
  *   MACROS
  ******************************************************************/
-#define RPC_UTIL_GETSTRUCTSIZE(PTR) *((OMX_U32*)PTR)
+#define RPC_UTIL_GETSTRUCTSIZE(PTR) *((OMX_U32*)PTR) 
 
 /******************************************************************
  *   MACROS - COMMON MARSHALLING UTILITIES
  ******************************************************************/
-	#define RPC_SETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
-	{ \
-		TYPE temp = VALUE; \
-		TIMM_OSAL_Memcpy((OMX_U8*)(MSGBODY+POS),(OMX_U8*)&temp,sizeof(TYPE)); \
-		POS+=sizeof(TYPE); \
-	} \
+#define RPC_SETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) do { \
+    *((TYPE *) ((OMX_U32)MSGBODY+POS)) = VALUE; \
+    POS+=sizeof(TYPE); \
+    } while(0)
 
-	#define RPC_SETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) \
-	{ \
-		TYPE temp = OFFSET; \
-		TIMM_OSAL_Memcpy((OMX_U8*)(MSGBODY+POS),(OMX_U8*)&temp,sizeof(TYPE)); \
-		POS+=sizeof(TYPE); \
-	} \
+#define RPC_SETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) do { \
+    *((TYPE *) ((OMX_U32)MSGBODY+POS)) = OFFSET; \
+    POS+=sizeof(TYPE); \
+    } while(0)
 
-	#define RPC_SETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
-	{ \
-		TIMM_OSAL_Memcpy((OMX_U8*) (MSGBODY+POS),PTR,SIZE); \
-	} \
+#define RPC_SETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
+TIMM_OSAL_Memcpy((OMX_U8*) ((OMX_U32)MSGBODY+POS),PTR,SIZE);
 
-	#define RPC_SETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
-	{ \
-		TIMM_OSAL_Memcpy((OMX_U8*) (MSGBODY+POS),PSTRUCT,sizeof(TYPE)); \
-	} \
-
+#define RPC_SETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
+*((TYPE *) ((OMX_U32)MSGBODY+POS)) = *PSTRUCT;
 
 /******************************************************************
  *   MACROS - COMMON UNMARSHALLING UTILITIES
  ******************************************************************/
-	#define RPC_GETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) \
-	{ \
-		TYPE temp; \
-		TIMM_OSAL_Memcpy((OMX_U8*)&temp,(OMX_U8*)(MSGBODY+POS),sizeof(TYPE)); \
-		VALUE = temp; \
-		POS+=sizeof(TYPE); \
-	} \
+#define RPC_GETFIELDVALUE(MSGBODY, POS, VALUE, TYPE) do { \
+    VALUE = *((TYPE *) ((OMX_U32)MSGBODY+POS)); \
+    POS+=sizeof(TYPE); \
+    } while(0)
 
-	#define RPC_GETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) \
-	{ \
-		TYPE temp; \
-		TIMM_OSAL_Memcpy((OMX_U8*)&temp,(OMX_U8*)(MSGBODY+POS),sizeof(TYPE)); \
-		OFFSET = temp; \
-		POS+=sizeof(TYPE); \
-	} \
+#define RPC_GETFIELDOFFSET(MSGBODY, POS, OFFSET, TYPE) do { \
+    OFFSET = *((TYPE *) ((OMX_U32)MSGBODY+POS)); \
+    POS+=sizeof(TYPE); \
+    } while(0)
 
-	#define RPC_GETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
-	{ \
-		TIMM_OSAL_Memcpy(PTR,(OMX_U8*) (MSGBODY+POS),SIZE); \
-	} \
+#define RPC_GETFIELDCOPYGEN(MSGBODY, POS, PTR, SIZE) \
+TIMM_OSAL_Memcpy(PTR,(OMX_U8*) ((OMX_U32)MSGBODY+POS),SIZE);
 
-	#define RPC_GETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
-	{ \
-		TIMM_OSAL_Memcpy(PSTRUCT,(OMX_U8*) (MSGBODY+POS),sizeof(TYPE)); \
-	} \
+#define RPC_GETFIELDCOPYTYPE(MSGBODY, POS, PSTRUCT, TYPE) \
+*PSTRUCT = *((TYPE *) ((OMX_U32)MSGBODY+POS));
 
-
-	#define RPC_GETFIELDPATCHED(MSGBODY, OFFSET, PTR, TYPE) \
-	{ \
-		PTR = (TYPE *) (MSGBODY+OFFSET); \
-	} \
+#define RPC_GETFIELDPATCHED(MSGBODY, OFFSET, PTR, TYPE) \
+PTR = (TYPE *) (MSGBODY+OFFSET);
 
 /******************************************************************
  *   FUNCTIONS
@@ -137,6 +136,7 @@ goto EXIT; }
 RPC_OMX_ERRORTYPE RPC_UnMapBuffer(OMX_U32 mappedBuffer );
 RPC_OMX_ERRORTYPE RPC_MapBuffer(OMX_U32 mappedBuffer );
 RPC_OMX_ERRORTYPE RPC_FlushBuffer(OMX_U8 * pBuffer, OMX_U32 size );
+RPC_OMX_ERRORTYPE RPC_InvalidateBuffer(OMX_U8 * pBuffer, OMX_U32 size);
 
 RPC_OMX_ERRORTYPE RPC_UTIL_GetTargetServerName(OMX_STRING ComponentName, OMX_STRING * ServerName);
 RPC_OMX_ERRORTYPE RPC_UTIL_GetLocalServerName(OMX_STRING ComponentName, OMX_STRING * ServerName);
