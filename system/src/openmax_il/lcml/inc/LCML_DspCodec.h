@@ -307,6 +307,7 @@ typedef struct LCML_DSP_INTERFACE
     OMX_U32 iBufinputcount;
     OMX_U32 iBufoutputcount;
     OMX_U32 pshutdownFlag;
+    OMX_U32 iDspOpenCount;
 #ifdef __ERROR_PROPAGATION__
     struct DSP_NOTIFICATION * g_aNotificationObjects[3];
 #else
