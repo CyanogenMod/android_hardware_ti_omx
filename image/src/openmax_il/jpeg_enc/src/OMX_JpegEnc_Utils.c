@@ -438,13 +438,14 @@ OMX_ERRORTYPE JPEGEnc_Free_ComponentResources(JPEGENC_COMPONENT_PRIVATE *pCompon
                       PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif
 
+    pthread_mutex_lock(&pComponentPrivate->jpege_mutex_destroy);
     if ( pComponentPrivate->pLCML != NULL && pComponentPrivate->isLCMLActive) {
     	LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,EMMCodecControlDestroy,NULL);
     	dlclose(pComponentPrivate->pDllHandle);
     	pComponentPrivate->pLCML = NULL;
     	pComponentPrivate->isLCMLActive = 0;
     }
-
+    pthread_mutex_unlock(&pComponentPrivate->jpege_mutex_destroy);
     pipeError = write(pComponentPrivate->nCmdPipe[1], &eCmd, sizeof(eCmd));
     if (pipeError == -1) {
         eError = OMX_ErrorHardware;
@@ -521,6 +522,7 @@ OMX_ERRORTYPE JPEGEnc_Free_ComponentResources(JPEGENC_COMPONENT_PRIVATE *pCompon
         OMX_PRCOMM4(dbg, "Error while closing cmd pipe\n");
     }
 
+    pthread_mutex_destroy(&pComponentPrivate->jpege_mutex_destroy);
     pthread_mutex_destroy(&pComponentPrivate->jpege_mutex);
     pthread_cond_destroy(&pComponentPrivate->stop_cond);
     pthread_cond_destroy(&pComponentPrivate->flush_cond);
@@ -1529,9 +1531,14 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
             OMX_PRMGR2(pComponentPrivate->dbg, "Value sent to RM = %d\n", nMHzRM);
             if (pComponentPrivate->nCurState != OMX_StateWaitForResources) {
 
+                pComponentPrivate->bResourceManagerState = RMProxy_RequestResource;
                 eError = RMProxy_NewSendCommand(pHandle, RMProxy_RequestResource, OMX_JPEG_Encoder_COMPONENT, nMHzRM, 3456, &(pComponentPrivate->rmproxyCallback));
 
-                if (eError != OMX_ErrorNone) {
+                if(eError == OMX_RmProxyCallback_FatalError){
+                    Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+                    eError = OMX_ErrorNone;
+                    goto EXIT;
+                } else if (eError != OMX_ErrorNone) {
                     /* resource is not available, need set state to OMX_StateWaitForResources*/
                     OMX_PRMGR4(pComponentPrivate->dbg, "Resource is not available\n");
 
@@ -1579,12 +1586,8 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
             if ( eError != OMX_ErrorNone ) {
                 OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed...  %x\n", eError);
                 printf("Error : InitMMCodec failed...>>>>>>");
-                pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                       pHandle->pApplicationPrivate,
-                                                       OMX_EventError,
-                                                       OMX_ErrorHardware,
-                                                       OMX_TI_ErrorSevere,
-                                                       NULL);
+                Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+                eError = OMX_ErrorNone;
                 goto EXIT;
             }
             pComponentPrivate->isLCMLActive = 1;
@@ -1938,6 +1941,7 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
             OMX_PRSTATE2(pComponentPrivate->dbg, "from idle to loaded\n");
             
             pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+            pthread_mutex_lock(&pComponentPrivate->jpege_mutex_destroy);
             if ( pComponentPrivate->pLCML != NULL && pComponentPrivate->isLCMLActive) {
                 pLcmlHandle =(LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
                 OMX_PRDSP2(pComponentPrivate->dbg, "try to close library again %p\n", pComponentPrivate->pLCML);
@@ -1949,6 +1953,7 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
 
             }
             OMX_PRDSP2(pComponentPrivate->dbg, "after release LCML\n");
+            pthread_mutex_unlock(&pComponentPrivate->jpege_mutex_destroy);
 #ifdef __PERF_INSTRUMENTATION__
             PERF_Boundary(pComponentPrivate->pPERFcomp,
                           PERF_BoundaryStart | PERF_BoundaryCleanup);
@@ -1998,6 +2003,7 @@ OMX_ERRORTYPE HandleJpegEncCommand (JPEGENC_COMPONENT_PRIVATE *pComponentPrivate
 
 #ifdef RESOURCE_MANAGER_ENABLED
             if (pComponentPrivate->nCurState != OMX_StateWaitForResources) {
+                pComponentPrivate->bResourceManagerState = RMProxy_FreeResource;
                 eError= RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
                 if (eError != OMX_ErrorNone) {
                     OMX_PRMGR4(pComponentPrivate->dbg, "Cannot Free Resources\n");                    
@@ -2197,7 +2203,11 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                               sizeof(JPEGENC_UALGOutputParams),
                               (OMX_U8 *)  pBuffHead);
 #endif
-
+    if (eError != OMX_ErrorNone) {
+        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+        eError = OMX_ErrorNone; /* don't want to double notify app */
+        goto EXIT;
+    }
     OMX_PRINT1(pComponentPrivate->dbg, "Error is %x\n",eError);
 
     EXIT:
@@ -2716,9 +2726,9 @@ OMX_ERRORTYPE HandleJpegEncDataBuf_FromApp(JPEGENC_COMPONENT_PRIVATE *pComponent
 
     OMX_PRDSP2(pComponentPrivate->dbg, "Input: after queue buffer %p\n", pBuffHead);
 
-    if ( eError ) {
-        eError = OMX_ErrorInsufficientResources;
-        OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorInsufficientResources\n");
+    if (eError != OMX_ErrorNone) {
+        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+        eError = OMX_ErrorNone; /* don't want to double notify app */
         goto EXIT;
     }
     OMX_PRINT1(pComponentPrivate->dbg, "Error is %x\n",eError);
@@ -3280,7 +3290,15 @@ void ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
         }            
 	}
     else if (RM_Error == OMX_RmProxyCallback_FatalError) {
-        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+        OMX_COMMANDTYPE FatalCmd = OMX_CustomCommandFatalError;
+
+        /* if we call Jpeg_Enc_FatalErrorRecover() directly here we could cause a deadlock in the system
+        because of the call to RMProxy_DeinitalizeEx(). RMProxy_DeinitalizeEx() blocks until the RM Proxy thread
+        terminates and this callback is called in RM proxy thread */
+
+        write (pComponentPrivate->nCmdPipe[1], &FatalCmd, sizeof(FatalCmd));
+        /*write something to nCmdDataPipe even though we don't need to keep things consistent */
+        write (pComponentPrivate->nCmdDataPipe[1], &(pComponentPrivate->nToState) ,sizeof(OMX_U32));
     }
 }
 #endif
@@ -3289,27 +3307,43 @@ void Jpeg_Enc_FatalErrorRecover(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
     char *pArgs = "";
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-
+    LOGD("Jpeg_Enc_FatalErrorRecover nCurState = %d nToState=%d", pComponentPrivate->nCurState,  pComponentPrivate->nToState);
     if (pComponentPrivate->nCurState != OMX_StateWaitForResources &&
-        pComponentPrivate->nCurState != OMX_StateLoaded) {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-        pComponentPrivate->pLCML = NULL;
-        dlclose(pComponentPrivate->pDllHandle);
-        pComponentPrivate->isLCMLActive = 0;
+        pComponentPrivate->nCurState != OMX_StateInvalid &&
+        (pComponentPrivate->nCurState != OMX_StateLoaded))
+    {
+        pthread_mutex_lock(&(pComponentPrivate->jpege_mutex_destroy));
+        if (pComponentPrivate->pLCML != NULL) {
+            eError = LCML_ControlCodec(((
+                     LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,
+                     EMMCodecControlDestroy, (void *)pArgs);
+            OMX_ERROR4(pComponentPrivate->dbg,
+                       "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+            pComponentPrivate->pLCML = NULL;
+            dlclose(pComponentPrivate->pDllHandle);
+            pComponentPrivate->isLCMLActive = 0;
+        }
+        pthread_mutex_unlock(&(pComponentPrivate->jpege_mutex_destroy));
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
-    eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
-             RMProxy_FreeResource,
-             OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
+    if(pComponentPrivate->bResourceManagerState >= RMProxy_Init &&
+        pComponentPrivate->bResourceManagerState < RMProxy_Exit)
+    {
+        if(pComponentPrivate->bResourceManagerState == RMProxy_RequestResource)
+        {
+            pComponentPrivate->bResourceManagerState = RMProxy_FreeResource;
+            eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
+            if (eError != OMX_ErrorNone) {
+                OMX_PRMGR4(pComponentPrivate->dbg, "Cannot Free RMProxy Resources\n");
+            }
+        }
 
-    eError = RMProxy_Deinitalize();
-    if (eError != OMX_ErrorNone) {
-        OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
+        eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_IMAGE);
+        if ( eError != OMX_ErrorNone )  {
+            OMX_PRMGR4(pComponentPrivate->dbg, "Error returned from destroy ResourceManagerProxy thread\n");
+        }
+        pComponentPrivate->bResourceManagerState = RMProxy_Exit;
     }
 #endif
 

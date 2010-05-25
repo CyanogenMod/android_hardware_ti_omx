@@ -223,6 +223,9 @@ void* OMX_JpegEnc_Thread (void* pThreadData)
                         }
                     } 
                     
+                else if ( eCmd == OMX_CustomCommandFatalError ) {
+                        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
+                    }
                 else if ( eCmd == OMX_CustomCommandStopThread ) {
                     /*eError = 10;*/
                     goto EXIT;
