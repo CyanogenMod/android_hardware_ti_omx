@@ -1239,6 +1239,8 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 
             if (eError != OMX_ErrorNone) {
                 OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed...\n");
+                JpegDec_FatalErrorRecover(pComponentPrivate, NULL);
+                eError = OMX_ErrorNone;
                 goto EXIT;
             }
             else {
@@ -2448,10 +2450,21 @@ void LinkedList_Destroy(LinkedList *LinkedList) {
 void JpegDec_FatalErrorRecover(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, const char* error_msg){
     char *pArgs = "";
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    int bDestroyCodec = 1;
 
-    if (pComponentPrivate->nCurState != OMX_StateWaitForResources &&
-        pComponentPrivate->nCurState != OMX_StateLoaded &&
-        pComponentPrivate->nIsLCMLActive == 1) {
+    /* since jpeg dec is not currently using RM. the codec needs to call EMMCodecControlDestroy
+        so DSPManager_Close() can be called in case of a MMU fault. Bridge can only recover if all
+        components call DSPManager_Close() after a DSPManager_Open() call. Calls to JpegDec_FatalErrorRecover()
+        are placed so that we guarantee DSPManager_Open() is called beforehand. Exception to this in InitMMCodec(),
+        but LCML guarantees calls to DSPManager_Open()/Close() are 1:1. */
+
+#ifdef RESOURCE_MANAGER_ENABLED
+    bDestroyCodec = (pComponentPrivate->nCurState != OMX_StateWaitForResources) &&
+        (pComponentPrivate->nCurState != OMX_StateLoaded) &&
+        (pComponentPrivate->nIsLCMLActive == 1);
+#endif
+
+    if (bDestroyCodec) {
         eError = LCML_ControlCodec(((
                  LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle,
                  EMMCodecControlDestroy, (void *)pArgs);
