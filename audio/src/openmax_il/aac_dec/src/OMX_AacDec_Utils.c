@@ -2639,6 +2639,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    pLcmlHdr->pBufHdr->nOutputPortIndex,
                                                    pLcmlHdr->pBufHdr->nFlags, NULL);
 				pComponentPrivate->bIsEOFSent = 0;
+                                pLcmlHdr->pOpParam->isLastBuffer=0;
 				OMX_PRINT2(pComponentPrivate->dbg, "%d : UTIL: EOS flag has been propagated\n",__LINE__);
 			}
 
