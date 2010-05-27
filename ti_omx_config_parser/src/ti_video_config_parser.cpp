@@ -158,19 +158,6 @@ OSCL_EXPORT_REF int16 ti_video_config_parser(tiVideoConfigParserInputs *aInputs,
         aOutputs->profile = (uint32)profile_idc;
         aOutputs->level = (uint32) level_idc;
         aOutputs->entropy = (uint32) entropy_coding_mode_flag;
-        aOutputs->dispwidth = (uint32)display_width;
-        aOutputs->dispheight = (uint32)display_height;
-        aOutputs->displeft = 36;
-        aOutputs->disptop = 24;
-
-#ifdef __ENABLE_DUCATI_WA__
-#define     PADX    32
-#define     PADY    24
-		aOutputs->width  = ((aOutputs->width   + (2*PADX) + 127) & 0xFFFFFF80);
-		aOutputs->height =  ((aOutputs->height + (4*PADY))) ;
-		LOGE("Adjusting the W & H in Video Decoder");
-#endif
-
     }
     else if (aInputs->iMimeType == PVMF_MIME_WMV) //wmv
     {
