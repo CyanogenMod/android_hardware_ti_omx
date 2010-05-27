@@ -439,24 +439,12 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
  EXIT:
     if(OMX_ErrorNone != eError) {
         G722DEC_DPRINT(":: ************* ERROR: Freeing Other Malloced Resources\n");
-        OMX_MEMFREE_STRUCT(pPortDef_ip);
-        OMX_MEMFREE_STRUCT(pPortDef_op);
-        OMX_MEMFREE_STRUCT(G722_ip);
-        OMX_MEMFREE_STRUCT(G722_op);
         if (NULL != pComponentPrivate) {
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_INPUT_PORT]);
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pCompPort[G722D_OUTPUT_PORT]);
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
-            OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
-
-            pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
-            pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
-            pthread_mutex_destroy(&pComponentPrivate->InIdle_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InIdle_threshold);
-            pthread_mutex_destroy(&pComponentPrivate->InLoaded_mutex);
-            pthread_cond_destroy(&pComponentPrivate->InLoaded_threshold);
+            // Free Component resources
+            G722DEC_FreeCompResources(pHandle);
+            // Free pComponentPrivate
+            OMX_MEMFREE_STRUCT(pComponentPrivate);
         }
-
     }
     G722DEC_DPRINT ("Exiting OMX_ComponentInit\n");
     return eError;
@@ -1551,8 +1539,6 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_HANDLETYPE pHandle)
             eError = eError1;
         }
     }
-
-    OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
     G722DEC_MEMPRINT(":: Freeing: pComponentPrivate = %p\n", pComponentPrivate);
     OMX_MEMFREE_STRUCT(pComponentPrivate);

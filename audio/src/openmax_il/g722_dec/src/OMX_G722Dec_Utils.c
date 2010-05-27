@@ -622,6 +622,7 @@ OMX_ERRORTYPE G722DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
         OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
         OMX_MEMFREE_STRUCT(pComponentPrivate->componentRole);
+        OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
     } 
 
     pComponentPrivate->bPortDefsAllocated = 0;
