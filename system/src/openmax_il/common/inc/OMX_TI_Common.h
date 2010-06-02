@@ -146,5 +146,39 @@ typedef enum OMX_TI_SEVERITYTYPE {
         OMX_MEMFREE_STRUCT(_pStruct_);\
     }
 
+/**
+ *@omx_mutex_signal inline function to send signals in a thread safe way
+ *@param pthread_mutex_t *omx_mutex
+ *@param pthread_cond_t *omx_threshold
+ *@param OMX_U8 *omx_signal
+ */
+static inline void omx_mutex_signal(pthread_mutex_t *omx_mutex,
+                                     pthread_cond_t *omx_threshold,
+                                     OMX_U8 *omx_signal){
+    pthread_mutex_lock(omx_mutex);
+    if (*omx_signal == 0) {
+        *omx_signal = 1;
+        pthread_cond_signal(omx_threshold);
+    }
+    pthread_mutex_unlock(omx_mutex);
+}
+/**
+ *@omx_mutex_wait inline function to wait for signals in a thread safe way
+ *@param pthread_mutex_t *omx_mutex
+ *@param pthread_cond_t *omx_threshold
+ *@param OMX_U8 *omx_signal
+ */
+static inline void omx_mutex_wait(pthread_mutex_t *omx_mutex,
+                                     pthread_cond_t *omx_threshold,
+                                     OMX_U8 *omx_signal){
+    pthread_mutex_lock(omx_mutex);
+    while (*omx_signal == 0) {
+        pthread_cond_wait(omx_threshold,
+            omx_mutex);
+    }
+    *omx_signal = 0;
+    pthread_mutex_unlock(omx_mutex);
+}
+
 #endif /*  end of  #ifndef __OMX_TI_COMMON_H__ */
 /* File EOF */
