@@ -598,6 +598,8 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     status = DspManager_Open(0, NULL);
     DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
+    /* DSPManager_Open is successful, increment counter so that we can keep open/close to a 1:1 ratio. */
+    phandle->iDspOpenCount++;
 
     /* Attach and get handle to processor */
     status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
@@ -1598,18 +1600,6 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
               "%d :: LCML:: FreeResources\n",__LINE__);
     if(hInterface->dspCodec != NULL)
     {
-        if(DSP_FAILED(DspManager_Open(0, NULL)) && 
-           hInterface->dspCodec->hNode != NULL)
-        {
-        /* we must guarantee that hNode is cleaned up,
-           else dsp error recovery
-           will be blocked unless this handle is freed */
-           LCML_FREE(hInterface->dspCodec->hNode);
-           hInterface->dspCodec->hNode = NULL;
-        }
-        else {
-            DspManager_Close(0, NULL);
-        }
         LCML_FREE(hInterface->dspCodec);
         hInterface->dspCodec = NULL;
     }
@@ -1705,10 +1695,22 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
     status = DSPProcessor_Detach(hInterface->dspCodec->hProc);
     DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
 
-    status = DspManager_Close(0, NULL);
-    DSP_ERROR_EXIT (status, "DeInit: DSPManager Close ", EXIT);
-
 EXIT:
+    /* always call DSPManager_Close() even if DSPBridge API is not accessible.
+        In the case of an error, all handles to DSPBridge have to be closed so that
+        it can recover properly.*/
+
+    if(hInterface->iDspOpenCount > 0)
+    {
+        status = DspManager_Close(0, NULL);
+        if (DSP_FAILED(status))
+        {
+            eError = OMX_ErrorHardware;
+            OMX_PRDSP4 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: DeInit: DSPManager Close failed!!\n",__LINE__, status);
+        }else
+            hInterface->iDspOpenCount--;
+    }
+
     return eError;
 
 }
