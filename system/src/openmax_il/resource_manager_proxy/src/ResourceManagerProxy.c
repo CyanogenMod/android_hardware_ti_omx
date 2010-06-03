@@ -585,6 +585,7 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
     int index=-1;
     struct timespec tv;
     int readPipeOpened=0;
+    int fatalErrorHandled = 0;
     OMX_PTR threadhandle=NULL;
 
     componentList.numRegisteredComponents = 0;
@@ -801,26 +802,37 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 if (NULL != core)
                 {
                     RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
-                    free (core);
-                    core = NULL;
                     free (RM_Error);
                     RM_Error = NULL;
                 }
             }
-            else if (rm_data.rm_status == RM_RESOURCEFATALERROR) {
-                if (!RM_Error)
-                    RM_Error = malloc(sizeof(OMX_ERRORTYPE));
-                if (NULL != RM_Error)
-                    *RM_Error = OMX_RmProxyCallback_FatalError;
-                cmd_data->hComponent = rm_data.hComponent;
-                if (NULL != core)
-                {
-                    RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
-                    free (core);
-                    core = NULL;
-                    free (RM_Error);
-                    RM_Error = NULL;
+            else if (rm_data.rm_status == RM_RESOURCEFATALERROR && !fatalErrorHandled) {
+                /* if RM denies us due to dsp recovery during request resource, we will deadlock the system if Callback is used
+                   because the main thread in the OMX component is already blocked on RMProxy_RequestResource */
+                if(!responsePending){
+                    if (!RM_Error)
+                        RM_Error = malloc(sizeof(OMX_ERRORTYPE));
+                    if (NULL != RM_Error)
+                        *RM_Error = OMX_RmProxyCallback_FatalError;
+                    cmd_data->hComponent = rm_data.hComponent;
+                    if (NULL != core)
+                    {
+                        RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
+                        free (RM_Error);
+                        RM_Error = NULL;
+                    }
+                }else {
+                    RMPROXY_DPRINT("RM_RESOURCEFATALERROR while requesting resources");
+                    if (RM_Error) {
+                        *RM_Error = OMX_RmProxyCallback_FatalError;
+                    }
+                    if (sem) {
+                        sem_post(sem) ;
+                    }
                 }
+                /* unknown behavior can occur if we tell the system to handle a fatal error multiple times.
+                fatal error should only need to handled once per component */
+                fatalErrorHandled = 1;
             }
             else if (rm_data.rm_status == RM_GRANT) {
 #ifndef __ENABLE_RMPM_STUB__
@@ -850,8 +862,6 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                 if (NULL != core)
                 {
                     RMProxy_CallbackClient(rm_data.hComponent,RM_Error, core);
-                    free (core);
-                    core = NULL;
                     free (RM_Error);
                     RM_Error = NULL;
                 }
