@@ -729,6 +729,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->hTunnelComponent = NULL;
     pComponentPrivate->pCompPort[JPEGENC_OUT_PORT]->nBuffCount       = 0;
 
+    pthread_mutex_init(&pComponentPrivate->jpege_mutex_destroy, NULL);
     pthread_mutex_init(&pComponentPrivate->jpege_mutex, NULL);
     pthread_cond_init(&pComponentPrivate->stop_cond, NULL);
     pthread_cond_init(&pComponentPrivate->flush_cond, NULL);
@@ -745,6 +746,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 
 #ifdef RESOURCE_MANAGER_ENABLED
     /* load the ResourceManagerProxy thread */
+    pComponentPrivate->bResourceManagerState = RMProxy_Init;
     eError = RMProxy_NewInitalizeEx(OMX_COMPONENTTYPE_IMAGE);
     if ( eError != OMX_ErrorNone ) {
         OMX_PRMGR4(pComponentPrivate->dbg, "Error returned from loading ResourceManagerProxy thread\n");
@@ -766,6 +768,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
             OMX_FREEALL();
             LinkedList_Destroy(&AllocList);
             if (pComponentPrivate != NULL) {
+                pthread_mutex_destroy(&pComponentPrivate->jpege_mutex_destroy);
                 pthread_mutex_destroy(&pComponentPrivate->jpege_mutex);
                 pthread_cond_destroy(&pComponentPrivate->stop_cond);
                 pthread_cond_destroy(&pComponentPrivate->flush_cond);
@@ -2054,22 +2057,30 @@ static OMX_ERRORTYPE JPEGENC_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	pHandle = (OMX_COMPONENTTYPE *)hComponent;
 	pComponentPrivate = (JPEGENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 	memcpy(&dbg, &(pComponentPrivate->dbg), sizeof(dbg));
+
+#ifdef RESOURCE_MANAGER_ENABLED
+     if(pComponentPrivate->bResourceManagerState >= RMProxy_Init &&
+     pComponentPrivate->bResourceManagerState < RMProxy_Exit)
+    {
+        if(pComponentPrivate->bResourceManagerState == RMProxy_RequestResource)
+        {
+            pComponentPrivate->bResourceManagerState = RMProxy_FreeResource;
+            eError = RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
+            if (eError != OMX_ErrorNone) {
+                OMX_PRMGR4(dbg, "Cannot Free RMProxy Resources\n");
+            }
+        }
+        eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_IMAGE);
+        if ( eError != OMX_ErrorNone )  {
+            OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
+        }
+         pComponentPrivate->bResourceManagerState = RMProxy_Exit;
+    }
+#endif
+
 	JPEGEnc_Free_ComponentResources(pComponentPrivate);
         pthread_mutex_destroy(&pComponentPrivate->mutexStateChangeRequest);
         pthread_cond_destroy(&pComponentPrivate->StateChangeCondition);
-
-#ifdef RESOURCE_MANAGER_ENABLED
-	eError = RMProxy_NewSendCommand(pHandle,  RMProxy_FreeResource, OMX_JPEG_Encoder_COMPONENT, 0, 3456, NULL);
-	if (eError != OMX_ErrorNone) {
-		OMX_PRMGR4(dbg, "Cannot Free RMProxy Resources\n");
-	}
-
-	eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_IMAGE);
-	if ( eError != OMX_ErrorNone )  {
-		OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
-	}
-
-#endif
     
 EXIT:
 #if 0

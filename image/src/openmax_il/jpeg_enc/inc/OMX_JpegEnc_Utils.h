@@ -88,6 +88,7 @@
 #define COMP_MAX_NAMESIZE 127
 
 #define OMX_CustomCommandStopThread (OMX_CommandMax - 1)
+#define OMX_CustomCommandFatalError (OMX_CommandMax - 2)
 
 #define PADDING_128_BYTE	128
 #define PADDING_256_BYTE	256
@@ -511,6 +512,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
 #endif
 #ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE rmproxyCallback;
+    RMPROXY_COMMANDTYPE bResourceManagerState;
 #endif
     OMX_BOOL bPreempted;
     int nFlags;
@@ -531,6 +533,7 @@ typedef struct JPEGENC_COMPONENT_PRIVATE
     IDMJPGE_TIGEM_DynamicParams *pDynParams;
 
     pthread_mutex_t jpege_mutex;
+    pthread_mutex_t jpege_mutex_destroy; /*mutex to ensure  EMMCodecControlDestroy is not called at the same time*/
     pthread_cond_t  stop_cond;
     pthread_cond_t  flush_cond;
     /* pthread_cond_t  control_cond; */
