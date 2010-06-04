@@ -216,14 +216,6 @@ typedef enum MP3D_COMP_PORT_TYPE {
 }MP3D_COMP_PORT_TYPE;
 
 /* ======================================================================= */
-/**
- * pthread variable to indicate OMX returned all buffers to app 
- */
-/* ======================================================================= */
-    pthread_mutex_t bufferReturned_mutex; 
-    pthread_cond_t bufferReturned_condition; 
-
-/* ======================================================================= */
 /** OMX_INDEXAUDIOTYPE: This enum is used by the TI OMX Component.
 * 
 * @param : 
@@ -588,9 +580,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
 
     /** Number of FillBufferDones acomplished, used to transition to idle */
     OMX_S32 nOutStandingFillDones;
-    OMX_U32 nUnhandledFillThisBuffers;
     OMX_U32 nHandledFillThisBuffers;
-    OMX_U32 nUnhandledEmptyThisBuffers;
     OMX_U32 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
@@ -614,6 +604,10 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
+
+    /* pthread variable to indicate OMX returned all buffers to app */
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
 
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     
@@ -947,7 +941,8 @@ OMX_U32 MP3DEC_GetBits(OMX_U32* nPosition, OMX_U8 nBits, OMX_U8* pBuffer, OMX_BO
 
  */
 /*=======================================================================*/
-void SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
+void MP3DEC_SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate,
+                                          OMX_U8 counterport);
 
 /*  =========================================================================*/
 /*  func    MP3DEC_HandleUSNError
