@@ -181,7 +181,6 @@ int dsp_mhz_to_vdd1_opp(int MHz)
         else {
             vdd1_opp = OPERATING_POINT_4;
         }
-        /* OPP5 should not be requested via sys/power/dsp_opp */
         break;
 
         default:
@@ -220,7 +219,6 @@ int get_omap_version()
         cpu_variant = OMAP3440_CPU;
     }
     else if (dsp_max_freq == vdd1_dsp_mhz_3630[OPERATING_POINT_4]){
-        /* 3630 has 5 OPPs, but OPP5 is 45MHz on DSP, so max will be OPP4 */
         cpu_variant = OMAP3630_CPU;
     }
     else {
@@ -438,9 +436,7 @@ void rm_request_boost(int level)
                 break;
 
             case OMAP3630_CPU:
-                /* the -2 handles the odd case where opp frequencies are not sorted,
-                   the true MAX is opp4=800MHz */
-                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -2];
+                boostConstraintMHz = vdd1_dsp_mhz_3630[ sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -1];
                 break;
                 
             case OMAP3430_CPU:
@@ -465,8 +461,7 @@ void rm_request_boost(int level)
                 break;
 
             case OMAP3630_CPU:
-                /* the -2 handles the odd case where opp frequencies are not sorted */
-                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -3];
+                boostConstraintMHz = vdd1_dsp_mhz_3630[sizeof(vdd1_dsp_mhz_3630)/sizeof(vdd1_dsp_mhz_3630[0]) -2];
                 break;
                 
             case OMAP3430_CPU:
@@ -652,8 +647,7 @@ int dsp_mhz_to_min_scaling_freq(int MHz)
 
         case OMAP3630_CPU:
         if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_1]) {
-            /* 3630 should be able to run MM cases at OPP1
-               since the clock is much faster compared to 3430 */
+            /* 3630 should be able to run many MM cases at OPP1 */
             freq = vdd1_dsp_mhz_3630[OPERATING_POINT_1];
         }
         else if (MHz <= vdd1_dsp_mhz_3630[OPERATING_POINT_2]) {
