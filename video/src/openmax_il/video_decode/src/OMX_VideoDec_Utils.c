@@ -1877,22 +1877,30 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 }
             }
 
+                dlerror();
                 pMyLCML = dlopen("libLCML.so", RTLD_LAZY);
                 if (!pMyLCML) {
                     OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-                    fputs(dlerror(), stderr);
+                    if ((error = dlerror()) != NULL) {
+                       fputs(error, stderr);
+                    }
                     eError = OMX_ErrorBadParameter;
                     goto EXIT;
                 }
+
+                dlerror();
                 fpGetHandle = dlsym(pMyLCML, "GetHandle");
-                if ((error = dlerror()) != NULL) {
+                if (!fpGetHandle) {
                     OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-                    fputs(error, stderr);
+                    if ((error = dlerror()) != NULL) {
+                       fputs(error, stderr);
+                    }
                     dlclose(pMyLCML);
                     pMyLCML = NULL;
                     eError = OMX_ErrorBadParameter;
                     goto EXIT;
                 }
+
                 eError = (*fpGetHandle)(&hLCML);
                 if (eError != OMX_ErrorNone) {
                     OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -7937,6 +7945,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     if (nDeringing != OMX_FALSE) {
         pComponentPrivate->pDeringingParamType->eImageFilter = OMX_ImageFilterDeRing;
     }
+
+    dlerror();
     pComponentPrivate->pModLCML = dlopen("libLCML.so", RTLD_LAZY);
     if (!pComponentPrivate->pModLCML) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
@@ -7946,15 +7956,20 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
+
+    dlerror();
     fpGetHandle = dlsym(pComponentPrivate->pModLCML, "GetHandle");
-    if ((error = dlerror()) != NULL) {
+    if (!fpGetHandle) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");
-        fputs(error, stderr);
+        if ((error = dlerror()) != NULL) {
+            fputs(error, stderr);
+        }
         dlclose(pComponentPrivate->pModLCML);
         pComponentPrivate->pModLCML = NULL;
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
+
     eError = (*fpGetHandle)(&hLCML);
     if (eError != OMX_ErrorNone) {
         OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorBadParameter\n");

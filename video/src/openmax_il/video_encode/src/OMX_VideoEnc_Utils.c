@@ -3115,18 +3115,28 @@ OMX_ERRORTYPE OMX_VIDENC_InitLCML(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
 
 #ifndef UNDER_CE
+    dlerror();
     pMyLCML = dlopen("libLCML.so", RTLD_LAZY);
     pComponentPrivate->pModLcml = pMyLCML;
     if (!pMyLCML)
     {
         OMX_ERROR5(pComponentPrivate->dbg, "Could not open LCML library\n");
+        if ((error = dlerror()) != NULL) {
+           fputs(error, stderr);
+        }
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
 
+    dlerror();
     fpGetHandle = dlsym(pMyLCML, "GetHandle");
-    if ((error = dlerror()) != NULL)
+    if (!fpGetHandle)
     {
         OMX_ERROR4(pComponentPrivate->dbg, "No GetHandle in LCML library\n");
+        if ((error = dlerror()) != NULL) {
+           fputs(error, stderr);
+        }
+        dlclose(pMyLCML);
+        pMyLCML = NULL;
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUndefined);
     }
 
