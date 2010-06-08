@@ -56,6 +56,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <sys/prctl.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -85,6 +86,8 @@ void* WMADEC_ComponentThread (void* pThreadData)
 
     WMADEC_COMPONENT_PRIVATE* pComponentPrivate = (WMADEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
+
+    prctl(PR_SET_NAME, (unsigned long) "OMX-WMADEC", 0, 0, 0);
 
     OMX_PRINT1(pComponentPrivate->dbg, "OMX_WmaDec_ComponentThread:%d\n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
