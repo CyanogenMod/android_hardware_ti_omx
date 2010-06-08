@@ -57,6 +57,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <sys/prctl.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -84,6 +85,7 @@ void* AACENC_ComponentThread (void* pThreadData)
     OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
 
+   prctl(PR_SET_NAME, (unsigned long) "OMX-AACENC", 0, 0, 0);
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->pPERFcomp = PERF_Create(PERF_FOURCC('A', 'A', 'C', 'E'),
