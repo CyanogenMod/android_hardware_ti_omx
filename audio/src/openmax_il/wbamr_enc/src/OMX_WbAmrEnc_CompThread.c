@@ -58,6 +58,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <sys/prctl.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -95,6 +96,7 @@ void* WBAMRENC_CompThread(void* pThreadData) {
     OMX_U32 commandData;
     OMX_COMMANDTYPE command;
 
+    prctl(PR_SET_NAME, (unsigned long) "OMX-WBAMRENC", 0, 0, 0);
     OMX_PRINT1(pComponentPrivate->dbg, "Entering\n");
 
 #ifdef __PERF_INSTRUMENTATION__
