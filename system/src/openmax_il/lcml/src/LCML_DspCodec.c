@@ -57,6 +57,7 @@
 #include <string.h>
 #include "usn.h"
 #include <sys/time.h>
+#include <sys/prctl.h>
 
 #define CEXEC_DONE 1
 /*DSP_HNODE hDasfNode;*/
@@ -1736,6 +1737,8 @@ void* MessagingThread(void* arg)
     /* we should not need to wait to retrieve a message, but keep this
        in case we need to test with other values */
     const int getMessageTimeout = 0;
+
+    prctl(PR_SET_NAME, (unsigned long) "LCML_Msg", 0, 0, 0);
 
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "Inside the Messaging thread\n");
 #ifdef __PERF_INSTRUMENTATION__
