@@ -57,8 +57,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/prctl.h>
 #include <dlfcn.h>
 #include <sys/select.h>
 #include <memory.h>
@@ -97,6 +97,8 @@ void* AACDEC_ComponentThread (void* pThreadData)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE* pComponentPrivate = (AACDEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
+
+    prctl(PR_SET_NAME, (unsigned long) "OMX-AACDEC", 0, 0, 0);
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering ComponentThread \n",__LINE__);
 #ifdef __PERF_INSTRUMENTATION__
