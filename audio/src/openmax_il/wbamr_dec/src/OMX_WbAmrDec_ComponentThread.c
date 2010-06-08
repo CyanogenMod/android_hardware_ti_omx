@@ -59,6 +59,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/prctl.h>
 #include <signal.h>
 #include "OMX_WbAmrDec_Utils.h"
 #include "OMX_WbAmrDecoder.h"
@@ -85,6 +86,7 @@ void* WBAMR_DEC_ComponentThread (void* pThreadData)
     OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
     ssize_t ret;
 
+    prctl(PR_SET_NAME, (unsigned long) "OMX-WBAMRDEC", 0, 0, 0);
     OMX_PRINT1(pComponentPrivate->dbg, "Entering\n");
 
 #ifdef __PERF_INSTRUMENTATION__
