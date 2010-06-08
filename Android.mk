@@ -28,7 +28,7 @@ PERF_INSTRUMENTATION := 1
 PERF_CUSTOMIZABLE := 1
 PERF_READER := 1
 
-TI_OMX_CFLAGS := -Wall -fpic -pipe -DSTATIC_TABLE -O0 
+TI_OMX_CFLAGS := -Wall -fpic -pipe -finline-functions -DSTATIC_TABLE -O0
 
 TI_OMX_TOP := $(LOCAL_PATH)
 TI_OMX_SYSTEM := $(TI_OMX_TOP)/system/src/openmax_il
