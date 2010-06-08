@@ -56,7 +56,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/types.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include <sys/select.h>
@@ -95,6 +95,8 @@ void* MP3DEC_ComponentThread (void* pThreadData)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     MP3DEC_COMPONENT_PRIVATE* pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
+
+    prctl(PR_SET_NAME, (unsigned long) "OMX-MP3DEC", 0, 0, 0);
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: Entering ComponentThread \n");
 
