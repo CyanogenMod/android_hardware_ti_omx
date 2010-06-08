@@ -50,6 +50,7 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/errno.h>
+#include <sys/prctl.h>
 #include <pthread.h>    // for threading support
 #include <string.h>     // for memset
 #include <stdio.h>      // for buffered io
@@ -597,6 +598,8 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                              PERF_ModuleVideoDecode | PERF_ModuleVideoEncode |
                              PERF_ModuleImageDecode | PERF_ModuleImageEncode);
 #endif
+
+    prctl(PR_SET_NAME, (unsigned long) "RM-Proxy", 0, 0, 0);
 
     RMPROXY_DPRINT("[Resource_Manager_Proxy] - RMProxy_Thread\n");
 
