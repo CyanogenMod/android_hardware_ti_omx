@@ -53,6 +53,7 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <sys/prctl.h>
 
 #include "OMX_AmrDec_Utils.h"
 #include "OMX_AmrDecoder.h"
@@ -70,6 +71,8 @@ void* NBAMRDEC_ComponentThread (void* pThreadData)
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
     OMX_BUFFERHEADERTYPE *pBufHeader = NULL;
 	ssize_t ret;
+
+    prctl(PR_SET_NAME, (unsigned long) "OMX-NBAMRDEC", 0, 0, 0);
 
 	OMX_PRINT1(pComponentPrivate->dbg, "%d :: OMX_AmrDec_ComponentThread.c :: \n",__LINE__);
 
