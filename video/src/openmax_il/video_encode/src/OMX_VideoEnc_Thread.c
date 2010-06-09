@@ -69,6 +69,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+/* Include functions useful for thread naming
+ * */
+#include <sys/prctl.h>
 
 /*------- Program Header Files -----------------------------------------------*/
 #include "OMX_VideoEnc_Utils.h"
@@ -121,7 +124,9 @@ void* OMX_VIDENC_Thread (void* pThreadData)
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     LCML_DSP_INTERFACE* pLcmlHandle = NULL;
     sigset_t set;
-
+    /* Set the thread's name
+     * */
+    prctl(PR_SET_NAME, (unsigned long) "OMX VIDENC", 0, 0, 0);
     if (!pThreadData)
     {
         eError = OMX_ErrorBadParameter;
