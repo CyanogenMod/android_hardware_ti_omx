@@ -23,6 +23,7 @@ LOCAL_C_INCLUDES := \
 
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES) \
 			libaudio \
+			libOMX_Core \
 			libc
 
 LOCAL_MODULE:= tiomxplayer

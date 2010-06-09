@@ -31,7 +31,8 @@ LOCAL_SRC_FILES:= tests/JPEGTest.c
 LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 	$(TI_OMX_IMAGE)/jpeg_dec/inc \
 
-LOCAL_SHARED_LIBRARIES := libOMX.TI.JPEG.decoder
+LOCAL_SHARED_LIBRARIES := libOMX.TI.JPEG.decoder \
+	libOMX_Core
 
 LOCAL_CFLAGS := -Wall -fpic -pipe -O0 -DOMX_DEBUG=1
 

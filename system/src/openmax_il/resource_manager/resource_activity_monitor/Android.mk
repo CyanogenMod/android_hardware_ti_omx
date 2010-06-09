@@ -14,9 +14,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES := \
 	libdl 	\
-	libcutils \
-	libbridge \
-	libOMX_Core
+	libcutils
 
 
 LOCAL_CFLAGS := $(TI_OMX_CFLAGS)

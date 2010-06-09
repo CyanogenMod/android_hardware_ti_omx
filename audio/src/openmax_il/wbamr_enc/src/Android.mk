@@ -12,15 +12,15 @@ LOCAL_SRC_FILES:= \
 LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 	$(TI_OMX_SYSTEM)/common/inc \
 	$(TI_OMX_AUDIO)/wbamr_enc/inc
-	
+
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES) \
-        liblog
+        libbridge
 
 LOCAL_LDLIBS += \
 	-lpthread \
 	-ldl \
 	-lsdl
-	
+
 LOCAL_CFLAGS := $(TI_OMX_CFLAGS) -DOMAP_2430
 
 LOCAL_MODULE:= libOMX.TI.WBAMR.encode

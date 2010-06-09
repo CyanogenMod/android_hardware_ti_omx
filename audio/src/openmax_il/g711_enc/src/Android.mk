@@ -14,7 +14,7 @@ LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 	$(TI_OMX_AUDIO)/g711_enc/inc
 	
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES) \
-        liblog
+        libbridge
 
 
 LOCAL_LDLIBS += \

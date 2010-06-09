@@ -41,9 +41,6 @@ TI_OMX_INCLUDES := \
 
 TI_OMX_COMP_SHARED_LIBRARIES := \
 	libdl \
-	libbridge \
-	libOMX_Core \
-	libLCML \
 	libcutils \
 	liblog	
 

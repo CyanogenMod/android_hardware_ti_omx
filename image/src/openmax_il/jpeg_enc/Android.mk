@@ -29,7 +29,8 @@ LOCAL_SRC_FILES:= test/JPEGTestEnc.c
 LOCAL_C_INCLUDES := $(TI_OMX_COMP_C_INCLUDES) \
 	$(TI_OMX_IMAGE)/jpeg_enc/inc \
 
-LOCAL_SHARED_LIBRARIES := libOMX.TI.JPEG.encoder
+LOCAL_SHARED_LIBRARIES := libOMX.TI.JPEG.encoder \
+	libOMX_Core
 
 LOCAL_CFLAGS := -Wall -fpic -pipe -O0 -DOMX_DEBUG=1
 
