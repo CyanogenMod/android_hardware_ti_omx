@@ -381,9 +381,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->ucUnrestrictedMV     = 0;
     pComponentPrivate->nQpMax               = 31;
     pComponentPrivate->nQpMin               = 2;
-    pComponentPrivate->bHideEvents          = OMX_FALSE;
-    pComponentPrivate->bHandlingFatalError  = OMX_FALSE;
-    pComponentPrivate->bUnresponsiveDsp     = OMX_FALSE;
+    pComponentPrivate->bInInvalidState      = 0;
     pComponentPrivate->bCodecLoaded         = OMX_FALSE;
     pComponentPrivate->cComponentName       = "OMX.TI.Video.encoder";
 
@@ -1053,9 +1051,8 @@ static OMX_ERRORTYPE SetCallbacks (OMX_IN  OMX_HANDLETYPE hComponent,
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
     OMX_U32* pTmp                               = NULL;
 
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate, pCallBacks);
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-    OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
-    OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCallBacks, 1, 1);
 
     /*Copy the callbacks of the application to the component private */
     pTmp = memcpy (&(pComponentPrivate->sCbData), pCallBacks, sizeof(OMX_CALLBACKTYPE));
@@ -1107,9 +1104,9 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, szComponentName, pComponentVersion, pSpecVersion);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pComponentUUID, 1, 1);
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
                                pComponentPrivate->dbg, OMX_PRSTATE3,
                                "Component is in invalid state.\n");
     }
@@ -1164,9 +1161,9 @@ static OMX_ERRORTYPE SendCommand (OMX_IN OMX_HANDLETYPE hComponent,
         OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCmdData, 1, 1);
     }
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
                                pComponentPrivate->dbg, OMX_PRSTATE3,
                                "Component is in invalid state.\n");
     }
@@ -1396,9 +1393,9 @@ static OMX_ERRORTYPE GetParameter (OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentParameterStructure, 1, 1);
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
                                pComponentPrivate->dbg, OMX_PRSTATE3,
                                "Component is in invalid state.\n");
     }
@@ -1819,6 +1816,13 @@ static OMX_ERRORTYPE SetParameter (OMX_IN OMX_HANDLETYPE hComponent,
 
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pCompParam, 1, 1);
+
+    if (pComponentPrivate->bInInvalidState != 0)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
+    }
 
     pMemoryListHead = pComponentPrivate->pMemoryListHead;
     pCompPortIn     = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT];
@@ -2250,9 +2254,9 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentConfigStructure, 1, 1);
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
                                pComponentPrivate->dbg, OMX_PRSTATE3,
                                "Component is in invalid state.\n");
     }
@@ -2473,9 +2477,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ComponentConfigStructure, 1, 1);
 
-    if (pComponentPrivate->eState == OMX_StateInvalid)
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorIncorrectStateOperation,
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
                                pComponentPrivate->dbg, OMX_PRSTATE3,
                                "Component is in invalid state.\n");
     }
@@ -2655,6 +2659,8 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
                                        OMX_IN OMX_STRING cParameterName,
                                        OMX_OUT OMX_INDEXTYPE* pIndexType)
 {
+    VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
+
     VIDENC_CUSTOM_DEFINITION sVideoEncodeCustomIndex[VIDENC_NUM_CUSTOM_INDEXES] =
     {
         {"OMX.TI.VideoEncode.Param.VBVSize", VideoEncodeCustomParamIndexVBVSize},
@@ -2690,10 +2696,14 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nIndex = 0;
 
-    if (!hComponent || !pIndexType)
+    OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, pIndexType);
+    pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
+
+    if (pComponentPrivate->bInInvalidState != 0)
     {
-        eError = OMX_ErrorBadParameter;
-        goto OMX_CONF_CMD_BAIL;
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
     }
 
     for (nIndex = 0; nIndex < VIDENC_NUM_CUSTOM_INDEXES; nIndex++)
@@ -2738,15 +2748,15 @@ static OMX_ERRORTYPE GetState (OMX_IN OMX_HANDLETYPE hComponent,
     /* Set to sufficiently high value */
     int mutex_timeout = 3;
 
-    if(hComponent == NULL || pState == NULL) {
-        return OMX_ErrorBadParameter;
-    }
+    OMX_CONF_CHECK_CMD(hComponent, pState, ((OMX_COMPONENTTYPE *)hComponent)->pComponentPrivate);
 
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate;
 
-    /* Retrieve current state */
-    if (pHandle && pHandle->pComponentPrivate) {
+    if(pComponentPrivate->bInInvalidState != 0) {
+       *pState = OMX_StateInvalid;
+       return OMX_ErrorNone;
+    }
         /* Check for any pending state transition requests */
         if(pthread_mutex_lock(&pComponentPrivate->mutexStateChangeRequest)) {
             return OMX_ErrorUndefined;
@@ -2758,7 +2768,7 @@ static OMX_ERRORTYPE GetState (OMX_IN OMX_HANDLETYPE hComponent,
            }
 
            /* No pending state transitions */
-           *pState = ((VIDENC_COMPONENT_PRIVATE*)pHandle->pComponentPrivate)->eState;
+       *pState = pComponentPrivate->eState;
            eError = OMX_ErrorNone;
         }
         else {
@@ -2786,11 +2796,8 @@ static OMX_ERRORTYPE GetState (OMX_IN OMX_HANDLETYPE hComponent,
               return OMX_ErrorUndefined;
            }
         }
-    }
-     else {
-        eError = OMX_ErrorInvalidComponent;
-        *pState = OMX_StateInvalid;
-    }
+
+OMX_CONF_CMD_BAIL:
 
     return eError;
 }
@@ -2827,6 +2834,12 @@ static OMX_ERRORTYPE EmptyThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
 
+    if (pComponentPrivate->bInInvalidState != 0)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
+    }
     hTunnelComponent = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->hTunnelComponent;
 
     pComponentPrivate->pMarkData = pBufHead->pMarkData;
@@ -2945,6 +2958,12 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
 
+    if (pComponentPrivate->bInInvalidState != 0)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
+    }
 
     hTunnelComponent = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->hTunnelComponent;
     pPortDefOut = pComponentPrivate->pCompPort[VIDENC_OUTPUT_PORT]->pPortDef;
@@ -3062,12 +3081,10 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 {
     OMX_ERRORTYPE eError                        = OMX_ErrorNone;
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
-    LCML_DSP_INTERFACE* pLcmlHandle             = NULL;
     VIDENC_NODE* pMemoryListHead                = NULL;
     OMX_ERRORTYPE eErr  = OMX_ErrorNone;
     OMX_S32 nRet        = -1;
     OMX_S32 nStop       = -1;
-    OMX_U32 nTimeout    = 0;
     struct OMX_TI_Debug dbg;
 
     OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
@@ -3084,60 +3101,11 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     PERF_Boundary(pComponentPrivate->pPERF,
                   PERF_BoundaryStart | PERF_BoundaryCleanup);
 #endif
-    while(1)
+    if((pComponentPrivate->bInInvalidState == 1) && pComponentPrivate->bCodecLoaded)
     {
-        if(!(pComponentPrivate->bHandlingFatalError))
-        {
-            if(!(pComponentPrivate->bErrorLcmlHandle) &&
-               !(pComponentPrivate->bUnresponsiveDsp))
-            { /* Add for ResourceExhaustionTest*/
-                pLcmlHandle = pComponentPrivate->pLCML;
-                if (pLcmlHandle != NULL)
-                {
-                    if (pComponentPrivate->bCodecStarted == OMX_TRUE ||
-                    pComponentPrivate->bCodecLoaded == OMX_TRUE)
-                    {
-                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                   EMMCodecControlDestroy,
-                                                   NULL);
-                        if (eError != OMX_ErrorNone)
-                        {
-                            OMX_PRDSP4(dbg, "error when requesting EMMCodecControlDestroy");
-                            eError = OMX_ErrorUndefined;
-                        }
-
-#ifdef UNDER_CE
-                        FreeLibrary(g_hLcmlDllHandle);
-                        g_hLcmlDllHandle = NULL;
-#endif
-                    }
-                }
-            }
-            break;
-        }
-        if(nTimeout++ > VIDENC_MAX_COMPONENT_TIMEOUT)
-        {
-            OMX_ERROR5(dbg, "TimeOut in HandlingFatalError!\n");
-            break;
-        }
-        sched_yield();
+        pComponentPrivate->bInInvalidState++;
+        OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
     }
-
-
-        /*Unload LCML */
-    if(pComponentPrivate->pModLcml != NULL)
-    {
-#ifndef UNDER_CE
-        dlclose(pComponentPrivate->pModLcml);
-#else
-        FreeLibrary(pComponentPrivate->pModLcml);
-#endif
-       pComponentPrivate->pModLcml = NULL;
-       pComponentPrivate->pLCML = NULL;
-    }
-
-
-    pComponentPrivate->bCodecStarted = OMX_FALSE;
 
     nStop = -1;
 #ifdef __PERF_INSTRUMENTATION__
@@ -3160,6 +3128,19 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
         eError = OMX_ErrorHardware;
         OMX_TRACE4(dbg, "Error pthread_join (%d).\n", eErr);
     }
+
+    /*Unload LCML */
+    if(pComponentPrivate->pModLcml != NULL)
+    {
+#ifndef UNDER_CE
+        dlclose(pComponentPrivate->pModLcml);
+#else
+        FreeLibrary(pComponentPrivate->pModLcml);
+#endif
+       pComponentPrivate->pModLcml = NULL;
+       pComponentPrivate->pLCML = NULL;
+    }
+    pComponentPrivate->bCodecStarted = OMX_FALSE;
 
     /*close the data pipe handles*/
     eErr = close(pComponentPrivate->nFree_oPipe[0]);
@@ -3249,12 +3230,15 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 #endif
 
 #ifdef RESOURCE_MANAGER_ENABLED
-    /* Deinitialize Resource Manager */
-    eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_VIDEO);
-    if (eError != OMX_ErrorNone)
+    if(pComponentPrivate->bInInvalidState == 0)
     {
-        OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
-        eError = OMX_ErrorUndefined;
+        /* Deinitialize Resource Manager */
+        eError = RMProxy_DeinitalizeEx(OMX_COMPONENTTYPE_VIDEO);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_PRMGR4(dbg, "Error returned from destroy ResourceManagerProxy thread\n");
+            eError = OMX_ErrorUndefined;
+        }
     }
 #endif
 
@@ -3318,6 +3302,13 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, ppBufferHdr, pBuffer, 1);
 
+    if (pComponentPrivate->bInInvalidState != 0)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
+    }
+
     if (nPortIndex == VIDENC_INPUT_PORT)
     {
        pPortDef = pComponentPrivate->pCompPort[VIDENC_INPUT_PORT]->pPortDef;
@@ -3351,14 +3342,6 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
         OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorBadParameter,
             pComponentPrivate->dbg, OMX_PRBUFFER4,
             "Allocating invalid size buffer: nBufferSize: %lu nSizeBytes: %lu\n", pPortDef->nBufferSize, nSizeBytes);
-    }
-
-
-    if (pComponentPrivate->eState == OMX_StateInvalid)
-    {
-        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
-                               pComponentPrivate->dbg, OMX_PRBUFFER4,
-                               "Using buffer in invalid state.\n");
     }
 
     pMemoryListHead=pComponentPrivate->pMemoryListHead;
@@ -3605,6 +3588,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_CONF_CIRCULAR_BUFFER_DELETE_NODE(pComponentPrivate,
                                          pComponentPrivate->sCircularBuffer);
     pCompPort->nBufferCnt--;
+    if(pComponentPrivate->bInInvalidState == OMX_FALSE) {
     if (pCompPort->nBufferCnt == 0)
     {
         pPortDef->bPopulated = OMX_FALSE;
@@ -3631,6 +3615,7 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                                       OMX_ErrorPortUnpopulated,
                                       nPortIndex,
                                       NULL);
+        }
     }
 OMX_CONF_CMD_BAIL:
     return eError;
@@ -3673,6 +3658,12 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
     OMX_DBG_CHECK_CMD(pComponentPrivate->dbg, pBufHead, 1, 1);
 
+    if (pComponentPrivate->bInInvalidState != 0)
+    {
+        OMX_DBG_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState,
+                               pComponentPrivate->dbg, OMX_PRSTATE3,
+                               "Component is in invalid state.\n");
+    }
     pHandle = (OMX_COMPONENTTYPE*)hComponent;
 
     if (nPortIndex == VIDENC_INPUT_PORT)

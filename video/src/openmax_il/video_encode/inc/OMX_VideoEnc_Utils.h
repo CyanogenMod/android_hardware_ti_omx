@@ -122,6 +122,8 @@
 
 #define DEFAULT_FRAMERATE 15.0
 
+#define VIDENC_FATAL_ERROR_COMMAND -2
+
 /*
 * Definition of capabilities index and structure
 * Needed to inform OpenCore about component capabilities.
@@ -363,7 +365,6 @@ do {                                            \
 /* Event Handler Macro*/
 #define OMX_VIDENC_EVENT_HANDLER(_hComponent_, _eEvent_, _nData1_, _nData2_, _pEventData_) \
 do {                                                        \
-    if((_hComponent_)->bHideEvents != OMX_TRUE )            \
         (_hComponent_)->sCbData.EventHandler((_hComponent_)->pHandle, \
                                             (_hComponent_)->pHandle->pApplicationPrivate, \
                                             _eEvent_,       \
@@ -603,7 +604,6 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     int nCmdPipe[2];
     int nCmdDataPipe[2];
     void* pModLcml;
-    void* pLcmlHandle;
     LCML_DSP_INTERFACE* pLCML;
     int nFrameCnt;
 #ifdef __PERF_INSTRUMENTATION__
@@ -638,9 +638,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_BOOL bForceIFrame;
     OMX_BOOL bFlushComplete;
     OMX_BOOL bEmptyPipes;
-    OMX_BOOL bHideEvents;
-    OMX_BOOL bHandlingFatalError;
-    OMX_BOOL bUnresponsiveDsp;
+    OMX_S32  bInInvalidState;
     VIDENC_NODE*  pMemoryListHead;
     OMX_CONF_CIRCULAR_BUFFER sCircularBuffer;
 
@@ -747,6 +745,10 @@ OMX_ERRORTYPE OMX_VIDENC_InitLCML(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
 
 OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
+
+OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufHead);
+
+OMX_ERRORTYPE OMX_VIDENC_Queue_H264_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE* pBufHead);
 
 OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event, void* argsCb [10]);
 

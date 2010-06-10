@@ -58,9 +58,7 @@
 
 #include "OMX_TI_Common.h"
 
-#define DSP_MMU_FAULT_HANDLING
-
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
 #include <dbapi.h>
 #include <DSPManager.h>
 #include <DSPProcessor.h>
@@ -212,7 +210,7 @@ static int fToQ16(float f)
     return (int)(f*fQ16_Const);
 }
 
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
 static int bInvalid_state;
 int LoadBaseImage();
 #endif
@@ -798,7 +796,7 @@ OMX_ERRORTYPE VIDENCTEST_HandleError(MYDATATYPE* pAppData, OMX_ERRORTYPE eError)
             ;
     }
 
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
     if(bInvalid_state == OMX_TRUE)
     {
         LoadBaseImage();
@@ -2725,7 +2723,7 @@ OMX_ERRORTYPE VIDENCTEST_HandleEventError(MYDATATYPE* pAppData, OMX_U32 eErr, OM
      case OMX_ErrorOverflow:
         break;
      case OMX_ErrorInvalidState:
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
         bInvalid_state = OMX_TRUE;
 #endif
      case OMX_ErrorHardware:
@@ -2788,7 +2786,7 @@ int main(int argc, char** argv)
     sigset_t set;
 
     nTimeCount = 0;
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
     bInvalid_state = OMX_FALSE;
 #endif
     OMX_OTHER_EXTRADATATYPE_1_1_2 *pExtraDataType;
@@ -2887,6 +2885,11 @@ int main(int argc, char** argv)
                 case OMX_EventError:
                     eError = VIDENCTEST_HandleEventError(pAppData, nData1, nData2);
                     VIDENCTEST_CHECK_ERROR(eError, "Fatal EventError");
+                    if(nData1 == OMX_ErrorInvalidState) {
+                        printf("\n------VIDENCTEST FATAL ERROR-------\n Component in reported invalid state \n");
+                        VIDENCTEST_HandleError(pAppData, OMX_ErrorInvalidState);
+                        goto EXIT;
+                    }
                     break;
                 case OMX_EventMax:
                     VIDENCTEST_PRINT("OMX_EventMax recived, nothing to do\n");
@@ -3104,7 +3107,7 @@ EXIT:
     return eError;
 }
 
-#ifdef DSP_MMU_FAULT_HANDLING
+#ifdef DSP_MMU_FAULT_HANDLING_RELOAD_BASEIMAGE
 int LoadBaseImage()
 {
     unsigned int uProcId = 0;   /* default proc ID is 0. */

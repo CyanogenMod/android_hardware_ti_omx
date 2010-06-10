@@ -159,6 +159,12 @@ void* OMX_VIDENC_Thread (void* pThreadData)
 
     while (1)
     {
+        if(pComponentPrivate->bInInvalidState == 1) {
+            pComponentPrivate->bInInvalidState++;
+            OMX_ERROR2(pComponentPrivate->dbg, "  --VE in invalid state detected\n");
+            OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
+        }
+        
         FD_ZERO (&rfds);
         FD_SET (pComponentPrivate->nCmdPipe[0], &rfds);
         FD_SET (pComponentPrivate->nFree_oPipe[0], &rfds);
@@ -179,14 +185,8 @@ void* OMX_VIDENC_Thread (void* pThreadData)
         }
         else if (-1 == status)
         {
-            if (pComponentPrivate->eState != OMX_StateLoaded)
-            {
-                OMX_TRACE3(pComponentPrivate->dbg, "select() error.\n");
-                OMX_VIDENC_EVENT_HANDLER(pComponentPrivate, OMX_EventError, OMX_ErrorHardware, 0, NULL);
-            }
-            /*OMX_VIDENC_SET_ERROR_BAIL(eError, OMX_ErrorHardware, pComponentPrivate);*/
-            eError = OMX_ErrorHardware;
-            OMX_ERROR5(pComponentPrivate->dbg, "*Fatal Error : %x\n", eError);
+            eError = OMX_ErrorInvalidState;
+            OMX_TRACE3(pComponentPrivate->dbg, "select() error.\n");
             OMX_VIDENC_HandleError(pComponentPrivate, eError);
         }
         else
@@ -199,9 +199,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                 if (nRet == -1)
                 {
                     OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from cmdPipe\n");
-                    OMX_VIDENC_SET_ERROR_BAIL(eError,
-                                              OMX_ErrorHardware,
-                                              pComponentPrivate);
+                    OMX_VIDENC_HandleError(pComponentPrivate, OMX_ErrorHardware);
                 }
 
 #ifdef __PERF_INSTRUMENTATION__
@@ -214,6 +212,11 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorNone);
                 }
 
+                /* dummy command to process fatal error event */
+                if (eCmd == (OMX_COMMANDTYPE)VIDENC_FATAL_ERROR_COMMAND)
+                {
+                    continue;
+                }
                 if (eCmd == OMX_CommandMarkBuffer)
                 {
                     nRet = read(pComponentPrivate->nCmdDataPipe[0],
@@ -222,9 +225,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     if (nRet == -1)
                     {
                         OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from cmdDataPipe\n");
-                        OMX_VIDENC_SET_ERROR_BAIL(eError,
-                                                  OMX_ErrorHardware,
-                                                  pComponentPrivate);
+                        OMX_VIDENC_HandleError(pComponentPrivate, OMX_ErrorHardware);
                     }
                 }
                 else
@@ -235,9 +236,7 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     if (nRet == -1)
                     {
                         OMX_PRCOMM4(pComponentPrivate->dbg, "Error while reading from cmdDataPipe\n");
-                        OMX_VIDENC_SET_ERROR_BAIL(eError,
-                                                  OMX_ErrorHardware,
-                                                  pComponentPrivate);
+                        OMX_VIDENC_HandleError(pComponentPrivate, OMX_ErrorHardware);
                     }
                 }
 
@@ -254,7 +253,9 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Enters OMX_VIDENC_HandleCommandStateSet\n");
                         eError = OMX_VIDENC_HandleCommandStateSet(pComponentPrivate,
                                                                   nParam1);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                        if(eError != OMX_ErrorNone) {
+                            OMX_VIDENC_HandleError(pComponentPrivate, eError);
+                        }
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Exits OMX_VIDENC_HandleCommandStateSet\n");
                         break;
                     case OMX_CommandFlush :
@@ -262,21 +263,27 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                         eError = OMX_VIDENC_HandleCommandFlush(pComponentPrivate,
                                                                nParam1,
                                                                OMX_FALSE);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                        if(eError != OMX_ErrorNone) {
+                            OMX_VIDENC_HandleError(pComponentPrivate, eError);
+                        }
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Exits OMX_VIDENC_HandleCommandFlush\n");
                         break;
                     case OMX_CommandPortDisable :
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Enters OMX_VIDENC_HandleCommandDisablePort\n");
                         eError = OMX_VIDENC_HandleCommandDisablePort(pComponentPrivate,
                                                                      nParam1);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                        if(eError != OMX_ErrorNone) {
+                            OMX_VIDENC_HandleError(pComponentPrivate, eError);
+                        }
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Exits OMX_VIDENC_HandleCommandDisablePort\n");
                         break;
                     case OMX_CommandPortEnable :
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Enters OMX_VIDENC_HandleCommandDisablePort\n");
                         eError = OMX_VIDENC_HandleCommandEnablePort(pComponentPrivate,
                                                                     nParam1);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                        if(eError != OMX_ErrorNone) {
+                            OMX_VIDENC_HandleError(pComponentPrivate, eError);
+                        }
                     OMX_PRSTATE2(pComponentPrivate->dbg, "Exits OMX_VIDENC_HandleCommandDisablePort\n");
                         break;
                     case OMX_CommandMarkBuffer :
@@ -307,15 +314,8 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                 {
                     OMX_PRBUFFER1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FilledInBuf\n");
                     eError = OMX_VIDENC_Process_FilledInBuf(pComponentPrivate);
-                    if (eError != OMX_ErrorNone)
-                    {
-                        OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
-                        OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,
-                                                 OMX_EventError,
-                                                 OMX_ErrorUndefined,
-                                                 0,
-                                                 NULL);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                    if(eError != OMX_ErrorNone) {
+                        OMX_VIDENC_HandleError(pComponentPrivate, eError);
                     }
                     OMX_PRBUFFER1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FilledInBuf\n");
                 }
@@ -326,15 +326,8 @@ void* OMX_VIDENC_Thread (void* pThreadData)
                 {
                     OMX_PRBUFFER1(pComponentPrivate->dbg, "Enters OMX_VIDENC_Process_FreeOutBuf\n");
                     eError = OMX_VIDENC_Process_FreeOutBuf(pComponentPrivate);
-                    if (eError != OMX_ErrorNone)
-                    {
-                        OMX_VIDENC_FatalErrorRecover(pComponentPrivate);
-                        OMX_VIDENC_EVENT_HANDLER(pComponentPrivate,
-                                                 OMX_EventError,
-                                                 OMX_ErrorUndefined,
-                                                 0,
-                                                 NULL);
-                        OMX_VIDENC_BAIL_IF_ERROR(eError, pComponentPrivate);
+                    if(eError != OMX_ErrorNone) {
+                        OMX_VIDENC_HandleError(pComponentPrivate, eError);
                     }
                     OMX_PRBUFFER1(pComponentPrivate->dbg, "Exits OMX_VIDENC_Process_FreeOutBuf\n");
                 }
