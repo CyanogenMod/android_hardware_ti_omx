@@ -2546,16 +2546,16 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         if (eError != OMX_ErrorNone) {
             goto FREEHANDLES;
         }
-        if (pAppData->H264BCType == VIDDECTEST_FILLDATA_TYPE_FRAME_NAL_TWO_BE ||
-            pAppData->H264BCType == VIDDECTEST_FILLDATA_TYPE_FRAME_NAL_TWO_BE ||
-            pAppData->H264BCType == VIDDECTEST_FILLDATA_TYPE_FRAME_NAL) {
-            OMX_U32 bBigEnd = 0;
+        if (pAppData->H264BCType == VIDDECTEST_H264FILETYPE_NAL_TWO_BE ||
+            pAppData->H264BCType == VIDDECTEST_H264FILETYPE_NAL_TWO_LE ||
+            pAppData->H264BCType == VIDDECTEST_H264FILETYPE_NAL) {
+            OMX_BOOL bBigEnd = OMX_FALSE;
             eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoDecode.Param.IsNALBigEndian", (OMX_INDEXTYPE *)&nVidDecodeCustomParamIndex);
             if(eError != OMX_ErrorNone) {
                 ERR_PRINT ("Error in OMX_GetExtensionIndex function %X\n", eError);
                 goto FREEHANDLES;
             }
-            if (pAppData->H264BCType == VIDDECTEST_FILLDATA_TYPE_FRAME_NAL_TWO_LE) {
+            if (pAppData->H264BCType == VIDDECTEST_H264FILETYPE_NAL_TWO_LE) {
                 bBigEnd = OMX_FALSE;
             }
             else {

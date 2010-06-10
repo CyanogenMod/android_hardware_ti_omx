@@ -2271,6 +2271,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pDynParams->ulDisplayWidth = 0;
                     pDynParams->ulFrameSkipMode = 0;
                     pDynParams->ulPPType = 0;
+                    pDynParams->ulInputBitStreamFormat = (pComponentPrivate->H264BitStreamFormat>0?1:0);
 
                     cmdValues[0] = IUALG_CMD_SETSTATUS;
                     cmdValues[1] = (OMX_U32)(pDynParams);
@@ -4035,8 +4036,12 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     else {
          pDataBuf = (OMX_U8*)nBitStream;
          do {
-        /* iOMXComponentUsesNALStartCodes is set to OMX_FALSE on opencore */
-#ifndef ANDROID
+            if (pComponentPrivate->H264BitStreamFormat == 1 || pComponentPrivate->H264BitStreamFormat == 2 || pComponentPrivate->H264BitStreamFormat == 4) {
+                /* We have all the requiered data*/
+                OMX_PRINT2(pComponentPrivate->dbg, "Setting bConfigBufferCompleteAVC = OMX_TRUE");
+                pComponentPrivate->bConfigBufferCompleteAVC = OMX_TRUE;
+            }
+            /* iOMXComponentUsesNALStartCodes is set to OMX_FALSE on opencore */
             if (pComponentPrivate->H264BitStreamFormat == 1) {
                 if (pComponentPrivate->bIsNALBigEndian) {
                     nNumBytesInNALunit = (OMX_U32)pDataBuf[nInBytePosition];
@@ -4046,7 +4051,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
                 }
             }
             else if (pComponentPrivate->H264BitStreamFormat == 2) {
-                if (pComponentPrivate>bIsNALBigEndian) {
+                if (pComponentPrivate->bIsNALBigEndian) {
                     nNumBytesInNALunit = (OMX_U32)pDataBuf[nInBytePosition] << 8 | pDataBuf[nInBytePosition+1];
                 }
                 else {
@@ -4065,7 +4070,6 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
                 eError = OMX_ErrorBadParameter;
                 goto EXIT;
             }
-#endif
             nBitPosition = (nInPositionTemp + nType) * 8;
             nInBytePosition = nInPositionTemp + nType;
             nInPositionTemp += nNumBytesInNALunit + nType;
@@ -4087,13 +4091,14 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
 
             }
         } while (nNalUnitType != 7);
-        nNumBytesInNALunit += 8 + nInBytePosition;/*sum to keep the code flow*/
+        nNumBytesInNALunit += 8;/*sum to keep the code flow*/
+        nNumBytesInNALunit += nInBytePosition;/*sum to keep the code flow*/
                                 /*the buffer must had enough space to enter this number*/
     }
-    for (i=0; nInBytePosition < nNumBytesInNALunit - 3; )
+    for (i=0; nInBytePosition < (nNumBytesInNALunit - 3); )
     {
 
-        if (((nInBytePosition + 2) < nNumBytesInNALunit - 3)&&
+        if (((nInBytePosition + 2) < (nNumBytesInNALunit - 3)) &&
             (VIDDEC_GetBits(&nBitPosition, 24, nBitStream, OMX_FALSE) == 0x000003))
         {
             OMX_PRINT2(pComponentPrivate->dbg, "discard emulation prev byte\n");
@@ -4109,6 +4114,9 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
             nRbspByte[i++] = nBitStream[nInBytePosition++];
             nNumOfBytesInRbsp++;
             nBitPosition += 8;
+        }
+        if (nInBytePosition >= (nNumBytesInNALunit - 3)) {
+            break;
         }
     }
 
@@ -5366,7 +5374,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pComponentPrivate->pLCML != NULL){
                 pComponentPrivate->pTempBuffHead.nFlags = 0;
                 if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                    pBuffHead->nFlags |= OMX_BUFFERFLAG_EOS;
+                    pComponentPrivate->pTempBuffHead.nFlags |= OMX_BUFFERFLAG_EOS;
                 }
                 pComponentPrivate->pTempBuffHead.nFilledLen = 0;
                 pComponentPrivate->pTempBuffHead.pBuffer = NULL;
@@ -5461,7 +5469,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     ((H264VDEC_UALGInputParam *)pUalgInpParams)->ulFrameIndex = pComponentPrivate->frameCounter;
                     if (pComponentPrivate->H264BitStreamFormat) {
                         H264VDEC_UALGInputParam *pParam;
-#ifndef ANDROID
                         OMX_U32 nal_len, i;
                         OMX_U8 *pDataBuf;
                         OMX_U32 length_pos = 0;
@@ -5473,20 +5480,22 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         pParam = (H264VDEC_UALGInputParam *)pUalgInpParams;
                         pParam->ulNumOfNALU = 0;
                         while (pBuffHead->nFilledLen > length_pos+pComponentPrivate->H264BitStreamFormat) {
-                            if (pComponentPrivate->H264BitStreamFormat == 1)
+                            if (pComponentPrivate->H264BitStreamFormat == 1) {
                                 if (pComponentPrivate->bIsNALBigEndian) {
                                     nal_len = (OMX_U32)pDataBuf[length_pos];
                                 }
                                 else {
                                     nal_len = (OMX_U32)pDataBuf[length_pos];
                                 }
-                            else if (pComponentPrivate->H264BitStreamFormat == 2)
+                            }
+                            else if (pComponentPrivate->H264BitStreamFormat == 2) {
                                 if (pComponentPrivate->bIsNALBigEndian) {
                                     nal_len = (OMX_U32)pDataBuf[length_pos] << 8 | pDataBuf[length_pos+1];
                                 }
                                 else {
                                     nal_len = (OMX_U32)pDataBuf[length_pos] << 0 | pDataBuf[length_pos+1] << 8 ;
                                 }
+                            }
                             else if (pComponentPrivate->H264BitStreamFormat == 4){
                                 if (pComponentPrivate->bIsNALBigEndian) {
                                     nal_len = (OMX_U32)pDataBuf[length_pos]<<24 | pDataBuf[length_pos+1] << 16 | pDataBuf[length_pos+2] << 8 | pDataBuf[length_pos+3];
@@ -5514,169 +5523,6 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         }
                         /* update with the new data size*/
                         pBuffHead->nFilledLen = data_pos;
-#else
-                        pParam = (H264VDEC_UALGInputParam *)pUalgInpParams;
-                        pParam->ulNumOfNALU = 0;
-
-                        if (pBuffHead->nFlags >= OMX_BUFFERFLAG_CODECCONFIG) {
-                            OMX_PRINT1(pComponentPrivate->dbg,"nFlags = %x\n", pBuffHead->nFlags);
-                            OMX_PRINT1(pComponentPrivate->dbg,"copy previous codec config data to current ccd buffer\n");
-                            eError = VIDDEC_CopyBuffer(pComponentPrivate, pBuffHead);
-
-                            OMX_PRINT1(pComponentPrivate->dbg,"save current ccd buff - nFilledLen = %d\n", pBuffHead->nFilledLen);
-                            eError = VIDDEC_SaveBuffer(pComponentPrivate, pBuffHead);
-                            pComponentPrivate->aCCDsize[pComponentPrivate->nCCDcnt++] = pBuffHead->nFilledLen;
-
-                            OMX_PRINT1(pComponentPrivate->dbg,"send ccd buffer back to client\n");
-                            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
-                            goto EXIT;
-                        }
-                        else {
-                            H264VDEC_UALGInputParam *pParam;
-                            OMX_U32 len     = 0; /* offset+filledlen+padding */
-                            OMX_U32 off     = 0; /* offset */
-                            OMX_U32 fl      = 0; /* filledlen */
-                            OMX_U32 rem     = 0; /* modulus */
-                            OMX_U32 pad     = 0; /* padding */
-                            OMX_U32 numnalu = 0; /* number of nal units */
-                            OMX_U32 sp      = 0; /* starting position of 4 byte nDataSize */
-                            OMX_U32 nalusize[256] = {0}; /* array to store nal sizes */
-                            OMX_U32 i       = 0;
-                            OMX_U32 j       = 0;
-                            OMX_U32 t1      = 0;
-                            OMX_U32 t2      = 0;
-
-                            /* This is how pBuffer is arranged when
-                             * iOMXComponentUsesFullAVCFrames is set
-                             * to true
-                             */
-
-                            /* offset,
-                             * NALU1, NALU2, ...
-                             * padding,
-                             * nSize,
-                             * nVersion,
-                             * nPortIndex,
-                             * eType,
-                             * nDataSize,
-                             * NAL1Len, NAL2Len, ...
-                             */
-
-                            pParam = (H264VDEC_UALGInputParam *)pUalgInpParams;
-                            pParam->ulNumOfNALU = 0;
-                            off = pBuffHead->nOffset;
-                            fl  = pBuffHead->nFilledLen;
-                            rem = (off + fl) % 4;
-                            if (rem > 0) {
-                                pad = 4 - rem;
-                            }
-
-                            len = off + fl + pad;
-                            OMX_PRINT1(pComponentPrivate->dbg,"nFlags = %x\n", pBuffHead->nFlags);
-                            OMX_PRINT1(pComponentPrivate->dbg,"off=%d,fl=%d,rem=%d,pad=%d,len=%d\n", off, fl, rem, pad, len);
-
-                            /* print the OMX_ExtraDataNALSizeArry marker */
-                            OMX_PRINT1(pComponentPrivate->dbg,"extradata marker -> 0x %x %x %x %x\n",
-                                                            pBuffHead->pBuffer[len+15],
-                                                            pBuffHead->pBuffer[len+14],
-                                                            pBuffHead->pBuffer[len+13],
-                                                            pBuffHead->pBuffer[len+12]);
-
-                            /* store number of numnalu */
-                            ((OMX_U8*)(&numnalu))[3] = pBuffHead->pBuffer[len+19];
-                            ((OMX_U8*)(&numnalu))[2] = pBuffHead->pBuffer[len+18];
-                            ((OMX_U8*)(&numnalu))[1] = pBuffHead->pBuffer[len+17];
-                            ((OMX_U8*)(&numnalu))[0] = pBuffHead->pBuffer[len+16];
-                            numnalu /= 4;
-
-                            /* print the numnalu */
-                            OMX_PRINT1(pComponentPrivate->dbg,"numnalu -> 0x %x %x %x %x\n", ((OMX_U8*)(&numnalu))[3]
-                                                        , ((OMX_U8*)(&numnalu))[2]
-                                                        , ((OMX_U8*)(&numnalu))[1]
-                                                        , ((OMX_U8*)(&numnalu))[0]);
-
-                            /* print the nDataSize */
-                            OMX_PRINT1(pComponentPrivate->dbg,"nDataSize -> 0x %x %x %x %x\n", pBuffHead->pBuffer[len+19]
-                                                        , pBuffHead->pBuffer[len+18]
-                                                        , pBuffHead->pBuffer[len+17]
-                                                        , pBuffHead->pBuffer[len+16]);
-                            /* print the first NALU len */
-                            OMX_PRINT1(pComponentPrivate->dbg,"first NALU len -> 0x %x %x %x %x\n", pBuffHead->pBuffer[len+23]
-                                                        , pBuffHead->pBuffer[len+22]
-                                                        , pBuffHead->pBuffer[len+21]
-                                                        , pBuffHead->pBuffer[len+20]);
-                            pParam->ulNumOfNALU = 0;
-
-                            /* starting position of nalu sizes */
-                            sp = t1 = len+20;
-                            t2 = i;
-
-                            OMX_PRINT1(pComponentPrivate->dbg,"numnalu = %d", numnalu);
-
-                            while (i<(t2+numnalu)) {
-                                j=0;
-                                while (sp<(t1+4)) {
-                                    ((OMX_U8*)(&nalusize[i]))[j] = pBuffHead->pBuffer[sp];
-                                    sp++;
-                                    j++;
-                                }
-                                t1 = sp;
-                                i++;
-                            }
-                            OMX_PRINT1(pComponentPrivate->dbg,"confirm ulNumOfNALU = %d\n", i);
-
-                            if (pComponentPrivate->bCopiedCCDBuffer == OMX_FALSE){
-                                pComponentPrivate->bCopiedCCDBuffer = OMX_TRUE;
-                                OMX_PRINT1(pComponentPrivate->dbg,"copy saved ccd buffer to data buffer\n");
-                                eError = VIDDEC_CopyBuffer(pComponentPrivate, pBuffHead);
-
-                                i=0;
-                                /* tally number of ccd nalus and add sizes to nalu array */
-                                while (i < pComponentPrivate->nCCDcnt) {
-                                    if (i == 0) {
-                                        pParam->pNALUSizeArray[i] = pComponentPrivate->aCCDsize[i];
-                                    }
-                                    else {
-                                        pParam->pNALUSizeArray[i] = pComponentPrivate->aCCDsize[i] -
-                                                                    pComponentPrivate->aCCDsize[i-1];
-                                    }
-                                    pParam->ulNumOfNALU++;
-                                    OMX_PRINT1(pComponentPrivate->dbg,"aCCDsize[%d] = %d\n", i, pParam->pNALUSizeArray[i]);
-                                    i++;
-                                }
-
-                                /* adjust the filled length to account for the ccd nalus */
-                                pBuffHead->nFilledLen = fl + pComponentPrivate->aCCDsize[i-1];
-
-                                OMX_PRINT1(pComponentPrivate->dbg,"new nFilledLen=%d; old fl=%d + aCCDsize=%d\n", pBuffHead->nFilledLen
-                                                                       , fl
-                                                                       , pComponentPrivate->aCCDsize[i-1]);
-                                t1 = i;
-                                j=0;
-
-                                /* now, add the data nalu sizes to the array,
-                                 * which already contain the ccd nalu sizes */
-                                for(;i<t1+numnalu;i++) {
-                                    pParam->pNALUSizeArray[i] = nalusize[j];
-                                    j++;
-                                }
-                                pParam->ulNumOfNALU = i+numnalu;
-
-                                for(j=0;j<i;j++) {
-                                    OMX_PRINT1(pComponentPrivate->dbg,"pParm->pNALUSizeArray[%d] = %d\n",j,pParam->pNALUSizeArray[j]);
-                                }
-                            }
-                            else {
-                                /* add the data nalu sizes to the array.
-                                 * we should not have any ccd sizes in here */
-                                for(j=0;j<i;j++) {
-                                    pParam->pNALUSizeArray[j] = nalusize[j];
-                                    OMX_PRINT1(pComponentPrivate->dbg,"pParm->pNALUSizeArray[%d] = %d\n",j,pParam->pNALUSizeArray[j]);
-                                }
-                                pParam->ulNumOfNALU = i;
-                            }
-                        }/* end else */
-#endif
                     }/* end bitstrm fmt */
                 size_dsp = sizeof(H264VDEC_UALGInputParam);
             }/* end if AVC */
@@ -8157,6 +8003,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         pDynParams->ulFrameSkipMode = 0;
         pDynParams->ulPPType = 0;
 
+        pDynParams->ulInputBitStreamFormat = (pComponentPrivate->H264BitStreamFormat>0?1:0);
         cmdValues[0] = IUALG_CMD_SETSTATUS;
         cmdValues[1] = (OMX_U32)(pDynParams);
         cmdValues[2] = sizeof(H264VDEC_UALGDynamicParams);
