@@ -2567,19 +2567,22 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
     PERF_Done(pComponentPrivate->pPERF);
 #endif
 
-    OMX_DBG_CLOSE(pComponentPrivate->dbg);
-
-    if(pComponentPrivate->eFirstBuffer.pFirstBufferSaved){
-        free(pComponentPrivate->eFirstBuffer.pFirstBufferSaved);
-        pComponentPrivate->eFirstBuffer.pFirstBufferSaved = NULL;
+    if(pComponentPrivate->eFirstBuffer.pBufferHdr){
+        if(pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer){
+            OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer, OMX_U8);
+        }
+        OMX_FREE(pComponentPrivate->eFirstBuffer.pBufferHdr);
         pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
-        pComponentPrivate->eFirstBuffer.nFilledLen = 0;
     }
+
     if(pComponentPrivate->pCodecData){
         free(pComponentPrivate->pCodecData);
         pComponentPrivate->pCodecData = NULL;
         pComponentPrivate->nCodecDataSize = 0;
     }
+
+    OMX_DBG_CLOSE(pComponentPrivate->dbg);
+
     VIDDEC_PTHREAD_MUTEX_DESTROY(pComponentPrivate->sMutex);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sInSemaphore);
     VIDDEC_PTHREAD_SEMAPHORE_DESTROY(pComponentPrivate->sOutSemaphore);

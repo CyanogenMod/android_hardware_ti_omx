@@ -792,8 +792,7 @@ typedef union VIDDEC_WMV_RCV_header {
 
 typedef struct VIDDEC_SAVE_BUFFER{
     OMX_BOOL    bSaveFirstBuffer;
-    OMX_PTR     pFirstBufferSaved;
-    OMX_S32     nFilledLen;
+    OMX_BUFFERHEADERTYPE*    pBufferHdr;
 }VIDDEC_SAVE_BUFFER;
 
 #ifdef ANDROID 
