@@ -725,12 +725,6 @@ OMX_ERRORTYPE VIDDEC_Load_Defaults (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
             VIDDEC_PTHREAD_MUTEX_INIT(pComponentPrivate->sMutex);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sInSemaphore);
             VIDDEC_PTHREAD_SEMAPHORE_INIT(pComponentPrivate->sOutSemaphore);
-            for (count = 0; count < CBUFFER_SIZE; count++) {
-                pComponentPrivate->aBufferFlags[count].nTimeStamp = 0;
-                pComponentPrivate->aBufferFlags[count].nFlags = 0;
-                pComponentPrivate->aBufferFlags[count].pMarkData = NULL;
-                pComponentPrivate->aBufferFlags[count].hMarkTargetComponent = NULL;
-            }
             pComponentPrivate->pBufferRCV.sStructRCV->nNumFrames = 0xFFFFFF; /*Infinite frame number*/
             pComponentPrivate->pBufferRCV.sStructRCV->nFrameType = 0x85;
             pComponentPrivate->pBufferRCV.sStructRCV->nID = 0x04; /*WMV3*/

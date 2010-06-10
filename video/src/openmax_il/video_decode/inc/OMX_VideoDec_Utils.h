@@ -564,8 +564,6 @@ typedef struct VIDDEC_BUFFER_PRIVATE
 /*structures and defines for Circular Buffer*/
 #define VIDDEC_CBUFFER_LOCK
 #define CBUFFER_ARRAYSIZE                   1000
-#define MAX_MULTIPLY                        4
-#define CBUFFER_SIZE                        MAX_PRIVATE_BUFFERS * MAX_MULTIPLY
 
 typedef struct VIDDEC_CBUFFER_BUFFERFLAGS{
     OMX_TICKS       nTimeStamp;
@@ -924,7 +922,6 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_U32 nCountInputBFromApp;
     OMX_U32 nCountOutputBFromApp;
 
-    VIDDEC_CBUFFER_BUFFERFLAGS aBufferFlags[CBUFFER_SIZE];
     VIDDEC_LCML_STATES eLCMLState;
     OMX_U32 nWMVFileType;
     OMX_BOOL bIsNALBigEndian;
