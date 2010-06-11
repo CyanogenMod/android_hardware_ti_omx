@@ -640,16 +640,19 @@ void *RMProxy_Thread(RMPROXY_CORE *core)
                         break;
                     }
                 }
-
                 if (index != -1) {
                     /* Shift all other components in the list up */
                     for(i=index; i < componentList.numRegisteredComponents-1; i++) {
                         componentList.component[i].componentHandle = componentList.component[i+1].componentHandle;
                         componentList.component[i].callback = componentList.component[i+1].callback;
                     }
-                    
+                    /* set the end of the list to keep the list clean */
+                    componentList.component[i].componentHandle = NULL;
+                    componentList.component[i].callback = NULL;
                     /* Decrement the count of registered components */
                     componentList.numRegisteredComponents--;
+                    /* reset index */
+                    index = -1;
                 }
                 if (numClients > 0)
                 {
