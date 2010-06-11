@@ -67,6 +67,9 @@
 #include <dbapi.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef ANDROID
+#include <utils/threads.h>
+#endif
 #include "OMX_Mp3Dec_Utils.h"
 
 /* ================================================================================= * */
@@ -96,6 +99,9 @@ void* MP3DEC_ComponentThread (void* pThreadData)
     MP3DEC_COMPONENT_PRIVATE* pComponentPrivate = (MP3DEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
 
+#ifdef ANDROID
+    setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_AUDIO);
+#endif
     prctl(PR_SET_NAME, (unsigned long) "OMX-MP3DEC", 0, 0, 0);
 
     OMX_PRINT1(pComponentPrivate->dbg, ":: Entering ComponentThread \n");
