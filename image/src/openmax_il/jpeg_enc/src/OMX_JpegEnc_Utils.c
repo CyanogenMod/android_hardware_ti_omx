@@ -718,15 +718,13 @@ this option supportsonly up to 3 mega pixels
     if(pComponentPrivate->bPPLibEnable && ptCreateString[17])
     {
         /* memory requirement for having both conversion and pplib is much larger */
-        lcml_dsp->ProfileID +=3;
-    }
-
-    if (lcml_dsp->ProfileID > 13) {
-         /* May be with conversion flag set and higer resolution >8MP images will result the profileID
-            greater than 13. We have max profileID as 13.*/
-         OMX_PRINT1(pComponentPrivate->dbg, "ERROR:: Invalid value in lcml_dsp->ProfileID =%d. \n",lcml_dsp->ProfileID);
-         eError = OMX_ErrorUndefined;
-         goto EXIT;
+        /* So increasing the profileID by 3 or to the maximum profileID limit 13.*/
+        if ( (lcml_dsp->ProfileID + 3) <= 13) {
+            lcml_dsp->ProfileID += 3;
+        }
+        else {
+            lcml_dsp->ProfileID = 13;
+        }
     }
 
     ptCreateString[18] = (ptCreateString[7] < 320) ? (ptCreateString[7] ) : 320; /* Maximum Horizontal Size of the Thumbnail for App5 marker */
