@@ -68,7 +68,9 @@
 #include <dbapi.h>
 #include <string.h>
 #include <stdio.h>
-
+#ifdef ANDROID
+#include <utils/threads.h>
+#endif
 #include "OMX_AacDec_Utils.h"
 
 /* ================================================================================= * */
@@ -97,7 +99,9 @@ void* AACDEC_ComponentThread (void* pThreadData)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE* pComponentPrivate = (AACDEC_COMPONENT_PRIVATE*)pThreadData;
     OMX_COMPONENTTYPE *pHandle = pComponentPrivate->pHandle;
-
+#ifdef ANDROID
+    setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_AUDIO);
+#endif
     prctl(PR_SET_NAME, (unsigned long) "OMX-AACDEC", 0, 0, 0);
 
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering ComponentThread \n",__LINE__);
