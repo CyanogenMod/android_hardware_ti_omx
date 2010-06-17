@@ -66,6 +66,7 @@
 #include <OMX_Core.h>
 #include <OMX_Audio.h>
 #include <TIDspOmx.h>
+#include <OMX_TI_Common.h>
 
 #ifdef DSP_RENDERING_ON
 #include <AudioManagerAPI.h>
@@ -1136,17 +1137,7 @@ int main(int argc, char* argv[]) {
 
         if (!DasfMode) {
             for (i = 0; i < numOfInputBuffer; i++) {
-                pInputBuffer[i] = (OMX_U8*)newmalloc(WBAPP_INPUT_BUFFER_SIZE * 2 + 256);
-                APP_MEMPRINT("%d :: [TESTAPP ALLOC] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-
-                if (NULL == pInputBuffer[i]) {
-                    APP_DPRINT("%d :: Malloc Failed\n", __LINE__);
-                    eError = OMX_ErrorInsufficientResources;
-                    goto EXIT;
-                }
-
-                pInputBuffer[i] = pInputBuffer[i] + 128;
-
+                OMX_MALLOC_SIZE_DSPALIGN(pInputBuffer[i], WBAPP_INPUT_BUFFER_SIZE * 2, OMX_U8);
                 /*  allocate input buffer */
                 APP_DPRINT("%d :: About to call OMX_UseBuffer\n", __LINE__);
                 eError = OMX_UseBuffer(pHandle, &pInputBufferHeader[i], 0, NULL, WBAPP_INPUT_BUFFER_SIZE * 2, pInputBuffer[i]);
@@ -1159,17 +1150,7 @@ int main(int argc, char* argv[]) {
         }
 
         for (i = 0; i < numOfOutputBuffer; i++) {
-            pOutputBuffer[i] = newmalloc (pCompPrivateStruct->nBufferSize * 2 + 256);
-            APP_MEMPRINT("%d :: [TESTAPP ALLOC] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-
-            if (NULL == pOutputBuffer[i]) {
-                APP_DPRINT("%d :: Malloc Failed\n", __LINE__);
-                eError = OMX_ErrorInsufficientResources;
-                goto EXIT;
-            }
-
-            pOutputBuffer[i] = pOutputBuffer[i] + 128;
-
+            OMX_MALLOC_SIZE_DSPALIGN(pOutputBuffer[i], pCompPrivateStruct->nBufferSize * 2, OMX_U8);
             /* allocate output buffer */
             APP_DPRINT("%d :: About to call OMX_UseBuffer\n", __LINE__);
             eError = OMX_UseBuffer(pHandle, &pOutputBufferHeader[i], 1, NULL, pCompPrivateStruct->nBufferSize * 2, pOutputBuffer[i]);
@@ -1496,12 +1477,7 @@ int main(int argc, char* argv[]) {
 #ifdef USE_BUFFER
 
                             for (i = 0; i < numOfInputBuffer; i++) {
-                                if (pInputBuffer[i] != NULL) {
-                                    APP_MEMPRINT("%d :: App: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-                                    pInputBuffer[i] = pInputBuffer[i] - 128;
-                                    newfree(pInputBuffer[i]);
-                                    pInputBuffer[i] = NULL;
-                                }
+                                OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
                             }
 
 #endif
@@ -1641,24 +1617,12 @@ int main(int argc, char* argv[]) {
         /* newfree the App Allocated Buffers */
         APP_IPRINT("%d :: App: Freeing the App Allocated Buffers in TestApp\n", __LINE__);
 
-        if (!DasfMode) {
-            for (i = 0; i < numOfInputBuffer; i++) {
-                if (pInputBuffer[i] != NULL) {
-                    APP_MEMPRINT("%d :: App: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-                    pInputBuffer[i] = pInputBuffer[i] - 128;
-                    newfree(pInputBuffer[i]);
-                    pInputBuffer[i] = NULL;
-                }
-            }
+        for (i = 0; i < numOfInputBuffer; i++) {
+            OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
         }
 
         for (i = 0; i < numOfOutputBuffer; i++) {
-            if (pOutputBuffer[i] != NULL) {
-                APP_MEMPRINT("%d :: App: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-                pOutputBuffer[i] = pOutputBuffer[i] - 128;
-                newfree(pOutputBuffer[i]);
-                pOutputBuffer[i] = NULL;
-            }
+            OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer[i], OMX_U8);
         }
 
 #endif
@@ -2080,23 +2044,11 @@ int FreeAllResources(OMX_HANDLETYPE *pHandle,
 
     /* free the UseBuffers */
     for (i = 0; i < NIB; i++) {
-        UseInpBuf[i] = UseInpBuf[i] - 128;
-        APP_IPRINT("%d :: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, (UseInpBuf[i]));
-
-        if (UseInpBuf[i] != NULL) {
-            newfree(UseInpBuf[i]);
-            UseInpBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseInpBuf[i], OMX_U8);
     }
 
     for (i = 0; i < NOB; i++) {
-        UseOutBuf[i] = UseOutBuf[i] - 128;
-        APP_IPRINT("%d :: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, UseOutBuf[i]);
-
-        if (UseOutBuf[i] != NULL) {
-            newfree(UseOutBuf[i]);
-            UseOutBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseOutBuf[i], OMX_U8);
     }
 
     /*i value is fixed by the number calls to malloc in the App */
@@ -2105,7 +2057,7 @@ int FreeAllResources(OMX_HANDLETYPE *pHandle,
             free(ArrayOfPointers[i]);
     }
 
-    OMX_FreeHandle(pHandle);
+    TIOMX_FreeHandle(pHandle);
 
     return eError;
 }
