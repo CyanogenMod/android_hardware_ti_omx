@@ -71,6 +71,9 @@
 #include "OMX_VideoDec_Utils.h"
 #include "OMX_VideoDec_Thread.h"
 #include "OMX_VideoDec_DSP.h"
+/* Include functions useful for thread naming
+ * */
+#include <sys/prctl.h>
 
 
 extern OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE pHandle, OMX_U32 nParam1);
@@ -111,7 +114,9 @@ void* OMX_VidDec_Thread (void* pThreadData)
     LCML_DSP_INTERFACE *pLcmlHandle;
     OMX_U32 aParam[4];
     OMX_BOOL bFlag = OMX_FALSE;
-
+    /* Set the thread's name
+     * */
+    prctl(PR_SET_NAME, (unsigned long) "OMX VIDDEC", 0, 0, 0);
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pThreadData;
 
 #ifdef __PERF_INSTRUMENTATION__
