@@ -3468,7 +3468,6 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     OMX_ERRORTYPE eError                        = OMX_ErrorNone;
     OMX_COMPONENTTYPE* pHandle                  = NULL;
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
-    char* pTemp                                 = NULL;
     VIDEOENC_PORT_TYPE* pCompPort               = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDef      = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefOut   = NULL;
@@ -3501,19 +3500,8 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         {
             if (pBufferPrivate->pUalgParam != NULL)
             {
-                pTemp = (char*)pBufferPrivate->pUalgParam;
-                pTemp -= 128;
-                if (eCompressionFormat == OMX_VIDEO_CodingAVC)
-                {
-                    pBufferPrivate->pUalgParam = (H264VE_GPP_SN_UALGInputParams*)pTemp;
-                }
-                else if (eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                         eCompressionFormat ==OMX_VIDEO_CodingH263)
-                {
-                    pBufferPrivate->pUalgParam = (MP4VE_GPP_SN_UALGInputParams*)pTemp;
-                }
+                VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
             }
-            VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
         }
     }
     else if (nPortIndex == VIDENC_OUTPUT_PORT)
@@ -3523,19 +3511,8 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
         {
             if (pBufferPrivate->pUalgParam != NULL)
             {
-                pTemp = (char*)pBufferPrivate->pUalgParam;
-                pTemp -= 128;
-                if (eCompressionFormat == OMX_VIDEO_CodingAVC)
-                {
-                    pBufferPrivate->pUalgParam = (H264VE_GPP_SN_UALGOutputParams*)pTemp;
-                }
-                else if (eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
-                         eCompressionFormat ==OMX_VIDEO_CodingH263)
-                {
-                    pBufferPrivate->pUalgParam = (MP4VE_GPP_SN_UALGOutputParams*)pTemp;
-                }
+                VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
             }
-            VIDENC_FREE(pBufferPrivate->pUalgParam, pMemoryListHead, pComponentPrivate->dbg);
         }
     }
     else
@@ -3565,8 +3542,6 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     {
         if (pBufHead->pBuffer != NULL)
         {
-            pBufHead->pBuffer -= 128;
-            pBufHead->pBuffer = (unsigned char*)pBufHead->pBuffer;
             VIDENC_FREE(pBufHead->pBuffer, pMemoryListHead, pComponentPrivate->dbg);
         }
     }
