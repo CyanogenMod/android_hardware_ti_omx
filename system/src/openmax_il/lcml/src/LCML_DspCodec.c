@@ -286,6 +286,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         status = DspManager_Open(0, NULL);
         DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
+        phandle->iDspOpenCount++;
 
         /* Attach and get handle to processor */
         status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
