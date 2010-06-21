@@ -4357,8 +4357,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4  ||
                 pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) {
             VIDDEC_ParseVideo_MPEG4( &nWidth, &nHeight, pBuffHead);
-            /* Work around force reconfiguration */
-            bOutPortSettingsChanged = OMX_TRUE;
         }
         else if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
             VIDDEC_ParseVideo_MPEG2( &nWidth, &nHeight, pBuffHead);
