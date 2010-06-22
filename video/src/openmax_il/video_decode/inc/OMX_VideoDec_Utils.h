@@ -345,8 +345,8 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
  #define VIDDEC_RM_FREQ_SPARK_VGA                     300
 #endif
 
-#define VIDDEC_MIN_WIDTH                              176
-#define VIDDEC_MIN_HEIGHT                             144
+#define VIDDEC_MIN_WIDTH                              128
+#define VIDDEC_MIN_HEIGHT                             96
 
 #define VIDDEC_QCIF_WIDTH                             176
 #define VIDDEC_QCIF_HEIGHT                            144

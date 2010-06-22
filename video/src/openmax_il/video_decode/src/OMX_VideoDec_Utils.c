@@ -3183,13 +3183,20 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
         OMX_PRCOMM4(pComponentPrivate->dbg, "NULL received\n");
         goto EXIT;
     }
+    /* Handle case were previous error as occur or flush is in process */
     if (pComponentPrivate->bFlushing ||
         pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
         if(pBuffHead->pOutputPortPrivate != NULL) {
+            /* Setting DSP as the owner, the buffer will be returned as soon as the client call flush */
             pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
             pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleFreeOutputBufferFromApp: set DSP as owner");
         }
-        OMX_PRCOMM4(pComponentPrivate->dbg, "Drop buffer to DSP%p\n", pBuffHead);
+        else{
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleFreeOutputBufferFromApp: VIDDEC_FillBufferDone()\n");
+            VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
+        }
+        eError = OMX_ErrorNone;
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead, pComponentPrivate->eExecuteToIdle);
@@ -4420,6 +4427,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             }
             nWidth  = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
             nHeight =  pComponentPrivate->pInPortDef->format.video.nFrameHeight;
+            OMX_PRINT4(pComponentPrivate->dbg, "Error while persering: %x, %dx%d", eError, nWidth, nHeight);
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                        OMX_EventError,
@@ -4428,6 +4436,19 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                                        "eError != OMX_ErrorNone or nWidth<->nHeight == zero");
             goto EXIT;
         }
+
+        /* Verify if the resolution is supported by the component,
+           depending in the format the limitations may vary */
+        if((nWidth > VIDDEC_D1MAX_WIDTH) || (nHeight > VIDDEC_D1MAX_HEIGHT) ||
+           (nWidth < VIDDEC_MIN_HEIGHT) || (nHeight < VIDDEC_MIN_HEIGHT) ||
+           (nWidth*nHeight > VIDDEC_D1MAX_HEIGHT*VIDDEC_VGA_HEIGHT) ||
+           (nWidth*nHeight < VIDDEC_MIN_WIDTH*VIDDEC_MIN_HEIGHT)){
+            OMX_PRINT4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+
+
         /*For MPeg4 WVGA SN requires that used resolutions be 854*/
         /*if parser read 864 it needs to be changed to 854*/
         /*nHeigth is changed in order to change portrait resolutions too*/
@@ -4461,14 +4482,6 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         /*Verify if actual width & height parameters are correct*/
         if (pComponentPrivate->pInPortDef->format.video.nFrameWidth != nWidth ||
             pComponentPrivate->pInPortDef->format.video.nFrameHeight != nHeight) {
-            if((nWidth >= 1500) || (nHeight >= 1500)){
-                nPadWidth = 720;
-                nPadHeight = 576;
-            }
-            else if(((nWidth < 16) || (nHeight < 16))){
-                nPadWidth = 720;
-                nPadHeight = 576;
-            }
             pComponentPrivate->pInPortDef->format.video.nFrameWidth = nPadWidth;
             pComponentPrivate->pInPortDef->format.video.nFrameHeight = nPadHeight;
 #ifdef ANDROID
@@ -4645,16 +4658,24 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         OMX_PRCOMM4(pComponentPrivate->dbg, "NULL received\n");
         goto EXIT;
     }
+    /* Handle case were previous error as occur or flush is in process */
     /*avoid buffer movement after critical error*/
     if (pComponentPrivate->bFlushing ||
         pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
         if(pBuffHead->pInputPortPrivate != NULL) {
+            /* Setting DSP as the owner, the buffer will be returned as soon as the client call flush */
             pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
             pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleDataBuf_FromApp: set DSP as owner");
         }
-        OMX_PRCOMM4(pComponentPrivate->dbg, "Drop buffer to DSP%p\n", pBuffHead);
+        else{
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleDataBuf_FromApp(): VIDDEC_EmptyBufferDone()");
+            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
+        }
+        eError = OMX_ErrorNone;
         goto EXIT;
     }
+
     if(pBuffHead->pInputPortPrivate != NULL) {
         pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
     }
@@ -5033,13 +5054,31 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         */
         eError = VIDDEC_ParseHeader( pComponentPrivate, pBuffHead);
 
+        /* Check first if resolution is supported */
+        if(eError == OMX_ErrorUnsupportedSetting){
+            /* Here we start the process of error handling since
+               component has start but resolution is NOT supported*/
+            OMX_PRINT4(pComponentPrivate->dbg, "Handling eError: %x", eError);
+            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
+            OMX_PRINT4(pComponentPrivate->dbg, "nLastErrorSeverity = OMX_TI_ErrorCritical");
+            pComponentPrivate->nLastErrorSeverity = OMX_TI_ErrorCritical;
+            OMX_PRCOMM4(pComponentPrivate->dbg, "Sending: OMX_EventError->OMX_ErrorUnsupportedSetting");
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                       OMX_EventError,
+                                       eError,
+                                       OMX_ErrorUnsupportedSetting,
+                                       "eError: OMX_ErrorUnsupportedSetting, set it as OMX_TI_ErrorCritical");
+            eError = OMX_ErrorNone;
+            goto EXIT;
+        }
         /* The MPEG4 algorithm expects both the configuration buffer
         * and the first data buffer to be in the same frame - this logic only
         * applies when in frame mode and when the framework sends the config data
         * separately. Similar situation is handled elsewhere for H.264 & WMV
         * decoding.
         */
-        if(eError != OMX_ErrorNone ||
+        else if(eError != OMX_ErrorNone ||
             ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4) &&
               pComponentPrivate->ProcessMode == 0)) {
             if (pBuffHead != NULL) {
@@ -5780,13 +5819,20 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         OMX_PRCOMM4(pComponentPrivate->dbg, "NULL received\n");
         goto EXIT;
     }
+    /* Handle case were previous error as occur */
     /*buffers needs to be stopped when critical error*/
     if (pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
         if(pBuffHead->pOutputPortPrivate != NULL) {
+            /* Setting DSP as the owner, the buffer will be returned as soon as the client call flush */
             pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
             pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleDataBuf_FromDsp: set DSP as owner");
         }
-        OMX_PRCOMM4(pComponentPrivate->dbg, "Drop buffer to DSP%p\n", pBuffHead);
+        else{
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleDataBuf_FromDsp: VIDDEC_FillBufferDone()\n");
+            VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
+        }
+        eError = OMX_ErrorNone;
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferSize fromDSP %lu \n",pBuffHead->nAllocLen);
@@ -6113,13 +6159,20 @@ OMX_ERRORTYPE VIDDEC_HandleFreeDataBuf( VIDDEC_COMPONENT_PRIVATE *pComponentPriv
         OMX_PRCOMM4(pComponentPrivate->dbg, "NULL received\n");
         goto EXIT;
     }
+    /* Handle case were previous error as occur or flush is in process */
     /*buffers needs to be stopped when critical error*/
     if (pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
         if(pBuffHead->pInputPortPrivate != NULL) {
+            /* Setting DSP as the owner, the buffer will be returned as soon as the client call flush */
             pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
             pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleFreeDataBuf: set DSP as owner");
         }
-        OMX_PRCOMM4(pComponentPrivate->dbg, "Drop buffer to DSP%p\n", pBuffHead);
+        else{
+            OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleFreeDataBuf(): VIDDEC_EmptyBufferDone()");
+            VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
+        }
+        eError = OMX_ErrorNone;
         goto EXIT;
     }
     OMX_PRSTATE1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
