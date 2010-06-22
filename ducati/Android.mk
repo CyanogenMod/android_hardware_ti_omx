@@ -12,7 +12,6 @@ TI_OMX_CFLAGS := -Wall -fpic -pipe -DSTATIC_TABLE -O0
 include $(TI_SYSTEMOMX_TOP)/system/mm_osal/src/Android.mk
 include $(TI_SYSTEMOMX_TOP)/system/omx_core/src/Android.mk
 
-include $(TI_DOMX_TOP)/mmplatform/src/Android.mk
 include $(TI_DOMX_TOP)/system/domx/omx_proxy_common/src/Android.mk
 include $(TI_DOMX_TOP)/system/domx/omx_rpc/src/Android.mk
 

@@ -68,6 +68,7 @@ char *tComponentName[MAXCOMP][2] = {
     {"OMX.TI.DUCATI1.VIDEO.H264D", "video_decoder.avc"},
     {"OMX.TI.DUCATI1.VIDEO.H264E", "video_encoder.avc"},
     {"OMX.TI.DUCATI1.VIDEO.MPEG4D", "video_decoder.mpeg4"},
+    {"OMX.TI.DUCATI1.VIDEO.MPEG4E", "video_encoder.mpeg4"},
     {"OMX.TI.DUCATI1.VIDEO.VP6D", "video_decoder.vp6"},
     {"OMX.TI.DUCATI1.VIDEO.VP7D", "video_decoder.vp7"},
     {"OMX.TI.DUCATI1.IMAGE.JPEGD", "jpeg_decoder.jpeg"},
@@ -273,6 +274,12 @@ OMX_ERRORTYPE OMX_FreeHandle (OMX_HANDLETYPE hComponent)
     if(pthread_mutex_lock(&mutex) != 0) 
     {
         printf("%d :: Core: Error in Mutex lock\n",__LINE__);
+    }
+
+    if(pHandle == NULL)
+    {
+        retVal = OMX_ErrorBadParameter;
+        goto EXIT;
     }
 
     /* Locate the component handle in the array of handles */

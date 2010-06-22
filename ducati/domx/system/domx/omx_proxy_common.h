@@ -88,8 +88,11 @@ typedef OMX_ERRORTYPE (*PROXY_EMPTYBUFFER_DONE)(OMX_HANDLETYPE hComponent, OMX_U
                                                  OMX_U32 nFlags);
                                                  
 typedef OMX_ERRORTYPE (*PROXY_FILLBUFFER_DONE)(OMX_HANDLETYPE hComponent, OMX_U32 remoteBufHdr,
-                                                OMX_U32 nfilledLen, OMX_U32 nOffset,
-                                                OMX_U32 nFlags, OMX_TICKS nTimeStamp);
+                                            OMX_U32 nfilledLen, OMX_U32 nOffset,
+                                            OMX_U32 nFlags,
+                                            OMX_TICKS nTimeStamp,
+                                            OMX_HANDLETYPE hMarkTargetComponent,
+                                            OMX_PTR pMarkData);
 
 typedef OMX_ERRORTYPE (*PROXY_EVENTHANDLER)(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
                                              OMX_EVENTTYPE eEvent, OMX_U32 nData1,
@@ -165,7 +168,23 @@ typedef struct PROXY_COMPONENT_PRIVATE {
     OMX_U32 nNumOfLines[PROXY_MAXNUMOFPORTS];
 }PROXY_COMPONENT_PRIVATE;
 
-
+/*===============================================================*/
+/** PROXY_MARK_DATA        : A pointer to this structure is sent as mark data to
+ *                           the remote core when a MarkBuffer command is made.
+ *
+ * @param hComponentActual : This is the actual handle of the component to be
+ *                           marked. When marked buffers come from the remote
+ *                           to the local core then remote handle of the mark
+ *                           component is replaced by this in the header.
+ *
+ * @param pMarkdataActual : This is the mark data set by the client.
+ */
+/*===============================================================*/
+typedef struct PROXY_MARK_DATA
+{
+    OMX_HANDLETYPE hComponentActual;
+    OMX_PTR pMarkDataActual;
+}PROXY_MARK_DATA;
 /*******************************************************************************
 * Functions
 *******************************************************************************/

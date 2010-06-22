@@ -18,7 +18,6 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../../domx \
 	hardware/ti/omx/ducati/system-omx/system/omx_core/inc \
 	hardware/ti/omx/ducati/system-omx/system/mm_osal/inc \
-	$(LOCAL_PATH)/../../../../mmplatform \
 	hardware/ti/tiler/memmgr \
 	hardware/ti/syslink/syslink/d2c \
 	hardware/ti/syslink/syslink/api/include \
@@ -27,7 +26,6 @@ LOCAL_CFLAGS := -pipe -fomit-frame-pointer -Wall  -Wno-trigraphs -Werror-implici
 LOCAL_CFLAGS += -D_Android
 
 LOCAL_STATIC_LIBRARIES += \
-		libipc_setup \
 
 LOCAL_SHARED_LIBRARIES += \
 		liblog \

@@ -113,6 +113,7 @@ static OMX_ERRORTYPE PROXY_EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppD
   
   OMX_U16 count;
   OMX_BUFFERHEADERTYPE * pLocalBufHdr = NULL;
+  OMX_PTR pTmpData = NULL;
     
   DOMX_DEBUG("\nEntered Proxy event handler__________________________________________PROXY EH");
     
@@ -151,14 +152,31 @@ static OMX_ERRORTYPE PROXY_EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppD
           /*update local buffer header*/
           nData1 = (OMX_U32)pLocalBufHdr;
           break;
+    case OMX_EventMark:
+        DOMX_DEBUG("Received Mark Event");
+        PROXY_assert((pEventData != NULL), OMX_ErrorUndefined,
+                     "MarkData corrupted");
+        pTmpData = pEventData;
+        pEventData = ((PROXY_MARK_DATA *)pEventData)->pMarkDataActual;
+        TIMM_OSAL_Free(pTmpData);
+    break;
           
     default:
           break;  
   }
-      
-  pCompPrv->tCBFunc.EventHandler(hComponent,pCompPrv->pILAppData,eEvent,nData1,nData2,pEventData);
 
 EXIT:
+    if(eError == OMX_ErrorNone)
+    {
+        pCompPrv->tCBFunc.EventHandler(hComponent, pCompPrv->pILAppData, eEvent,
+                                       nData1, nData2, pEventData);
+    }
+    else
+    {
+        pCompPrv->tCBFunc.EventHandler(hComponent, pCompPrv->pILAppData,
+                                       OMX_EventError, eError, 0, NULL);
+    }
+
   DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
   return OMX_ErrorNone;
 }
@@ -223,7 +241,9 @@ EXIT:
 /* ===========================================================================*/
 static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 remoteBufHdr,
                                           OMX_U32 nfilledLen, OMX_U32 nOffset,
-                                          OMX_U32 nFlags, OMX_TICKS nTimeStamp)
+                                          OMX_U32 nFlags, OMX_TICKS nTimeStamp,
+                                          OMX_HANDLETYPE hMarkTargetComponent,
+                                          OMX_PTR pMarkData)
 {
     
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -251,6 +271,15 @@ static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 rem
             pBufHdr->nFlags = nFlags;
             pBufHdr->pBuffer = (OMX_U8 *)pCompPrv->tBufList[count].pBufferActual;
             pBufHdr->nTimeStamp = nTimeStamp;
+            if(pMarkData != NULL)
+            {
+                /*Update mark info in the buffer header*/
+                pBufHdr->pMarkData = ((PROXY_MARK_DATA *)pMarkData)->
+                                                         pMarkDataActual;
+                pBufHdr->hMarkTargetComponent = ((PROXY_MARK_DATA *)pMarkData)->
+                                                hComponentActual;
+                TIMM_OSAL_Free(pMarkData);
+            }
 /*Invalidate call is being commented out for now since invalidate functionality
  * is currently broken in kernel. Workaround is to call flush in FTB. */
 #if 0
@@ -307,6 +336,9 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     OMX_U8 isMatchFound = 0;
     OMX_U8 *pBuffer=NULL;
     OMX_U32 pBufToBeMapped = 0;
+    OMX_COMPONENTTYPE *pMarkComp = NULL;
+    PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
+    OMX_PTR pMarkData = NULL;
     
     DOMX_DEBUG("\n%s Entered",__FUNCTION__);
     
@@ -387,6 +419,26 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
             TIMM_OSAL_Error("Flush Buffer failed");
             goto EXIT;
         }
+    }
+
+    if(pBufferHdr->hMarkTargetComponent != NULL)
+    {
+        pMarkComp = (OMX_COMPONENTTYPE *)(pBufferHdr->hMarkTargetComponent);
+        pMarkCompPrv = pMarkComp->pComponentPrivate;
+        PROXY_assert(pMarkCompPrv != NULL, OMX_ErrorBadParameter, NULL);
+
+        /*Replacing original mark data with proxy specific structure*/
+        pMarkData = pBufferHdr->pMarkData;
+        pBufferHdr->pMarkData = TIMM_OSAL_Malloc(
+                                    sizeof(PROXY_MARK_DATA), TIMM_OSAL_TRUE, 0,
+                                    TIMMOSAL_MEM_SEGMENT_INT);
+        ((PROXY_MARK_DATA *)(pBufferHdr->pMarkData))->
+                                         hComponentActual = pMarkComp;
+        ((PROXY_MARK_DATA *)(pBufferHdr->pMarkData))->
+                                         pMarkDataActual = pMarkData;
+        /*Replacing with remote component handle*/
+        pBufferHdr->hMarkTargetComponent =
+                   ((RPC_OMX_CONTEXT *)pMarkCompPrv->hRemoteComp)->remoteHandle;
     }
 
     eRPCError = RPC_EmptyThisBuffer(pCompPrv->hRemoteComp, pBufferHdr, pCompPrv->tBufList[count].pBufHeaderRemote, &eCompReturn);
@@ -1203,6 +1255,9 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN  OMX_HANDLETYPE hComponent,
   RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
   PROXY_COMPONENT_PRIVATE* pCompPrv;    
   OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
+    OMX_COMPONENTTYPE *pMarkComp = NULL;
+    PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
+    OMX_PTR pMarkData = NULL;
 
   DOMX_DEBUG("\nEnter: %s",__FUNCTION__);
   
@@ -1211,8 +1266,39 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN  OMX_HANDLETYPE hComponent,
                  
   pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;  
 
+    if(eCmd == OMX_CommandMarkBuffer)
+    {
+        PROXY_assert(pCmdData != NULL, OMX_ErrorBadParameter, NULL);
+        pMarkComp = (OMX_COMPONENTTYPE *)
+                    (((OMX_MARKTYPE *)pCmdData)->hMarkTargetComponent);
+        PROXY_assert(pMarkComp != NULL, OMX_ErrorBadParameter, NULL);
+        pMarkCompPrv = pMarkComp->pComponentPrivate;
+        PROXY_assert(pMarkCompPrv != NULL, OMX_ErrorBadParameter, NULL);
+
+        /*Replacing original mark data with proxy specific structure*/
+        pMarkData = ((OMX_MARKTYPE *)pCmdData)->pMarkData;
+        ((OMX_MARKTYPE *)pCmdData)->pMarkData = TIMM_OSAL_Malloc(
+                                    sizeof(PROXY_MARK_DATA), TIMM_OSAL_TRUE, 0,
+                                    TIMMOSAL_MEM_SEGMENT_INT);
+        ((PROXY_MARK_DATA *)(((OMX_MARKTYPE *)pCmdData)->pMarkData))->
+                                                   hComponentActual = pMarkComp;
+        ((PROXY_MARK_DATA *)(((OMX_MARKTYPE *)pCmdData)->pMarkData))->
+                                                    pMarkDataActual = pMarkData;
+
+        /*Replacing with remote component handle*/
+        ((OMX_MARKTYPE *)pCmdData)->hMarkTargetComponent =
+                   ((RPC_OMX_CONTEXT *)pMarkCompPrv->hRemoteComp)->remoteHandle;
+    }
+
   eRPCError = RPC_SendCommand(pCompPrv->hRemoteComp, eCmd, nParam, pCmdData, &eCompReturn);
     
+    if(eCmd == OMX_CommandMarkBuffer)
+    {
+        /*Resetting to original values*/
+        ((OMX_MARKTYPE *)pCmdData)->hMarkTargetComponent = pMarkComp;
+        ((OMX_MARKTYPE *)pCmdData)->pMarkData = pMarkData;
+    }
+
   if(eRPCError == RPC_OMX_ErrorNone) {
       DOMX_DEBUG("RPC_SendCommand Successful");
       eError = eCompReturn;
@@ -1935,7 +2021,8 @@ OMX_ERRORTYPE RPC_MapMetaData_Host(OMX_BUFFERHEADERTYPE *pBufHdr)
       
       dsptr[0]= (OMX_U32) ((OMX_TI_PLATFORMPRIVATE *)pBufHdr->pPlatformPrivate)->pMetaDataBuffer;
       numBlocks = 1;
-      lengths[0] = LINUX_PAGE_SIZE * (nMetaDataSize + (LINUX_PAGE_SIZE - 1)) / LINUX_PAGE_SIZE;
+      lengths[0] = LINUX_PAGE_SIZE * ((nMetaDataSize + (LINUX_PAGE_SIZE - 1)) /
+                                      LINUX_PAGE_SIZE);
       
       pMappedMetaDataBuffer = tiler_assisted_phase1_D2CReMap(numBlocks,dsptr,lengths);
       
