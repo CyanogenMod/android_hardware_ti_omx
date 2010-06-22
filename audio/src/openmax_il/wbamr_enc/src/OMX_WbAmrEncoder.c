@@ -1208,47 +1208,47 @@ static OMX_ERRORTYPE SetParameter (OMX_HANDLETYPE hComp,
                        pCompAmrParam,
                        sizeof(OMX_AUDIO_PARAM_AMRTYPE));
             } else if (pCompAmrParam->nPortIndex == 1) { /* 1 means Output port */
-                switch (pCompAmrParam->eAMRBandMode) {
-                    case OMX_AUDIO_AMRBandModeWB0:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR660;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB1:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR885;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB2:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR1265;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB3:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR1425;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB4:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR1585;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB5:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR1825;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB6:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR1985;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB7:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR2305;
-                        break;
-                    case OMX_AUDIO_AMRBandModeWB8:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR2385;
-                        break;
-                    default:
-                        pCompAmrParam->eAMRBandMode = SN_AUDIO_BR660;
-                        break;
-                }
-
 	        if (((WBAMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate)->amrParams == NULL) {
 	            eError = OMX_ErrorBadParameter;
-                    break; 
+                    break;
 	        }
                 memcpy(((WBAMRENC_COMPONENT_PRIVATE *)
                         pHandle->pComponentPrivate)->amrParams,
                        pCompAmrParam,
                        sizeof(OMX_AUDIO_PARAM_AMRTYPE));
+
+                switch (pCompAmrParam->eAMRBandMode) {
+                    case OMX_AUDIO_AMRBandModeWB0:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR660;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB1:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR885;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB2:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR1265;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB3:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR1425;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB4:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR1585;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB5:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR1825;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB6:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR1985;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB7:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR2305;
+                        break;
+                    case OMX_AUDIO_AMRBandModeWB8:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR2385;
+                        break;
+                    default:
+                        pComponentPrivate->amrParams-> eAMRBandMode = SN_AUDIO_BR660;
+                        break;
+                }
 
                 if (pCompAmrParam->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatConformance) {
                     pComponentPrivate->frameMode = WBAMRENC_FORMATCONFORMANCE;
