@@ -7712,7 +7712,12 @@ OMX_ERRORTYPE VIDDEC_SaveBuffer(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
 
     /* Save buffer */
     OMX_MALLOC_SIZE_DSPALIGN(pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer, pBuffHead->nFilledLen, OMX_U8);
-    memcpy(pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer, pBuffHead->pBuffer, pBuffHead->nFilledLen);
+    if (pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer){
+       memcpy(pComponentPrivate->eFirstBuffer.pBufferHdr->pBuffer, pBuffHead->pBuffer, pBuffHead->nFilledLen);
+    }else {
+       eError = OMX_ErrorInsufficientResources;
+       goto EXIT;
+    }
     pComponentPrivate->eFirstBuffer.pBufferHdr->nAllocLen = pBuffHead->nFilledLen;
     pComponentPrivate->eFirstBuffer.pBufferHdr->nFilledLen = pBuffHead->nFilledLen;
 
