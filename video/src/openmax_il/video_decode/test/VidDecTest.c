@@ -41,6 +41,18 @@
 #endif
 #define NALPATTERN 0x1000000
 #define NALUNITS 15
+/* The position of the Deblocking Enable/Disable Switch
+ * */
+#define DEBLOCKING_ARG_POS (15)
+/* The position of the MB Error Logic Switch
+ * */
+#define MB_ERROR_LOGIC_SWITCH_POS (16)
+/* Make Private the Routine that Sets Deblocking
+ * */
+static OMX_ERRORTYPE MPEG4VIDDEC_SetParamDeblocking(MYDATATYPE* pAppData);
+/* Make private the MB Error Printing Routine
+ * */
+static OMX_S32 MBErrorPrintRoutine(OMX_HANDLETYPE pHandle, OMX_U32* bMBErrorCount, MYDATATYPE* pAppData);
 /* safe routine to get the maximum of 2 integers */
 OMX_S32 maxint(int a, int b)
 {
@@ -1512,6 +1524,54 @@ void VidDec_FillBufferDone (OMX_HANDLETYPE hComponent, MYDATATYPE* pAppData, OMX
 {
     write(pAppData->OpBuf_Pipe[1], &pBuffer, sizeof(pBuffer));
 }
+/* ========================================================================== */
+/**
+ *  MPEG4VIDDEC_SetParamDeblocking() Enable/Disables Deblocking filter at the
+ *       OMX IL
+ * @param
+ *     pAppData            Application's' private data
+ *
+ * @retval OMX_NoError              Success, ready to roll
+ **/
+/* ========================================================================== */
+OMX_ERRORTYPE MPEG4VIDDEC_SetParamDeblocking(MYDATATYPE* pAppData)
+{
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+    VIDEODEC_PORT_INDEX sVidDecPortIndex;
+    /* Get port definitions
+     * */
+    eError = GetVidDecPortDef (pAppData->pHandle, &sVidDecPortIndex);
+    if (eError != OMX_ErrorNone) {
+        goto EXIT;
+    }
+
+    /* Clear the memory related to deblocking
+     * */
+    memset(&(pAppData->deblockSwType), VAL_ZERO, sizeof(OMX_PARAM_DEBLOCKINGTYPE));
+    /* Set its enable/disable flag
+     * */
+    pAppData->deblockSwType.nSize
+                                 = sizeof(OMX_PARAM_DEBLOCKINGTYPE);
+    pAppData->deblockSwType.nVersion.s.nVersionMajor
+                                 = VERSION_MAJOR;
+    pAppData->deblockSwType.nVersion.s.nVersionMinor
+                                 = VERSION_MINOR;
+    pAppData->deblockSwType.nVersion.s.nRevision
+                                 = VERSION_REVISION;
+    pAppData->deblockSwType.nVersion.s.nStep
+                                 = VERSION_STEP;
+    pAppData->deblockSwType.nPortIndex
+                                 = sVidDecPortIndex.nOutputPortIndex;
+    pAppData->deblockSwType.bDeblocking
+                                 = (pAppData->deblockSW != 0);
+    eError = OMX_SetParameter(pAppData->pHandle, OMX_IndexParamCommonDeblocking,
+                              &(pAppData->deblockSwType));
+    if (eError != OMX_ErrorNone) {
+        goto EXIT;
+    }
+EXIT:
+    return eError;
+}
 
 void calc_time(MYDATATYPE* pAppData)
 {
@@ -1623,8 +1683,16 @@ int main(int argc, char** argv)
         APP_PRINT("arg12: Repetition time - numeric\n");
         APP_PRINT("arg13: Save output 0:save first out/1: save all out\n");
         APP_PRINT("arg14: profile used, h264 Level and WMV9 Profile selection in stream mode\n");
+        APP_PRINT("arg15: "
+                  "Effective only on MPEG4 format \(-arg7=3\)"
+                  "Will disable deblocking when "
+                  "clear \(0\); if this value is set \(1\) the automatic deblocking "
+                  "settings will be used\n");
+        APP_PRINT("arg16: "
+                  "Enable//Disable MB Error Checking\n");
+
 #ifdef __GET_BC_VOP__
-        APP_PRINT("arg15: fps value or NAL lenght used bytes\n");
+        APP_PRINT("arg17: fps value or NAL lenght used bytes\n");
 #endif
         APP_PRINT("************************************************************************************\n");
         APP_PRINT("WMV9 test vector file extension is .rcv for frame mode and .vc1 in stream mode. Header input file can be any blank file.\n");
@@ -1648,6 +1716,60 @@ int main(int argc, char** argv)
     else
         return 0;
 }
+/* ========================================================================== */
+/**
+ *  MBErrorPrintRoutine() Print the MBErrors reported by the
+ *       OMX IL
+ * @param
+ *     pHandle             Component's handle
+ *     bMBErrorCount       MB Error Count
+ *     pAppData            Application's' private data
+ *
+ * @retval OMX_NoError              Success, ready to roll
+ **/
+/* ========================================================================== */
+OMX_S32 MBErrorPrintRoutine(OMX_HANDLETYPE pHandle, OMX_U32* bMBErrorCount, MYDATATYPE* pAppData)
+/***************** MBError Code ********************/
+{
+    OMX_S32 eError=OMX_ErrorNone;
+    OMX_U32 nlooping = 0;
+    OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE pMBErrorMap;
+    memset(&pMBErrorMap, 0, sizeof(OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE));
+    pMBErrorMap.nSize                     = sizeof(OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE);
+    pMBErrorMap.nVersion.s.nVersionMajor  = VERSION_MAJOR;
+    pMBErrorMap.nVersion.s.nVersionMinor  = VERSION_MINOR;
+    pMBErrorMap.nVersion.s.nRevision      = VERSION_REVISION;
+    pMBErrorMap.nVersion.s.nStep          = VERSION_STEP;
+    eError = OMX_GetConfig(pHandle, OMX_IndexConfigVideoMacroBlockErrorMap, &pMBErrorMap);
+    if (eError != OMX_ErrorNone) {
+        APP_PRINT("Not Supported setting %x\n",eError);
+        goto ERROR;
+    }
+    for (nlooping = 0; nlooping < pMBErrorMap.nErrMapSize; nlooping++) {
+        if (pMBErrorMap.ErrMap[nlooping] != 0) {
+            OMX_U8 i;
+            /* Search the byte for the MBs causing the
+             * problem(s)
+             * */
+            for (i = 0; i < 8 ; i++) {
+                /* If a bit is found set
+                 * increment the error count and print the
+                 * error
+                 * */
+                if (pMBErrorMap.ErrMap[nlooping]
+                        &  1 << i) {
+                    (*bMBErrorCount)++;
+                    APP_PRINT("Frm# %d,\tMB# %d\n",
+                              pAppData->nCurrentFrameOut,
+                              nlooping*8+i);
+                }
+            }
+        }
+    }
+ERROR:
+    return eError;
+}
+
 
 int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
 {
@@ -1683,9 +1805,9 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
 
     /* validate command line args */
 #ifndef __GET_BC_VOP__
-    if(argc > 16) {
+    if(argc > 17) {
 #else
-    if((argc > 16)) {
+    if((argc > 18)) {
 #endif
 
         APP_PRINT("OMX Test App Built On " __DATE__ ":" __TIME__ "\n");
@@ -1747,8 +1869,16 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         APP_PRINT("arg12: Repetition time - numeric\n");
         APP_PRINT("arg13: Save output 0:save first out/1: save all out\n");
         APP_PRINT("arg14: profile used, h264 Level and WMV9 Profile selection in stream mode\n");
+        APP_PRINT("arg15: "
+                  "Effective only on MPEG4 format \(-arg7=3\)"
+                  "Will disable deblocking when "
+                  "clear \(0\); if this value is set \(1\) the automatic deblocking "
+                  "settings will be used\n");
+        APP_PRINT("arg16: "
+                  "Enable//Disable MB Error Checking\n"
+                 );
 #ifdef __GET_BC_VOP__
-        APP_PRINT("arg15: fps value or NAL lenght used bytes\n");
+        APP_PRINT("arg17: fps value or NAL lenght used bytes\n");
 #endif
         APP_PRINT("************************************************************************************\n");
         APP_PRINT("WMV9 test vector file extension is .rcv for frame mode and .vc1 in stream mode. Header input file can be any blank file.\n");
@@ -2149,12 +2279,32 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     pAppData->cInputBuffers     = atoi(argv[10]);
     pAppData->cOutputBuffers    = atoi(argv[11]);
 
-
+    /* Set/Clear the Deblocking Switch
+     * */
+    if(pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG4
+    && argc > DEBLOCKING_ARG_POS){
+       pAppData->deblockSW = atoi(argv[DEBLOCKING_ARG_POS]);
+    } else {
+       /* If the parameter is not provided the deblocking will not be disabled
+        * */
+       pAppData->deblockSW = !0;
+    }
+    /* Set/Clear the MB Error Checking logic
+     * */
+    if (argc > MB_ERROR_LOGIC_SWITCH_POS){
+        pAppData->MB_Error_Logic_Switch = atoi(argv[MB_ERROR_LOGIC_SWITCH_POS]);
+    }
+    else {
+       /* If the parameter is not provided the macroblock error information will
+        * be enabled.
+        * */
+        pAppData->MB_Error_Logic_Switch = 1;
+    }
 #ifdef __GET_BC_VOP__
     if( pAppData->nTestCase == 10 ){
-        if(argc == 16)
+        if(argc == 18)
         {
-            rate                    = 1000 / atoi((char*)argv[15]);
+            rate                    = 1000 / atoi((char*)argv[17]);
         }
     }
 #endif
@@ -2744,6 +2894,9 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
                 pAppData->eCompressionFormat == OMX_VIDEO_CodingH263) {
             eError = MPEG4VIDDEC_SetParamPortDefinition(pAppData);
+            /* Set the deblocking parameter at the OMX Component
+             * */
+            eError = MPEG4VIDDEC_SetParamDeblocking(pAppData);
         }
         else if (pAppData->eCompressionFormat == OMX_VIDEO_CodingMPEG2) {
             eError = MPEG2VIDDEC_SetParamPortDefinition(pAppData);
@@ -2835,8 +2988,9 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         pAppData->bFirstPortSettingsChanged = OMX_FALSE;
         pAppData->bSecondPortSettingsChanged = OMX_FALSE;
         /***************** MBError Code ********************/
-        if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK) {
-            APP_PRINT("MBError Test Case -> %d\n",pAppData->nTestCase);
+        /* Propagate MBError Enable Code Switch to OMX IL
+         * */
+        {
             OMX_PARAM_MACROBLOCKSTYPE pMBBlocksType;
             memset(&pMBBlocksType, 0, sizeof(OMX_PARAM_MACROBLOCKSTYPE));
             pMBBlocksType.nSize                     = sizeof(OMX_PARAM_MACROBLOCKSTYPE);
@@ -2856,7 +3010,9 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             pMBErrorType.nVersion.s.nVersionMinor  = VERSION_MINOR;
             pMBErrorType.nVersion.s.nRevision      = VERSION_REVISION;
             pMBErrorType.nVersion.s.nStep          = VERSION_STEP;
-            pMBErrorType.bEnabled                  = OMX_TRUE;
+            /* Enable/Disable MB Error Logic on Below Layers
+             * */
+            pMBErrorType.bEnabled         = pAppData->MB_Error_Logic_Switch;
             eError = OMX_SetConfig(pAppData->pHandle, OMX_IndexConfigVideoMBErrorReporting, &pMBErrorType);
             if (eError != OMX_ErrorNone) {
                 APP_PRINT("Not Supported setting %x\n",eError);
@@ -3185,30 +3341,10 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                     else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
                         APP_PRINT("Out TimeStamp %lld for output Buffer 0x%x\n", pBuf->nTimeStamp, (unsigned int)pBuf);
                     }
-                    /***************** MBError Code ********************/
-                    if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK) {
-                        OMX_U32 nlooping = 0;
-                        OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE pMBErrorMap;
-                        memset(&pMBErrorMap, 0, sizeof(OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE));
-                        pMBErrorMap.nSize                     = sizeof(OMX_TI_CONFIG_MACROBLOCKERRORMAPTYPE);
-                        pMBErrorMap.nVersion.s.nVersionMajor  = VERSION_MAJOR;
-                        pMBErrorMap.nVersion.s.nVersionMinor  = VERSION_MINOR;
-                        pMBErrorMap.nVersion.s.nRevision      = VERSION_REVISION;
-                        pMBErrorMap.nVersion.s.nStep          = VERSION_STEP;
-                        eError = OMX_GetConfig(pAppData->pHandle, OMX_IndexConfigVideoMacroBlockErrorMap, &pMBErrorMap);
-                        if (eError != OMX_ErrorNone) {
-                            APP_PRINT("Not Supported setting %x\n",eError);
-                            goto DEINIT;
-                        }
-                        for (nlooping = 0; nlooping < pMBErrorMap.nErrMapSize; nlooping++){
-                            if (pMBErrorMap.ErrMap[nlooping] != 0){
-                                bMBErrorCount++;
-                                APP_PRINT("\tFrm# %d MB# %d - 0x%x \n",
-                                    (unsigned int)pAppData->nCurrentFrameOut,
-                                    (unsigned int)nlooping,
-                                    (unsigned int)pMBErrorMap.ErrMap[nlooping]);
-                            }
-                        }
+                    /* If the MB Error logic is enabled, print the MB Errors
+                     * */
+                    if (pAppData->MB_Error_Logic_Switch){
+                       MBErrorPrintRoutine(pAppData->pHandle, &bMBErrorCount, pAppData);
                     }
                     if ((pBuf->nFlags & OMX_BUFFERFLAG_EOS) == 0) {
                         pBuf->nFlags &= ~(FRAMETYPE_MASK);
@@ -3430,14 +3566,30 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                     ERR_PRINT("Warning:  VideoDec->GetState has returned status %X\n", eError);
                     goto DEINIT;
                  }
+                 /* Print the deblocking algorith status (Enabled/Disabled)
+                  * */
+                 eError = OMX_GetParameter(pAppData->pHandle,
+                             OMX_IndexParamCommonDeblocking,
+                             &(pAppData->deblockSwType));
+                 if(eError != OMX_ErrorNone) {
+                     APP_PRINT("Error getting the deblocking status\n");
+                 }
+                 else if (pAppData->deblockSwType.bDeblocking){
+                     APP_PRINT("Deblocking is: ENABLED\n");
+                 }
+                 else{
+                     APP_PRINT("Deblocking is: DISABLED\n");
+                 }
+                 /* If the MB Error Code Logic is Enabled Print the Error Num.
+                  * */
                  /***************** MBError Code ********************/
-                 if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK) {
-                     if (bMBErrorCount == 0){
-                        APP_PRINT("Do not MBErrors occurs\n");
-                     }
-                     else {
-                        APP_PRINT("Do MBErrors occurs %d\n",(int)bMBErrorCount);
-                     }
+                 if (pAppData->MB_Error_Logic_Switch){
+                    if (bMBErrorCount == 0){
+                       APP_PRINT("MBErrors Didn't Occur\n");
+                    }
+                    else {
+                       APP_PRINT("MBErrors: %d\n",(int)bMBErrorCount);
+                    }
                  }
             }
             

@@ -405,6 +405,9 @@ typedef struct MYDATATYPE{
 
     OMX_U32 nInputPortIndex;
     OMX_U32 nOutputPortIndex;
+    OMX_PARAM_DEBLOCKINGTYPE deblockSwType;
+    OMX_U8 deblockSW;
+    OMX_U8 MB_Error_Logic_Switch;
 } MYDATATYPE;
 
 typedef struct VIDEODEC_PORT_INDEX

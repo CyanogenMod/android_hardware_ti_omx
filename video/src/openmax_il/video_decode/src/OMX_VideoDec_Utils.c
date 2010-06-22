@@ -55,6 +55,44 @@
 #include "OMX_VideoDec_DSP.h"
 #include "OMX_VideoDec_Thread.h"
 #include "usn.h"
+/* Make private Convert1ByteTo1BitMBErrorArray
+ * */
+static OMX_S32 Convert1ByteTo1BitMBErrorArray (OMX_U8* ErrMapFrom,
+                               OMX_U8* ErrMapTo, OMX_U32 nErrMapSize);
+/* ========================================================================== */
+/**
+  *  Convert MacroBlock Error Array from 1 Byte to 1 bit.
+  **/
+/* ========================================================================== */
+OMX_S32 Convert1ByteTo1BitMBErrorArray (OMX_U8* ErrMapFrom, OMX_U8* ErrMapTo,
+                                        OMX_U32 nErrMapSize)
+/* Format Error Array to be compliant with OMX Standard
+ * (Chage it from 1 Byte to 1 bit -will make it 1/8th of its
+ * current size)
+ * */
+{
+    /* i Will parse the provided MB Error Array
+     * j Will parse the new array
+     * */
+    OMX_S32 i, j=-1;
+    /* Loop thru the complete input array
+     * */
+    for (i=0; i < nErrMapSize; i++) {
+        /* Every time i is multiple of 8
+         * write a new byte.
+         * */
+        if (!(i % 8)) {
+            ErrMapTo[++j] = 0;
+        }
+        /* Write bit corresponding to i mod 8
+         * */
+        ErrMapTo[j] |= (ErrMapFrom[i]!=0) << (i % 8);
+    }
+    /* Return the new Array's size
+     * */
+    return j;
+}
+
 /*----------------------------------------------------------------------------*/
 /**
   * VIDDEC_GetRMFrequency() Return the value for frequency to use RM.
@@ -5925,6 +5963,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             }
         }
 #ifdef KHRONOS_1_1
+       /* If the MB Error logic has been enabled perform a memory format.
+        * */
         if (pComponentPrivate->eMBErrorReport.bEnabled) {
             OMX_U8* ErrMapFrom = NULL;
             OMX_U8* ErrMapTo = NULL;
@@ -5939,8 +5979,13 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 nErrMapSize = pComponentPrivate->pOutPortDef->format.video.nFrameWidth *
                               pComponentPrivate->pOutPortDef->format.video.nFrameHeight / 256;
                 ErrMapTo = pComponentPrivate->eMBErrorMapType[pComponentPrivate->cMBErrorIndexIn].ErrMap;
-                pComponentPrivate->eMBErrorMapType[pComponentPrivate->cMBErrorIndexIn].nErrMapSize = nErrMapSize;
-                memcpy(ErrMapTo, ErrMapFrom, nErrMapSize);
+
+                /* Make the array size 1/8th of its size
+                 * */
+                pComponentPrivate->eMBErrorMapType[pComponentPrivate->
+                cMBErrorIndexIn].nErrMapSize = Convert1ByteTo1BitMBErrorArray
+                                            (ErrMapFrom, ErrMapTo, nErrMapSize);
+
                 pComponentPrivate->cMBErrorIndexIn++;
                 pComponentPrivate->cMBErrorIndexIn %= pComponentPrivate->pOutPortDef->nBufferCountActual;
             }
@@ -5952,8 +5997,12 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 nErrMapSize = pComponentPrivate->pOutPortDef->format.video.nFrameWidth *
                               pComponentPrivate->pOutPortDef->format.video.nFrameHeight / 256;
                 ErrMapTo = pComponentPrivate->eMBErrorMapType[pComponentPrivate->cMBErrorIndexIn].ErrMap;
-                pComponentPrivate->eMBErrorMapType[pComponentPrivate->cMBErrorIndexIn].nErrMapSize = nErrMapSize;
-                memcpy(ErrMapTo, ErrMapFrom, nErrMapSize);
+
+                /* Make the array size 1/8th of its size
+                 * */
+                pComponentPrivate->eMBErrorMapType[pComponentPrivate->
+                cMBErrorIndexIn].nErrMapSize = Convert1ByteTo1BitMBErrorArray
+                                            (ErrMapFrom, ErrMapTo, nErrMapSize);
                 pComponentPrivate->cMBErrorIndexIn++;
                 pComponentPrivate->cMBErrorIndexIn %= pComponentPrivate->pOutPortDef->nBufferCountActual;
             }
@@ -8516,6 +8565,16 @@ OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPri
     pDynParams->ulPPType = 0; /* Disable */
     if(pComponentPrivate->pDeblockingParamType->bDeblocking && bDisDeblocking == OMX_FALSE){
         pDynParams->ulPPType |= 1; /* Enable deblocking filter*/
+        /* Loop back the application regarding DSP's capabilities by not
+         * changing the bDeblocking status.
+         * */
+        LOGD("Deblocking ENABLED\n");
+    } else {
+        LOGD("Deblocking DISABLED\n");
+        /* Loop back the application regarding current DSP's capabilities
+         * by informing the bDeblocking status is off.
+         * */
+        pComponentPrivate->pDeblockingParamType->bDeblocking = 0;
     }
     if (pComponentPrivate->pDeringingParamType->eImageFilter == OMX_ImageFilterDeRing &&
         IS_DERINGING_SUPPORTED) {
