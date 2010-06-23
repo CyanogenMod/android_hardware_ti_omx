@@ -86,7 +86,6 @@ AM_CONDITIONAL([BUILD_TESTS], test "x$enable_tests" = "xtrue")
 
 AC_CONFIG_FILES([
 Makefile
-mmplatform/src/Makefile
 system/domx/Makefile
 system/domx/omx_proxy_common/src/Makefile
 system/domx/omx_rpc/src/Makefile

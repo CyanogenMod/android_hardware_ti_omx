@@ -143,6 +143,8 @@ RPC_OMX_ERRORTYPE RPC_SKEL_FillBufferDone(UInt32 size, UInt32 *data)
     OMX_U32 nPos=0;
     RPC_OMX_MESSAGE * recdMsg;
     RPC_OMX_BYTE * pMsgBody = NULL; 
+    OMX_HANDLETYPE hMarkTargetComponent = NULL;
+    OMX_PTR pMarkData = NULL;
     recdMsg = (RPC_OMX_MESSAGE*)(data);
     
     pMsgBody = &recdMsg->msgBody[0];
@@ -159,9 +161,13 @@ RPC_OMX_ERRORTYPE RPC_SKEL_FillBufferDone(UInt32 size, UInt32 *data)
     RPC_GETFIELDVALUE(pMsgBody, nPos, nfilledLen, OMX_U32);
     RPC_GETFIELDVALUE(pMsgBody, nPos, nOffset, OMX_U32);
     RPC_GETFIELDVALUE(pMsgBody, nPos, nFlags, OMX_U32);
-    RPC_GETFIELDCOPYTYPE(pMsgBody, nPos, &nTimeStamp, OMX_TICKS);
+    RPC_GETFIELDVALUE(pMsgBody, nPos, nTimeStamp, OMX_TICKS);
+    RPC_GETFIELDVALUE(pMsgBody, nPos, hMarkTargetComponent, OMX_HANDLETYPE);
+    RPC_GETFIELDVALUE(pMsgBody, nPos, pMarkData, OMX_PTR);
       
-    tRPCError = pCompPrv->proxyFillBufferDone(hComp,bufferHdr,nfilledLen,nOffset,nFlags,nTimeStamp);
+    tRPCError = pCompPrv->proxyFillBufferDone(hComp, bufferHdr, nfilledLen,
+                                              nOffset, nFlags, nTimeStamp,
+                                              hMarkTargetComponent, pMarkData);
             
 EXIT:    
     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);

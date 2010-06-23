@@ -428,8 +428,6 @@ typedef struct OMX_BUFFERHEADERTYPE
                                      to determine absolute time.  This is an
                                      optional entry and not all components
                                      will update it.*/
-    OMX_U32 __padding1;         /**< padding to force structure size to be same
-                                     accross different compilers and processors */
  OMX_TICKS nTimeStamp;          /**< Timestamp corresponding to the sample 
                                      starting at the first logical sample 
                                      boundary in the buffer. Timestamps of 
@@ -442,8 +440,6 @@ typedef struct OMX_BUFFERHEADERTYPE
                                      this buffer */
   OMX_U32 nInputPortIndex;      /**< The index of the input port (if any) using
                                      this buffer */
-    OMX_U32 __padding2;         /**< padding to force structure size to be same 
-                                     accross different compilers and processors */
 } OMX_BUFFERHEADERTYPE;
 
 /** The OMX_EXTRADATATYPE enumeration is used to define the 
