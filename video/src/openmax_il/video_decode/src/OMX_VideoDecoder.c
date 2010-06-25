@@ -1432,9 +1432,12 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                         default:
                             break;
                     }
-                    pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
-                                            pPortDef->format.video.nFrameHeight;
-                    OMX_PRINT1(pComponentPrivate->dbg, "Set i/p size: %dx%d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight);
+
+                    if(pPortDef->nBufferSize == 0){
+                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
+                                                pPortDef->format.video.nFrameHeight;
+                    }
+                    OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                     if ((pPortDefParam->format.video.nFrameWidth * pPortDefParam->format.video.nFrameHeight) > MAX_RESOLUTION)
                     {
                         /*if the resolution is not supported this is the place
@@ -1456,20 +1459,26 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                     switch (pPortDef->format.video.eColorFormat) {
                         case VIDDEC_COLORFORMAT422:
+                            OMX_PRINT3(pComponentPrivate->dbg, "Setting VIDDEC_COLORFORMAT422");
                             pComponentPrivate->pOutPortFormat->nIndex = VIDDEC_DEFAULT_OUTPUT_INDEX_INTERLEAVED422;
                             pComponentPrivate->pOutPortFormat->eColorFormat = pPortDef->format.video.eColorFormat;
+                            break;
                         case VIDDEC_COLORFORMAT420:
+                            OMX_PRINT3(pComponentPrivate->dbg, "Setting VIDDEC_COLORFORMAT420");
                             pComponentPrivate->pOutPortFormat->nIndex = VIDDEC_DEFAULT_OUTPUT_INDEX_PLANAR420;
                             pComponentPrivate->pOutPortFormat->eColorFormat = pPortDef->format.video.eColorFormat;
                             break;
                         default:
+                            OMX_PRINT3(pComponentPrivate->dbg, "The color format is unknow");
                             break;
                     }
-                    pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
-                                            pPortDef->format.video.nFrameHeight *
-                                            ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
+                    if (pPortDef->nBufferSize == 0) {
+                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
+                        pPortDef->format.video.nFrameHeight *
+                        ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
+                    }
 
-                    OMX_PRINT1(pComponentPrivate->dbg, "Set OUT/p size: %dx%d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight);
+                    OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                 }
                 else {
                     eError = OMX_ErrorBadPortIndex;
