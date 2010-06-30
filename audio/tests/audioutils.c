@@ -43,7 +43,8 @@ int config_mp3(appPrivateSt* appPrvt){
 int config_aac(appPrivateSt* appPrvt){
 
   OMX_ERRORTYPE error = OMX_ErrorNone;
-
+  int framesPerOutput = 512;
+  OMX_INDEXTYPE index = 0;
   OMX_INIT_STRUCT(appPrvt->aac, OMX_AUDIO_PARAM_AACPROFILETYPE);
 
   APP_DPRINT("call get_parameter for OMX_IndexParamAudioAac\n");
@@ -55,8 +56,24 @@ int config_aac(appPrivateSt* appPrvt){
     APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
     return 1;
   }
+  if(RECORD == appPrvt->appType){
+      appPrvt->aac->eAACProfile = appPrvt->profile;
+      appPrvt->aac->nBitRate = appPrvt->bitrate;
+      appPrvt->aac->eAACStreamFormat = appPrvt->fileformat;
+      error = OMX_GetExtensionIndex(appPrvt->phandle, "OMX.TI.index.config.aacencframesPerOutBuf",&index);
+      if (error != OMX_ErrorNone)
+      {
+          APP_DPRINT("%d :: APP: Error getting extension index\n",__LINE__);
+      }
+      error = OMX_SetConfig (appPrvt->phandle, index, &framesPerOutput);
+      if (error != OMX_ErrorNone)
+      {
+          APP_DPRINT("%d :: APP: Error in SetConfig\n",__LINE__);
+      }
+  }
   appPrvt->aac->nSampleRate = appPrvt->samplerate;
   appPrvt->aac->nChannels = appPrvt->channels;
+
   if(appPrvt->raw){
       APP_DPRINT("Configure in RAW format with samplerate %ld and channels %ld\n",
                  appPrvt->aac->nSampleRate,

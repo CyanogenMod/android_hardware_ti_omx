@@ -23,6 +23,8 @@
 
 #define STD_NBAMRDEC_BUF_SIZE 118
 #define STD_WBAMRDEC_BUF_SIZE 116
+#define NBAMRENC_MIME_HEADER_LEN 6
+#define NBAMRENC_BUFFER_SIZE 320
 
 /* G729 frame size */
 #define SPEECH_FRAME_SIZE 80
@@ -44,6 +46,9 @@
 #define FILE_MODE 0
 #define ALSA_MODE 1
 #define DASF_MODE 2
+
+#define PLAYER  0
+#define RECORD  1
 
 #define APP_DEBUG
 #ifdef APP_DEBUG
@@ -104,9 +109,13 @@ typedef struct{
   OMX_PARAM_COMPONENTROLETYPE *pCompRoleStruct;
   OMX_AUDIO_CODINGTYPE eEncoding;
   OMX_U8 mode;
+  OMX_U8 appType;
   OMX_U16 iterations;
   OMX_U8 channels;
   OMX_U32 samplerate;
+  OMX_U32 bitrate;
+  OMX_U32 profile;
+  OMX_AUDIO_AACSTREAMFORMATTYPE fileformat;
   OMX_U16 nIpBuf;
   OMX_U16 IpBufSize;
   OMX_U16 nOpBuf;
@@ -123,6 +132,8 @@ typedef struct{
   OMX_U32 processed_buffers;
   OMX_U32 Device;
   OMX_U8 fileReRead;
+  OMX_U32 recordTime;
+  OMX_U32 frameSizeRecord;
   volatile OMX_U8 comthrdstop;
   pthread_t commFunc;
 }appPrivateSt;
@@ -204,9 +215,23 @@ int allocate_buffer(appPrivateSt *appPrvt);
  * @param buffer IN buffer header pointer
  *
  */
-int send_input_buffer(appPrivateSt* appPrvt,
+int (*send_input_buffer)(appPrivateSt* appPrvt,
                       OMX_BUFFERHEADERTYPE* buffer);
 
+/** Call to OMX_EmptyThisBuffer for decoders
+ *
+ * @param handle Handle to the component.
+ * @param buffer IN buffer header pointer
+ *
+ */
+int send_dec_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer);
+/** Call to OMX_EmptyThisBuffer for encoders
+ *
+ * @param handle Handle to the component.
+ * @param buffer IN buffer header pointer
+ *
+ */
+int send_enc_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer);
 /** test: Switch to different test cases
  *
  * @param handle Handle to the component.

@@ -134,11 +134,20 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
 
   case OMX_EventBufferFlag:
 #ifdef OMAP3
-    if((nData2 == (int)OMX_BUFFERFLAG_EOS) && (nData1 == OMX_DirOutput)){
-      APP_DPRINT("EOS reported!\n");
-      appPrvt->done_flag = OMX_TRUE;
-      event_wakeup(appPrvt->eos);
-    }
+      if(PLAYER == appPrvt->appType){
+          if((nData2 == (int)OMX_BUFFERFLAG_EOS) && (nData1 == OMX_DirOutput)){
+              APP_DPRINT("EOS reported!\n");
+              appPrvt->done_flag = OMX_TRUE;
+              event_wakeup(appPrvt->eos);
+          }
+      }
+      else{
+          if((nData2 == (int)OMX_BUFFERFLAG_EOS) && (nData1 == OMX_DirInput)){
+              APP_DPRINT("EOS reported!\n");
+              appPrvt->done_flag = OMX_TRUE;
+              event_wakeup(appPrvt->eos);
+          }
+      }
 #else
     if((nData2 == (int)OMX_BUFFERFLAG_EOS) && (nData1 == OMX_DirInput)){
       APP_DPRINT("EOS reported!\n");
@@ -189,14 +198,15 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
   appPrivateSt* appPrvt = (appPrivateSt*)ptr;
   static long bytes_wrote = 0;
   if(!appPrvt->done_flag){
-    if(appPrvt->mode==FILE_MODE){
+    if(FILE_MODE== appPrvt->mode||
+       (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
         bytes_wrote += fwrite(pBuffer->pBuffer,
                               sizeof(OMX_U32),
                               pBuffer->nFilledLen/sizeof(OMX_U32),
                               outfile);
                               //pnothing);
     }
-    else if(appPrvt->mode==ALSA_MODE){
+    else if(ALSA_MODE == appPrvt->mode && PLAYER == appPrvt->appType){
       alsa_pcm_write(appPrvt, pBuffer);
     }
     /*APP_DPRINT("Send OUT buffer %p %ld %x\n",pBuffer->pBuffer,
@@ -208,9 +218,10 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
       APP_DPRINT("Warning: buffer (%p) dropped!\n",pBuffer);
     }
   }else{
-    if(appPrvt->mode==FILE_MODE){
-        APP_DPRINT(" %ld Bytes wrote\n",sizeof(OMX_U32)*(bytes_wrote - 1));
-    }
+      if(FILE_MODE== appPrvt->mode||
+         (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
+          APP_DPRINT(" %ld Bytes wrote\n",sizeof(OMX_U32)*(bytes_wrote - 1));
+      }
   }
 
   return error;
@@ -315,7 +326,7 @@ int use_buffer(appPrivateSt *appPrvt){
  * @param buffer IN buffer header pointer
  *
  */
-int send_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
+int send_dec_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
 
   OMX_ERRORTYPE error = OMX_ErrorNone;
   static OMX_BOOL eos_flag = OMX_FALSE;
@@ -396,6 +407,89 @@ int send_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
     }
   }
   return 0;
+}
+
+int send_enc_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
+
+    OMX_ERRORTYPE error = OMX_ErrorNone;
+    static OMX_BOOL eos_flag = OMX_FALSE;
+    static int buffer_count = 0;
+    static int nread;
+    static int drop_count = 0;
+    static OMX_BOOL first_time = OMX_TRUE;
+    static OMX_U8 NextBuffer[NBAMRENC_BUFFER_SIZE*3] = {0};
+
+    if(!eos_flag){
+	if(appPrvt->mode==FILE_MODE){
+            switch(appPrvt->out_port->format.audio.eEncoding){
+            case OMX_AUDIO_CodingAMR:
+                if(first_time){
+                    nread = fread(buffer->pBuffer,
+                                  1,
+                                  NBAMRENC_BUFFER_SIZE,
+                                  infile);
+                    first_time = OMX_FALSE;
+                }else{
+                    memcpy(buffer->pBuffer, NextBuffer,nread);
+                }
+                buffer->nFlags |= 0;
+                buffer->nFilledLen = nread;
+
+                nread = fread(NextBuffer, 1, NBAMRENC_BUFFER_SIZE, infile);
+                if(nread < NBAMRENC_BUFFER_SIZE) {
+                    /*set the buffer flag*/
+                    buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+                    eos_flag = OMX_TRUE;
+                    APP_DPRINT("EOS marked!\n");
+                }
+                break;
+            default:
+                nread = fread(buffer->pBuffer,
+                              1,
+                              buffer->nAllocLen,
+                              infile);
+                buffer->nFilledLen = nread;
+                buffer->nFlags |= 0;
+                if(nread <= 0 ) {
+                    /*set the buffer flag*/
+                    buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+                    eos_flag = OMX_TRUE;
+                    APP_DPRINT("EOS marked!\n");
+                }
+                break;
+            }
+	}
+        else{
+            if(appPrvt->recordTime > 0){
+                alsa_pcm_read(appPrvt,buffer);
+                buffer->nFlags |= 0;
+            }
+            else{
+                buffer->nFilledLen = 0;
+                buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+                eos_flag = OMX_TRUE;
+                APP_DPRINT("EOS marked!\n");
+            }
+	}
+	buffer_count++;
+	if((appPrvt->tc == 2) && (buffer_count == 20)){
+            event_wakeup(appPrvt->pause);
+	    return 0;
+	}
+         error = OMX_EmptyThisBuffer(appPrvt->phandle,buffer);
+        if(error != OMX_ErrorNone){
+            APP_DPRINT("Error on EmptyThisBuffer\n");
+            return 1;
+        }
+    }else{
+        drop_count++;
+        if(drop_count == appPrvt->nIpBuf){
+             drop_count = 0;
+            eos_flag = OMX_FALSE;
+        }
+    }
+
+    return 0;
 }
 
 /** Configure pcm output params
@@ -491,7 +585,12 @@ int test_repeat(appPrivateSt *appPrvt){
   for(i = 0;i < appPrvt->iterations;i++){
     sleep(1);
     appPrvt->fileReRead=OMX_TRUE;
-    APP_DPRINT("********PLAY FOR %d TIME********\n",(i+1));
+    if( PLAYER == appPrvt->appType ){
+      APP_DPRINT("********PLAY FOR %d TIME********\n",(i+1));
+    }
+    else{
+      APP_DPRINT("********RECORD FOR %d TIME********\n",(i+1));
+    }
 
     if((error = test_play(appPrvt))){
       APP_DPRINT("FAILED!!\n");
@@ -505,18 +604,25 @@ int test_repeat(appPrivateSt *appPrvt){
                             OMX_StateIdle,
                             NULL);
     if(error != OMX_ErrorNone){
-      return 1;
+        APP_DPRINT("Error when trying to change to idle \n");
+        return 1;
     }
+
     error = WaitForState(appPrvt->phandle,
                          OMX_StateIdle,
                          appPrvt->state);
+
     if(error != OMX_ErrorNone){
+        printf("error \n");
       return 1;
     }
 
     event_reset(appPrvt->eos);
     appPrvt->done_flag = OMX_FALSE;
-    rewind(infile);
+
+    if((FILE_MODE == appPrvt->mode) || !(RECORD == appPrvt->appType)){
+        rewind(infile);
+    }
 
   }
 
@@ -627,9 +733,55 @@ int SetOMXState(appPrivateSt *appPrvt,OMX_STATETYPE DesiredState){
     return error;
 }
 
+int setAudioFormat(appPrivateSt *appPrvt, char *fname){
+    int error =0;
+    int fn_index=0;
+    fn_index = strlen(fname);
+    if(fn_index < 4){
+        APP_DPRINT("Invalid filename \n");
+        exit(1);
+    }
+    if(strcasecmp((fname+fn_index -4),".mp3")==0){
+        appPrvt->eEncoding=OMX_AUDIO_CodingMP3;
+        APP_DPRINT("MP3 Format is selected\n");
+    }
+    else if(strcasecmp((fname+fn_index -4),".aac")==0){
+        appPrvt->eEncoding=OMX_AUDIO_CodingAAC;
+        APP_DPRINT("AAC Dec Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -4),".rca")==0) ){
+        appPrvt->eEncoding= OMX_AUDIO_CodingWMA;
+        APP_DPRINT("WMA Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -4),".amr")==0) ||
+            (strcasecmp((fname+fn_index -4),".cod")==0)){
+        appPrvt->eEncoding=OMX_AUDIO_CodingAMR;
+        appPrvt->amr_mode=OMX_FALSE;
+        APP_DPRINT("NBAMR Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -6),".amrwb")==0) ||
+            (strcasecmp((fname+fn_index -4),".awb")==0)){
+        appPrvt->eEncoding=OMX_AUDIO_CodingAMR;
+        appPrvt->amr_mode=OMX_TRUE;
+        APP_DPRINT("WBAMR Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -5),".g729")==0) ){
+        appPrvt->eEncoding= OMX_AUDIO_CodingG729;
+        APP_DPRINT("G729 Format is selected\n");
+    }
+    else{
+        printf("Format not recognized\n");
+        error = 1;
+    }
+    return error;
+}
+
 void alsa_setAudioParams(appPrivateSt *appPrvt) {
   int err;
   snd_pcm_uframes_t period_frames = 100;
+  snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
+  size_t n = 1024;
+  int val;
   if(appPrvt->Device == 1)
       appPrvt->alsaPrvt->device = "plughw:0,3";            /* HDMI device */
   else
@@ -640,15 +792,25 @@ void alsa_setAudioParams(appPrivateSt *appPrvt) {
   appPrvt->alsaPrvt->format = SND_PCM_FORMAT_S16_LE ;   /* sample format */
   appPrvt->alsaPrvt->frames = 0;
 
+  /* Open PCM. The last parameter of this function is the mode. */
+  if(RECORD==appPrvt->appType){
+      /*change params for record */
+      period_frames=appPrvt->frameSizeRecord;
+      stream = SND_PCM_STREAM_CAPTURE;
+      /*Activate device for capture*/
+      system("./system/bin/alsa_amixer cset numid=26 1");
+      /*Leaving this part for when we get working alsa capture*/
+      appPrvt->alsaPrvt->device = "default";
+      n = OUT_BUFFER_SIZE;
+  }
 
+  if (err = snd_pcm_open(&appPrvt->alsaPrvt->playback_handle, appPrvt->alsaPrvt->device,
+                         stream, 0) < 0){
+      printf("Playback open error: %s\n", snd_strerror(err));
+      exit(1);
+  }
   /* Allocate a hardware parameters object. */
   snd_pcm_hw_params_alloca(&appPrvt->alsaPrvt->hw_params);
-  /* Open PCM. The last parameter of this function is the mode. */
-  if ((err = snd_pcm_open(&appPrvt->alsaPrvt->playback_handle, appPrvt->alsaPrvt->device,
-                          SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-    printf("Playback open error: %s\n", snd_strerror(err));
-    exit(1);
-  }
   /* Fill it in with default values. */
   snd_pcm_hw_params_any(appPrvt->alsaPrvt->playback_handle,
                         appPrvt->alsaPrvt->hw_params);
@@ -683,47 +845,9 @@ void alsa_setAudioParams(appPrivateSt *appPrvt) {
     fprintf (stderr, "cannot set hwparameters (%s)\n", snd_strerror (err));
     exit (1);
   }
-
-  /*Leaving this part for now as could help when we get ALSA working*/
-#if 0
-  /* Configure sw pcm params */
-  if ((err = snd_pcm_sw_params_malloc(&appPrvt->alsaPrvt->sw_params)) < 0) {
-    fprintf (stderr, "cannot allocate software parameters structure (%s)\n",
-             snd_strerror (err));
-    exit (1);
-  }
-  /* Get current sw configuration for a PCM */
-  if ((err = snd_pcm_sw_params_current (appPrvt->alsaPrvt->playback_handle,
-                                        appPrvt->alsaPrvt->sw_params)) < 0) {
-    fprintf (stderr, "cannot initialize software parameters structure (%s)\n",
-             snd_strerror (err));
-    exit (1);
-  }
-  /* Set min avail frames to consider PCM ready */
-  if ((err = snd_pcm_sw_params_set_avail_min (appPrvt->alsaPrvt->playback_handle,
-                                              appPrvt->alsaPrvt->sw_params,
-                                              1024)) < 0) {
-    fprintf (stderr, "cannot set minimum available count (%s)\n",
-             snd_strerror (err));
-    exit (1);
-  }
-  /* PCM is automatically started when playback frames available
-     to PCM are >= threshold */
-  if ((err = snd_pcm_sw_params_set_start_threshold (appPrvt->alsaPrvt->playback_handle,
-                                                    appPrvt->alsaPrvt->sw_params,
-                                                    0)) < 0) {
-    fprintf (stderr, "cannot set start mode (%s)\n",
-             snd_strerror (err));
-    exit (1);
-  }
-  /* Install PCM sw configuration defined */
-  if ((err = snd_pcm_sw_params (appPrvt->alsaPrvt->playback_handle,
-                                appPrvt->alsaPrvt->sw_params)) < 0) {
-    fprintf (stderr, "cannot set software parameters (%s)\n",
-             snd_strerror (err));
-    exit (1);
-  }
-#endif
+  snd_pcm_hw_params_get_period_time(appPrvt->alsaPrvt->hw_params,
+                                         &val, 0);
+  appPrvt->recordTime /=  val;
   snd_pcm_prepare(appPrvt->alsaPrvt->playback_handle);
 
 }
@@ -756,4 +880,43 @@ void alsa_pcm_write(appPrivateSt *appPrvt, OMX_BUFFERHEADERTYPE* pBuffer)
   }  else if (err != (int)(pBuffer->nFilledLen/(2*appPrvt->pcm->nChannels))) {
     /*APP_DPRINT("Short write, write %d frames\n", err);*/
   }
+}
+
+void alsa_pcm_read(appPrivateSt *appPrvt, OMX_BUFFERHEADERTYPE* pBuffer)
+{
+  int err;
+  snd_pcm_uframes_t frameSize;
+  int totalBuffer;
+
+  frameSize = appPrvt->frameSizeRecord;
+
+  pBuffer->nFilledLen=0;
+  if(appPrvt->in_port->nBufferSize  < frameSize){
+      APP_DPRINT("Buffer not big enough! %ld\n",appPrvt->in_port->nBufferSize );
+      return;
+  }
+
+  totalBuffer = frameSize*2*appPrvt->channels;
+
+  appPrvt->recordTime--;
+  err = snd_pcm_readi(appPrvt->alsaPrvt->playback_handle,
+                      pBuffer->pBuffer, frameSize);
+
+  if(err>0){
+      pBuffer->nFilledLen=totalBuffer;
+      /*uncomment to dump capture*/
+      /*FILE * dump= fopen("dump.pcm","ab");
+      fwrite(pBuffer->pBuffer,pBuffer->nFilledLen,1,dump);
+      fclose(dump);*/
+  }
+  if (err == -EPIPE) {
+    APP_DPRINT("OVERRUN\n");
+    snd_pcm_prepare(appPrvt->alsaPrvt->playback_handle);
+  } else if (err < 0) {
+    APP_DPRINT("Error from readi: %s\n", snd_strerror(err));
+    exit(1);
+  }  else if (err != (int)(appPrvt->in_port->nBufferSize/(2*appPrvt->pcm->nChannels))) {
+    /*APP_DPRINT("Short write, write %d frames\n", err);*/
+  }
+
 }

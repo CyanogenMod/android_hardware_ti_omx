@@ -193,6 +193,10 @@ void display_help()
     printf("       -d : If this option is specified, the decoded stream is rendered in DASF, if not it will be rendered in ALSA\n");
     printf("       -c num_channels: To decode in a specific channel number (MONO/STEREO). Default value is STEREO \n");
     printf("       -r sampling rate:  To decode in a specific frequency. Default value is 44100 \n");
+    printf("       -b bit rate:  To encode in a specific bitrate. Default value is 128000 \n");
+    printf("       -p profile:  AAC encoding Profile, default is LC \n");
+    printf("       -f file format:  AAC encoding File format, default is MP4 ADTS \n");
+    printf("       -s seconds: Amount of seconds to encode on alsa capture mode \n");
     printf("       -x input buffer amount:  Amount of input buffers, default is 1 \n");
     printf("       -X input buffer size:  Input buffer size in bytes \n");
     printf("       -y output buffer amount:  Amount of output buffers, default is 1 \n");
@@ -212,13 +216,28 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
     int index;
     int fn_index=0;
     int c;
-
+    int size = 0;
     opterr = 0;
     if(argc < 2){
         display_help();
     }
     else{
-        while ((c = getopt (argc, argv, "o:c:r:t:x:X:y:Y:i:D:dRh")) != -1)
+        size = strlen(argv[0]);
+
+        if(!strcmp(argv[0]+size-11,"tiomxplayer")){
+            printf("Application is working in decoding mode \n");
+            appPrvt->appType = PLAYER;
+            send_input_buffer = &send_dec_input_buffer;
+        }
+        else if(!strcmp(argv[0]+size-11,"tiomxrecord")){
+            printf("Application is working in encoding mode \n");
+            appPrvt->appType = RECORD;
+            send_input_buffer = &send_enc_input_buffer;
+        }
+        else{
+            APP_DPRINT("Application name should be tiomxplayer or tiomxrecord \n");
+        }
+        while ((c = getopt (argc, argv, "o:c:r:t:x:b:p:f:X:y:Y:i:D:s:dRh")) != -1)
         switch (c)
         {
         case 'o':
@@ -241,6 +260,12 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         case 'x':
             appPrvt->nIpBuf = atoi(optarg);
             break;
+	case 'b':
+            appPrvt->bitrate = atoi(optarg);
+            break;
+        case 'p':
+            appPrvt->profile = atoi(optarg);
+            break;
         case 'X':
             appPrvt->IpBufSize = atoi(optarg);
             break;
@@ -261,6 +286,12 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
             break;
         case 'h':
             display_help();
+            break;
+        case 'f':
+            appPrvt->fileformat = atoi(optarg);
+            break;
+        case 's':
+            appPrvt->recordTime = atoi(optarg)*1000000;
             break;
         case '?':
             if (optopt == 'o')
@@ -294,68 +325,38 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         default:
             abort ();
         }
+        if(argc==optind){
+            appPrvt->mode=ALSA_MODE;
+        }
         for (index = optind; index < argc; index++){
             inputFile=argv[index];
             printf ("\nNon-option argument %s\n", argv[index]);
         }
-        //must validate input file existance here
-        if(!inputFile){
-            printf("inputFile doesn't exist!\n");
-            exit(1);
-        }
-        fn_index = strlen(inputFile);
-        if(fn_index < 4){
-            printf("Invalid filename \n");
-            exit(1);
-        }
-        if(strcasecmp((inputFile+fn_index -4),".mp3")==0){
-            appPrvt->eEncoding=OMX_AUDIO_CodingMP3;
-            printf("MP3 Format is selected\n");
-        }
-        else if(strcasecmp((inputFile+fn_index -4),".aac")==0){
-            appPrvt->eEncoding=OMX_AUDIO_CodingAAC;
-            printf("AAC Format is selected\n");
-        }
-        else if((strcasecmp((inputFile+fn_index -4),".rca")==0) ){
-            appPrvt->eEncoding= OMX_AUDIO_CodingWMA;
-            printf("WMA Format is selected\n");
-        }
-        else if((strcasecmp((inputFile+fn_index -4),".amr")==0) ||
-                (strcasecmp((inputFile+fn_index -4),".cod")==0)){
-            appPrvt->eEncoding=OMX_AUDIO_CodingAMR;
-            appPrvt->amr_mode=OMX_FALSE;
-            printf("NBAMR Format is selected\n");
-        }
-        else if((strcasecmp((inputFile+fn_index -6),".amrwb")==0) ||
-                (strcasecmp((inputFile+fn_index -4),".awb")==0)){
-            appPrvt->eEncoding=OMX_AUDIO_CodingAMR;
-            appPrvt->amr_mode=OMX_TRUE;
-            printf("WBAMR Format is selected\n");
-        }
-        else if((strcasecmp((inputFile+fn_index -5),".g729")==0) ){
-            appPrvt->eEncoding= OMX_AUDIO_CodingG729;
-            printf("G729 Format is selected\n");
+        if (appPrvt->appType==PLAYER){
+            if(!inputFile){
+                printf("Input File doesn't exist! (needed)\n");
+                exit(1);
+            }
+            setAudioFormat(appPrvt,inputFile);
         }
         else{
-            printf("Format not recognized\n");
-            exit(1);
-        }
-
-        if((infile = fopen(inputFile,"r")) == NULL){
-            perror("fopen-infile\n");
-            exit(1);
-        }
-
-        if(appPrvt->mode==DASF_MODE){
-            printf( "Mode              :DASF Mode \n");
-        }
-        else if(appPrvt->mode==FILE_MODE){
             if(!outputFile){
-              printf("outputFile doesn't exist!\n");
-              exit(1);
+                printf("Output File doesn't exist! (needed)\n");
+                exit(1);
             }
-            printf( "Mode              :File Mode \n");
-            printf( "Output File       :%s \n",outputFile);
+            setAudioFormat(appPrvt,outputFile);
+        }
+        if((FILE_MODE == appPrvt->mode && RECORD== appPrvt->appType )||
+                (PLAYER == appPrvt->appType) ){
+            /*input file is needed */
+            if((infile = fopen(inputFile,"r")) == NULL){
+                perror("fopen-infile\n");
+                exit(1);
+            }
+        }
+        if((FILE_MODE == appPrvt->mode && PLAYER == appPrvt->appType) ||
+                (RECORD== appPrvt->appType) ){
+            /*output file is needed */
             if((outfile = fopen(outputFile,"w")) == NULL){
               perror("fopen-outfile\n");
               exit(1);
@@ -365,9 +366,14 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
               exit(1);
             }
         }
-        else{
+        else if(ALSA_MODE == appPrvt->mode){
           printf( "Mode              :Alsa Mode \n");
         }
+        else{
+            printf( "Mode              :DASF Mode \n");
+        }
+        printf( "Mode              :File Mode \n");
+        printf( "Output File       :%s \n",outputFile);
         printf( "Input File        :%s \n",inputFile);
         printf ("Channels          :%d \n", appPrvt->channels);
         printf("Sampling Rate     :%d \n", (int)appPrvt->samplerate);
@@ -382,7 +388,9 @@ static int config_params(appPrivateSt* appPrvt)
 
   config_pcm(appPrvt);
 
-  switch(appPrvt->in_port->format.audio.eEncoding){
+  switch(PLAYER==appPrvt->appType?
+         appPrvt->in_port->format.audio.eEncoding:
+         appPrvt->out_port->format.audio.eEncoding){
   case OMX_AUDIO_CodingMP3:
     config_mp3(appPrvt);
     break;
@@ -434,6 +442,9 @@ appPrivateSt* app_core_new(void){
   me->Device=0;
   me->channels = 2;
   me->samplerate = 44100;
+  me->bitrate = 128000;
+  me->profile = OMX_AUDIO_AACObjectLC;
+  me->fileformat = OMX_AUDIO_AACStreamFormatMP4ADTS;
   me->nIpBuf = 1;
   me->IpBufSize = IN_BUFFER_SIZE;
   me->nOpBuf = 1;
@@ -447,7 +458,9 @@ appPrivateSt* app_core_new(void){
   me->state = NULL;
   me->pause = NULL;
   me->processed_buffers = 0;
+  me->recordTime=5000000;
   me->fileReRead = OMX_FALSE;
+  me->frameSizeRecord=4096;
   me->commFunc =NULL;
   return me;
 }
@@ -643,33 +656,42 @@ static int config_ports(appPrivateSt* appPrvt)
 static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
 {
     OMX_ERRORTYPE error = OMX_ErrorNone;
-    OMX_STRING audio_decode_string = "OMX.TI.AUDIO.DECODE";
+    char audio_string[80] = "OMX.TI.AUDIO.DECODE";
+
     /*Allocating application resources*/
 #ifdef OMAP3
     switch(appPrvt->eEncoding){
     case OMX_AUDIO_CodingMP3:
-        audio_decode_string = "OMX.TI.MP3.decode";
+        strcpy ((char*)audio_string , "OMX.TI.MP3.");
         break;
     case OMX_AUDIO_CodingAAC:
-        audio_decode_string = "OMX.TI.AAC.decode";
+        strcpy ((char*)audio_string , "OMX.TI.AAC.");
         break;
     case OMX_AUDIO_CodingWMA:
-        audio_decode_string = "OMX.TI.WMA.decode";
+        strcpy ((char*)audio_string , "OMX.TI.WMA.");
         break;
     case OMX_AUDIO_CodingAMR:
         if(!appPrvt->amr_mode)
-            audio_decode_string = "OMX.TI.AMR.decode";
+            strcpy ((char*)audio_string , "OMX.TI.AMR.");
         else
-            audio_decode_string = "OMX.TI.WBAMR.decode";
+            strcpy ((char*)audio_string , "OMX.TI.WBAMR.");
         break;
     case OMX_AUDIO_CodingG729:
-        audio_decode_string = "OMX.TI.G729.decode";
+        strcpy ((char*)audio_string , "OMX.TI.G729.");
         break;
     default:
         APP_DPRINT("Component index not found \n");
         break;
     }
 #endif
+
+    if(PLAYER == appPrvt->appType){
+        strcat (audio_string,"decode");
+    }
+    else{
+        strcat (audio_string,"encode");
+    }
+
     alloc_app_resources(appPrvt);
 
     /*Initializing mutexes*/
@@ -680,7 +702,7 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
 
     /* Get the component handle */
     error = OMX_GetHandle(&appPrvt->phandle,
-                          audio_decode_string,
+                          audio_string,
                           appPrvt,
                           &callbacks);
     if (error != OMX_ErrorNone) {
@@ -703,28 +725,33 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
         }
     */
     /* Now set the role to the appropriate format */
+    if(PLAYER == appPrvt->appType)
+        strcpy ((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.");
+    else
+        strcpy ((char*)appPrvt->pCompRoleStruct->cRole,"audio_encode.dsp.");
+
     switch(appPrvt->in_port->format.audio.eEncoding){
     case OMX_AUDIO_CodingMP3:
-        strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.mp3");
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"mp3");
         break;
     case OMX_AUDIO_CodingAAC:
-        strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.aac");
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"aac");
         break;
     case OMX_AUDIO_CodingWMA:
-        strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.wma");
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"wma");
         break;
     case OMX_AUDIO_CodingAMR:
         if(!appPrvt->amr_mode)
-          strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.amrnb");
+          strcat((char*)appPrvt->pCompRoleStruct->cRole,"amrnb");
         else
-          strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.amrwb");
+          strcat((char*)appPrvt->pCompRoleStruct->cRole,"amrwb");
 
         break;
     case OMX_AUDIO_CodingG729:
-        strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.g729");
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"g729");
         break;
     default:
-        strcpy((char*)appPrvt->pCompRoleStruct->cRole,"audio_decode.dsp.mp3");
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"mp3");
         break;
     }
     error = OMX_SetParameter (appPrvt->phandle,
@@ -767,7 +794,9 @@ static int free_app_resources(appPrivateSt* appPrvt)
   free(appPrvt->pcm);
   appPrvt->pcm = NULL;
 
-  switch(appPrvt->in_port->format.audio.eEncoding){
+  switch(PLAYER==appPrvt->appType?
+         appPrvt->in_port->format.audio.eEncoding:
+         appPrvt->out_port->format.audio.eEncoding){
   case OMX_AUDIO_CodingMP3:
     APP_DPRINT("Free mp3 params\n");
     free(appPrvt->mp3);
@@ -822,6 +851,10 @@ static int free_app_resources(appPrivateSt* appPrvt)
   appPrvt->out_buffers = NULL;
 
   if(appPrvt->mode==ALSA_MODE){
+    if(appPrvt->appType == RECORD){
+        /*Deactivate device for capture*/
+        system("./system/bin/alsa_amixer cset numid=26 0");
+    }
     snd_pcm_drain(appPrvt->alsaPrvt->playback_handle);
     snd_pcm_close(appPrvt->alsaPrvt->playback_handle);
     free(appPrvt->alsaPrvt);
@@ -852,11 +885,12 @@ static int free_app_resources(appPrivateSt* appPrvt)
   event_deinit(appPrvt->pause);
   free(appPrvt->pause);
   appPrvt->pause = NULL;
-
-  if(fclose(infile)){
-    return 1;
+  if((FILE_MODE == appPrvt->mode) || !(RECORD == appPrvt->appType)){
+      if(fclose(infile)){
+          return 1;
+      }
   }
-  if(appPrvt->mode == FILE_MODE){
+  if(appPrvt->mode == FILE_MODE || RECORD == appPrvt->appType){
     if(fclose(outfile)){
       return 1;
     }
