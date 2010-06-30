@@ -1692,10 +1692,6 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
         /*DSP_ERROR_EXIT (status, "Unregister DSP Object, Socket UUID ", EXIT);*/
     }
 
-    /* detach processor from gpp */
-    status = DSPProcessor_Detach(hInterface->dspCodec->hProc);
-    DSP_ERROR_EXIT (status, "DeInit: DSP Processor Detach ", EXIT);
-
 EXIT:
     /* always call DSPManager_Close() even if DSPBridge API is not accessible.
         In the case of an error, all handles to DSPBridge have to be closed so that
