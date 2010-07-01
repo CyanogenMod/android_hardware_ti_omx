@@ -21,8 +21,19 @@ LOCAL_CFLAGS := -pipe -fomit-frame-pointer -Wall  -Wno-trigraphs -Werror-implici
 LOCAL_CFLAGS += -D_Android
 
 LOCAL_SHARED_LIBRARIES := \
-	liblog
+		libOMX_CoreOsal \
+		libipcutils \
+		libsysmgr \
+		libipc \
+		librcm \
+		libnotify \
+		libsysmemmgr \
+		libc \
+		liblog	\
+		libmemmgr \
+		libd2cmap \
+		libomx_rpc
 
 LOCAL_MODULE:= libomx_proxy_common
 
-include $(BUILD_STATIC_LIBRARY)
+include $(BUILD_SHARED_LIBRARY)
