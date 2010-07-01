@@ -676,7 +676,6 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
 	OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
 
 	PRINT("Inside Test Application WaitForState function\n");
-	eError = pComponent->GetState(pHandle, &CurState);
 	while ( (eError == OMX_ErrorNone) &&
 	        (CurState != DesiredState)) {
 		sched_yield();
