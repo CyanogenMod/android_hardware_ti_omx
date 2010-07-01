@@ -306,6 +306,7 @@ typedef struct IH264VENC_DynamicParams {
                                                Second entry in the array specify the end position of foreground region in terms
                                                of macroblock number, valid values are [0, totalMbsInFrame-1] with following constrains:
                                                endPos > startPos && endPos%mbsInOneRow > startPos%mbsInOneRow*/
+    OMX_U32 max_delay; /* in units of 1/30 second or 33.3333 msec for CBR */
 } IH264VENC_DynamicParams;
 
 /* H264 Encoder DSP s/n run-time input parameters */

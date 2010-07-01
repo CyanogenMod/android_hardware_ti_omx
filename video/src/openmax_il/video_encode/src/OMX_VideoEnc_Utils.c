@@ -2637,6 +2637,8 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_H264_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentP
     {
         pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceGroupParams[i] = pComponentPrivate->sliceGroupParams[i];
     }
+    /*Unless required otherwise, always set this value to 30. */
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.max_delay = 30;
 
     pUalgInpParams->ulFrameIndex = pComponentPrivate->nFrameCnt;
 
