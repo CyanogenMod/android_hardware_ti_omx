@@ -25,8 +25,6 @@ LOCAL_SHARED_LIBRARIES := \
 		liblog	\
 		libmemmgr \
 		libd2cmap \
-
-LOCAL_STATIC_LIBRARIES := \
 		libomx_proxy_common \
 		libomx_rpc \
 

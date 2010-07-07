@@ -87,9 +87,9 @@ static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(
     (PV_OMXComponentCapabilityFlagsType*)pComponentParameterStructure;
     /*Set PV (opencore) capability flags*/
     pPVCapaFlags->iIsOMXComponentMultiThreaded = OMX_TRUE;
-    pPVCapaFlags->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;//OMX_TRUE;
-    pPVCapaFlags->iOMXComponentSupportsExternalInputBufferAlloc = OMX_FALSE;
-    pPVCapaFlags->iOMXComponentSupportsMovableInputBuffers = OMX_FALSE;
+    pPVCapaFlags->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
+    pPVCapaFlags->iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
+    pPVCapaFlags->iOMXComponentSupportsMovableInputBuffers = OMX_TRUE;
     pPVCapaFlags->iOMXComponentSupportsPartialFrames = OMX_FALSE;
     pPVCapaFlags->iOMXComponentCanHandleIncompleteFrames = OMX_FALSE;
 #ifdef __H264_ENC__

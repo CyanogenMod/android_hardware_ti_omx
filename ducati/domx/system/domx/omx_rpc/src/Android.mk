@@ -28,9 +28,18 @@ LOCAL_CFLAGS += -D_Android
 LOCAL_STATIC_LIBRARIES += \
 
 LOCAL_SHARED_LIBRARIES += \
+		libOMX_CoreOsal \
+		libipcutils \
+		libsysmgr \
+		libipc \
+		librcm \
+		libnotify \
+		libsysmemmgr \
+		libc \
 		liblog \
+		libmemmgr \
+		libd2cmap \
 
 LOCAL_MODULE:= libomx_rpc
 
-
-include $(BUILD_STATIC_LIBRARY)
+include $(BUILD_SHARED_LIBRARY)
