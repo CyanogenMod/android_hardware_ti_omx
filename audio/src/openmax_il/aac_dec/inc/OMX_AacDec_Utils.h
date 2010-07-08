@@ -193,15 +193,8 @@
     #define AACDEC_DPRINT printf
     #undef AACDEC_BUFPRINT printf
     #undef AACDEC_MEMPRINT printf
-    #define AACDEC_STATEPRINT printf
 #else
     #define AACDEC_DPRINT(...)
-#endif
-
-#ifdef AACDEC_STATEDETAILS
-    #define AACDEC_STATEPRINT printf
-#else
-    #define AACDEC_STATEPRINT(...)
 #endif
 
 #ifdef AACDEC_BUFDETAILS
