@@ -954,6 +954,16 @@ void MP3DEC_SignalIfAllBuffersAreReturned(MP3DEC_COMPONENT_PRIVATE *pComponentPr
 *  =========================================================================*/
 void MP3DEC_HandleUSNError (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
+/**
+* @MP3DEC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param MP3DEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void MP3DEC_waitForAllBuffersToReturn(
+        MP3DEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 /*  =========================================================================*/
 /*  func    MP3DEC_FatalErrorRecover
 *
