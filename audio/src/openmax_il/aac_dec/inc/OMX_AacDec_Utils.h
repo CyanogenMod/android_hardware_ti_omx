@@ -1203,6 +1203,16 @@ void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 /*=======================================================================*/
 void AACDEC_SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 counterport);
 
+/**
+* @AACDEC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param MP3DEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void AACDEC_waitForAllBuffersToReturn(
+        AACDEC_COMPONENT_PRIVATE *pComponentPrivate);
+
 /*  =========================================================================*/
 /*  func    AACDEC_FatalErrorRecover
 *
