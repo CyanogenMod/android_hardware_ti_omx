@@ -1337,6 +1337,10 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
         case OMX_StateMax:
             OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: NBAMRENC_HandleCommand :: Cmd OMX_StateMax\n",__LINE__);
             break;
+            default:
+                OMX_PRSTATE2(pComponentPrivate->dbg, ": HandleCommand: commandedState: \
+                                                         nothing to do for this case::\n");
+                break;
         } /* End of Switch */
     } else if (command == OMX_CommandMarkBuffer) {
         OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: command OMX_CommandMarkBuffer received\n",__LINE__);
