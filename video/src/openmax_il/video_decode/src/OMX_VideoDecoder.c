@@ -1401,6 +1401,14 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             goto EXIT;
                         }
                     }
+                    /* Calculate the buffer size only when the existing buffer size is zero
+                     * or the OMX IL client has not modified it */
+                    if ((pPortDefParam->nBufferSize == pPortDef->nBufferSize) ||
+                        (pPortDefParam->nBufferSize == 0)) {
+                        pPortDefParam->nBufferSize = pPortDef->format.video.nFrameWidth *
+                                                pPortDef->format.video.nFrameHeight;
+                    }
+
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                     switch (pPortDef->format.video.eCompressionFormat) {
                         case OMX_VIDEO_CodingH263:
@@ -1433,10 +1441,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             break;
                     }
 
-                    if(pPortDef->nBufferSize == 0){
-                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
-                                                pPortDef->format.video.nFrameHeight;
-                    }
                     OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                     if ((pPortDefParam->format.video.nFrameWidth * pPortDefParam->format.video.nFrameHeight) > MAX_RESOLUTION)
                     {
@@ -1456,6 +1460,14 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             goto EXIT;
                         }
                     }
+                    /* Calculate the buffer size only when the existing buffer size is zero
+                     * or the OMX IL client has not modified it */
+                    if ((pPortDefParam->nBufferSize == pPortDef->nBufferSize) ||
+                        (pPortDefParam->nBufferSize == 0)) {
+                        pPortDefParam->nBufferSize = pPortDefParam->format.video.nFrameWidth *
+                        pPortDefParam->format.video.nFrameHeight *
+                        ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
+                    }
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                     switch (pPortDef->format.video.eColorFormat) {
                         case VIDDEC_COLORFORMAT422:
@@ -1471,11 +1483,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                         default:
                             OMX_PRINT3(pComponentPrivate->dbg, "The color format is unknow");
                             break;
-                    }
-                    if (pPortDef->nBufferSize == 0) {
-                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
-                        pPortDef->format.video.nFrameHeight *
-                        ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
                     }
 
                     OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
