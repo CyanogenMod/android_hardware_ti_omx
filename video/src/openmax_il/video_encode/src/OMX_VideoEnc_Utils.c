@@ -4290,7 +4290,8 @@ void CalculateBufferSize(OMX_PARAM_PORTDEFINITIONTYPE* pCompPort, VIDENC_COMPONE
         else
         {/*coding Mpeg4 or H263*/
             pCompPort->nBufferSize = pCompPort->format.video.nFrameWidth *
-                                    pCompPort->format.video.nFrameHeight / 2;
+                                    pCompPort->format.video.nFrameHeight;
+            OMX_PRINT4(pCompPrivate->dbg, "CalcluateBufferSize output other %d",pCompPort->nBufferSize );
         }
         pCompPort->nBufferSize += 256;
         OMX_ERROR5(pCompPrivate->dbg, "*The output buffer size is %lu. WIDTH=%lu HEIGHT=%lu FORMAT %d\n", pCompPort->nBufferSize, pCompPort->format.video.nFrameWidth, pCompPort->format.video.nFrameHeight, pCompPort->format.video.eCompressionFormat);
