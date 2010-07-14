@@ -515,7 +515,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_ip->eDir = OMX_DirInput;
     pPortDef_ip->bEnabled = OMX_TRUE;
     pPortDef_ip->nBufferSize = IP_BUFFERSIZE;
-    pPortDef_ip->nBufferAlignment = CACHE_ALIGNMENT;
+    pPortDef_ip->nBufferAlignment = DSP_CACHE_ALIGNMENT;
     pPortDef_ip->bPopulated = 0;   
     pPortDef_ip->format.audio.eEncoding = OMX_AUDIO_CodingAMR;
 
@@ -525,7 +525,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pPortDef_op->nPortIndex = 0x1;
     pPortDef_op->nBufferCountActual = NUM_NBAMRDEC_OUTPUT_BUFFERS;
     pPortDef_op->nBufferCountMin = NUM_NBAMRDEC_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferAlignment = CACHE_ALIGNMENT;
+    pPortDef_op->nBufferAlignment = DSP_CACHE_ALIGNMENT;
     pPortDef_op->eDir = OMX_DirOutput;
     pPortDef_op->bEnabled = OMX_TRUE;
     pPortDef_op->nBufferSize = OUTPUT_NBAMRDEC_BUFFER_SIZE;

@@ -187,13 +187,6 @@ FILE *fpRes = NULL;
 
 /* ======================================================================= */
 /**
-  * @def  CACHE_ALIGNMENT                           Buffer Cache Alignment
- */
-/* ======================================================================= */
-#define CACHE_ALIGNMENT 128
-
-/* ======================================================================= */
-/**
  * @def    APP_DEBUGMEM    This Macro turns On the logic to detec memory
  *                         leaks on the App. To debug the component, 
  *                         NBAMRDEC_DEBUGMEM must be defined.
@@ -1057,7 +1050,7 @@ int main(int argc, char* argv[])
     {
         pInputBuffer[i] = (OMX_U8*)newmalloc(INPUT_NBAMRDEC_BUFFER_SIZE*3 + EXTRA_BUFFBYTES);/*To have enought space for    */
         APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pInputBuffer[i]);                   /*handling two frames by buffer*/
-        pInputBuffer[i] = pInputBuffer[i] + CACHE_ALIGNMENT;
+        pInputBuffer[i] = pInputBuffer[i] + DSP_CACHE_ALIGNMENT;
 
         /* allocate input buffer */
         APP_DPRINT("%d :: About to call OMX_UseBuffer\n",__LINE__);
@@ -1076,7 +1069,7 @@ int main(int argc, char* argv[])
         if ((testCaseNo != 7) && (testCaseNo != 9)){
             pOutputBuffer[i] = (OMX_U8*)newmalloc (OUTPUT_NBAMRDEC_BUFFER_SIZE*1 + EXTRA_BUFFBYTES);
             APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pOutputBuffer);
-            pOutputBuffer[i] = pOutputBuffer[i] + CACHE_ALIGNMENT;
+            pOutputBuffer[i] = pOutputBuffer[i] + DSP_CACHE_ALIGNMENT;
 
             /* allocate output buffer */
             APP_DPRINT("%d :: About to call OMX_UseBuffer\n",__LINE__);
@@ -1090,7 +1083,7 @@ int main(int argc, char* argv[])
         else{
             pOutputBuffer[i] = (OMX_U8*)newmalloc (OUTPUT_NBAMRDEC_BUFFER_SIZE*2 + EXTRA_BUFFBYTES);
             APP_MEMPRINT("%d:::[TESTAPPALLOC] %p\n",__LINE__,pOutputBuffer);
-            pOutputBuffer[i] = pOutputBuffer[i] + CACHE_ALIGNMENT;
+            pOutputBuffer[i] = pOutputBuffer[i] + DSP_CACHE_ALIGNMENT;
 
             /* allocate output buffer */
             APP_DPRINT("%d :: About to call OMX_UseBuffer\n",__LINE__);
