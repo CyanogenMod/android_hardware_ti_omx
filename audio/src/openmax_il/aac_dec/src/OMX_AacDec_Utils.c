@@ -873,7 +873,7 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                 NULL);
                         goto EXIT;
                     }
-                    AACDEC_STATEPRINT("****************** Component State Set to Idle\n\n");
+                    OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Idle\n\n");
                     pComponentPrivate->curState = OMX_StateIdle;
 #ifdef RESOURCE_MANAGER_ENABLED
                     rm_error = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
