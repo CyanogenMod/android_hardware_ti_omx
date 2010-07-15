@@ -934,12 +934,8 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         OMX_PRCOMM2(pComponentPrivate->dbg, "outputPortFlag = %d\n",outputPortFlag);
                         if (!(inputPortFlag && outputPortFlag)) 
                         {
-
-                            pComponentPrivate->InLoaded_readytoidle = 1;
-                            pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex); 
-                            pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
-                            pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-                        
+                            omx_mutex_wait(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                                           &pComponentPrivate->InLoaded_readytoidle);
                         }
 
                         cb.LCML_Callback = (void *) AACENCLCML_Callback;
@@ -1066,18 +1062,12 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                         pComponentPrivate->bIsStopping = 1;
 
-						if (pComponentPrivate->codecStop_waitingsignal == 0){ 
-							pthread_mutex_lock(&pComponentPrivate->codecStop_mutex); 	
-						}
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                       MMCodecControlStop,(void *)pArgs);
 
-	                    if (pComponentPrivate->codecStop_waitingsignal == 0){
-	                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
-	                        pComponentPrivate->codecStop_waitingsignal = 0;
-	                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
-	                    }
-					
+                        omx_mutex_wait(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
+                                       &pComponentPrivate->codecStop_waitingsignal);
+
                         if(eError != OMX_ErrorNone) 
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
@@ -1402,12 +1392,8 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                         if (pComponentPrivate->pInputBufferList->numBuffers ||
                             pComponentPrivate->pOutputBufferList->numBuffers) 
                         {
-                            pComponentPrivate->InIdle_goingtoloaded = 1;
-
-                            pthread_mutex_lock(&pComponentPrivate->InIdle_mutex); 
-                            pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
-                            pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-
+                            omx_mutex_wait(&pComponentPrivate->InIdle_mutex,&pComponentPrivate->InIdle_threshold,
+                                           &pComponentPrivate->InIdle_goingtoloaded);
                         }
 
                         /* Now Deinitialize the component No error should be returned from this function. It should clean the system as much as possible */
@@ -1578,18 +1564,13 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
                     OMX_PRINT2(pComponentPrivate->dbg, "AACENC: About to stop socket node line %d\n",__LINE__);
 
-                        pComponentPrivate->bIsStopping = 1;
-					if (pComponentPrivate->codecStop_waitingsignal == 0){ 
-						pthread_mutex_lock(&pComponentPrivate->codecStop_mutex); 	
-					}
+                    pComponentPrivate->bIsStopping = 1;
+
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                   MMCodecControlStop,(void *)pArgs);
 
-                    if (pComponentPrivate->codecStop_waitingsignal == 0){
-                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
-                        pComponentPrivate->codecStop_waitingsignal = 0;
-                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
-                    }
+                    omx_mutex_wait(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
+                                   &pComponentPrivate->codecStop_waitingsignal);
                 }
             }
         }
@@ -1675,14 +1656,10 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             }
             if(commandData == 0x1 || commandData == -1) 
             {
-                /* enable out port */
-                if(pComponentPrivate->AlloBuf_waitingsignal)
-                {
-                     pComponentPrivate->AlloBuf_waitingsignal = 0;
-                     pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
-                }
+
+                omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
+                                 &pComponentPrivate->AlloBuf_waitingsignal);
+
                 if (pComponentPrivate->curState == OMX_StateExecuting) 
                 {
                     char *pArgs = "";
@@ -1765,9 +1742,8 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             }
         }
 
-                     pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-                     pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
-                     pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);    
+        omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
+                         &pComponentPrivate->AlloBuf_waitingsignal);
 
     }
 
@@ -2716,22 +2692,12 @@ pHandle = pComponentPrivate_CC->pHandle;
     else if(event == EMMCodecProcessingStoped) 
     {
         OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder received stop ack, waiting for all outstanding buffers to be returned",__LINE__);
-        pthread_mutex_lock(&pComponentPrivate_CC->bufferReturned_mutex);
-        while (pComponentPrivate_CC->EmptythisbufferCount != pComponentPrivate_CC->EmptybufferdoneCount ||
-               pComponentPrivate_CC->FillthisbufferCount  != pComponentPrivate_CC->FillbufferdoneCount) {
-            pthread_cond_wait(&pComponentPrivate_CC->bufferReturned_condition, &pComponentPrivate_CC->bufferReturned_mutex);
-        }
-        pthread_mutex_unlock(&pComponentPrivate_CC->bufferReturned_mutex);
-        OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder has returned all buffers",__LINE__);
 
-        pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex);
-        if(pComponentPrivate_CC->codecStop_waitingsignal == 0){
-            pComponentPrivate_CC->codecStop_waitingsignal = 1;             
-            pthread_cond_signal(&pComponentPrivate_CC->codecStop_threshold);
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "stop ack. received. stop waiting for sending disable command completed\n");
-        }
-        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
-		
+        AACENC_waitForAllBuffersToReturn(pComponentPrivate_CC);
+
+        omx_mutex_signal(&pComponentPrivate_CC->codecStop_mutex,&pComponentPrivate_CC->codecStop_threshold,
+                         &pComponentPrivate_CC->codecStop_waitingsignal);
+
         if (!pComponentPrivate_CC->bNoIdleOnStop) 
         {
             pComponentPrivate_CC->curState = OMX_StateIdle;
@@ -3613,4 +3579,23 @@ void AACENC_SignalIfAllBuffersAreReturned(AACENC_COMPONENT_PRIVATE *pComponentPr
         OMX_PRINT2(pComponentPrivate->dbg, "Sending pthread signal that OMX has returned all buffers to app",__LINE__);
     }
     pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
+}
+
+/**
+* @AACENC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param AACENC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void AACENC_waitForAllBuffersToReturn(
+        AACENC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex);
+    while (pComponentPrivate->EmptythisbufferCount != pComponentPrivate->EmptybufferdoneCount ||
+           pComponentPrivate->FillthisbufferCount  != pComponentPrivate->FillbufferdoneCount) {
+        pthread_cond_wait(&pComponentPrivate->bufferReturned_condition, &pComponentPrivate->bufferReturned_mutex);
+    }
+    pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
+    OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
 }

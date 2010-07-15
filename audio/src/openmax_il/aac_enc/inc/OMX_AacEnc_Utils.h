@@ -635,6 +635,16 @@ void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
 void AACENC_SignalIfAllBuffersAreReturned(AACENC_COMPONENT_PRIVATE *pComponentPrivate,
                                           OMX_U8 counterport);
 
+/**
+* @AACENC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param AACENC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void AACENC_waitForAllBuffersToReturn(
+                                      AACENC_COMPONENT_PRIVATE *pComponentPrivate);
+
 void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #endif
