@@ -1868,10 +1868,9 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     MP3D_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
 
     if(!pPortDef->bEnabled){
-        pComponentPrivate->AlloBuf_waitingsignal = 1;  
-        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-        pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
-        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+        omx_mutex_wait(&pComponentPrivate->AlloBuf_mutex,
+                          &pComponentPrivate->AlloBuf_threshold,
+                          &pComponentPrivate->AlloBuf_waitingsignal);
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -1939,15 +1938,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     if((pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
-        {
-            pComponentPrivate->InLoaded_readytoidle = 0;
-
-            pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-            pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-            pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-        }
+       (pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bEnabled))
+    {
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,
+                   &pComponentPrivate->InLoaded_threshold,
+                   &pComponentPrivate->InLoaded_readytoidle);
+    }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -2089,15 +2085,11 @@ static OMX_ERRORTYPE FreeBuffer(
                                                NULL);
     }
 
-    if ((!pComponentPrivate->pInputBufferList->numBuffers &&
-         !pComponentPrivate->pOutputBufferList->numBuffers) &&
-        pComponentPrivate->InIdle_goingtoloaded){
-        pComponentPrivate->InIdle_goingtoloaded = 0;                  
-
-        pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-
+    if (!pComponentPrivate->pInputBufferList->numBuffers &&
+         !pComponentPrivate->pOutputBufferList->numBuffers){
+        omx_mutex_signal(&pComponentPrivate->InIdle_mutex,
+                   &pComponentPrivate->InIdle_threshold,
+                   &pComponentPrivate->InIdle_goingtoloaded);
     }
     
     if ((pComponentPrivate->bDisableCommandPending) &&
@@ -2179,10 +2171,9 @@ static OMX_ERRORTYPE UseBuffer (
 
     MP3D_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
     if(!pPortDef->bEnabled){
-        pComponentPrivate->AlloBuf_waitingsignal = 1;   
-        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex); 
-        pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
-        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+        omx_mutex_wait(&pComponentPrivate->AlloBuf_mutex,
+                          &pComponentPrivate->AlloBuf_threshold,
+                          &pComponentPrivate->AlloBuf_waitingsignal);
     }
     OMX_PRCOMM2(pComponentPrivate->dbg, ":: pPortDef = %p\n",pPortDef);
     OMX_PRCOMM2(pComponentPrivate->dbg, ":: pPortDef->bEnabled = %d\n",pPortDef->bEnabled);
@@ -2222,14 +2213,9 @@ static OMX_ERRORTYPE UseBuffer (
     }
 
     if((pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
-        {
-            pComponentPrivate->InLoaded_readytoidle = 0;                  
-            pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-            pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-            pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
-
+       (pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[MP3D_INPUT_PORT]->bEnabled)){
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                             &pComponentPrivate->InLoaded_readytoidle);
         }
 
     pBufferHeader->pAppPrivate = pAppPrivate;
