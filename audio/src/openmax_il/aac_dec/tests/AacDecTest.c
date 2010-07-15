@@ -437,8 +437,8 @@ int main(int argc, char* argv[]) {
     OMX_S16 numOfOutputBuffer = 0;
     OMX_INDEXTYPE index;
 #ifdef USE_BUFFER
-    OMX_U8* pInputBuffer[10] = NULL;
-    OMX_U8* pOutputBuffer[10] = NULL;
+    OMX_U8* pInputBuffer[10] = {NULL};
+    OMX_U8* pOutputBuffer[10] = {NULL};
 #endif
 
     struct timeval tv;
@@ -923,17 +923,7 @@ int main(int argc, char* argv[]) {
 
 #else
         for (i = 0; i < numOfInputBuffer; i++) {
-            pInputBuffer[i] = (OMX_U8*)malloc(sizeof(nIpBufSize) + (nIpBufSize * 2));
-            printf("%d :: [TESTAPPALLOC] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-
-            if (NULL == pInputBuffer[i]) {
-                printf("%d :: APP: Malloc Failed\n", __LINE__);
-                error = OMX_ErrorInsufficientResources;
-                goto EXIT;
-            }
-
-            pInputBuffer[i] = pInputBuffer[i] + 128;
-
+            OMX_MALLOC_SIZE_DSPALIGN(pInputBuffer[i], nIpBufSize, OMX_U8);
             printf("%d :: pInputBufferHeader[%d] = %p\n", __LINE__, i, pInputBufferHeader[i]);
             error = OMX_UseBuffer(pHandle, &pInputBufferHeader[i], 0, NULL, nIpBufSize, pInputBuffer[i]);
 
@@ -945,17 +935,7 @@ int main(int argc, char* argv[]) {
 
         if (audioinfo.dasfMode == 0) {
             for (i = 0; i < numOfOutputBuffer; i++) {
-                pOutputBuffer[i] = (OMX_U8*) malloc (sizeof(nOpBufSize) + (nOpBufSize * 2));
-                printf("%d :: [TESTAPPALLOC] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-
-                if (NULL == pOutputBuffer[i]) {
-                    printf("%d :: APP: Malloc Failed\n", __LINE__);
-                    error = OMX_ErrorInsufficientResources;
-                    goto EXIT;
-                }
-
-                pOutputBuffer[i] = pOutputBuffer[i] + 128;
-
+                OMX_MALLOC_SIZE_DSPALIGN(pOutputBuffer[i], nOpBufSize, OMX_U8);
                 printf("%d :: pOutputBufferHeader[%d] = %p\n", __LINE__, i, pOutputBufferHeader[i]);
                 error = OMX_UseBuffer(pHandle, &pOutputBufferHeader[i], 1, NULL, nOpBufSize, pOutputBuffer[i]);
 
@@ -1892,22 +1872,12 @@ int main(int argc, char* argv[]) {
 #ifdef USE_BUFFER
                     /* free the UseBuffers */
                     for (i = 0; i < numOfInputBuffer; i++) {
-                        if (pInputBuffer[i] != NULL) {
-                            pInputBuffer[i] = pInputBuffer[i] - 128;
-                            printf("%d :: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-                            newfree(pInputBuffer[i]);
-                            pInputBuffer[i] = NULL;
-                        }
+                        OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
                     }
 
                     if (audioinfo.dasfMode == 0) {
                         for (i = 0; i < numOfOutputBuffer; i++) {
-                            if (pOutputBuffer[i] != NULL) {
-                                pOutputBuffer[i] = pOutputBuffer[i] - 128;
-                                printf("%d :: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-                                newfree(pOutputBuffer[i]);
-                                pOutputBuffer[i] = NULL;
-                            }
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer[i], OMX_U8);
                         }
                     }
 
@@ -2083,22 +2053,12 @@ if (audioinfo.dasfMode == 0) {
 #ifdef USE_BUFFER
 /* free the UseBuffers */
 for (i = 0; i < numOfInputBuffer; i++) {
-    if (pInputBuffer[i] != NULL) {
-        pInputBuffer[i] = pInputBuffer[i] - 128;
-        printf("%d :: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-        newfree(pInputBuffer[i]);
-        pInputBuffer[i] = NULL;
-    }
+    OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
 }
 
 if (audioinfo.dasfMode == 0) {
     for (i = 0; i < numOfOutputBuffer; i++) {
-        if (pOutputBuffer[i] != NULL) {
-            pOutputBuffer[i] = pOutputBuffer[i] - 128;
-            printf("%d :: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-            newfree(pOutputBuffer[i]);
-            pOutputBuffer[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer[i], OMX_U8);
     }
 }
 
@@ -2495,21 +2455,11 @@ FILE* fIn, FILE* fOut) {
     /* free the UseBuffers */
 
     for (i = 0; i < NIB; i++) {
-        if (UseInpBuf[i] != NULL) {
-            UseInpBuf[i] = UseInpBuf[i] - 128;
-            printf("%d :: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, (UseInpBuf[i]));
-            newfree(UseInpBuf[i]);
-            UseInpBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseInpBuf[i],OMX_U8);
     }
 
     for (i = 0; i < NOB; i++) {
-        if (UseOutBuf[i] != NULL) {
-            UseOutBuf[i] = UseOutBuf[i] - 128;
-            printf("%d :: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, UseOutBuf[i]);
-            newfree(UseOutBuf[i]);
-            UseOutBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseOutBuf[i],OMX_U8);
     }
 
     /*i value is fixed by the number calls to malloc in the App */
