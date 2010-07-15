@@ -66,6 +66,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <alloca.h>
+#include <OMX_TI_Common.h>
 #ifdef AM_APP
 #include <AudioManagerAPI.h>
 #endif
@@ -1113,33 +1114,32 @@ int main(int argc, char* argv[]) {
             }
 
 #else
-            pInputBuffer[0] = (OMX_U8*)newmalloc(nIpBufSize);
+            for (i = 0; i < nIpBuffs; i++) {
+                OMX_MALLOC_SIZE_DSPALIGN(pInputBuffer[i], nIpBufSize, OMX_U8);
 
-            pInputBufferHeader[0] = newmalloc(1);
-
-            /* allocate input buffer */
-            error = OMX_UseBuffer(*pHandle, &pInputBufferHeader[0], 0, NULL, nIpBufSize, pInputBuffer[0]);
-
-            if (error != OMX_ErrorNone) {
-                APP_DPRINT("%d :: Error returned by OMX_UseBuffer()\n", __LINE__);
-                goto EXIT;
-            }
-
-            if (audioinfo->dasfMode == 0) {
-                pOutputBuffer[0] = newmalloc (nOpBufSize + 256);
-                pOutputBuffer[0] = pOutputBuffer[0] + 128;
-
-                pOutputBufferHeader[0] = newmalloc(1);
-
-                /* allocate output buffer */
-                error = OMX_UseBuffer(*pHandle, &pOutputBufferHeader[0], 1, NULL, nOpBufSize, pOutputBuffer[0]);
+                /* allocate input buffer */
+                error = OMX_UseBuffer(*pHandle, &pInputBufferHeader[i], 0, NULL, nIpBufSize, pInputBuffer[i]);
 
                 if (error != OMX_ErrorNone) {
                     APP_DPRINT("%d :: Error returned by OMX_UseBuffer()\n", __LINE__);
                     goto EXIT;
                 }
+            }
 
-                pOutputBufferHeader[0]->nFilledLen = 0;
+            if (audioinfo->dasfMode == 0) {
+                for (i = 0; i < nOpBuffs; i++) {
+                    OMX_MALLOC_SIZE_DSPALIGN(pOutputBuffer[i], nOpBufSize, OMX_U8);
+
+                    /* allocate output buffer */
+                    error = OMX_UseBuffer(*pHandle, &pOutputBufferHeader[i], 1, NULL, nOpBufSize, pOutputBuffer[i]);
+
+                    if (error != OMX_ErrorNone) {
+                        APP_DPRINT("%d :: Error returned by OMX_UseBuffer()\n", __LINE__);
+                        goto EXIT;
+                    }
+
+                    pOutputBufferHeader[i]->nFilledLen = 0;
+                }
             }
 
 #endif
@@ -2230,24 +2230,17 @@ int main(int argc, char* argv[]) {
 #ifdef USE_BUFFER
                         /* newfree the App Allocated Buffers */
                         APP_DPRINT("%d :: Freeing the App Allocated Buffers in TestApp\n", __LINE__);
+                        for (i = 0; i < nIpBuffs; i++) {
+                            APP_DPRINT("%d::: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
 
-                        APP_DPRINT("%d::: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, pInputBuffer[i]);
-
-                        if (pInputBuffer[0] != NULL) {
-                            pInputBuffer[0] = pInputBuffer[0] - 128;
-                            newfree(pInputBuffer[0]);
-                            pInputBuffer[0] = NULL;
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
                         }
+                        for (i = 0; i < nOpBuffs; i++) {
 
+                            APP_DPRINT("%d::: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
 
-                        APP_DPRINT("%d::: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, pOutputBuffer[i]);
-
-                        if (pOutputBuffer[0] != NULL) {
-                            pOutputBuffer[0] = pOutputBuffer[0] - 128;
-                            newfree(pOutputBuffer[0]);
-                            pOutputBuffer[0] = NULL;
+                            OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer[i], OMX_U8);
                         }
-
 #endif
 
                         OMX_SendCommand(*pHandle, OMX_CommandStateSet, OMX_StateLoaded, NULL);
@@ -2563,14 +2556,11 @@ if (bInvalidState == OMX_TRUE) {
 
 
 #ifdef USE_BUFFER
-    if (NULL != pInputBuffer[0])
-        newfree(pInputBuffer[0]);
-
+    for (i = 0; i < nIpBuffs; i++)
+        OMX_MEMFREE_STRUCT_DSPALIGN(pInputBuffer[i], OMX_U8);
     if (!gDasfMode) {
-        if (NULL != pOutputBuffer[0]) {
-            pOutputBuffer[0] -= 128;
-            newfree(pOutputBuffer[0]);
-        }
+        for (i = 0; i < nOpBuffs; i++)
+            OMX_MEMFREE_STRUCT_DSPALIGN(pOutputBuffer[i], OMX_U8);
     }
 
 #endif
@@ -2764,8 +2754,7 @@ void SendGainRamp() {
     ADN_DCTN_PARAM* pDctnParam = NULL;
     AM_COMMANDDATATYPE cmd_data;
 
-    pDctnParamBuffer = (unsigned char*)malloc(4096 * sizeof(unsigned char*) + 256);
-    pDctnParamBuffer = (((unsigned char*)pDctnParamBuffer)  + 128);
+    OMX_MALLOC_SIZE_DSPALIGN(pDctnParamBuffer, 4096*sizeof(unsigned char), (unsigned char));
     pDctnParam = (ADN_DCTN_PARAM*)(pDctnParamBuffer);
 
     pDctnParam->ulInPortMask  = 0x0;
@@ -2927,23 +2916,11 @@ FILE* fIn, FILE* fOut) {
     /* free the UseBuffers */
 
     for (i = 0; i < NIB; i++) {
-        UseInpBuf[i] = UseInpBuf[i] - 128;
-        printf("%d :: [TESTAPPFREE] pInputBuffer[%d] = %p\n", __LINE__, i, (UseInpBuf[i]));
-
-        if (UseInpBuf[i] != NULL) {
-            newfree(UseInpBuf[i]);
-            UseInpBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseInpBuf[i], OMX_U8);
     }
 
     for (i = 0; i < NOB; i++) {
-        UseOutBuf[i] = UseOutBuf[i] - 128;
-        printf("%d :: [TESTAPPFREE] pOutputBuffer[%d] = %p\n", __LINE__, i, UseOutBuf[i]);
-
-        if (UseOutBuf[i] != NULL) {
-            newfree(UseOutBuf[i]);
-            UseOutBuf[i] = NULL;
-        }
+        OMX_MEMFREE_STRUCT_DSPALIGN(UseOutBuf[i], OMX_U8);
     }
 
     /*i value is fixed by the number calls to malloc in the App */
