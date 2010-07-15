@@ -5757,6 +5757,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 }
             }
             else {
+                VIDDEC_EmptyBufferDone (pComponentPrivate, pBuffHead);
                 eError = OMX_ErrorHardware;
                 goto EXIT;
             }
