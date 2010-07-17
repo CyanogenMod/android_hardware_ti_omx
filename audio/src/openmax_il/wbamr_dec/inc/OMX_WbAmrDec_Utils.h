@@ -358,6 +358,15 @@ OMX_ERRORTYPE WBAMR_DEC_Fill_LCMLInitParamsEx(OMX_HANDLETYPE pComponent);
 */
 /*================================================================== */
 OMX_U32 WBAMR_DEC_IsValid(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 *pBuffer, OMX_DIRTYPE eDir) ;
+/**
+* @WBAMRDEC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param WBAMRDEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void WBAMRDEC_waitForAllBuffersToReturn(
+                                        WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate);
 
 #ifdef RESOURCE_MANAGER_ENABLED
 void WBAMRDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
