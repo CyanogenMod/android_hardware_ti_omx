@@ -476,6 +476,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
+
     pComponentPrivate->bMutexInitialized = OMX_TRUE;
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT], OMX_PARAM_PORTDEFINITIONTYPE);
@@ -1873,6 +1877,11 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PRINT1 (pComponentPrivate->dbg, "%s: ALLOCATE BUFFER", __FUNCTION__);
     pPortDef = ((AMRDEC_COMPONENT_PRIVATE*)
                     pComponentPrivate)->pPortDef[nPortIndex];
+
+    if(pPortDef == NULL){
+        return OMX_ErrorBadParameter;
+    }
+
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
         OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocateBuffer %d\n",__LINE__);
@@ -1890,16 +1899,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
 
     OMX_PRCOMM2(pComponentPrivate->dbg, "pPortDef->bEnabled = %d\n", pPortDef->bEnabled);
-    while (1) {
-        if(pPortDef->bEnabled) {
-            break;
-        }
-        pComponentPrivate->AlloBuf_waitingsignal = 1;
-        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
-        pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
-        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-        break;
+
+    if (!pPortDef->bEnabled) {
+        omx_mutex_wait(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
+                       &pComponentPrivate->AlloBuf_waitingsignal);
     }
+
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
     if (pBufferHeader == NULL) {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDecoder.c :: AMRDEC: Error - insufficient resources\n", __LINE__);
@@ -1975,13 +1980,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
     /* Removing sleep() calls. Input buffer enabled and populated as well as output buffer. */
     if((pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
+       (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled))
     {
-        pComponentPrivate->InLoaded_readytoidle = 0;
-        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                         &pComponentPrivate->InLoaded_readytoidle);
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -2106,13 +2108,10 @@ static OMX_ERRORTYPE FreeBuffer(
     }
 
     if ((!pComponentPrivate->pInputBufferList->numBuffers &&
-         !pComponentPrivate->pOutputBufferList->numBuffers) &&
-        pComponentPrivate->InIdle_goingtoloaded) {
-        pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
-
-        pComponentPrivate->InIdle_goingtoloaded = 0;
+         !pComponentPrivate->pOutputBufferList->numBuffers))
+    {
+        omx_mutex_signal(&pComponentPrivate->InIdle_mutex,&pComponentPrivate->InIdle_threshold,
+                         &pComponentPrivate->InIdle_goingtoloaded);
     }
 
     OMX_PRINT2(pComponentPrivate->dbg, "%d ::OMX_AmrDecoder.c ::pComponentPrivate->bDisableCommandPending = %ld\n",__LINE__,pComponentPrivate->bDisableCommandPending);
@@ -2226,13 +2225,10 @@ static OMX_ERRORTYPE UseBuffer (
     }
     /* Removing sleep() calls. All enabled buffers are populated. */
     if((pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
+       (pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[NBAMRDEC_INPUT_PORT]->bEnabled))
     {
-    pComponentPrivate->InLoaded_readytoidle = 0;
-    pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-    pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-    pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                         &pComponentPrivate->InLoaded_readytoidle);
     }
     /* Removing sleep() calls.  */
 

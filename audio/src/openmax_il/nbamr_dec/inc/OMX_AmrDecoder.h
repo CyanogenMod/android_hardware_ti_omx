@@ -275,14 +275,6 @@
 #define _ERROR_PROPAGATION__
 
 /* ======================================================================= */
-/**
-* pthread variable to indicate OMX returned all buffers to app 
-*/
-/* ======================================================================= */
-pthread_mutex_t bufferReturned_mutex; 
-pthread_cond_t bufferReturned_condition; 
-
-/* ======================================================================= */
 /** NBAMRDEC_COMP_PORT_TYPE  Port Type
 *
 *  @param  NBAMRDEC_INPUT_PORT                  Port Type Input
@@ -789,6 +781,14 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     /** Indicate when first output buffer received from DSP **/
     OMX_BOOL first_output_buf_rcv;
 
+    /**pthread variable to indicate OMX returned all buffers to app **/
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
+    /*pthread variable to control flush operation*/
+    pthread_mutex_t codecFlush_mutex;
+    pthread_cond_t codecFlush_threshold;
+    OMX_U8 codecFlush_waitingsignal;
+
 } AMRDEC_COMPONENT_PRIVATE;
 
 typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
@@ -815,6 +815,6 @@ typedef enum OMX_NBAMRDEC_INDEXAUDIOTYPE {
 
  */
 /*=======================================================================*/
-void SignalIfAllBuffersAreReturned(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate);
+void SignalIfAllBuffersAreReturned(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 counterport);
 
 #endif /* OMX_AMRDECODER_H */
