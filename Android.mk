@@ -21,9 +21,9 @@ include $(CLEAR_VARS)
 TI_BRIDGE_TOP := hardware/ti/omap3/dspbridge
 
 OMX_DEBUG := 0
-RESOURCE_MANAGER_ENABLED := 0
+RESOURCE_MANAGER_ENABLED := 1
 ENABLE_RMPM_STUB := 0
-DVFS_ENABLED := 0
+DVFS_ENABLED := 1
 PERF_INSTRUMENTATION := 1
 PERF_CUSTOMIZABLE := 1
 PERF_READER := 1
@@ -90,9 +90,9 @@ endif
 #call to common omx & system components
 include $(TI_OMX_SYSTEM)/omx_core/src/Android.mk
 include $(TI_OMX_SYSTEM)/lcml/src/Android.mk
-#include $(TI_OMX_SYSTEM)/resource_manager/Android.mk
-#include $(TI_OMX_SYSTEM)/resource_manager_proxy/Android.mk
-#include $(TI_OMX_SYSTEM)/omx_policy_manager/Android.mk
+include $(TI_OMX_SYSTEM)/resource_manager/Android.mk
+include $(TI_OMX_SYSTEM)/resource_manager_proxy/Android.mk
+include $(TI_OMX_SYSTEM)/omx_policy_manager/Android.mk
 
 #call to audio
 include $(TI_OMX_TOP)/audio/tests/Android.mk
