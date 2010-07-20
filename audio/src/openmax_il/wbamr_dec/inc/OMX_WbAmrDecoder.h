@@ -250,14 +250,6 @@ typedef enum OMX_INDEXAUDIOTYPE_WBAMRDEC {
 }OMX_INDEXAUDIOTYPE_WBAMRDEC;
 
 /* ======================================================================= */
-/**
- * pthread variable to indicate OMX returned all buffers to app 
- */
-/* ======================================================================= */
-pthread_mutex_t bufferReturned_mutex; 
-pthread_cond_t bufferReturned_condition; 
-
-/* ======================================================================= */
 /** WBAMR_DEC_StreamType  Stream types
 *
 *  @param  WBAMR_DEC_DMM                    DMM
@@ -587,7 +579,14 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
-    
+
+    pthread_mutex_t codecFlush_mutex;
+    pthread_cond_t codecFlush_threshold;
+    OMX_U8 codecFlush_waitingsignal;
+
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
+
     OMX_U32 nUnhandledFillThisBuffers;
     OMX_U32 nHandledFillThisBuffers;
     OMX_U32 nUnhandledEmptyThisBuffers;
@@ -652,6 +651,6 @@ typedef struct WBAMR_DEC_COMPONENT_PRIVATE
 
  */
 /*=======================================================================*/
-void SignalIfAllBuffersAreReturned(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate);
+void SignalIfAllBuffersAreReturned(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U8 counterport);
 
 #endif /* OMX_WBAMR_DECODER_H */

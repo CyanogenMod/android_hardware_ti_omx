@@ -457,6 +457,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
     pComponentPrivate->InIdle_goingtoloaded = 0;
 
+    pthread_mutex_init(&pComponentPrivate->codecFlush_mutex, NULL);
+    pthread_cond_init (&pComponentPrivate->codecFlush_threshold, NULL);
+    pComponentPrivate->codecFlush_waitingsignal = 0;
+
     pComponentPrivate->bMutexInitialized = TRUE;
 
     OMX_MALLOC_GENERIC(pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT], OMX_PARAM_PORTDEFINITIONTYPE);
@@ -1810,10 +1814,8 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     OMX_PRCOMM2(pComponentPrivate->dbg, "pPortDef->bEnabled = %d\n", pPortDef->bEnabled);
     while (!pPortDef->bEnabled) {
-        pComponentPrivate->AlloBuf_waitingsignal = 1;
-        pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
-        pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
-        pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+        omx_mutex_wait(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
+                       pComponentPrivate->AlloBuf_waitingsignal);
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -1882,13 +1884,10 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         goto EXIT;
     }
     if((pComponentPrivate->pPortDef[WBAMR_DEC_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
+       (pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bEnabled))
     {
-        pComponentPrivate->InLoaded_readytoidle = 0;
-        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                         &pComponentPrivate->InLoaded_readytoidle);
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
@@ -2007,13 +2006,10 @@ static OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     }
 
     if ((!pComponentPrivate->pInputBufferList->numBuffers &&
-         !pComponentPrivate->pOutputBufferList->numBuffers) &&
-        pComponentPrivate->InIdle_goingtoloaded)
+         !pComponentPrivate->pOutputBufferList->numBuffers))
     {
-        pComponentPrivate->InIdle_goingtoloaded = 0;
-        pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
-        pthread_cond_signal(&pComponentPrivate->InIdle_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
+        omx_mutex_signal(&pComponentPrivate->InIdle_mutex,&pComponentPrivate->InIdle_threshold,
+                                 &pComponentPrivate->InIdle_goingtoloaded);
     }
 
     if (pComponentPrivate->bDisableCommandPending &&
@@ -2109,13 +2105,10 @@ static OMX_ERRORTYPE UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     }
 
     if((pComponentPrivate->pPortDef[WBAMR_DEC_OUTPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_OUTPUT_PORT]->bEnabled)&&
-       (pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bEnabled) &&
-       (pComponentPrivate->InLoaded_readytoidle))
+       (pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bPopulated == pComponentPrivate->pPortDef[WBAMR_DEC_INPUT_PORT]->bEnabled))
     {
-        pComponentPrivate->InLoaded_readytoidle = 0;
-        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
-        pthread_cond_signal(&pComponentPrivate->InLoaded_threshold);
-        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
+        omx_mutex_signal(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
+                         &pComponentPrivate->InLoaded_readytoidle);
     }
     pBufferHeader->pAppPrivate = pAppPrivate;
     pBufferHeader->pPlatformPrivate = pComponentPrivate;
