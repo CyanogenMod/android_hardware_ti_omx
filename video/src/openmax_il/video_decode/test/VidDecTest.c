@@ -1882,8 +1882,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
 #endif
         APP_PRINT("************************************************************************************\n");
         APP_PRINT("WMV9 test vector file extension is .rcv for frame mode and .vc1 in stream mode. Header input file can be any blank file.\n");
-        APP_PRINT(".bc file – Header file for H264 in binary format\n");
-        APP_PRINT(".vop file – Header file for MPEG4 in ascii format, with timestamps\n");
+        APP_PRINT(".bc file  Header file for H264 in binary format\n");
+        APP_PRINT(".vop file  Header file for MPEG4 in ascii format, with timestamps\n");
         APP_PRINT("For NAL format you need to use a 264nb and 264nd files.\n");
         APP_PRINT("H264 Level (0-MAX|1-L1.0|2-L1.b|3-L1.1|4-L1.2|5-L1.3|6-L2|7-L2.1|8-L2.2|9-L3.0 and greater)\n");
         APP_PRINT("WMV Profile (0-MAX|1-QCIF(Frame)|2-CIF(Frame)|3-VGA(Frame)|4-MainLowDefaultOverhead(Stream)\n");
@@ -2291,14 +2291,14 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
     }
     /* Set/Clear the MB Error Checking logic
      * */
-    if (argc > MB_ERROR_LOGIC_SWITCH_POS){
+    if (argc > MB_ERROR_LOGIC_SWITCH_POS && pAppData->nTestCase != 10){
         pAppData->MB_Error_Logic_Switch = atoi(argv[MB_ERROR_LOGIC_SWITCH_POS]);
     }
     else {
        /* If the parameter is not provided the macroblock error information will
-        * be enabled.
+        * be Disabled.
         * */
-        pAppData->MB_Error_Logic_Switch = 1;
+        pAppData->MB_Error_Logic_Switch = 0;
     }
 #ifdef __GET_BC_VOP__
     if( pAppData->nTestCase == 10 ){
@@ -2990,8 +2990,12 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         /***************** MBError Code ********************/
         /* Propagate MBError Enable Code Switch to OMX IL
          * */
-        {
+        if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK || pAppData->MB_Error_Logic_Switch) {
             OMX_PARAM_MACROBLOCKSTYPE pMBBlocksType;
+            APP_PRINT("MBError Test Case -> %d\n",pAppData->nTestCase);
+            if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK) {
+               pAppData->MB_Error_Logic_Switch = 1;
+            }
             memset(&pMBBlocksType, 0, sizeof(OMX_PARAM_MACROBLOCKSTYPE));
             pMBBlocksType.nSize                     = sizeof(OMX_PARAM_MACROBLOCKSTYPE);
             pMBBlocksType.nVersion.s.nVersionMajor  = VERSION_MAJOR;
@@ -3583,7 +3587,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                  /* If the MB Error Code Logic is Enabled Print the Error Num.
                   * */
                  /***************** MBError Code ********************/
-                 if (pAppData->MB_Error_Logic_Switch){
+                 if (pAppData->nTestCase == TESTCASE_TYPE_MBERRORCHECK || pAppData->MB_Error_Logic_Switch){
                     if (bMBErrorCount == 0){
                        APP_PRINT("MBErrors Didn't Occur\n");
                     }
