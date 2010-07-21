@@ -8454,11 +8454,10 @@ OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
         }
     }
 #endif
+EXIT:
     /* regardless of success from above,
        still send the Invalid State error to client */
     eError = VIDDEC_Handle_InvalidState(pComponentPrivate);
-
-EXIT:
     OMX_PRDSP1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
