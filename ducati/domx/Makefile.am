@@ -1,6 +1,8 @@
 # Process this file with automake to produce Makefile.in
 
 SUBDIRS = \
+	system/omx_core \
+	system/mm_osal \
 	system/domx \
 	video/omx_proxy_component/src
 

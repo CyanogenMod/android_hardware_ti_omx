@@ -55,17 +55,15 @@ extern "C" {
  ******************************************************************/
 #include "omx_rpc.h"
 
-#define LINUX_TRACE
-
-#ifndef LINUX_TRACE
-#  include <timm_osal_error.h>
-#  include <timm_osal_osal.h>
-#  include <timm_osal_trace.h>
-#  define DOMX_DEBUG(ARGS,...)  TIMM_OSAL_TraceExt(TIMM_OSAL_TRACEGRP_DOMX,ARGS,##__VA_ARGS__)
-#else
 #include <timm_osal_trace.h>
-#define DOMX_DEBUG(ARGS,...) TIMM_OSAL_Trace(ARGS,##__VA_ARGS__)
-#endif
+
+#define DOMX_ERROR(fmt,...)  TIMM_OSAL_Error(fmt, ##__VA_ARGS__)
+#define DOMX_WARN(fmt,...)   TIMM_OSAL_Warning(fmt, ##__VA_ARGS__)
+#define DOMX_INFO(fmt,...)   TIMM_OSAL_Info(fmt, ##__VA_ARGS__)
+#define DOMX_DEBUG(fmt,...)  TIMM_OSAL_Debug(fmt, ##__VA_ARGS__)
+#define DOMX_ENTER(fmt,...)  TIMM_OSAL_Entering(fmt, ##__VA_ARGS__)
+#define DOMX_EXIT(fmt,...)   TIMM_OSAL_Exiting(fmt, ##__VA_ARGS__)
+
 
 /******************************************************************
  *   MACROS - ASSERTS
@@ -76,7 +74,9 @@ extern "C" {
 
 #define RPC_paramCheck(C, V, S) do { \
     if (!(C)) { eRPCError = V;\
-    TIMM_OSAL_TraceFunction("##Error:: %s::in %s::line %d \n",S,__FUNCTION__, __LINE__); \
+    DOMX_ERROR("failed check: " #C);\
+    DOMX_ERROR(" - returning error: " #V);\
+    if(S) DOMX_ERROR(" - %s", S);\
     goto EXIT; } \
     } while(0)
 

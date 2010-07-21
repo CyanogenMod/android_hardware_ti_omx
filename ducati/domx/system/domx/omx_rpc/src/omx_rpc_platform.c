@@ -67,8 +67,8 @@
 #include "omx_rpc_utils.h"
 
 /*This list needs to be a comprehensive list of all possible communicating RCM servers avalilable across the whole system (core 0 core 1, tesla, chiron)*/
-char Core_Array[][MAX_CORENAME_LENGTH] = {"CHIRON","TESLA","DUCATI0","DUCATI1"};
+char Core_Array[][MAX_CORENAME_LENGTH] = {"TESLA","DUCATI1","DUCATI0","CHIRON"};
 
-char rcmservertable[][MAX_SERVER_NAME_LENGTH] = {"RSrv_Chiron","RSrv_Tesla","RSrv_Ducati0","RSrv_Ducati1"}; 
+char rcmservertable[][MAX_SERVER_NAME_LENGTH] = {"RSrv_Tesla","RSrv_Ducati1","RSrv_Ducati0","RSrv_Chiron"};
 
-OMX_U32 heapIdArray[MAX_NUMBER_OF_HEAPS] = {1,0,0,1};
+OMX_U32 heapIdArray[MAX_NUMBER_OF_HEAPS] = {0,1,0,1};

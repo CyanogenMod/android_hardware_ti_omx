@@ -16,6 +16,7 @@ libomx_rpc_la_LIBADD        = \
 	@LTLIBOBJS@
 
 libomx_rpc_la_CFLAGS        = \
+	$(WARN_CFLAGS) \
 	-I$(top_srcdir)/system/domx \
 	-I$(top_srcdir)/system/domx/omx_rpc/inc \
 	$(MMOSAL_CFLAGS) \

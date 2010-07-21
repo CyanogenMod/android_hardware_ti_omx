@@ -41,12 +41,6 @@ dnl Check for pkgconfig first
 AC_CHECK_PROG([HAVE_PKGCONFIG], [pkg-config], [yes], [no])
 
 dnl *** checks for libraries ***
-dnl Check for OMX Core:
-PKG_CHECK_MODULES([OMXCORE], [libOMX_Core])
-
-dnl Check for OMX mm_osal
-PKG_CHECK_MODULES([MMOSAL], [libmmosal])
-
 dnl Check for syslink
 PKG_CHECK_MODULES([SYSLINK], [syslink])
 
@@ -83,9 +77,26 @@ AC_ARG_ENABLE(tests,
         esac], [enable_tests=false])
 AM_CONDITIONAL([BUILD_TESTS], test "x$enable_tests" = "xtrue")
 
+dnl since these are now in same build, we don't get these variables from
+dnl pkgconfig.. so set the variables other Makefile's expect:
+AC_SUBST(OMXCORE_CFLAGS, [-I\$\(top_srcdir\)/system/omx_core/inc])
+AC_SUBST(OMXCORE_LIBS, ["\$(top_builddir)/system/omx_core/libOMX_Core.la -ldl"])
+AC_SUBST(MMOSAL_CFLAGS,  [-I\$\(top_srcdir\)/system/mm_osal/inc])
+AC_SUBST(MMOSAL_LIBS, [\$\(top_builddir\)/system/mm_osal/libmmosal.la])
+
+dnl more strict compiler warning/error flags.. all the subdirectories, at
+dnl least outside of test, should add these to their CFLAGS
+AC_SUBST(WARN_CFLAGS, ["-Werror -Wall -fno-strict-aliasing"])
+
 
 AC_CONFIG_FILES([
 Makefile
+system/omx_core/Makefile
+system/omx_core/src/Makefile
+system/omx_core/libOMX_Core.pc
+system/mm_osal/Makefile
+system/mm_osal/src/Makefile
+system/mm_osal/libmmosal.pc
 system/domx/Makefile
 system/domx/omx_proxy_common/src/Makefile
 system/domx/omx_rpc/src/Makefile

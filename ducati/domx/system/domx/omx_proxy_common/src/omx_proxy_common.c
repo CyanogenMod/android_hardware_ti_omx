@@ -114,22 +114,20 @@ static OMX_ERRORTYPE PROXY_EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppD
   OMX_U16 count;
   OMX_BUFFERHEADERTYPE * pLocalBufHdr = NULL;
   OMX_PTR pTmpData = NULL;
-    
-  DOMX_DEBUG("\nEntered Proxy event handler__________________________________________PROXY EH");
+
+  pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
     
   PROXY_assert((hComp->pComponentPrivate != NULL),
                 OMX_ErrorBadParameter, NULL);
-                 
-  pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;    
-    
-  DOMX_DEBUG("hComponent:0x%x,hComp->pApplicationPrivate: 0x%x,eEvent: 0x%x,nData1: 0x%x,nData2: 0x%x,pEventData: 0x%x\n",
-               hComponent,pCompPrv->pILAppData,eEvent,nData1,nData2,pEventData);
+
+  DOMX_ENTER("hComponent=%p, pCompPrv=%p, eEvent=%p, nData1=%p, nData2=%p, pEventData=%p",
+               hComponent, pCompPrv, eEvent, nData1, nData2, pEventData);
                
   switch(eEvent)
   {
   
     case OMX_TI_EventBufferRefCount:
-          DOMX_DEBUG("\nReceived Ref Count Event");
+          DOMX_DEBUG("Received Ref Count Event");
           /*nData1 will be pBufferHeader, nData2 will be present count. Need to find local
           buffer header for nData1 which is remote buffer header*/
           
@@ -177,7 +175,7 @@ EXIT:
                                        OMX_EventError, eError, 0, NULL);
     }
 
-  DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+  DOMX_EXIT("eError: %d", eError);
   return OMX_ErrorNone;
 }
 
@@ -202,18 +200,18 @@ static OMX_ERRORTYPE PROXY_EmptyBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 re
     OMX_U16 count;
     OMX_BUFFERHEADERTYPE * pBufHdr = NULL;
     
-    DOMX_DEBUG("\n%s Entered",__FUNCTION__);
-    
     PROXY_assert((hComp->pComponentPrivate != NULL),
                  OMX_ErrorBadParameter, NULL);
-                 
+
     pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
+    
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, remoteBufHdr=%p, nFilledLen=%d, nOffset=%d, nFlags=%08x",
+                 hComponent, pCompPrv, remoteBufHdr, nfilledLen, nOffset, nFlags);
     
     for(count = 0; count < pCompPrv->nTotalBuffers; ++count)
     {
         if(pCompPrv->tBufList[count].pBufHeaderRemote == remoteBufHdr)
         {
-            
             pBufHdr = pCompPrv->tBufList[count].pBufHeader;
             pBufHdr->nFilledLen = nfilledLen;
             pBufHdr->nOffset = nOffset;
@@ -225,7 +223,7 @@ static OMX_ERRORTYPE PROXY_EmptyBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 re
     }
     
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return OMX_ErrorNone;
 }
 
@@ -249,17 +247,17 @@ static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 rem
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
-    RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     
     OMX_U16 count;
     OMX_BUFFERHEADERTYPE * pBufHdr = NULL;
     
-    DOMX_DEBUG("\n%s Entered",__FUNCTION__);
-    
     PROXY_assert((hComp->pComponentPrivate != NULL),
                  OMX_ErrorBadParameter, NULL);
                  
-    pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;                 
+    pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
+
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, remoteBufHdr=%p, nFilledLen=%d, nOffset=%d, nFlags=%08x",
+                 hComponent, pCompPrv, remoteBufHdr, nfilledLen, nOffset, nFlags);
     
     for(count = 0; count < pCompPrv->nTotalBuffers; ++count)
     {
@@ -310,7 +308,7 @@ static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_U32 rem
     }
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return OMX_ErrorNone;
 }
 
@@ -340,8 +338,6 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
     OMX_PTR pMarkData = NULL;
     
-    DOMX_DEBUG("\n%s Entered",__FUNCTION__);
-    
     PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
     PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter, NULL);
                  
@@ -349,21 +345,22 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     
     pBuffer = pBufferHdr->pBuffer;
     
-    DOMX_DEBUG("\n%s:  pBufferHdr->pBuffer : 0x%x, pBufferHdr->nFilledLen : %d ",__FUNCTION__,pBufferHdr->pBuffer,pBufferHdr->nFilledLen);
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, pBuffer=%p, nFilledLen=%d, nOffset=%d, nFlags=%08x",
+                 hComponent, pCompPrv, pBuffer, pBufferHdr->nFilledLen, pBufferHdr->nOffset, pBufferHdr->nFlags);
     
     /*First find the index of this buffer header to retrieve remote buffer header */
     for(count=0; count < pCompPrv->nTotalBuffers; count++)
     {
         if(pCompPrv->tBufList[count].pBufHeader == pBufferHdr)
         {
-            DOMX_DEBUG("%s: Buffer Index of Match %d \n",__FUNCTION__,count);
+            DOMX_DEBUG("Buffer Index of Match %d ", count);
             isMatchFound = 1;
             break;
         }
     }
     if(!isMatchFound)
     {
-        DOMX_DEBUG("\n%s: Could not find the remote header in buffer list",__FUNCTION__);
+        DOMX_WARN("Could not find the remote header in buffer list");
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -451,12 +448,12 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
       eError = eCompReturn;
     }
     else {
-      DOMX_DEBUG("****RPC_EmptyThisBuffer RPC Error");
+      DOMX_WARN("****RPC_EmptyThisBuffer RPC Error");
       eError = OMX_ErrorUndefined;
     }
 
 EXIT:
-    DOMX_DEBUG("\n%s: Exiting: ",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -484,8 +481,6 @@ static OMX_ERRORTYPE PROXY_FillThisBuffer(OMX_HANDLETYPE hComponent,
     OMX_U8 *pBuffer=NULL;
     OMX_U32 pBufToBeMapped = 0;
     
-    DOMX_DEBUG("\n%s Entered",__FUNCTION__);
-    
     PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
     PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter, NULL);
                  
@@ -493,21 +488,22 @@ static OMX_ERRORTYPE PROXY_FillThisBuffer(OMX_HANDLETYPE hComponent,
     
     pBuffer = pBufferHdr->pBuffer;
     
-    DOMX_DEBUG("\n%s:  pBufferHdr->pBuffer : 0x%x, pBufferHdr->nFilledLen : %d ",__FUNCTION__,pBufferHdr->pBuffer,pBufferHdr->nFilledLen);
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, pBuffer=%p, nFilledLen=%d, nOffset=%d, nFlags=%08x",
+                 hComponent, pCompPrv, pBuffer, pBufferHdr->nFilledLen, pBufferHdr->nOffset, pBufferHdr->nFlags);
     
     /*First find the index of this buffer header to retrieve remote buffer header */
     for(count=0; count < pCompPrv->nTotalBuffers; count++)
     {
         if(pCompPrv->tBufList[count].pBufHeader == pBufferHdr)
         {
-            DOMX_DEBUG("%s: Buffer Index of Match %d \n",__FUNCTION__,count);
+            DOMX_DEBUG("Buffer Index of Match %d ",count);
             isMatchFound = 1;
             break;
         }
     }
     if(!isMatchFound)
     {
-        DOMX_DEBUG("\n%s: Could not find the remote header in buffer list",__FUNCTION__);
+        DOMX_ERROR("Could not find the remote header in buffer list");
         eError = OMX_ErrorBadParameter;
         goto EXIT;
     }
@@ -578,12 +574,12 @@ static OMX_ERRORTYPE PROXY_FillThisBuffer(OMX_HANDLETYPE hComponent,
       eError = eCompReturn;
     }
     else {
-      DOMX_DEBUG("****RPC_FillThisBuffer RPC Error");
+      DOMX_WARN("****RPC_FillThisBuffer RPC Error");
       eError = OMX_ErrorUndefined;
     }
 
 EXIT:
-    DOMX_DEBUG("\n%s: Exiting:\n ",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -617,12 +613,14 @@ static OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
         OMX_TI_PLATFORMPRIVATE * pPlatformPrivate;
         OMX_BOOL bSlotFound = OMX_FALSE;
 
-        DOMX_DEBUG("\n Entered %s ____ \n",__FUNCTION__);
-        
         PROXY_assert((hComp->pComponentPrivate != NULL),
                       OMX_ErrorBadParameter, NULL);
-                      
+        PROXY_assert(ppBufferHdr != NULL, OMX_ErrorBadParameter,
+                     "Pointer to buffer header is NULL");
         pCompPrv=(PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
+
+        DOMX_ENTER("hComponent=%p, pCompPrv=%p, nPortIndex=%p, pAppPrivate=%p, nSizeBytes=%d",
+                     hComponent, pCompPrv, nPortIndex, pAppPrivate, nSizeBytes);
 
         /*Pick up 1st empty slot*/
         for(i = 0; i < pCompPrv->nTotalBuffers; i++)
@@ -639,7 +637,7 @@ static OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
             currentBuffer = pCompPrv->nTotalBuffers;
         }
 
-        DOMX_DEBUG("\nIn AB, no. of buffers = %d\n", pCompPrv->nTotalBuffers);
+        DOMX_DEBUG("In AB, no. of buffers = %d", pCompPrv->nTotalBuffers);
         PROXY_assert((pCompPrv->nTotalBuffers < MAX_NUM_PROXY_BUFFERS),
                      OMX_ErrorInsufficientResources,
                      "Proxy cannot handle more than MAX buffers");
@@ -657,14 +655,14 @@ static OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
         }   
         pBufferHeader->pPlatformPrivate = pPlatformPrivate;
 
-        DOMX_DEBUG("\n Calling RPC \n");
+        DOMX_DEBUG(" Calling RPC ");
        
         eRPCError = RPC_AllocateBuffer(pCompPrv->hRemoteComp,&pBufferHeader,nPortIndex,
                                &pBufHeaderRemote,&pBufferMapped,pAppPrivate,nSizeBytes,&eCompReturn);
 
          if(eRPCError == RPC_OMX_ErrorNone) {
-            DOMX_DEBUG("\n%s Allocate Buffer Successful\n", __FUNCTION__);
-            DOMX_DEBUG("\n%s Value of pBufHeaderRemote: 0x%x   LocalBufferHdr :0x%x\n",__FUNCTION__, pBufHeaderRemote,pBufferHeader);
+            DOMX_DEBUG("Allocate Buffer Successful");
+            DOMX_DEBUG("Value of pBufHeaderRemote: %p   LocalBufferHdr :%p", pBufHeaderRemote,pBufferHeader);
 
             if(eCompReturn == OMX_ErrorNone)
             {
@@ -733,6 +731,7 @@ static OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     }
 
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -767,8 +766,12 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     
     PROXY_assert((hComp->pComponentPrivate != NULL),
                   OMX_ErrorBadParameter, NULL);
-                  
+    PROXY_assert(ppBufferHdr != NULL, OMX_ErrorBadParameter,
+                 "Pointer to buffer header is NULL");
     pCompPrv=(PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
+
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nPortIndex=%p, pAppPrivate=%p, nSizeBytes=%d, pBuffer=%p",
+                 hComponent, pCompPrv, nPortIndex, pAppPrivate, nSizeBytes, pBuffer);
 
     /*Pick up 1st empty slot*/
     for(i = 0; i < pCompPrv->nTotalBuffers; i++)
@@ -784,7 +787,7 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     {
         currentBuffer = pCompPrv->nTotalBuffers;
     }
-    DOMX_DEBUG("\nIn UB, no. of buffers = %d\n",pCompPrv->nTotalBuffers);
+    DOMX_DEBUG("In UB, no. of buffers = %d",pCompPrv->nTotalBuffers);
     
     PROXY_assert((pCompPrv->nTotalBuffers < MAX_NUM_PROXY_BUFFERS),
                   OMX_ErrorInsufficientResources,
@@ -828,8 +831,8 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
 
     if(eRPCError == RPC_OMX_ErrorNone)
     {
-        DOMX_DEBUG("\n%s Yahoo!!Use Buffer Successful", __FUNCTION__);
-        DOMX_DEBUG("\n %s Value of pBufHeaderRemote: 0x%x   LocalBufferHdr :0x%x",__FUNCTION__, pBufHeaderRemote,pBufferHeader);
+        DOMX_DEBUG("Yahoo!!Use Buffer Successful");
+        DOMX_DEBUG("Value of pBufHeaderRemote: %p   LocalBufferHdr :%p", pBufHeaderRemote,pBufferHeader);
         
         if(eCompReturn == OMX_ErrorNone)
         {        
@@ -859,7 +862,7 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
             if(pCompPrv->nTotalBuffers < pCompPrv->nAllocatedBuffers)
                 pCompPrv->nTotalBuffers = pCompPrv->nAllocatedBuffers;
 
-            DOMX_DEBUG("\nUpdating no. of buffer to %d\n",pCompPrv->nTotalBuffers);
+            DOMX_DEBUG("Updating no. of buffer to %d",pCompPrv->nTotalBuffers);
             
             //Restore back original pBuffer
             pBufferHeader->pBuffer = pBuffer;
@@ -870,7 +873,7 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         }
         else
         {
-            DOMX_DEBUG("\n***ERROR in UseBuffer return value, freeing buffer header");
+            DOMX_WARN("***ERROR in UseBuffer return value, freeing buffer header");
             TIMM_OSAL_Free(pPlatformPrivate);
             TIMM_OSAL_Free((void *)pBufferHeader);
             eError = eCompReturn;
@@ -881,8 +884,8 @@ static OMX_ERRORTYPE PROXY_UseBuffer (OMX_IN OMX_HANDLETYPE hComponent,
         eError = OMX_ErrorUndefined;
     }
 
-     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -915,18 +918,21 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                  
     pCompPrv=(PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
     
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nPortIndex=%p, pBufferHdr=%p",
+                 hComponent, pCompPrv, nPortIndex, pBufferHdr);
+
     for(count = 0; count < pCompPrv->nTotalBuffers; count++)
     {
         if(pCompPrv->tBufList[count].pBufHeader == pBufferHdr)
         {
-            DOMX_DEBUG("%s: Buffer Index of Match %d \n",__FUNCTION__,count);
+            DOMX_DEBUG("Buffer Index of Match %d",count);
             isMatchFound = 1;
             break;
         }
     }
     if(!isMatchFound)
     {
-        DOMX_DEBUG("\n%s: Could not find the mapped address in component private buffer list",__FUNCTION__);
+        DOMX_DEBUG("Could not find the mapped address in component private buffer list");
         return OMX_ErrorBadParameter;
     }
     
@@ -959,7 +965,7 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
                     "Buffer unmap failed");
     }
 
-    DOMX_DEBUG("%s Cleaning up Buffer\n",__FUNCTION__);
+    DOMX_DEBUG("Cleaning up Buffer");
     if(pCompPrv->tBufList[count].pBufferMapped)
         RPC_UnMapBuffer(pCompPrv->tBufList[count].pBufferMapped);
 
@@ -986,15 +992,17 @@ The UV is not, may be consider adding this to the table
     
     if(eRPCError == RPC_OMX_ErrorNone)
     {
-        DOMX_DEBUG("%s Yahoo!! Free Buffer Successful\n", __FUNCTION__);
+        DOMX_DEBUG("Yahoo!! Free Buffer Successful");
         eError = eCompReturn;
     }
-    else{
-        DOMX_DEBUG("%s [%d]: Warning: RPC Error",__FUNCTION__,__LINE__);
+    else
+    {
+        DOMX_WARN("RPC Error");
         eError=OMX_ErrorUndefined;
     }
 
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1018,8 +1026,6 @@ static OMX_ERRORTYPE PROXY_SetParameter(OMX_IN OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    DOMX_DEBUG("Entered: %s\n",__FUNCTION__);
-    
     PROXY_require((pParamStruct != NULL),
                  OMX_ErrorBadParameter, NULL);
                  
@@ -1028,6 +1034,9 @@ static OMX_ERRORTYPE PROXY_SetParameter(OMX_IN OMX_HANDLETYPE hComponent,
                  
     pCompPrv = (PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
 
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nParamIndex=%d, pParamStruct=%p",
+                 hComponent, pCompPrv, nParamIndex, pParamStruct);
+
     eRPCError = RPC_SetParameter(pCompPrv->hRemoteComp,nParamIndex,pParamStruct, &eCompReturn);
 
     if(eRPCError == RPC_OMX_ErrorNone) {
@@ -1035,12 +1044,12 @@ static OMX_ERRORTYPE PROXY_SetParameter(OMX_IN OMX_HANDLETYPE hComponent,
         eError = eCompReturn;
     }
     else {
-        DOMX_DEBUG("****RPC_SetParameter RPC Error");
+        DOMX_WARN("****RPC_SetParameter RPC Error");
         eError = OMX_ErrorUndefined;
     }
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
  }
 
@@ -1064,8 +1073,6 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN  OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    DOMX_DEBUG("Entered: %s\n",__FUNCTION__);
-    
     PROXY_require((pParamStruct != NULL),
                  OMX_ErrorBadParameter, NULL);
                  
@@ -1074,6 +1081,9 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN  OMX_HANDLETYPE hComponent,
                  
     pCompPrv = (PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
 
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nParamIndex=%d, pParamStruct=%p",
+                 hComponent, pCompPrv, nParamIndex, pParamStruct);
+
     eRPCError = RPC_GetParameter(pCompPrv->hRemoteComp,nParamIndex,pParamStruct, &eCompReturn);
 
     if(eRPCError == RPC_OMX_ErrorNone) {
@@ -1081,12 +1091,12 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN  OMX_HANDLETYPE hComponent,
         eError = eCompReturn;
     }
     else {
-        DOMX_DEBUG("****RPC_GetParameter RPC Error");
+        DOMX_WARN("****RPC_GetParameter RPC Error");
         eError = OMX_ErrorUndefined;
     }
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1112,8 +1122,6 @@ static OMX_ERRORTYPE PROXY_GetConfig (OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    DOMX_DEBUG("Entered: %s\n",__FUNCTION__);
-    
     PROXY_require((pConfigStruct != NULL),
                  OMX_ErrorBadParameter, NULL);
     
@@ -1122,6 +1130,9 @@ static OMX_ERRORTYPE PROXY_GetConfig (OMX_HANDLETYPE hComponent,
                  
     pCompPrv = (PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
 
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nConfigIndex=%d, pConfigStruct=%p",
+                 hComponent, pCompPrv, nConfigIndex, pConfigStruct);
+
     eRPCError = RPC_GetConfig(pCompPrv->hRemoteComp, nConfigIndex, pConfigStruct, &eCompReturn);
 
     if(eRPCError == RPC_OMX_ErrorNone) {
@@ -1129,12 +1140,12 @@ static OMX_ERRORTYPE PROXY_GetConfig (OMX_HANDLETYPE hComponent,
         eError = eCompReturn;
     }
     else {
-        DOMX_DEBUG("****RPC_GetConfig RPC Error");
+        DOMX_WARN("****RPC_GetConfig RPC Error");
         eError = OMX_ErrorUndefined;
     }
     
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1159,8 +1170,6 @@ static OMX_ERRORTYPE PROXY_SetConfig(OMX_IN  OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    DOMX_DEBUG("Entered: %s\n",__FUNCTION__);
-    
     PROXY_require((pConfigStruct != NULL),
                  OMX_ErrorBadParameter, NULL);
     
@@ -1169,6 +1178,9 @@ static OMX_ERRORTYPE PROXY_SetConfig(OMX_IN  OMX_HANDLETYPE hComponent,
                  
     pCompPrv = (PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
 
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p, nConfigIndex=%d, pConfigStruct=%p",
+                 hComponent, pCompPrv, nConfigIndex, pConfigStruct);
+
     eRPCError = RPC_SetConfig(pCompPrv->hRemoteComp, nConfigIndex, pConfigStruct, &eCompReturn);
 
     if(eRPCError == RPC_OMX_ErrorNone) {
@@ -1176,12 +1188,12 @@ static OMX_ERRORTYPE PROXY_SetConfig(OMX_IN  OMX_HANDLETYPE hComponent,
         eError = eCompReturn;
     }
     else {
-        DOMX_DEBUG("****RPC_SetConfig RPC Error");
+        DOMX_WARN("****RPC_SetConfig RPC Error");
         eError = OMX_ErrorUndefined;
     }
     
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
  }
 
@@ -1205,8 +1217,6 @@ static OMX_ERRORTYPE PROXY_GetState(OMX_IN  OMX_HANDLETYPE hComponent,
   OMX_COMPONENTTYPE * hComp = hComponent;
   PROXY_COMPONENT_PRIVATE* pCompPrv = NULL;
   
-  DOMX_DEBUG("\nEnter: %s",__FUNCTION__);
-  
   PROXY_require((pState != NULL),
                 OMX_ErrorBadParameter, NULL);
                 
@@ -1215,22 +1225,25 @@ static OMX_ERRORTYPE PROXY_GetState(OMX_IN  OMX_HANDLETYPE hComponent,
                 
   pCompPrv = (PROXY_COMPONENT_PRIVATE*)hComp->pComponentPrivate;
   
+  DOMX_ENTER("hComponent=%p, pCompPrv=%p", hComponent, pCompPrv);
+
   eRPCError = RPC_GetState(pCompPrv->hRemoteComp, pState, &eCompReturn);
 
-  DOMX_DEBUG("\n%s: Returned from RPC_GetState",__FUNCTION__);
+  DOMX_DEBUG("Returned from RPC_GetState, state: ", *pState);
   
   if(eRPCError == RPC_OMX_ErrorNone)
   {
-    DOMX_DEBUG("\n%s Yahoo!! Get Parameter Successful", __FUNCTION__);
-    eError = eCompReturn;
+	  DOMX_DEBUG("Yahoo!! Get Parameter Successful");
+	  eError = eCompReturn;
   }
   else
   {
-      DOMX_DEBUG("\n%s [%d]: Warning: RPC Error",__FUNCTION__,__LINE__);
+      DOMX_WARN("RPC Error");
       eError=OMX_ErrorUndefined;
   }
 
-EXIT:  
+EXIT:
+   DOMX_EXIT("eError: %d", eError);
    return eError;
 }
 
@@ -1255,17 +1268,18 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN  OMX_HANDLETYPE hComponent,
   RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
   PROXY_COMPONENT_PRIVATE* pCompPrv;    
   OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
-    OMX_COMPONENTTYPE *pMarkComp = NULL;
-    PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
-    OMX_PTR pMarkData = NULL;
+  OMX_COMPONENTTYPE *pMarkComp = NULL;
+  PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
+  OMX_PTR pMarkData = NULL;
   OMX_U32 i;
 
-  DOMX_DEBUG("\nEnter: %s",__FUNCTION__);
-  
   PROXY_assert((hComp->pComponentPrivate != NULL),
                 OMX_ErrorBadParameter, NULL);
                  
   pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;  
+
+  DOMX_ENTER("hComponent=%p, pCompPrv=%p, eCmd=%d, nParam=%d, pCmdData=%p",
+		  hComponent, pCompPrv, eCmd, nParam, pCmdData);
 
     if(eCmd == OMX_CommandMarkBuffer)
     {
@@ -1330,7 +1344,7 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN  OMX_HANDLETYPE hComponent,
   }
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1358,11 +1372,15 @@ static OMX_ERRORTYPE PROXY_GetComponentVersion(OMX_IN  OMX_HANDLETYPE hComponent
   RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
   OMX_ERRORTYPE eCompReturn;
 
-  DOMX_DEBUG("\nEnter: %s",__FUNCTION__);
+  DOMX_ENTER("hComponent=%p, pCompPrv=%p", hComponent, pCompPrv);
   
   PROXY_assert((hComp->pComponentPrivate != NULL),
                 OMX_ErrorBadParameter, NULL);
-                 
+  PROXY_assert(pComponentName != NULL, OMX_ErrorBadParameter, NULL);
+  PROXY_assert(pComponentVersion != NULL, OMX_ErrorBadParameter, NULL);
+  PROXY_assert(pSpecVersion != NULL, OMX_ErrorBadParameter, NULL);
+  PROXY_assert(pComponentUUID != NULL, OMX_ErrorBadParameter, NULL);
+
   pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
 
   eRPCError = RPC_GetComponentVersion(pCompPrv->hRemoteComp,
@@ -1373,16 +1391,15 @@ static OMX_ERRORTYPE PROXY_GetComponentVersion(OMX_IN  OMX_HANDLETYPE hComponent
               &eCompReturn);
               
   if(eRPCError == RPC_OMX_ErrorNone) {
-    DOMX_DEBUG("\n%s PROXY_GetComponentVersion Successful", __FUNCTION__);
+    DOMX_DEBUG("PROXY_GetComponentVersion Successful");
     eError = eCompReturn;
   }
   else {
     eError=OMX_ErrorUndefined;
   }
   
-  DOMX_DEBUG("\nLeaving: %s",__FUNCTION__);	
-  
-EXIT:        
+EXIT:
+  DOMX_EXIT("eError: %d", eError);
   return  eError;
 }
 
@@ -1408,30 +1425,31 @@ static OMX_ERRORTYPE PROXY_GetExtensionIndex(OMX_IN  OMX_HANDLETYPE hComponent,
   OMX_COMPONENTTYPE * hComp = hComponent;
   OMX_ERRORTYPE eCompReturn;
   RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
-
-  DOMX_DEBUG("\nEnter: %s",__FUNCTION__);	       	       
   
   PROXY_assert((hComp->pComponentPrivate != NULL),
                 OMX_ErrorBadParameter, NULL);
-                 
+  PROXY_assert(cParameterName != NULL, OMX_ErrorBadParameter, NULL);
+  PROXY_assert(pIndexType != NULL, OMX_ErrorBadParameter, NULL);
+
   pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
   
+  DOMX_ENTER("hComponent=%p, pCompPrv=%p, cParameterName=%s", hComponent, pCompPrv, cParameterName);
+
   eRPCError = RPC_GetExtensionIndex(pCompPrv->hRemoteComp,
             cParameterName,
             pIndexType,
             &eCompReturn);
 
   if(eRPCError == RPC_OMX_ErrorNone) {
-    DOMX_DEBUG("\n%s PROXY_GetComponentVersion Successful", __FUNCTION__);
+    DOMX_DEBUG("PROXY_GetComponentVersion Successful");
     eError = eCompReturn;
   }
   else {
     eError=OMX_ErrorUndefined;
   }
 
-  DOMX_DEBUG("\nLeaving: %s",__FUNCTION__);	
-  
 EXIT:
+  DOMX_EXIT("eError: %d", eError);
   return  eError;
 }
 
@@ -1454,11 +1472,10 @@ static OMX_ERRORTYPE PROXY_ComponentRoleEnum(OMX_IN OMX_HANDLETYPE hComponent,
 {
   OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-  DOMX_DEBUG("\nEntering: %s",__FUNCTION__);	
-  DOMX_DEBUG("\n EMPTY IMPLEMENTATION ");	
-  DOMX_DEBUG("\nLeaving: %s",__FUNCTION__);	
+  DOMX_ENTER("hComponent=%p", hComponent);
+  DOMX_DEBUG(" EMPTY IMPLEMENTATION ");	
 
-EXIT:  
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1481,11 +1498,10 @@ static OMX_ERRORTYPE PROXY_ComponentTunnelRequest(OMX_IN  OMX_HANDLETYPE hCompon
 {
   OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-  DOMX_DEBUG("\nEntering: %s",__FUNCTION__);	
-  DOMX_DEBUG("\n EMPTY IMPLEMENTATION ");	
-  DOMX_DEBUG("\nLeaving: %s",__FUNCTION__);	
+  DOMX_ENTER("hComponent=%p", hComponent);
+  DOMX_DEBUG(" EMPTY IMPLEMENTATION ");	
 
-EXIT:  
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1508,8 +1524,6 @@ static OMX_ERRORTYPE PROXY_SetCallbacks (OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE* pCompPrv;    
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    DOMX_DEBUG("Entered : %s\n",__FUNCTION__);
-    
     PROXY_require((pCallBacks != NULL),
                    OMX_ErrorBadParameter, NULL);
     
@@ -1518,14 +1532,35 @@ static OMX_ERRORTYPE PROXY_SetCallbacks (OMX_HANDLETYPE hComponent,
                  
     pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
     
+    DOMX_ENTER("hComponent=%p, pCompPrv=%p", hComponent, pCompPrv);
+
     /*Store App callback and data to proxy- managed by proxy*/
     pCompPrv->tCBFunc = *pCallBacks;
     pCompPrv->pILAppData = pAppData;
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
+
+
+/* ===========================================================================*/
+/**
+ * @name PROXY_UseEGLImage()
+ * @brief : This returns error not implemented by default as no component
+ *          implements this. In case there is a requiremet, support for this
+ *          can be added later.
+ *
+ */
+/* ===========================================================================*/
+static OMX_ERRORTYPE PROXY_UseEGLImage (OMX_HANDLETYPE hComponent,
+                                        OMX_BUFFERHEADERTYPE** ppBufferHdr,
+                                        OMX_U32 nPortIndex,
+                                        OMX_PTR pAppPrivate, void* pBuffer)
+{
+    return OMX_ErrorNotImplemented;
+}
+
 
 /* ===========================================================================*/
 /**
@@ -1544,14 +1579,12 @@ static OMX_ERRORTYPE PROXY_ComponentDeInit (OMX_HANDLETYPE hComponent)
     PROXY_COMPONENT_PRIVATE* pCompPrv;
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
     
-    OMX_U32 count;
-    
-    DOMX_DEBUG("Entered : %s\n",__FUNCTION__);
-    
     PROXY_assert((hComp->pComponentPrivate != NULL),
                 OMX_ErrorBadParameter, NULL);
                 
-    pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;                
+    pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
+
+    DOMX_ENTER("hComponent=%p", hComponent);
 
     eRPCError = RPC_FreeHandle(pCompPrv->hRemoteComp, &eCompReturn);
 
@@ -1570,12 +1603,12 @@ static OMX_ERRORTYPE PROXY_ComponentDeInit (OMX_HANDLETYPE hComponent)
       eError = eCompReturn;
    }
    else {
-      DOMX_DEBUG("****RPC_FreeHandle RPC Error");
+      DOMX_WARN("****RPC_FreeHandle RPC Error");
       eError = OMX_ErrorUndefined;
    }
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1601,8 +1634,8 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
     OMX_U32 i=0;
     //OMX_CALLBACKTYPE tProxyCBinfo = {PROXY_EventHandler, PROXY_EmptyBufferDone, PROXY_FillBufferDone};
 
-    DOMX_DEBUG("\n_____________________INSIDE PROXY COMMON__________________________\n");
-    DOMX_DEBUG("%s:  hComponent: 0x%x\n",__FUNCTION__, hComponent);
+    DOMX_ENTER("hComponent=%p", hComponent);
+    DOMX_DEBUG("_____________________INSIDE PROXY COMMON__________________________");
     
     PROXY_assert((hComp->pComponentPrivate != NULL),
                  OMX_ErrorBadParameter, NULL);    
@@ -1630,17 +1663,17 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
     
     if(eRPCError==RPC_OMX_ErrorNone) {
        if(eCompReturn==OMX_ErrorNone) {
-          DOMX_DEBUG("\nRPC_GetHandle Successful");
+          DOMX_DEBUG("RPC_GetHandle Successful");
           pCompPrv->hRemoteComp = hRemoteComp;
        }
        else {
-          DOMX_DEBUG("\n ERROR executing OMX_GetHandle remotely");
+          DOMX_WARN(" ERROR executing OMX_GetHandle remotely");
           eError = eCompReturn;
           RPC_InstanceDeInit(hRemoteComp);
        }
      }
     else {
-       DOMX_DEBUG("****RPC_GetHandle RPC Error");       
+       DOMX_ERROR("****RPC_GetHandle RPC Error");
        RPC_InstanceDeInit(hRemoteComp);
        eError = OMX_ErrorHardware;       
        goto EXIT;
@@ -1663,13 +1696,14 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
     hComp->ComponentRoleEnum = PROXY_ComponentRoleEnum;    
     hComp->AllocateBuffer = PROXY_AllocateBuffer;
     hComp->ComponentTunnelRequest = PROXY_ComponentTunnelRequest;
+    hComp->UseEGLImage = PROXY_UseEGLImage;
     
     pCompPrv->hRemoteComp = hRemoteComp;
         
-    DOMX_DEBUG("\n Proxy Initted");    
+    DOMX_DEBUG(" Proxy Initted");    
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1683,14 +1717,16 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Chiron(PROXY_COMPONENT_PRIVATE *pCompPrv, OMX_CO
       OMX_U8 *pBuffer;
       
       DSPtr dsptr[2];
-      bytes_t lengths[2],uvPtr;
+      bytes_t lengths[2];
       OMX_U32 i = 0;
       OMX_U32 numBlocks =0;
       
       pBuffer = pDucBuf->pBuffer;
 
+      DOMX_ENTER("");
+
      if(((OMX_TI_PLATFORMPRIVATE *)pDucBuf->pPlatformPrivate)->pAuxBuf1 == NULL) {
-      DOMX_DEBUG("\nOne component buffer\n");
+      DOMX_DEBUG("One component buffer");
       
       if(!(pCompPrv->nNumOfLines[nPortIndex])) {
       pCompPrv->nNumOfLines[nPortIndex] = 1;
@@ -1702,7 +1738,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Chiron(PROXY_COMPONENT_PRIVATE *pCompPrv, OMX_CO
 			LINUX_PAGE_SIZE);
       }
       else {
-      DOMX_DEBUG("\nTwo component buffers\n");
+      DOMX_DEBUG("Two component buffers");
       dsptr[0] = (OMX_U32)pBuffer;
       dsptr[1] = (OMX_U32)(((OMX_TI_PLATFORMPRIVATE *)pDucBuf->pPlatformPrivate)->
 				pAuxBuf1);
@@ -1724,11 +1760,11 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Chiron(PROXY_COMPONENT_PRIVATE *pCompPrv, OMX_CO
      }
      
      //Map back to chiron
-     DOMX_DEBUG("\nNumBlocks = %d\n", numBlocks);
+     DOMX_DEBUG("NumBlocks = %d", numBlocks);
      for (i = 0; i < numBlocks; i++)
      {
-        DOMX_DEBUG("\ndsptr[%d] = 0x%x\n", i, dsptr[i]);
-        DOMX_DEBUG("\nlength[%d] = %d\n", i, lengths[i]);
+        DOMX_DEBUG("dsptr[%d] = %p", i, dsptr[i]);
+        DOMX_DEBUG("length[%d] = %d", i, lengths[i]);
      }
      
      pDucBuf->pBuffer = tiler_assisted_phase1_D2CReMap(numBlocks,dsptr,lengths);
@@ -1737,6 +1773,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Chiron(PROXY_COMPONENT_PRIVATE *pCompPrv, OMX_CO
                      "Mapping to Chiron failed");
                      
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return OMX_ErrorNone;
 }
 
@@ -1751,7 +1788,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE *pCompPrv,
       OMX_U32 nNumOfLines = 1;
       OMX_U8 *pBuffer;
       
-      DOMX_DEBUG("\n Entered %s ____ \n",__FUNCTION__);
+      DOMX_ENTER("");
       
       pBuffer = pChironBuf->pBuffer;
                      
@@ -1790,9 +1827,8 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE *pCompPrv,
       *(OMX_U32 *)pBufToBeMapped = (OMX_U32)pBuffer;
      }
      
-     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
-     
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return OMX_ErrorNone;
 }
 
@@ -1814,10 +1850,8 @@ EXIT:
       
       OMX_PARAM_PORTDEFINITIONTYPE portDef;    
       OMX_CONFIG_RECTTYPE sRect;
-      OMX_U8 * pBuffer;
-      OMX_PTR pUVBuffer;
 
-      DOMX_DEBUG("Entered: %s\n",__FUNCTION__);
+      DOMX_ENTER("");
 
      /*initializing Structure*/
      portDef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
@@ -1844,11 +1878,11 @@ EXIT:
 				  OMX_TI_IndexParam2DBufferAllocDimension,
 				  (OMX_PTR)&sRect, &eCompReturn);
      if(eRPCError == RPC_OMX_ErrorNone) {
-         DOMX_DEBUG("\n PROXY_UTIL Get Parameter Successful\n", __FUNCTION__);
+         DOMX_DEBUG(" PROXY_UTIL Get Parameter Successful");
          eError = eCompReturn;
      }
      else{
-        DOMX_DEBUG("\n%s [%d]: Warning: RPC Error",__FUNCTION__,__LINE__);
+        DOMX_WARN("RPC Error");
          eError=OMX_ErrorUndefined;
      }
 
@@ -1859,11 +1893,11 @@ EXIT:
      eRPCError = RPC_GetParameter(hRemoteComp,OMX_IndexParamPortDefinition,(OMX_PTR)&portDef, &eCompReturn);
 
      if(eRPCError == RPC_OMX_ErrorNone) {
-         DOMX_DEBUG("\n PROXY_UTIL Get Parameter Successful\n", __FUNCTION__);
+         DOMX_DEBUG(" PROXY_UTIL Get Parameter Successful");
          eError = eCompReturn;
      }
      else{
-        DOMX_DEBUG("\n%s [%d]: Warning: RPC Error",__FUNCTION__,__LINE__);
+    	 DOMX_WARN("RPC Error");
          eError=OMX_ErrorUndefined;
      }
 
@@ -1874,44 +1908,44 @@ EXIT:
      
      if(portDef.eDomain==OMX_PortDomainVideo) {
             *nNumOfLines = portDef.format.video.nFrameHeight;
-           //DOMX_DEBUG("\nPort definition Type is video...");           
-           //DOMX_DEBUG("\n&&Colorformat is:0x%x", portDef.format.video.eColorFormat);
-           //DOMX_DEBUG("\nnFrameHeight is:%d", portDef.format.video.nFrameHeight);
+           //DOMX_DEBUG("Port definition Type is video...");           
+           //DOMX_DEBUG("&&Colorformat is:%p", portDef.format.video.eColorFormat);
+           //DOMX_DEBUG("nFrameHeight is:%d", portDef.format.video.nFrameHeight);
            //*nNumOfLines = portDef.format.video.nFrameHeight;
            
            //if((portDef.format.video.eColorFormat == OMX_COLOR_FormatYUV420PackedSemiPlanar) ||
              //  (portDef.format.video.eColorFormat == OMX_COLOR_FormatYUV420Planar))
            //{
-            //DOMX_DEBUG("\nSetting FrameHeight as Number of lines...");
+            //DOMX_DEBUG("Setting FrameHeight as Number of lines...");
             //*nNumOfLines = portDef.format.video.nFrameHeight;
            //}
         }
         else if(portDef.eDomain==OMX_PortDomainImage) {
-            DOMX_DEBUG("\nImage DOMAIN TILER SUPPORT");
+            DOMX_DEBUG("Image DOMAIN TILER SUPPORT for NV12 format only");
+            *nNumOfLines = portDef.format.image.nFrameHeight;
         }
         else if(portDef.eDomain==OMX_PortDomainAudio) {
-            DOMX_DEBUG("\nAudio DOMAIN TILER SUPPORT");
+            DOMX_DEBUG("Audio DOMAIN TILER SUPPORT");
         }
         else if(portDef.eDomain==OMX_PortDomainOther) {
-            DOMX_DEBUG("\nOther DOMAIN TILER SUPPORT");
+            DOMX_DEBUG("Other DOMAIN TILER SUPPORT");
         }
         else { //this is the sample component test
         //Temporary - just to get check functionality
-            DOMX_DEBUG("\nSample component TILER SUPPORT");
+            DOMX_DEBUG("Sample component TILER SUPPORT");
             *nNumOfLines = 4;
         }
      }
      else {
-         DOMX_DEBUG("\n ERROR IN RECOVERING UV POINTER");
+         DOMX_WARN(" ERROR IN RECOVERING UV POINTER");
      }
      }
      else {
-         DOMX_DEBUG("\n ERROR IN RECOVERING UV POINTER");
+         DOMX_WARN(" ERROR IN RECOVERING UV POINTER");
      }
      
-     DOMX_DEBUG("Port Number: %d :: NumOfLines %d\n",nPortIndex,*nNumOfLines); 
-     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
-EXIT:     
+     DOMX_DEBUG("Port Number: %d :: NumOfLines %d",nPortIndex,*nNumOfLines);
+     DOMX_EXIT("eError: %d", eError);
      return eError;
 }
 
@@ -1930,18 +1964,18 @@ OMX_ERRORTYPE RPC_MapBuffer_Ducati(OMX_U8 *pBuf, OMX_U32 nBufLineSize,
                                    OMX_PTR pBufToBeMapped)
 {
     ProcMgr_MapType mapType;
-    SyslinkMemUtils_MpuAddrToMap MpuAddr_list_1D;    
-    MemAllocBlock block;
+    SyslinkMemUtils_MpuAddrToMap MpuAddr_list_1D = {0};
+    MemAllocBlock block = {0};
     OMX_U32 status;
     OMX_U32 nDiff = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     
-    DOMX_DEBUG("\n Entered %s ____ \n",__FUNCTION__);
+    DOMX_ENTER("");
 
     *(OMX_U32 *)pBufToBeMapped = (OMX_U32)pBuf;
     
     if(!MemMgr_IsMapped(pBuf) && (nBufLines == 1)) {
-        DOMX_DEBUG("\nBuffer is not mapped: Mapping as 1D buffer now..");
+        DOMX_DEBUG("Buffer is not mapped: Mapping as 1D buffer now..");
         block.pixelFormat = PIXEL_FMT_PAGE;
         block.ptr    = (OMX_PTR)(((OMX_U32)pBuf / LINUX_PAGE_SIZE) * 
                                  LINUX_PAGE_SIZE);
@@ -1973,8 +2007,8 @@ OMX_ERRORTYPE RPC_MapBuffer_Ducati(OMX_U8 *pBuf, OMX_U32 nBufLineSize,
                                      mapType, PROC_APPM3);
     }
 
-     DOMX_DEBUG("Exited: %s\n",__FUNCTION__);    
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -1995,6 +2029,8 @@ OMX_ERRORTYPE RPC_UnMapBuffer_Ducati(OMX_PTR pBuffer)
     OMX_U32 status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     
+    DOMX_ENTER("");
+
     status = MemMgr_UnMap(pBuffer);
     if(status != 0)
     {
@@ -2004,6 +2040,7 @@ OMX_ERRORTYPE RPC_UnMapBuffer_Ducati(OMX_PTR pBuffer)
     }
     
 EXIT:
+    DOMX_EXIT("eError: %d", eError);
     return eError;
 }
 
@@ -2031,6 +2068,8 @@ OMX_ERRORTYPE RPC_MapMetaData_Host(OMX_BUFFERHEADERTYPE *pBufHdr)
     bytes_t lengths[2];
     OMX_U32 numBlocks =0;
     
+    DOMX_ENTER("");
+
     if((pBufHdr->pPlatformPrivate != NULL) &&
        (((OMX_TI_PLATFORMPRIVATE *)pBufHdr->pPlatformPrivate)->pMetaDataBuffer != NULL)) {
       
@@ -2054,7 +2093,8 @@ OMX_ERRORTYPE RPC_MapMetaData_Host(OMX_BUFFERHEADERTYPE *pBufHdr)
     }
     
 EXIT:
-     return eError;
+    DOMX_EXIT("eError: %d", eError);
+    return eError;
 }
 
 /* ===========================================================================*/
@@ -2073,6 +2113,8 @@ OMX_ERRORTYPE RPC_UnMapMetaData_Host(OMX_BUFFERHEADERTYPE *pBufHdr)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_S32 nReturn = 0;
     
+    DOMX_ENTER("");
+
     if((pBufHdr->pPlatformPrivate != NULL) &&
        (((OMX_TI_PLATFORMPRIVATE *)pBufHdr->pPlatformPrivate)->pMetaDataBuffer != NULL)) {
       
@@ -2081,5 +2123,6 @@ OMX_ERRORTYPE RPC_UnMapMetaData_Host(OMX_BUFFERHEADERTYPE *pBufHdr)
                     "Metadata unmap failed");
     }
 EXIT:
-     return eError;
+    DOMX_EXIT("eError: %d", eError);
+    return eError;
 }

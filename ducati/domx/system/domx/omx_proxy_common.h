@@ -78,7 +78,9 @@ extern "C" {
 
 #define PROXY_paramCheck(C, V, S) do {\
     if (!(C)) { eError = V;\
-    TIMM_OSAL_TraceFunction("##Error:: %s::in %s::line %d \n",S,__FUNCTION__, __LINE__);\
+    DOMX_ERROR("failed check: " #C);\
+    DOMX_ERROR(" - returning error: " #V);\
+    if(S) DOMX_ERROR(" - %s", S);\
     goto EXIT; }\
     } while(0)
 

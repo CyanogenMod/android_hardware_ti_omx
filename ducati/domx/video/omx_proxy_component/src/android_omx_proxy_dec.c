@@ -131,12 +131,15 @@ static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(
 	DOMX_DEBUG("Update WxH\n");
 	((OMX_VIDEO_PORTDEFINITIONTYPE*)&(pPortdef->format))->nFrameWidth = \
 															pRectType.nWidth;
+	((OMX_VIDEO_PORTDEFINITIONTYPE*)&(pPortdef->format))->nStride = \
+															pRectType.nWidth;
 	((OMX_VIDEO_PORTDEFINITIONTYPE*)&(pPortdef->format))->nFrameHeight = \
 															pRectType.nHeight;
+
 	DOMX_DEBUG("Update WxH %dx%d size %d\n",pRectType.nWidth, \
 											pRectType.nHeight, \
 											pPortdef->nBufferSize);
-	pPortdef->nBufferSize = (pRectType.nWidth * pRectType.nHeight * 3) / 2;
+	//pPortdef->nBufferSize = (pRectType.nWidth * pRectType.nHeight * 3) / 2;
 	DOMX_DEBUG("GetParameter Done\n");
 	}
 	}
@@ -153,7 +156,7 @@ OMX_COMPONENTTYPE *pHandle = NULL;
 PROXY_COMPONENT_PRIVATE *pComponentPrivate;
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
 
-	DOMX_DEBUG("\n___INSISDE VIDEO DECODER PROXY WRAPPER__\n");
+	DOMX_DEBUG("___INSISDE VIDEO DECODER PROXY WRAPPER__\n");
 
 	pHandle->pComponentPrivate = \
 			(PROXY_COMPONENT_PRIVATE *)TIMM_OSAL_Malloc( \
@@ -162,7 +165,7 @@ PROXY_COMPONENT_PRIVATE *pComponentPrivate;
 
 	pComponentPrivate = (PROXY_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     if (pHandle->pComponentPrivate == NULL) {
-        DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
+        DOMX_DEBUG(" ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
 		eError = OMX_ErrorInsufficientResources;
 		goto EXIT;
 	}
@@ -170,7 +173,7 @@ PROXY_COMPONENT_PRIVATE *pComponentPrivate;
 							MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8), \
 							TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
     if (pComponentPrivate->cCompName == NULL) {
-        DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY COMPONENT NAME STRUCTURE");
+        DOMX_DEBUG(" ERROR IN ALLOCATING PROXY COMPONENT NAME STRUCTURE");
         TIMM_OSAL_Free(pComponentPrivate);
 		eError = OMX_ErrorInsufficientResources;
 		goto EXIT;
@@ -182,7 +185,7 @@ PROXY_COMPONENT_PRIVATE *pComponentPrivate;
 	eError = OMX_ProxyCommonInit(hComponent);// Calling Proxy Common Init()
 
 	if(eError != OMX_ErrorNone){
-        DOMX_DEBUG("\nError in Initializing Proxy");
+        DOMX_DEBUG("Error in Initializing Proxy");
         TIMM_OSAL_Free(pComponentPrivate->cCompName);
         TIMM_OSAL_Free(pComponentPrivate);
         }
