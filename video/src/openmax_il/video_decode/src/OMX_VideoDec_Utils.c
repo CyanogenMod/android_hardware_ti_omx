@@ -4655,8 +4655,10 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         goto EXIT;
     }
     /* Handle case were previous error as occur or flush is in process */
+    /* If flush in process but the buffer is a configuration one we can't miss
+       it so VD save it and return EmptyBufferDone() */
     /*avoid buffer movement after critical error*/
-    if (pComponentPrivate->bFlushing ||
+    if ((pComponentPrivate->bFlushing && !(pBuffHead->nFlags & OMX_BUFFERFLAG_CODECCONFIG)) ||
         pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
         if(pBuffHead->pInputPortPrivate != NULL) {
             /* Setting DSP as the owner, the buffer will be returned as soon as the client call flush */
