@@ -145,6 +145,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->bEnabled                              = PORTENABLED;
     pAppData->pInPortDef->bPopulated                            = PORTPOPULATED;
     pAppData->pInPortDef->eDomain                               = PORTDOMAIN;
+    pAppData->pInPortDef->nBufferSize                           = 0;
 
     /* OMX_VIDEO_PORTDEFINITION values for input port */
     pAppData->pInPortDef->format.video.cMIMEType                = MIMETYPEMPEG2;
@@ -185,6 +186,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pOutPortDef->bEnabled                             = PORTENABLED;
     pAppData->pOutPortDef->bPopulated                           = PORTPOPULATED;
     pAppData->pOutPortDef->eDomain                              = PORTDOMAIN;
+    pAppData->pOutPortDef->nBufferSize                          = 0;
 
     /* OMX_VIDEO_PORTDEFINITION values for output port */
     pAppData->pOutPortDef->format.video.cMIMEType               = MIMETYPEYUV;

@@ -1479,7 +1479,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     /* OMX VD defines the minimum required output size */
                     nMinOutputBufferSize = pPortDef->format.video.nFrameWidth *
                         pPortDef->format.video.nFrameHeight *
-                        ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
+                        ((pPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
                     pPortDef->nBufferSize = nMinOutputBufferSize;
 
                     OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);

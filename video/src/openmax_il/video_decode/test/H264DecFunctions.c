@@ -94,6 +94,7 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->bEnabled                  = PORTENABLED;
     pAppData->pInPortDef->bPopulated                = PORTPOPULATED;
     pAppData->pInPortDef->eDomain                   = PORTDOMAIN;
+    pAppData->pInPortDef->nBufferSize               = 0;
 
     /* OMX_VIDEO_PORTDEFINITION values for input port */
     pAppData->pInPortDef->format.video.cMIMEType                = MIMETYPEH264;
@@ -134,6 +135,7 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pOutPortDef->bEnabled                             = PORTENABLED;
     pAppData->pOutPortDef->bPopulated                           = PORTPOPULATED;
     pAppData->pOutPortDef->eDomain                              = PORTDOMAIN;
+    pAppData->pOutPortDef->nBufferSize                          = 0;
 
     /* OMX_VIDEO_PORTDEFINITION values for output port */
     pAppData->pOutPortDef->format.video.cMIMEType               = MIMETYPEYUV;
