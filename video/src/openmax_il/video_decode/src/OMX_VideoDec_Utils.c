@@ -4525,20 +4525,15 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             nWidth = VIDDEC_MULTIPLE16 (nWidth);
             nHeight = VIDDEC_MULTIPLE16 (nHeight);
 
-            if (nWidth < nHeight) {
+            if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
+                nCroppedWidth = nWidth - nCropWidth;
+                nCroppedHeight = nHeight - nCropHeight;
+            }
+            else if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT420) {
                 nCroppedWidth = nWidth;
                 nCroppedHeight = nHeight;
             }
-            else {
-                if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT422) {
-                    nCroppedWidth = nWidth - nCropWidth;
-                    nCroppedHeight = nHeight - nCropHeight;
-                }
-                else if (pComponentPrivate->pOutPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT420) {
-                    nCroppedWidth = nWidth;
-                    nCroppedHeight = nHeight;
-                }
-            }
+
             if(pComponentPrivate->pOutPortDef->format.video.nFrameWidth != nCroppedWidth ||
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight != nCroppedHeight) {
 
@@ -4550,12 +4545,13 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
         }
 
         /*Get minimum OUTPUT buffer size, 
-         * verify if the actual allocated size is the same as require by display driver*/
+         * verify if the actual allocated size is enought */
         nOutMinBufferSize = pComponentPrivate->pOutPortDef->format.video.nFrameWidth *
                             pComponentPrivate->pOutPortDef->format.video.nFrameHeight *
                             ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
 
-        if(nOutPortActualAllocLen != nOutMinBufferSize){
+        if(nOutPortActualAllocLen < nOutMinBufferSize || pComponentPrivate->pOutPortDef->nBufferSize < nOutMinBufferSize){
+            OMX_PRINT1(pComponentPrivate->dbg, " Previous: pOutPortDef->nBufferSize: %d", pComponentPrivate->pOutPortDef->nBufferSize);
             pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
             bOutPortSettingsChanged = OMX_TRUE;
             OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%x \n", nOutMinBufferSize);

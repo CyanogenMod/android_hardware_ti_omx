@@ -1433,6 +1433,8 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             break;
                     }
 
+                    /* Lets stagefright define the min buffer size of the input data
+                    Only if the given size is zero, VD set the size */
                     if(pPortDef->nBufferSize == 0){
                         pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
                                                 pPortDef->format.video.nFrameHeight;
@@ -1448,6 +1450,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     }
                 }
                 else if (pComponentParam->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
+                    OMX_U32 nMinOutputBufferSize = 0;
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pOutPortDef;
                     if( pPortDefParam->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
@@ -1472,11 +1475,12 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             OMX_PRINT3(pComponentPrivate->dbg, "The color format is unknow");
                             break;
                     }
-                    if (pPortDef->nBufferSize == 0) {
-                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
+
+                    /* OMX VD defines the minimum required output size */
+                    nMinOutputBufferSize = pPortDef->format.video.nFrameWidth *
                         pPortDef->format.video.nFrameHeight *
                         ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
-                    }
+                    pPortDef->nBufferSize = nMinOutputBufferSize;
 
                     OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                 }
@@ -2684,8 +2688,8 @@ static OMX_ERRORTYPE VIDDEC_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pPortDef->nBufferSize %d nSizeBytes %d %d\n", (int )pPortDef->nBufferSize, 
         (int )nSizeBytes,(int )(pPortDef->nBufferSize > nSizeBytes));
-    pPortDef->nBufferSize = nSizeBytes;
-    if(nSizeBytes != pPortDef->nBufferSize || pPortDef->bPopulated){
+
+    if(nSizeBytes < pPortDef->nBufferSize || pPortDef->bPopulated){
         OMX_PRBUFFER4(pComponentPrivate->dbg, "Error: badparameter\n");
         eError = OMX_ErrorBadParameter;
         goto EXIT;
