@@ -33,7 +33,7 @@
 OMX_ERRORTYPE WMVVIDDEC_Fill_Data(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBuf)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-        
+
     if (pAppData->ProcessMode == 0)
     {
         if(pAppData->nWMVFileType == WMV_ELEMSTREAM) {
@@ -62,17 +62,17 @@ OMX_ERRORTYPE WMVVIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if (eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
     /* Set the component's OMX_PARAM_PORTDEFINITIONTYPE structure (input) */
     /**********************************************************************/
-    memset(pAppData->pInPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));    
+    memset(pAppData->pInPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     pAppData->pInPortDef->nSize                     = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pAppData->pInPortDef->nVersion.s.nVersionMajor  = VERSION_MAJOR;
     pAppData->pInPortDef->nVersion.s.nVersionMinor  = VERSION_MINOR;
     pAppData->pInPortDef->nVersion.s.nRevision      = VERSION_REVISION;
     pAppData->pInPortDef->nVersion.s.nStep          = VERSION_STEP;
     pAppData->pInPortDef->nPortIndex                = sVidDecPortIndex.nInputPortIndex;
-    
+
     eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pInPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -83,15 +83,15 @@ OMX_ERRORTYPE WMVVIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->bEnabled                  = PORTENABLED;
     pAppData->pInPortDef->bPopulated                = PORTPOPULATED;
     pAppData->pInPortDef->eDomain                   = PORTDOMAIN;
-    
+
     /* OMX_VIDEO_PORTDEFINITION values for input port */
     pAppData->pInPortDef->format.video.cMIMEType                = MIMETYPEWMV;
-    pAppData->pInPortDef->format.video.pNativeRender            = INPORTNATIVERENDER; 
+    pAppData->pInPortDef->format.video.pNativeRender            = INPORTNATIVERENDER;
     pAppData->pInPortDef->format.video.nFrameWidth              = pAppData->nWidth;
     pAppData->pInPortDef->format.video.nFrameHeight             = pAppData->nHeight;
-    pAppData->pInPortDef->format.video.nStride                  = INPORTSTRIDE; 
+    pAppData->pInPortDef->format.video.nStride                  = INPORTSTRIDE;
     pAppData->pInPortDef->format.video.nSliceHeight             = INPORTSLICEHEIGHT;
-    pAppData->pInPortDef->format.video.eCompressionFormat       = PORTCOMPRESSIONFORMATWMV; 
+    pAppData->pInPortDef->format.video.eCompressionFormat       = PORTCOMPRESSIONFORMATWMV;
     pAppData->pInPortDef->format.video.bFlagErrorConcealment    = INPORTFLAGERRORCONCEALMENT;
     pAppData->pInPortDef->format.video.eColorFormat             = PORTCOMPRESSIONFORMATUNUSED;
 
@@ -103,17 +103,17 @@ OMX_ERRORTYPE WMVVIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if(eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
     /* Set the component's OMX_PARAM_PORTDEFINITIONTYPE structure (output) */
     /***********************************************************************/
-    memset(pAppData->pOutPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));    
-    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);        
+    memset(pAppData->pOutPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pAppData->pOutPortDef->nVersion.s.nVersionMajor             = VERSION_MAJOR;
     pAppData->pOutPortDef->nVersion.s.nVersionMinor             = VERSION_MINOR;
     pAppData->pOutPortDef->nVersion.s.nRevision                 = VERSION_REVISION;
     pAppData->pOutPortDef->nVersion.s.nStep                     = VERSION_STEP;
     pAppData->pOutPortDef->nPortIndex                           = sVidDecPortIndex.nOutputPortIndex;
-    
+
     eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -127,12 +127,12 @@ OMX_ERRORTYPE WMVVIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
 
     /* OMX_VIDEO_PORTDEFINITION values for output port */
     pAppData->pOutPortDef->format.video.cMIMEType               = MIMETYPEYUV;
-    pAppData->pOutPortDef->format.video.pNativeRender           = OUTPORTNATIVERENDER; 
+    pAppData->pOutPortDef->format.video.pNativeRender           = OUTPORTNATIVERENDER;
     pAppData->pOutPortDef->format.video.nFrameWidth             = pAppData->nWidth;
     pAppData->pOutPortDef->format.video.nFrameHeight            = pAppData->nHeight;
     pAppData->pOutPortDef->format.video.nStride                 = OUTPORTSTRIDE;
-    pAppData->pOutPortDef->format.video.nSliceHeight            = OUTPORTSLICEHEIGHT; 
-    pAppData->pOutPortDef->format.video.nBitrate                = OUTPORTBITRATE; 
+    pAppData->pOutPortDef->format.video.nSliceHeight            = OUTPORTSLICEHEIGHT;
+    pAppData->pOutPortDef->format.video.nBitrate                = OUTPORTBITRATE;
     pAppData->pOutPortDef->format.video.xFramerate              = OUTPORTFRAMERATE;
     pAppData->pOutPortDef->format.video.bFlagErrorConcealment   = OUTPORTFLAGERRORCONCEALMENT;
     pAppData->pOutPortDef->format.video.eCompressionFormat      = PORTCOMPRESSIONFORMATOUTPUT;
@@ -146,7 +146,7 @@ OMX_ERRORTYPE WMVVIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if(eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
 EXIT:
     return eError;
 }
@@ -163,7 +163,7 @@ OMX_ERRORTYPE WMVVIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pInPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
+
     pAppData->pOutPortDef = (OMX_PARAM_PORTDEFINITIONTYPE*)malloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     if (!pAppData->pOutPortDef) {
         ERR_PRINT("%s :OMX_ErrorInsufficientResources: %d\n", __FUNCTION__, __LINE__);
@@ -171,7 +171,7 @@ OMX_ERRORTYPE WMVVIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pOutPortDef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
+
     pAppData->pWMV  = (OMX_VIDEO_PARAM_WMVTYPE*)malloc(sizeof(OMX_VIDEO_PARAM_WMVTYPE));
     if (!pAppData->pWMV) {
         ERR_PRINT("%s :OMX_ErrorInsufficientResources: %d\n", __FUNCTION__, __LINE__);
@@ -179,7 +179,7 @@ OMX_ERRORTYPE WMVVIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pWMV, 0, sizeof(OMX_VIDEO_PARAM_WMVTYPE));
-    
+
     /* Create a pipe used to queue data from the callback. */
     retval = pipe(pAppData->IpBuf_Pipe);
     if (retval != 0)
@@ -229,7 +229,7 @@ void WMVVIDDEC_FreeResources(MYDATATYPE* pAppData)
     close(pAppData->IpBuf_Pipe[1]);
     close(pAppData->OpBuf_Pipe[0]);
     close(pAppData->OpBuf_Pipe[1]);
-    
+
     if (pAppData->pInPortDef != NULL){
         free(pAppData->pInPortDef);
         pAppData->pInPortDef = NULL;

@@ -806,9 +806,9 @@ OMX_ERRORTYPE VIDDECTEST_FillData(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBu
                             APP_PRINT("Possible input file corruption\n");
                             return OMX_ErrorHardware;
                         }
-                        if ((pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) && 
+                        if ((pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) &&
                             pAppData->nWMVUseFix &&
-                            (pAppData->nWMVFileType == WMV_ELEMSTREAM) && 
+                            (pAppData->nWMVFileType == WMV_ELEMSTREAM) &&
                             eFillDataType == VIDDECTEST_FILLDATA_TYPE_FRAME_VOP){
                             if (!pAppData->bFirstBufferRead) {
                                 pBufferHeader->nFlags |= OMX_BUFFERFLAG_CODECCONFIG;
@@ -1126,7 +1126,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
     OMX_BUFFERHEADERTYPE* pBuf;
     OMX_U32 nCount = 0;
     OMX_HANDLETYPE pHandle = pAppData->pHandle;
-    
+
     /*in the case port enable, they need do be disable*/
     /*move the component from execute to idle*/
     eError = OMX_GetState(pHandle, &pAppData->eState);
@@ -1134,9 +1134,9 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
 
     eError = OMX_SendCommand( pHandle, OMX_CommandPortDisable, nParam, NULL);
     CHECK_ERROR(eError, eError, "Error from OMX_CommandPortDisable %X\n", EXIT);
-    
+
     sleep(1); /*wait until buffers are returned*/
-    
+
     /*clean the pipes of buffers*/
     if ( nParam == 0 || nParam == 1 || nParam == -1){
         int fdmax = maxint(pAppData->IpBuf_Pipe[0], pAppData->OpBuf_Pipe[0]);
@@ -1147,7 +1147,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
             FD_SET(pAppData->IpBuf_Pipe[0], &rfds);
             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
             FD_SET(pAppData->Error_Pipe[0], &rfds);
-            
+
             tv.tv_sec = 0;
             tv.tv_nsec = 100000;
 
@@ -1178,7 +1178,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
             {
                 read(pAppData->Error_Pipe[0], &eError, sizeof(eError));
             }
-            
+
         } while(FD_ISSET(pAppData->Error_Pipe[0], &rfds) || FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) || FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds));
     }
     /*clean some variables and return pointer to the beggining*/
@@ -1189,7 +1189,7 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
     pAppData->nCurrentFrameOutCorrupt = 0;
     pAppData->nDecodeFrms      = 0;
     pAppData->nRewind          = 1;
-    
+
     if ( nParam == 0 || nParam == -1){
         for (nCount = 0; nCount < pAppData->pInPortDef->nBufferCountActual; nCount++) {
             eError = OMX_FreeBuffer(pHandle, pAppData->pInPortDef->nPortIndex, pAppData->pInBuff[nCount]);
@@ -1269,8 +1269,8 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
         }
 #endif
         if (eError != OMX_ErrorNone && eError != OMX_ErrorNoMore) {
-	        ERR_PRINT ("Error from Fill_Data function %x\n",eError);
-	        goto EXIT;
+            ERR_PRINT ("Error from Fill_Data function %x\n",eError);
+            goto EXIT;
         }
         ++pAppData->nCurrentFrameIn;
         TickCounPropatation( pAppData, pAppData->pInBuff[0], pAppData->nCurrentFrameIn);
@@ -1307,10 +1307,10 @@ OMX_ERRORTYPE PortSettingChanged(MYDATATYPE* pAppData, OMX_S32 nParam) {
                 }
 #endif
                 if (eError != OMX_ErrorNone && eError != OMX_ErrorNoMore) {
-			        ERR_PRINT ("Error from Fill_Data function %x\n",eError);
-			        goto EXIT;
-		        }
-		        ++pAppData->nCurrentFrameIn;
+                    ERR_PRINT ("Error from Fill_Data function %x\n",eError);
+                    goto EXIT;
+                }
+                ++pAppData->nCurrentFrameIn;
                 TickCounPropatation( pAppData, pAppData->pInBuff[nCount], pAppData->nCurrentFrameIn);
                 if (pAppData->nTestCase == TESTCASE_TYPE_PROP_TICKCOUNT) {
                     APP_PRINT("In TickCount %d for input Buffer 0x%x\n", (int)pAppData->pInBuff[nCount]->nTickCount,
@@ -1471,7 +1471,7 @@ void VidDec_EventHandler (OMX_HANDLETYPE hComponent,OMX_PTR pAppData,OMX_EVENTTY
                 ((MYDATATYPE *)pAppData)->bSecondPortSettingsChanged = OMX_TRUE;
                 ((MYDATATYPE *)pAppData)->cSecondPortChanged = (OMX_S32)nData1;
             }
-            
+
             APP_DPRINT("%d :: App: OMX_Event Port Settings Changed %d\n", __LINE__, state);
             break;
         case OMX_EventBufferFlag:
@@ -2500,7 +2500,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         else if(pAppData->nTestCase == 3 || pAppData->nTestCase == 4 || pAppData->nTestCase == 5 ||
                 pAppData->nTestCase == 6 || pAppData->nTestCase == 7 || pAppData->nTestCase == 8 ||
                 pAppData->nTestCase == 11 || pAppData->nTestCase == 9 ||
-                pAppData->nTestCase == TESTCASE_TYPE_PLAYAFTEREOS || 
+                pAppData->nTestCase == TESTCASE_TYPE_PLAYAFTEREOS ||
                 pAppData->nTestCase == TESTCASE_TYPE_DERINGINGENABLE) {
             bDoPauseResume        = OMX_FALSE;
             bDoStopResume       = OMX_FALSE;
@@ -2743,7 +2743,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
         if (pAppData->nTestCase == TESTCASE_TYPE_DERINGINGENABLE) {
             OMX_CONFIG_IMAGEFILTERTYPE pDeringingParamType;
             CONFIG_SIZE_AND_VERSION(pDeringingParamType);
-            pDeringingParamType.nPortIndex = 1; 
+            pDeringingParamType.nPortIndex = 1;
             pDeringingParamType.eImageFilter = OMX_ImageFilterDeRing;
             eError = OMX_SetParameter (pHandle, OMX_IndexConfigCommonImageFilter, &pDeringingParamType);
             if (eError != OMX_ErrorNone && eError != OMX_ErrorUnsupportedIndex) {
@@ -3089,8 +3089,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                 (unsigned int)pAppData->pInBuff[0]);
         }
         else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
-            APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", 
-                pAppData->pInBuff[0]->nTimeStamp, 
+            APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n",
+                pAppData->pInBuff[0]->nTimeStamp,
                 (unsigned int)(unsigned int)pAppData->pInBuff[0]);
         }
         eError = OMX_EmptyThisBuffer(pHandle, pAppData->pInBuff[0]);
@@ -3157,8 +3157,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             (unsigned int)pAppData->pInBuff[i]);
                     }
                     else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
-                        APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", 
-                            pAppData->pInBuff[i]->nTimeStamp, 
+                        APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n",
+                            pAppData->pInBuff[i]->nTimeStamp,
                             (unsigned int)pAppData->pInBuff[i]);
                     }
                     eError = OMX_EmptyThisBuffer(pHandle, pAppData->pInBuff[i]);
@@ -3380,7 +3380,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                 if (eError != OMX_ErrorNone) {
                                     ERR_PRINT("Error:  VideoDec->VidDec_WaitForState has timed out %X\n", eError);
                                     goto FREEHANDLES;
-                                }                 
+                                }
                                 int fdmax = maxint(pAppData->IpBuf_Pipe[0], pAppData->OpBuf_Pipe[0]);
                                 fdmax = maxint(fdmax, pAppData->Error_Pipe[0]);
                                 do
@@ -3420,8 +3420,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                         read(pAppData->Error_Pipe[0], &eError, sizeof(eError));
                                     }
                                 } while(FD_ISSET(pAppData->Error_Pipe[0], &rfds) || FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) || FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds));
-                                
-                                
+
+
                                 eError = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateExecuting, NULL);
                                 if (eError != OMX_ErrorNone) {
                                     ERR_PRINT("Error from SendCommand-Executing State function %X\n", eError);
@@ -3431,13 +3431,13 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                 if (eError != OMX_ErrorNone) {
                                     ERR_PRINT("Error:  VideoDec->VidDec_WaitForState has timed out %X\n", eError);
                                     goto FREEHANDLES;
-                                }     
-                                
+                                }
+
                                 eError = OMX_GetState(pHandle, &pAppData->eState);
                                 if (eError != OMX_ErrorNone) {
                                     ERR_PRINT("Warning:  VideoDec->GetState has returned status %X\n", eError);
                                     goto DEINIT;
-                                 }                                
+                                 }
 
                                 for (i = 0; i < pAppData->pOutPortDef->nBufferCountActual; i++) {
                                     pAppData->pOutBuff[i]->nFlags = 0;
@@ -3483,8 +3483,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                                 (unsigned int)pAppData->pInBuff[i]);
                                         }
                                         else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
-                                            APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", 
-                                                pAppData->pInBuff[i]->nTimeStamp, 
+                                            APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n",
+                                                pAppData->pInBuff[i]->nTimeStamp,
                                                 (unsigned int)(unsigned int)pAppData->pInBuff[i]);
                                         }
 
@@ -3596,7 +3596,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                     }
                  }
             }
-            
+
             if (pAppData->nDone == 1) {
                 eError = OMX_GetState(pHandle, &pAppData->eState);
                 if (eError != OMX_ErrorNone) {
@@ -3604,7 +3604,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                     goto DEINIT;
                  }
             }
-            
+
             if (bDoPauseResume && (pAppData->nCurrentFrameOut > 0)) {
                 if(((pAppData->nCurrentFrameOut % PAUSERESUMEFRAME) == 0)) {
                     if(nPassCount++ >= FRAMECOUNTMULT){
@@ -3645,7 +3645,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                         ++pAppData->nCurrentFrameOut;
                         pAppData->nRewind = 1;
                         nStreamFlag = OMX_TRUE;
-                        
+
                         eError = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StatePause, NULL);
                         if(eError != OMX_ErrorNone) {
                             ERR_PRINT ("Error from SendCommand-Pause State function %X\n", eError);
@@ -3656,14 +3656,14 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             ERR_PRINT("Error:  VideoDec->WaitForState has timed out %X\n", eError);
                             goto DEINIT;
                         }
-                        
+
                         eError = OMX_SendCommand(pHandle,OMX_CommandFlush, -1, NULL);
                         if(eError != OMX_ErrorNone) {
                             ERR_PRINT ("Error from SendCommand-Pause State function %X\n", eError);
                             goto DEINIT;
                         }
                         sem_wait( &pAppData->sWaitCommandReceived);
-                        
+
                         eError = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateExecuting, NULL);
                         if(eError != OMX_ErrorNone) {
                             ERR_PRINT ("Error from SendCommand-Executing State function %X\n", eError);
@@ -3684,7 +3684,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             FD_SET(pAppData->IpBuf_Pipe[0], &rfds);
                             FD_SET(pAppData->OpBuf_Pipe[0], &rfds);
                             FD_SET(pAppData->Error_Pipe[0], &rfds);
-            
+
                             tv.tv_sec = 0;
                             tv.tv_nsec = 100000;
 
@@ -3715,7 +3715,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             {
                                 read(pAppData->Error_Pipe[0], &eError, sizeof(eError));
                             }
-                            
+
                         } while(FD_ISSET(pAppData->Error_Pipe[0], &rfds) || FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) || FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds));
 
                         for (i = 0; i < pAppData->pOutPortDef->nBufferCountActual; i++) {
@@ -3762,8 +3762,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                         (unsigned int)pAppData->pInBuff[i]);
                                 }
                                 else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
-                                    APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", 
-                                        pAppData->pInBuff[i]->nTimeStamp, 
+                                    APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n",
+                                        pAppData->pInBuff[i]->nTimeStamp,
                                         (unsigned int)(unsigned int)pAppData->pInBuff[i]);
                                 }
 
@@ -3853,7 +3853,7 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                             {
                                 read(pAppData->Error_Pipe[0], &eError, sizeof(eError));
                             }
-                            
+
                         } while(FD_ISSET(pAppData->Error_Pipe[0], &rfds) || FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) || FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds));
 
                         for (i = 0; i < pAppData->pOutPortDef->nBufferCountActual; i++) {
@@ -3897,8 +3897,8 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
                                         (unsigned int)pAppData->pInBuff[i]);
                                 }
                                 else if(pAppData->nTestCase == TESTCASE_TYPE_PROP_TIMESTAMPS) {
-                                    APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n", 
-                                        pAppData->pInBuff[i]->nTimeStamp, 
+                                    APP_PRINT("In TimeStamp %lld for input Buffer 0x%x\n",
+                                        pAppData->pInBuff[i]->nTimeStamp,
                                         (unsigned int)(unsigned int)pAppData->pInBuff[i]);
                                 }
 

@@ -56,7 +56,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pInPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
+
     pAppData->pOutPortDef = (OMX_PARAM_PORTDEFINITIONTYPE*)malloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     if (!pAppData->pOutPortDef) {
         ERR_PRINT("%s :OMX_ErrorInsufficientResources: %d\n", __FUNCTION__, __LINE__);
@@ -72,7 +72,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pMpeg2, VAL_ZERO, sizeof(OMX_VIDEO_PARAM_MPEG2TYPE));
-    
+
     /* Create a pipe used to queue data from the callback. */
     retval = pipe(pAppData->IpBuf_Pipe);
     if (retval != OMX_FALSE) {
@@ -121,20 +121,20 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
         eError = OMX_ErrorUndefined;
         goto EXIT;
     }
-    
+
     eError = GetVidDecPortDef (pAppData->pHandle, &sVidDecPortIndex);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
     }
     /* Set the component's OMX_PARAM_PORTDEFINITIONTYPE structure (input) */
-    memset(pAppData->pInPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));    
+    memset(pAppData->pInPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     pAppData->pInPortDef->nSize                     = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pAppData->pInPortDef->nVersion.s.nVersionMajor  = VERSION_MAJOR;
     pAppData->pInPortDef->nVersion.s.nVersionMinor  = VERSION_MINOR;
     pAppData->pInPortDef->nVersion.s.nRevision      = VERSION_REVISION;
     pAppData->pInPortDef->nVersion.s.nStep          = VERSION_STEP;
     pAppData->pInPortDef->nPortIndex                = sVidDecPortIndex.nInputPortIndex;
-    
+
     eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pInPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -145,7 +145,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->bEnabled                              = PORTENABLED;
     pAppData->pInPortDef->bPopulated                            = PORTPOPULATED;
     pAppData->pInPortDef->eDomain                               = PORTDOMAIN;
-    
+
     /* OMX_VIDEO_PORTDEFINITION values for input port */
     pAppData->pInPortDef->format.video.cMIMEType                = MIMETYPEMPEG2;
     pAppData->pInPortDef->format.video.pNativeRender            = INPORTNATIVERENDER;
@@ -156,7 +156,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->format.video.eCompressionFormat       = PORTCOMPRESSIONFORMATMPEG2;
     pAppData->pInPortDef->format.video.bFlagErrorConcealment    = INPORTFLAGERRORCONCEALMENT;
     pAppData->pInPortDef->format.video.eColorFormat             = PORTCOMPRESSIONFORMATUNUSED;
-    
+
     eError = OMX_SetParameter (pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pInPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -165,16 +165,16 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if(eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
     /* Set the component's OMX_PARAM_PORTDEFINITIONTYPE structure (output) */
-    memset(pAppData->pOutPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));                  
-    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);        
+    memset(pAppData->pOutPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pAppData->pOutPortDef->nVersion.s.nVersionMajor             = VERSION_MAJOR;
     pAppData->pOutPortDef->nVersion.s.nVersionMinor             = VERSION_MINOR;
     pAppData->pOutPortDef->nVersion.s.nRevision                 = VERSION_REVISION;
     pAppData->pOutPortDef->nVersion.s.nStep                     = VERSION_STEP;
     pAppData->pOutPortDef->nPortIndex                           = sVidDecPortIndex.nOutputPortIndex;
-    
+
     eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -185,16 +185,16 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pOutPortDef->bEnabled                             = PORTENABLED;
     pAppData->pOutPortDef->bPopulated                           = PORTPOPULATED;
     pAppData->pOutPortDef->eDomain                              = PORTDOMAIN;
-    
+
     /* OMX_VIDEO_PORTDEFINITION values for output port */
     pAppData->pOutPortDef->format.video.cMIMEType               = MIMETYPEYUV;
-    pAppData->pOutPortDef->format.video.pNativeRender           = OUTPORTNATIVERENDER; 
+    pAppData->pOutPortDef->format.video.pNativeRender           = OUTPORTNATIVERENDER;
     pAppData->pOutPortDef->format.video.nFrameWidth             = pAppData->nWidth;
     pAppData->pOutPortDef->format.video.nFrameHeight            = pAppData->nHeight;
-    pAppData->pOutPortDef->format.video.nStride                 = OUTPORTSTRIDE; 
-    pAppData->pOutPortDef->format.video.nSliceHeight            = OUTPORTSLICEHEIGHT; 
-    pAppData->pOutPortDef->format.video.nBitrate                = OUTPORTBITRATE; 
-    pAppData->pOutPortDef->format.video.xFramerate              = OUTPORTFRAMERATE; 
+    pAppData->pOutPortDef->format.video.nStride                 = OUTPORTSTRIDE;
+    pAppData->pOutPortDef->format.video.nSliceHeight            = OUTPORTSLICEHEIGHT;
+    pAppData->pOutPortDef->format.video.nBitrate                = OUTPORTBITRATE;
+    pAppData->pOutPortDef->format.video.xFramerate              = OUTPORTFRAMERATE;
     pAppData->pOutPortDef->format.video.bFlagErrorConcealment   = OUTPORTFLAGERRORCONCEALMENT;
     pAppData->pOutPortDef->format.video.eCompressionFormat      = PORTCOMPRESSIONFORMATOUTPUT;
     pAppData->pOutPortDef->format.video.eColorFormat            = pAppData->eColorFormat;
@@ -207,7 +207,7 @@ OMX_ERRORTYPE MPEG2VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if(eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
 EXIT:
     return eError;
 }
@@ -220,7 +220,7 @@ void MPEG2VIDDEC_FreeResources(MYDATATYPE* pAppData)
     close(pAppData->IpBuf_Pipe[1]);
     close(pAppData->OpBuf_Pipe[0]);
     close(pAppData->OpBuf_Pipe[1]);
-    
+
     if (pAppData->pInPortDef != NULL){
         free(pAppData->pInPortDef);
         pAppData->pInPortDef = NULL;

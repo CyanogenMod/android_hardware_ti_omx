@@ -33,7 +33,7 @@
 OMX_ERRORTYPE H264VIDDEC_Fill_Data(MYDATATYPE* pAppData,OMX_BUFFERHEADERTYPE *pBuf)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    
+
     if (pAppData->H264BCType == VIDDECTEST_H264FILETYPE_NAL) {
         eError = VIDDECTEST_FillData( pAppData, pBuf, VIDDECTEST_FILLDATA_TYPE_FRAME_NAL);
     }
@@ -104,7 +104,7 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pInPortDef->format.video.nSliceHeight             = INPORTSLICEHEIGHT;
     pAppData->pInPortDef->format.video.eCompressionFormat       = PORTCOMPRESSIONFORMATH264;
     pAppData->pInPortDef->format.video.bFlagErrorConcealment    = INPORTFLAGERRORCONCEALMENT;
-    
+
     eError = OMX_SetParameter (pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pInPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -116,14 +116,14 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
 
     /* Set the component's OMX_PARAM_PORTDEFINITIONTYPE structure (output) */
     /***********************************************************************/
-    memset(pAppData->pOutPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));    
-    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);        
+    memset(pAppData->pOutPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
+    pAppData->pOutPortDef->nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
     pAppData->pOutPortDef->nVersion.s.nVersionMajor             = VERSION_MAJOR;
     pAppData->pOutPortDef->nVersion.s.nVersionMinor             = VERSION_MINOR;
     pAppData->pOutPortDef->nVersion.s.nRevision                 = VERSION_REVISION;
     pAppData->pOutPortDef->nVersion.s.nStep                     = VERSION_STEP;
     pAppData->pOutPortDef->nPortIndex                           = sVidDecPortIndex.nOutputPortIndex;
-    
+
     eError = OMX_GetParameter(pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -147,7 +147,7 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     pAppData->pOutPortDef->format.video.bFlagErrorConcealment   = OUTPORTFLAGERRORCONCEALMENT;
     pAppData->pOutPortDef->format.video.eCompressionFormat      = PORTCOMPRESSIONFORMATOUTPUT;
     pAppData->pOutPortDef->format.video.eColorFormat            = pAppData->eColorFormat;
-    
+
     eError = OMX_SetParameter (pAppData->pHandle, OMX_IndexParamPortDefinition, pAppData->pOutPortDef);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -162,9 +162,9 @@ OMX_ERRORTYPE H264VIDDEC_SetParamPortDefinition(MYDATATYPE* pAppData)
     if (eError != OMX_ErrorNone) {
         goto EXIT;
     }
-    
+
     pAppData->pH264->eLevel = pAppData->nLevelProfile;
-    
+
     eError = OMX_SetParameter (pHandle, OMX_IndexParamVideoAvc, pAppData->pH264);
     if (eError != OMX_ErrorNone) {
         goto EXIT;
@@ -186,7 +186,7 @@ OMX_ERRORTYPE H264VIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pInPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
+
     pAppData->pOutPortDef = (OMX_PARAM_PORTDEFINITIONTYPE*)malloc(sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
     if (!pAppData->pOutPortDef) {
         ERR_PRINT("%s :OMX_ErrorInsufficientResources: %d\n", __FUNCTION__, __LINE__);
@@ -194,7 +194,7 @@ OMX_ERRORTYPE H264VIDDEC_AllocateResources(MYDATATYPE* pAppData)
         goto EXIT;
     }
     memset(pAppData->pOutPortDef, VAL_ZERO, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
-    
+
     pAppData->pH264  = (OMX_VIDEO_PARAM_AVCTYPE*)malloc(sizeof(OMX_VIDEO_PARAM_AVCTYPE));
     if (!pAppData->pH264) {
         ERR_PRINT("%s :OMX_ErrorInsufficientResources: %d\n", __FUNCTION__, __LINE__);

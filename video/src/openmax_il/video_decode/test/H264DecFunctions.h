@@ -28,13 +28,13 @@
 /**
 * @file H264DecFunctions.h
 *
-* This is an header file for an video Mpeg4 decoder that is fully 
+* This is an header file for an video Mpeg4 decoder that is fully
 * compliant with the OMX Video specification.
-* This the file that the application that uses OMX would include 
+* This the file that the application that uses OMX would include
 * in its code.
 *
 * @path $(CSLPATH)\
-* 
+*
 * @rev 0.1
 */
 /* --------------------------------------------------------------------------- */
