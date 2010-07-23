@@ -5043,7 +5043,9 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV && 
              pComponentPrivate->ProcessMode == 1)) &&
             pComponentPrivate->bParserEnabled &&
-            pComponentPrivate->bFirstHeader == OMX_FALSE) {
+            (pComponentPrivate->bFirstHeader == OMX_FALSE ||
+             (pComponentPrivate->bFirstHeader == OMX_TRUE && /* Condition add it to catch VTC duplicating the config buffers */
+             pBuffHead->nFlags & OMX_BUFFERFLAG_CODECCONFIG))) {
         pComponentPrivate->bFirstHeader = OMX_TRUE;
         /* If VIDDEC_ParseHeader() does not return OMX_ErrorNone, then
         * reconfiguration is required.
