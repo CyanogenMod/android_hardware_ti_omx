@@ -1401,6 +1401,16 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             goto EXIT;
                         }
                     }
+
+                    /* Lets stagefright define the min buffer size of the input data
+                       Only if the given size is zero or for WMV where OC is used, VD set the size */
+                    if (((pPortDefParam->nBufferSize == pPortDef->nBufferSize) &&
+                        (pPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV))||
+                        (pPortDefParam->nBufferSize == 0)) {
+                            pPortDefParam->nBufferSize = pPortDefParam->format.video.nFrameWidth *
+                                                         pPortDefParam->format.video.nFrameHeight;
+                    }
+
                     memcpy(pPortDef, pPortDefParam, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
                     switch (pPortDef->format.video.eCompressionFormat) {
                         case OMX_VIDEO_CodingH263:
@@ -1433,12 +1443,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                             break;
                     }
 
-                    /* Lets stagefright define the min buffer size of the input data
-                    Only if the given size is zero, VD set the size */
-                    if(pPortDef->nBufferSize == 0){
-                        pPortDef->nBufferSize = pPortDef->format.video.nFrameWidth *
-                                                pPortDef->format.video.nFrameHeight;
-                    }
                     OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                     if ((pPortDefParam->format.video.nFrameWidth * pPortDefParam->format.video.nFrameHeight) > MAX_RESOLUTION)
                     {
