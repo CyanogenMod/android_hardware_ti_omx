@@ -56,7 +56,6 @@ extern "C" {
  ******************************************************************/
 /* ----- system and platform files ----------------------------*/ 
 #include <RcmClient.h>
-#include <HeapBuf.h>
 #include <OMX_Component.h>
 #include <OMX_Core.h>
 #include <OMX_Audio.h>
@@ -106,20 +105,20 @@ This is used to define the length of maximum string length the symbol can be*/
 
 /**NEW**/
 #define MAX_PROC 4
-#define APPM3_PROC 3
+#define APPM3_PROC 1
 #define SYSM3_PROC 2
-#define TESLA_PROC 1
-#define CHIRON_PROC 0
+#define TESLA_PROC 0
+#define CHIRON_PROC 3
 
 /*******************************************************************************
 * Enumerated Types
 *******************************************************************************/
 typedef enum COREID
 {
-        CORE_CHIRON = 0,
-        CORE_TESLA = 1,
+        CORE_TESLA = 0,
+        CORE_APPM3 = 1,
         CORE_SYSM3 = 2,
-        CORE_APPM3 = 3,
+        CORE_CHIRON = 3,
         CORE_MAX = 4
 }COREID; 
 

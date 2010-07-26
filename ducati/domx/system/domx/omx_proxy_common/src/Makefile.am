@@ -10,6 +10,7 @@ libomx_proxy_common_la_LIBADD        = \
 	$(SYSLINK_LIBS) \
 	@LTLIBOBJS@
 libomx_proxy_common_la_CFLAGS        = \
+	$(WARN_CFLAGS) \
 	-I$(top_srcdir)/system/domx \
 	-I$(top_srcdir)/system/domx/omx_rpc/inc \
 	$(MMOSAL_CFLAGS) \

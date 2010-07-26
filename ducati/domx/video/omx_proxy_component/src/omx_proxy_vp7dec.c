@@ -70,7 +70,7 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 	PROXY_COMPONENT_PRIVATE *pComponentPrivate;
 	pHandle = (OMX_COMPONENTTYPE *)hComponent;
 
-	DOMX_DEBUG("\n__INSIDE VP7 VIDEO DECODER PROXY WRAPPER__\n");
+	DOMX_DEBUG("__INSIDE VP7 VIDEO DECODER PROXY WRAPPER__\n");
 
 	pHandle->pComponentPrivate =
 	  (PROXY_COMPONENT_PRIVATE *)TIMM_OSAL_Malloc(
@@ -87,12 +87,12 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 		goto EXIT;
 	}
 	pComponentPrivate->cCompName =
-		(OMX_U8 *)TIMM_OSAL_Malloc(
-		MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8), TIMM_OSAL_TRUE, 0,
-		TIMMOSAL_MEM_SEGMENT_INT);
+			TIMM_OSAL_Malloc(
+					MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8), TIMM_OSAL_TRUE, 0,
+					TIMMOSAL_MEM_SEGMENT_INT);
 
 	if (pComponentPrivate->cCompName == NULL) {
-		DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY " \
+		DOMX_DEBUG(" ERROR IN ALLOCATING PROXY " \
 			"COMPONENT NAME");
 		eError = OMX_ErrorInsufficientResources;
 		goto EXIT;
@@ -109,7 +109,7 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 
 EXIT:
 	if (eError != OMX_ErrorNone) {
-		DOMX_DEBUG("\nError in Initializing Proxy");
+		DOMX_DEBUG("Error in Initializing Proxy");
 		if (pComponentPrivate) {
 			if (pComponentPrivate->cCompName)
 				TIMM_OSAL_Free(pComponentPrivate->cCompName);

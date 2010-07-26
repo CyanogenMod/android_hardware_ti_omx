@@ -65,24 +65,24 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 	PROXY_COMPONENT_PRIVATE *pComponentPrivate;
     pHandle = (OMX_COMPONENTTYPE *)hComponent;
 			
-	DOMX_DEBUG("\n_____________________INSISDE H264 VIDEO DECODER PROXY WRAPPER__________________________\n");
+	DOMX_DEBUG("_____________________INSISDE H264 VIDEO DECODER PROXY WRAPPER__________________________\n");
         		
 	pHandle->pComponentPrivate = (PROXY_COMPONENT_PRIVATE *)TIMM_OSAL_Malloc(sizeof(PROXY_COMPONENT_PRIVATE),TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
 	
 	pComponentPrivate = (PROXY_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     if (pHandle->pComponentPrivate == NULL) {
-        DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
+        DOMX_DEBUG(" ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
 		eError = OMX_ErrorInsufficientResources;
 		goto EXIT;
 	}
-	pComponentPrivate->cCompName = (OMX_U8 *)TIMM_OSAL_Malloc(MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8),TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
+	pComponentPrivate->cCompName = TIMM_OSAL_Malloc(MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8),TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
 	// Copying component Name - this will be picked up in the proxy common
 	assert(strlen(COMPONENT_NAME)+1 < MAX_COMPONENT_NAME_LENGTH);
     TIMM_OSAL_Memcpy(pComponentPrivate->cCompName,COMPONENT_NAME,strlen(COMPONENT_NAME)+1);
 	eError = OMX_ProxyCommonInit(hComponent);// Calling Proxy Common Init()
 	
 	if(eError != OMX_ErrorNone){
-        DOMX_DEBUG("\nError in Initializing Proxy");
+        DOMX_DEBUG("Error in Initializing Proxy");
         TIMM_OSAL_Free(pComponentPrivate->cCompName);
         TIMM_OSAL_Free(pComponentPrivate);
         }

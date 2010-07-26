@@ -17,6 +17,7 @@ common_libadd = \
 	$(SYSLINK_LIBS)
 
 common_cflags = \
+	$(WARN_CFLAGS) \
 	-I$(top_srcdir)/system/domx \
 	-I$(top_srcdir)/system/domx/omx_rpc/inc \
 	$(MMOSAL_CFLAGS) \

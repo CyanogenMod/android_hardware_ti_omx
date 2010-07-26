@@ -69,17 +69,18 @@ extern COREID TARGET_CORE_ID;
  *   MACROS - LOCAL
  ******************************************************************/
 #define RPC_getPacket(HRCM, nPacketSize, pPacket) do { \
-    pPacket = RcmClient_alloc(HRCM, nPacketSize); \
-    RPC_assert(pPacket != NULL, RPC_OMX_ErrorInsufficientResources, \
+    status = RcmClient_alloc(HRCM, nPacketSize, &pPacket); \
+    RPC_assert(status >= 0, RPC_OMX_ErrorInsufficientResources, \
            "Error Allocating RCM Message Frame"); \
     } while(0)
 
-#define RPC_sendPacket_sync(HRCM, pPacket, fxnIdx) do { \
+#define RPC_sendPacket_sync(HRCM, pPacket, fxnIdx, pRetPacket) do { \
     pPacket->fxnIdx = fxnIdx; \
-    status = RcmClient_exec(HRCM, pPacket); \
+    status = RcmClient_exec(HRCM, pPacket, &pRetPacket); \
     if(status < 0) { \
-    RcmClient_free(HRCM, pPacket); \
+    RPC_freePacket(HRCM, pRetPacket); \
     pPacket = NULL; \
+    pRetPacket = NULL; \
     RPC_assert(0, RPC_OMX_RCM_ErrorExecFail, \
            "RcmClient_exec failed"); \
     } \
@@ -89,15 +90,17 @@ extern COREID TARGET_CORE_ID;
     pPacket->fxnIdx = fxnIdx; \
     status = RcmClient_execNoReply(HRCM, pPacket); \
     if(status < 0) { \
-    RcmClient_free(HRCM, pPacket); \
+    RPC_freePacket(HRCM, pPacket); \
     pPacket = NULL; \
     RPC_assert(0, RPC_OMX_RCM_ErrorExecFail, \
            "RcmClient_exec failed"); \
     } \
     } while(0)
- 
-#define RPC_freePacket(HRCM, pPacket) \
-if(pPacket!=NULL) RcmClient_free(HRCM, pPacket);
+
+#define RPC_freePacket(HRCM, pPacket) do { \
+   if(pPacket!=NULL) RcmClient_free(HRCM, pPacket); \
+   } while(0)
+
 
 /* ===========================================================================*/
 /**
@@ -123,9 +126,9 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx, OMX_STRING cComponentNam
     OMX_U32 dataOffset = 0;
     OMX_U32 dataOffset2 = 0;
     OMX_U32 offset=0;
-    OMX_PTR * testVal;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPos = 0;
     RPC_OMX_CONTEXT *hCtx = hRPCCtx;
     RPC_OMX_HANDLE hComp = NULL;
@@ -134,11 +137,11 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx, OMX_STRING cComponentNam
     RPC_INDEX fxnIdx;
     OMX_STRING CallingCorercmServerName;        
    
-    DOMX_DEBUG("\nEntering: %s\n", __FUNCTION__);
-    DOMX_DEBUG("\nRPC_GetHandle: Recieved GetHandle request from %s\n", cComponentName);
+    DOMX_ENTER("");
+    DOMX_DEBUG("RPC_GetHandle: Recieved GetHandle request from %s", cComponentName);
 
     RPC_UTIL_GetLocalServerName(cComponentName,&CallingCorercmServerName);
-    DOMX_DEBUG("\n RCM Server Name Calling on Current Core: %s",CallingCorercmServerName);
+    DOMX_DEBUG(" RCM Server Name Calling on Current Core: %s",CallingCorercmServerName);
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_HANDLE].rpcFxnIdx;
     
@@ -163,21 +166,25 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx, OMX_STRING cComponentNam
     //To update with RPC macros
     strcpy((char *)(pMsgBody + dataOffset2),CallingCorercmServerName);
     
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
     
     if(*eCompReturn == OMX_ErrorNone) {
         offset = dataOffset2 + 32; //max size of rcm server name
         RPC_GETFIELDVALUE(pMsgBody, offset, hComp, RPC_OMX_HANDLE);
-        DOMX_DEBUG("%s: Received Remote Handle 0x%x\n",__FUNCTION__, hComp);
+        DOMX_DEBUG("Received Remote Handle 0x%x", hComp);
         hCtx->remoteHandle = hComp;
     }
             
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -202,13 +209,14 @@ RPC_OMX_ERRORTYPE RPC_FreeHandle(RPC_OMX_HANDLE hRPCCtx, OMX_ERRORTYPE * eCompRe
    RPC_OMX_BYTE * pMsgBody;
    OMX_U32 nPacketSize = PACKET_SIZE;
    RcmClient_Message * pPacket=NULL;
+   RcmClient_Message *pRetPacket = NULL;
    OMX_S16 status;
    RPC_INDEX fxnIdx;
    OMX_U32 nPos = 0;
    RPC_OMX_CONTEXT *hCtx = hRPCCtx;
    RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
    
-   DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+   DOMX_ENTER("");
    
    fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FREE_HANDLE].rpcFxnIdx;
    
@@ -220,14 +228,17 @@ RPC_OMX_ERRORTYPE RPC_FreeHandle(RPC_OMX_HANDLE hRPCCtx, OMX_ERRORTYPE * eCompRe
    //Marshalled:[>hComp]
    RPC_SETFIELDVALUE(pMsgBody, nPos, hComp, RPC_OMX_HANDLE);
    
-   RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
-    
+   RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                       pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
+
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
     
 }
@@ -253,6 +264,7 @@ RPC_OMX_ERRORTYPE RPC_SetParameter(RPC_OMX_HANDLE hRPCCtx, OMX_INDEXTYPE nParamI
 
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -282,14 +294,17 @@ RPC_OMX_ERRORTYPE RPC_SetParameter(RPC_OMX_HANDLE hRPCCtx, OMX_INDEXTYPE nParamI
     structSize = RPC_UTIL_GETSTRUCTSIZE(pCompParam);
     RPC_SETFIELDCOPYGEN(pMsgBody, offset,  pCompParam, structSize);
         
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
-        
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
+
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
         
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -312,6 +327,7 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nParamIn
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -324,7 +340,7 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nParamIn
     OMX_U32 structSize=0;
     OMX_U32 offset=0;
 
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_PARAMETER].rpcFxnIdx;
     
@@ -343,7 +359,10 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nParamIn
     structSize = RPC_UTIL_GETSTRUCTSIZE(pCompParam);
     RPC_SETFIELDCOPYGEN(pMsgBody, offset,  pCompParam, structSize);
 
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
     
@@ -351,10 +370,10 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nParamIn
     RPC_GETFIELDCOPYGEN(pMsgBody, offset, pCompParam, structSize);
     }
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);    
+    DOMX_EXIT("");
     return eRPCError;    
 }
 
@@ -378,6 +397,7 @@ RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
 
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -390,7 +410,7 @@ RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
     OMX_U32 structSize=0;
     OMX_U32 offset=0;
                
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_SET_CONFIG].rpcFxnIdx;
     
@@ -410,14 +430,17 @@ RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
     structSize = RPC_UTIL_GETSTRUCTSIZE(pCompConfig);
     RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCompConfig, structSize);
         
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
        
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -436,6 +459,7 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -448,7 +472,7 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
     OMX_U32 structSize=0;
     OMX_U32 offset=0;
     
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_CONFIG].rpcFxnIdx;
     
@@ -468,7 +492,10 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
     structSize = RPC_UTIL_GETSTRUCTSIZE(pCompConfig);
     RPC_SETFIELDCOPYGEN(pMsgBody, offset,  pCompConfig, structSize);
 
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
 
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
@@ -476,10 +503,10 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,OMX_INDEXTYPE nConfigInde
         RPC_GETFIELDCOPYGEN(pMsgBody, offset, pCompConfig, structSize);
     }
  
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;    
 }
 
@@ -500,6 +527,7 @@ RPC_OMX_ERRORTYPE RPC_SendCommand(RPC_OMX_HANDLE hRPCCtx,OMX_COMMANDTYPE eCmd,OM
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -512,7 +540,7 @@ RPC_OMX_ERRORTYPE RPC_SendCommand(RPC_OMX_HANDLE hRPCCtx,OMX_COMMANDTYPE eCmd,OM
     OMX_U32 structSize=0;
     OMX_U32 offset=0;
     
-    DOMX_DEBUG("\nEntering: %s", __FUNCTION__);
+    DOMX_ENTER("");
 
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_SEND_CMD].rpcFxnIdx;
 
@@ -545,14 +573,17 @@ RPC_OMX_ERRORTYPE RPC_SendCommand(RPC_OMX_HANDLE hRPCCtx,OMX_COMMANDTYPE eCmd,OM
         RPC_SETFIELDCOPYGEN(pMsgBody, offset,  pCmdData, structSize);    
     }
 
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
 
     *eCompReturn =pRPCMsg->msgHeader.nOMXReturn;
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-   DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+   DOMX_EXIT("");
    return eRPCError;
 }
 
@@ -572,6 +603,7 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_INOUT OMX_BUFFE
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -585,7 +617,7 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_INOUT OMX_BUFFE
     OMX_TI_PLATFORMPRIVATE *pPlatformPrivate = NULL;
     OMX_BUFFERHEADERTYPE* pBufferHdr = *ppBufferHdr;
 
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
   
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_ALLOCATE_BUFFER].rpcFxnIdx;
     
@@ -602,7 +634,10 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_INOUT OMX_BUFFE
     RPC_SETFIELDVALUE(pMsgBody, nPos, pAppPrivate, OMX_PTR);
     RPC_SETFIELDVALUE(pMsgBody, nPos, nSizeBytes, OMX_U32);
     
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
@@ -644,23 +679,23 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_INOUT OMX_BUFFE
         (*ppBufferHdr)->pPlatformPrivate = pPlatformPrivate;
         
         #ifdef TILER_BUFF
-        DOMX_DEBUG("\n Copying plat pvt. \n");
+        DOMX_DEBUG(" Copying plat pvt. ");
         RPC_GETFIELDOFFSET(pMsgBody, nPos, offset, OMX_U32);
         if(offset !=0) {
         RPC_GETFIELDCOPYTYPE(pMsgBody, offset, (OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate), OMX_TI_PLATFORMPRIVATE);
-           DOMX_DEBUG("\nDone copying plat pvt., aux buf = 0x%x\n", ((OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1);	
+           DOMX_DEBUG("Done copying plat pvt., aux buf = 0x%x", ((OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1);
         }
         #endif
         
         *pBufferMapped = (OMX_U32) (*ppBufferHdr )->pBuffer;
 }
 else {
-    DOMX_DEBUG("%s: OMX Error received: 0x%x",__FUNCTION__,pRPCMsg->msgHeader.nOMXReturn);
+    DOMX_DEBUG("OMX Error received: 0x%x",pRPCMsg->msgHeader.nOMXReturn);
 }
 
 EXIT:        
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    DOMX_EXIT("");
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
     return eRPCError;
 }
 
@@ -685,6 +720,7 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
 
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -700,7 +736,7 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
     OMX_TI_PLATFORMPRIVATE *pPlatformPrivate = NULL;
     OMX_BUFFERHEADERTYPE* pBufferHdr = *ppBufferHdr;
     
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_USE_BUFFER].rpcFxnIdx;
 
@@ -711,12 +747,12 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
     mappedAddress = (OMX_U32) (*ppBufferHdr)->pBuffer;
     
     #ifdef TILER_BUFF
-    DOMX_DEBUG("\n Getting aux buf\n");
+    DOMX_DEBUG(" Getting aux buf");
     mappedAddress2 = (OMX_U32) ((OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1;
     #endif
     
-    DOMX_DEBUG("\n DEBUG - MAPPING - pBuffer = %x",pBuffer);
-    DOMX_DEBUG("\n DEBUG - MAPPING - mappedAddress = %x",mappedAddress);
+    DOMX_DEBUG(" DEBUG - MAPPING - pBuffer = %x",pBuffer);
+    DOMX_DEBUG(" DEBUG - MAPPING - mappedAddress = %x",mappedAddress);
         
     //Marshalled:[>hComp|>nPortIndex|>pAppPrivate|>nSizeBytes|
     //>mappedAddress|!>mappedAddress2|<pBufHeaderRemote|
@@ -733,7 +769,10 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
     RPC_SETFIELDVALUE(pMsgBody, nPos, mappedAddress2, OMX_U32);
     #endif
    
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
 
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
@@ -742,14 +781,14 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
         
         RPC_GETFIELDVALUE(pMsgBody, nPos, *pBufHeaderRemote, OMX_U32);
         
-        DOMX_DEBUG("\n Getting offset for buffer header:\n");
+        DOMX_DEBUG(" Getting offset for buffer header:");
         RPC_GETFIELDOFFSET(pMsgBody, nPos, offset, OMX_U32); 
-        DOMX_DEBUG("\n Copying buffer header at offset:%d\n", offset);
+        DOMX_DEBUG(" Copying buffer header at offset:%d", offset);
         
         //save platform private before overwriting          
         pPlatformPrivate = (*ppBufferHdr)->pPlatformPrivate;
         
-        DOMX_DEBUG("\n Copying buffer header at offset:%d\n", offset);
+        DOMX_DEBUG(" Copying buffer header at offset:%d", offset);
         //RPC_GETFIELDCOPYTYPE(pMsgBody, offset, pBufferHdr, OMX_BUFFERHEADERTYPE);
         /*Copying each field of the header separately due to padding issues in
         the buffer header structure*/
@@ -782,24 +821,24 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_INOUT OMX_BUFFERHEADE
         *pBufferMapped = mappedAddress;
         
         #ifdef TILER_BUFF
-        DOMX_DEBUG("\n Copying plat pvt. \n");
+        DOMX_DEBUG(" Copying plat pvt. ");
         
         RPC_GETFIELDOFFSET(pMsgBody, nPos, offset, OMX_U32);
         if(offset !=0) {
         RPC_GETFIELDCOPYTYPE(pMsgBody, offset, (OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate), OMX_TI_PLATFORMPRIVATE);
-        DOMX_DEBUG("\nDone copying plat pvt., aux buf = 0x%x\n", ((OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1);	
+        DOMX_DEBUG("Done copying plat pvt., aux buf = 0x%x", ((OMX_TI_PLATFORMPRIVATE *)((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1);
         }
         #endif
     }
     else {
-        DOMX_DEBUG("\n %s: OMX Error received: 0x%x",__FUNCTION__,pRPCMsg->msgHeader.nOMXReturn);
+        DOMX_DEBUG("OMX Error received: 0x%x",pRPCMsg->msgHeader.nOMXReturn);
         *pBufferMapped = 0;
     }
 
-        RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);	
+        RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:   
-        DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+        DOMX_EXIT("");
         return eRPCError;    
 }
 
@@ -818,6 +857,7 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_IN  OMX_U32 nPortInd
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -827,7 +867,7 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_IN  OMX_U32 nPortInd
     RPC_OMX_CONTEXT *hCtx = hRPCCtx;
     RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
 
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FREE_BUFFER].rpcFxnIdx;
     RPC_getPacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], nPacketSize, pPacket);
@@ -841,14 +881,17 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,OMX_IN  OMX_U32 nPortInd
     
     RPC_SETFIELDVALUE(pMsgBody, nPos, BufHdrRemote, OMX_U32);
     
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
 
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -880,7 +923,7 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_BUFFERHEADERTY
     
     OMX_U8* pAuxBuf1=NULL;
     
-    DOMX_DEBUG("\n Entering: %s __________ BUFFER READ-WRITE ", __FUNCTION__);
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_EMPTYTHISBUFFER].rpcFxnIdx;
         
@@ -909,14 +952,14 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_BUFFERHEADERTY
                       OMX_HANDLETYPE);
     RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->pMarkData, OMX_PTR);
     
-    DOMX_DEBUG("\n pBufferHdr = %x BufHdrRemote %x",pBufferHdr,BufHdrRemote);
+    DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x",pBufferHdr,BufHdrRemote);
     
     RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
     
     *eCompReturn = OMX_ErrorNone;//pRPCMsg->msgHeader.nOMXReturn;
         
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -946,8 +989,8 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_BUFFERHEADERTYP
     RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
     
     OMX_U8* pAuxBuf1 = NULL;
-        
-    DOMX_DEBUG("\n Entering: %s __________ BUFFER READ-WRITE ", __FUNCTION__);
+
+    DOMX_ENTER("");
     
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FILLTHISBUFFER].rpcFxnIdx;
     
@@ -972,14 +1015,14 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx, OMX_BUFFERHEADERTYP
     RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nOffset, OMX_U32);
     RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nFlags, OMX_U32);
           
-    DOMX_DEBUG("\n pBufferHdr = %x BufHdrRemote %x",pBufferHdr,BufHdrRemote);
+    DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x",pBufferHdr,BufHdrRemote);
     
     RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
     
     *eCompReturn = OMX_ErrorNone;//pRPCMsg->msgHeader.nOMXReturn;
 
 EXIT:
-    DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+    DOMX_EXIT("");
     return eRPCError;
 }
 
@@ -998,6 +1041,7 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx,OMX_STATETYPE* pState, OMX
 {
     RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RPC_OMX_MESSAGE* pRPCMsg=NULL;
     RPC_OMX_BYTE * pMsgBody;
@@ -1009,7 +1053,7 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx,OMX_STATETYPE* pState, OMX
     
     OMX_U32 offset=0;
         
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
     
     *pState = OMX_StateInvalid;
   
@@ -1022,7 +1066,10 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx,OMX_STATETYPE* pState, OMX
     //Marshalled:[>hComp|>offset(pState)|<--pState--]
     RPC_SETFIELDVALUE(pMsgBody, nPos, hComp, RPC_OMX_HANDLE);
     
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn =pRPCMsg->msgHeader.nOMXReturn;
         
@@ -1031,10 +1078,10 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx,OMX_STATETYPE* pState, OMX
        RPC_GETFIELDCOPYTYPE(pMsgBody, offset, pState, OMX_STATETYPE);
     }
 
-    RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+    RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
     
 EXIT:  
-  DOMX_DEBUG("Exited: %s\n",__FUNCTION__);
+  DOMX_EXIT("");
   return eRPCError;
 }
 
@@ -1060,13 +1107,14 @@ RPC_OMX_ERRORTYPE RPC_GetComponentVersion(RPC_OMX_HANDLE hRPCCtx, OMX_STRING pCo
     VERSION_INFO *pVer;
     OMX_U32 nPacketSize = PACKET_SIZE;
     RcmClient_Message * pPacket=NULL;
+    RcmClient_Message *pRetPacket = NULL;
     OMX_S16 status;
     RPC_INDEX fxnIdx;
     OMX_U32 nPos = 0;
     RPC_OMX_CONTEXT *hCtx = hRPCCtx;
     RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
         
-    DOMX_DEBUG("Entering: %s\n", __FUNCTION__);
+    DOMX_ENTER("");
   
     fxnIdx = rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_VERSION].rpcFxnIdx;
     
@@ -1094,7 +1142,10 @@ pRPCMsg = (RPC_OMX_MESSAGE*)(&pPacket->data);
     offset = GET_PARAM_DATA_OFFSET; // strange - why this offset vs just 4 bytes?
     RPC_SETFIELDOFFSET(pMsgBody, nPos,  offset, OMX_U32);
     
-    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+    RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
     
     *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
 
@@ -1105,7 +1156,7 @@ pRPCMsg = (RPC_OMX_MESSAGE*)(&pPacket->data);
     TIMM_OSAL_Memcpy(pSpecVersion, &(pVer->sSpecVersion.s), sizeof(pVer->sSpecVersion.s));
     }
         
-  RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+  RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
   
  EXIT:
   return eRPCError;
@@ -1131,13 +1182,13 @@ RPC_OMX_ERRORTYPE RPC_GetExtensionIndex(RPC_OMX_HANDLE hRPCCtx,OMX_STRING cParam
   RPC_OMX_MESSAGE* pRPCMsg=NULL;
   RPC_OMX_BYTE * pMsgBody=NULL;
   OMX_U32  offset = 0;  
-  OMX_U32 i_offset;
   OMX_U32 nPos = 0;
   RPC_OMX_CONTEXT *hCtx = hRPCCtx;
   RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
   
   OMX_U32 nPacketSize = PACKET_SIZE;
   RcmClient_Message * pPacket=NULL;
+  RcmClient_Message *pRetPacket = NULL;
   
   OMX_S16 status;
   RPC_INDEX fxnIdx;
@@ -1159,10 +1210,13 @@ RPC_OMX_ERRORTYPE RPC_GetExtensionIndex(RPC_OMX_HANDLE hRPCCtx,OMX_STRING cParam
     
   //can assert this value at proxy
   if(strlen(cParameterName) <= 128) {
-    strcpy((pMsgBody+offset), cParameterName);
+    strcpy((OMX_STRING)(pMsgBody+offset), cParameterName);
   }
     
-  RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx);
+  RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket, fxnIdx,
+                        pRetPacket);
+    pRPCMsg = (RPC_OMX_MESSAGE*)(&pRetPacket->data);
+    pMsgBody = &pRPCMsg->msgBody[0];
   
   *eCompReturn = pRPCMsg->msgHeader.nOMXReturn;           
 
@@ -1170,7 +1224,7 @@ RPC_OMX_ERRORTYPE RPC_GetExtensionIndex(RPC_OMX_HANDLE hRPCCtx,OMX_STRING cParam
       RPC_GETFIELDCOPYTYPE(pMsgBody, offset, pIndexType, OMX_INDEXTYPE);
   }
     
-  RcmClient_free(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
+  RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
     
  EXIT:
   return eRPCError;
