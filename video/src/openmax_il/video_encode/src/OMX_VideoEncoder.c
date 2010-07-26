@@ -3432,12 +3432,13 @@ OMX_ERRORTYPE UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pCompPort->nBufferCnt++;
     if(pCompPort->nBufferCnt == pPortDef->nBufferCountActual)
     {
-        pPortDef->bPopulated = OMX_TRUE;
 #ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
+        pPortDef->bPopulated = OMX_TRUE;
         pthread_cond_signal(&pComponentPrivate->populate_cond);
         pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
+        pPortDef->bPopulated = OMX_TRUE;
         OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
 #endif
     }
@@ -3566,13 +3567,14 @@ OMX_ERRORTYPE FreeBuffer(OMX_IN  OMX_HANDLETYPE hComponent,
     if(pComponentPrivate->bInInvalidState == OMX_FALSE) {
     if (pCompPort->nBufferCnt == 0)
     {
-        pPortDef->bPopulated = OMX_FALSE;
 
 #ifndef UNDER_CE
        pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
+       pPortDef->bPopulated = OMX_FALSE;
        pthread_cond_signal(&pComponentPrivate->unpopulate_cond);
        pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
+       pPortDef->bPopulated = OMX_FALSE;
            OMX_SignalEvent(&(pComponentPrivate->InIdle_event));
 #endif
     }
@@ -3748,12 +3750,13 @@ OMX_ERRORTYPE AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     pCompPort->nBufferCnt++;
     if(pCompPort->nBufferCnt == pPortDef->nBufferCountActual)
     {
-        pPortDef->bPopulated = OMX_TRUE;
 #ifndef UNDER_CE
         pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
+        pPortDef->bPopulated = OMX_TRUE;
         pthread_cond_signal(&pComponentPrivate->populate_cond);
         pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 #else
+        pPortDef->bPopulated = OMX_TRUE;
         OMX_SignalEvent(&(pComponentPrivate->InLoaded_event));
 #endif
     }

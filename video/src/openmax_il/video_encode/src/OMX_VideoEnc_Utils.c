@@ -2111,8 +2111,6 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
             PERF_Boundary(pComponentPrivate->pPERFcomp,
                           PERF_BoundaryStart | PERF_BoundaryCleanup);
     #endif
-        if ( pPortDefIn->bEnabled == OMX_TRUE || pPortDefOut->bEnabled == OMX_TRUE )
-        {
             pthread_mutex_lock(&pComponentPrivate->videoe_mutex_app);
             while ( (pPortDefIn->bPopulated) || (pPortDefOut->bPopulated))
             {
@@ -2121,9 +2119,8 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
     #else
                     OMX_WaitForEvent(&(pComponentPrivate->InIdle_event));
     #endif
-                }
-                pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
             }
+            pthread_mutex_unlock(&pComponentPrivate->videoe_mutex_app);
 
     #ifdef RESOURCE_MANAGER_ENABLED /* Resource Manager Proxy Calls */
             if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC)
