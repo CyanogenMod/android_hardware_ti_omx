@@ -672,8 +672,14 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     }
 		
                     if (!(inputPortFlag && outputPortFlag)) {
-                        omx_mutex_wait(&pComponentPrivate->InLoaded_mutex,&pComponentPrivate->InLoaded_threshold,
-                                       &pComponentPrivate->InLoaded_readytoidle);
+                        pComponentPrivate->InLoaded_readytoidle = 1;
+
+	
+
+
+                        pthread_mutex_lock(&pComponentPrivate->InLoaded_mutex);
+                        pthread_cond_wait(&pComponentPrivate->InLoaded_threshold, &pComponentPrivate->InLoaded_mutex);
+                        pthread_mutex_unlock(&pComponentPrivate->InLoaded_mutex);
                     }
 	
                     pLcmlHandle = (OMX_HANDLETYPE) AACDEC_GetLCMLHandle(pComponentPrivate);
@@ -799,13 +805,16 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: In HandleCommand: Stopping the codec\n",__LINE__);
                     pComponentPrivate->bDspStoppedWhileExecuting = OMX_TRUE;
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
-
+			if (pComponentPrivate->codecStop_waitingsignal == 0){
+                        pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
+                    }
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)pArgs);
-
-                    omx_mutex_wait(&pComponentPrivate->codecStop_mutex, &pComponentPrivate->codecStop_threshold,
-                                   &pComponentPrivate->codecStop_waitingsignal);
-
+			 if (pComponentPrivate->codecStop_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                        pComponentPrivate->codecStop_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                    }
                     if(eError != OMX_ErrorNone) {
                         OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in Codec Stop..\n");
                         pComponentPrivate->curState = OMX_StateInvalid;
@@ -843,13 +852,16 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d :: Comp: Stop Command Received\n",__LINE__);
                     OMX_PRDSP2(pComponentPrivate->dbg, "%d: AACDECUTILS::About to call LCML_ControlCodec\n",__LINE__);
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
-
+			if (pComponentPrivate->codecStop_waitingsignal == 0){
+                        pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
+                    }
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)pArgs);
-
-                    omx_mutex_wait(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
-                                   &pComponentPrivate->codecStop_waitingsignal);
-
+			 if (pComponentPrivate->codecStop_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
+                        pComponentPrivate->codecStop_waitingsignal = 0; // reset the wait condition for next time
+                        pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                    }
                     if(eError != OMX_ErrorNone) {
                         OMX_ERROR4(pComponentPrivate->dbg, ": Error Occurred in Codec Stop..\n");
                         pComponentPrivate->curState = OMX_StateInvalid;
@@ -1181,10 +1193,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                               pComponentPrivate->pOutputBufferList->numBuffers);
 
                 if (pComponentPrivate->pInputBufferList->numBuffers || pComponentPrivate->pOutputBufferList->numBuffers) {
-
-                    omx_mutex_wait(&pComponentPrivate->InIdle_mutex, &pComponentPrivate->InIdle_threshold,
-                                   &pComponentPrivate->InIdle_goingtoloaded);
-
+                    pComponentPrivate->InIdle_goingtoloaded = 1;
+                    pthread_mutex_lock(&pComponentPrivate->InIdle_mutex);
+                    pthread_cond_wait(&pComponentPrivate->InIdle_threshold, &pComponentPrivate->InIdle_mutex);
+                    pthread_mutex_unlock(&pComponentPrivate->InIdle_mutex);
                     pComponentPrivate->bLoadedCommandPending = OMX_FALSE;
                 }
 
@@ -1452,12 +1464,18 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                 pComponentPrivate->bEnableCommandPending = 0;
                 pComponentPrivate->reconfigInputPort = 0;
                 
+                if(pComponentPrivate->AlloBuf_waitingsignal){
+                    pComponentPrivate->AlloBuf_waitingsignal = 0;
+                    pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
+                    pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                    pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+                }
 
-                omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
-                                 &pComponentPrivate->AlloBuf_waitingsignal);
 		/* Needed for port reconfiguration */   
                 AACDEC_CleanupInitParamsEx(pHandle,commandData);
                 AACDECFill_LCMLInitParamsEx(pHandle,commandData);
+////
+#if 1
 
                 for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
                         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d pComponentPrivate->pInputBufHdrPending[%lu] = %d\n",__LINE__,i,
@@ -1490,6 +1508,8 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         }
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
+////
+#endif
             }
             else {
                 pComponentPrivate->bEnableCommandPending = 1;
@@ -1506,10 +1526,12 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                     OMX_CommandPortEnable,
                                                                     OUTPUT_PORT_AACDEC,
                                                                     NULL);
-
-                            omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex,&pComponentPrivate->AlloBuf_threshold,
-                                             &pComponentPrivate->AlloBuf_waitingsignal);
-
+               if(pComponentPrivate->AlloBuf_waitingsignal){
+                    pComponentPrivate->AlloBuf_waitingsignal = 0;
+                    pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
+                    pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                    pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+                }
 		    /* Needed for port reconfiguration */   
                AACDEC_CleanupInitParamsEx(pHandle,commandData);
                AACDECFill_LCMLInitParamsEx(pHandle,commandData);
@@ -1571,9 +1593,12 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                             OUTPUT_PORT_AACDEC,
                                                             NULL);
 
-                     omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex, &pComponentPrivate->AlloBuf_threshold,
-                                      &pComponentPrivate->AlloBuf_waitingsignal);
-
+                     if(pComponentPrivate->AlloBuf_waitingsignal){
+                         pComponentPrivate->AlloBuf_waitingsignal = 0;
+                         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
+                         pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+                         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
+                     }
                      pComponentPrivate->reconfigOutputPort = 0;
                      pComponentPrivate->bEnableCommandPending = 0;
                      AACDEC_CleanupInitParamsEx(pHandle,commandData);
@@ -1649,8 +1674,10 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                  }
              }
 
-        omx_mutex_signal(&pComponentPrivate->AlloBuf_mutex, &pComponentPrivate->AlloBuf_threshold,
-                         &pComponentPrivate->AlloBuf_waitingsignal);
+
+             pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
+             pthread_cond_signal(&pComponentPrivate->AlloBuf_threshold);
+             pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
 
     }
     else if (command == OMX_CommandFlush) {
@@ -1668,12 +1695,16 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     aParam[2] = 0x0;
 
                     OMX_PRCOMM2(pComponentPrivate->dbg, "Flushing input port DSP\n");
-
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                            pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    }
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                  EMMCodecControlStrmCtrl, (void*)aParam);
-
-                    omx_mutex_wait(&pComponentPrivate->codecFlush_mutex,&pComponentPrivate->codecFlush_threshold,
-                                   &pComponentPrivate->codecFlush_waitingsignal);
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecFlush_threshold, &pComponentPrivate->codecFlush_mutex);
+                        pComponentPrivate->codecFlush_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    }
                     if (eError != OMX_ErrorNone) {
                         goto EXIT;
                     }
@@ -1722,13 +1753,16 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     aParam[2] = 0x0;
 
                     OMX_PRCOMM2(pComponentPrivate->dbg,"Flushing output port dsp\n");
-
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                            pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    }
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlStrmCtrl, (void*)aParam);
-
-                    omx_mutex_wait(&pComponentPrivate->codecFlush_mutex,&pComponentPrivate->codecFlush_threshold,
-                                   &pComponentPrivate->codecFlush_waitingsignal);
-
+                    if (pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pthread_cond_wait(&pComponentPrivate->codecFlush_threshold, &pComponentPrivate->codecFlush_mutex);
+                        pComponentPrivate->codecFlush_waitingsignal = 0;
+                        pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    }
                     if (eError != OMX_ErrorNone) {
                         goto EXIT;
                     }
@@ -2677,10 +2711,13 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                 AACDEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
 	}
         pComponentPrivate->nNumOutputBufPending=0;
-
-        omx_mutex_signal(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
-                         &pComponentPrivate->codecStop_waitingsignal);
-
+	pthread_mutex_lock(&pComponentPrivate->codecStop_mutex);
+        if(pComponentPrivate->codecStop_waitingsignal == 0){
+            pComponentPrivate->codecStop_waitingsignal = 1;
+            pthread_cond_signal(&pComponentPrivate->codecStop_threshold);
+             OMX_PRDSP2(pComponentPrivate->dbg,"stop ack. received. stop waiting for sending disable command completed\n");
+        }
+	  pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
             OMX_PRDSP2(pComponentPrivate->dbg, "setting state to idle after EMMCodecProcessingStoped event\n\n");
             pComponentPrivate->curState = OMX_StateIdle;
 
@@ -2688,7 +2725,25 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             rm_error = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_StateSet, OMX_AAC_Decoder_COMPONENT, OMX_StateIdle, 3456, NULL);
 #endif
 
-            AACDEC_waitForAllBuffersToReturn(pComponentPrivate);
+            if((pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount) ||
+               (pComponentPrivate->nFillThisBufferCount != pComponentPrivate->nFillBufferDoneCount)) {
+                if(pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex) != 0)
+                {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: bufferReturned_mutex mutex lock error\n",__LINE__);
+                }
+                OMX_PRINT2(pComponentPrivate->dbg, ":: pthread_cond_waiting for OMX to return all input and outbut buffers\n");
+                pthread_cond_wait(&pComponentPrivate->bufferReturned_condition, &pComponentPrivate->bufferReturned_mutex);
+                OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
+                if(pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex) != 0)
+                {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: bufferReturned_mutex mutex unlock error\n",__LINE__);
+                }
+            }
+            else
+            {
+                OMX_PRINT1(pComponentPrivate->dbg, "OMX has returned all input and output buffers");
+            }
+
             if (pComponentPrivate->bPreempted == 0) {
                 pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -2778,9 +2833,14 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 					}
                     pComponentPrivate->nNumInputBufPending=0;
                     
-                    omx_mutex_signal(&pComponentPrivate->codecFlush_mutex, &pComponentPrivate->codecFlush_threshold,
-                                     &pComponentPrivate->codecFlush_waitingsignal);
-
+                    pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    if(pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pComponentPrivate->codecFlush_waitingsignal = 1; 
+                        pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
+                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for input port\n");
+                    }     
+                    pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
+                    
                     pComponentPrivate->cbInfo.EventHandler(pHandle, 
                                                            pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete,
@@ -2819,9 +2879,13 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                     }
                     pComponentPrivate->nNumOutputBufPending=0;
 
-                    omx_mutex_signal(&pComponentPrivate->codecFlush_mutex,&pComponentPrivate->codecFlush_threshold,
-                                     &pComponentPrivate->codecFlush_waitingsignal);
-
+                    pthread_mutex_lock(&pComponentPrivate->codecFlush_mutex);
+                    if(pComponentPrivate->codecFlush_waitingsignal == 0){
+                        pComponentPrivate->codecFlush_waitingsignal = 1; 
+                        pthread_cond_signal(&pComponentPrivate->codecFlush_threshold);
+                        OMX_PRCOMM2(pComponentPrivate->dbg, "flush ack. received. for output port\n");
+                    }     
+                    pthread_mutex_unlock(&pComponentPrivate->codecFlush_mutex);
                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                            pComponentPrivate->pHandle->pApplicationPrivate,
                                                            OMX_EventCmdComplete,
@@ -3623,24 +3687,6 @@ void AACDEC_SignalIfAllBuffersAreReturned(AACDEC_COMPONENT_PRIVATE *pComponentPr
     {
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: bufferReturned_mutex mutex unlock error\n",__LINE__);
     }
-}
-/**
-* @AACDEC_waitForAllBuffersToReturn This function waits for all buffers to return
-*
-* @param MP3DEC_COMPONENT_PRIVATE *pComponentPrivate
-*
-* @return None
-*/
-void AACDEC_waitForAllBuffersToReturn(
-        AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
-{
-    pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex);
-    while (pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount ||
-           pComponentPrivate->nFillThisBufferCount  != pComponentPrivate->nFillBufferDoneCount) {
-        pthread_cond_wait(&pComponentPrivate->bufferReturned_condition, &pComponentPrivate->bufferReturned_mutex);
-    }
-    pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
-    OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
 }
 
 void AACDEC_HandleUSNError (AACDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
