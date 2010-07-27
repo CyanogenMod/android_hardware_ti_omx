@@ -911,6 +911,8 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
         eError = OMX_ErrorBadParameter;
     }
 
+NBAMRENC_OMX_CONF_CHECK_CMD(pSpecVersion, pComponentUUID, 1);
+
 EXIT:
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Exiting GetComponentVersion\n", __LINE__);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Returning = 0x%x\n",__LINE__,eError);
@@ -937,6 +939,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
                                   OMX_PTR pCmdData)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    OMX_S32 nParamTemp = (OMX_S32)nParam;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE *)phandle;
     AMRENC_COMPONENT_PRIVATE *pCompPrivate =
              (AMRENC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -999,7 +1002,7 @@ static OMX_ERRORTYPE SendCommand (OMX_HANDLETYPE phandle,
             break;
         case OMX_CommandFlush:
             OMX_PRINT1(pCompPrivate->dbg, "%d :: OMX_CommandFlush SendCommand\n",__LINE__);
-            if(nParam > 1 && nParam != -1) {
+            if((abs(nParamTemp)) > 1 ) {
                 eError = OMX_ErrorBadPortIndex;
                 OMX_ERROR4(pCompPrivate->dbg, "%d :: OMX_ErrorBadPortIndex from SendCommand",__LINE__);
                 goto EXIT;
@@ -1637,7 +1640,11 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
 /**-------------------**/
         case  OMX_IndexCustomNBAMRENCDataPath:
             customFlag = (OMX_S16*)ComponentConfigStructure;
-/*            dataPath = *customFlag;             */
+            if (customFlag == NULL) {
+                eError = OMX_ErrorBadParameter;
+                return eError;
+            }
+            dataPath = *customFlag;
             switch(dataPath) {
                 case DATAPATH_APPLICATION:
                     OMX_MMMIXER_DATAPATH(pComponentPrivate->sDeviceString, RENDERTYPE_ENCODER, pComponentPrivate->streamID);
@@ -2026,6 +2033,8 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
                                              OMX_TUNNELSETUPTYPE* pTunnelSetup)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    NBAMRENC_OMX_CONF_CHECK_CMD(hComp, nPort, hTunneledComp);
+    NBAMRENC_OMX_CONF_CHECK_CMD(nTunneledPort, pTunnelSetup, 1);
     eError = OMX_ErrorNotImplemented;
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: Entering ComponentTunnelRequest\n", __LINE__);
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "%d :: Exiting ComponentTunnelRequest\n", __LINE__);
@@ -2071,15 +2080,12 @@ static OMX_ERRORTYPE AllocateBuffer (OMX_IN OMX_HANDLETYPE hComponent,
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering AllocateBuffer\n", __LINE__);
     OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: pPortDef = %p\n", __LINE__,pPortDef);
     OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: pPortDef->bEnabled = %d\n", __LINE__,pPortDef->bEnabled);
-    while (1) {
-        if(pPortDef->bEnabled) {
-            break;
-        }
+    NBAMRENC_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
+    if(!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;
         pthread_mutex_lock(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
-        break;
     }
 
     OMX_MALLOC_GENERIC(pBufferHeader, OMX_BUFFERHEADERTYPE);
@@ -2454,6 +2460,7 @@ static OMX_ERRORTYPE GetExtensionIndex(
             OMX_OUT OMX_INDEXTYPE* pIndexType)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    NBAMRENC_OMX_CONF_CHECK_CMD(hComponent, 1, 1);
 
     OMXDBG_PRINT(stderr, PRINT, 1, 0, "GetExtensionIndex\n");
     
