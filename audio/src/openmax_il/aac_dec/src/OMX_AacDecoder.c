@@ -681,7 +681,6 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
                                    OMX_INDEXTYPE nParamIndex,
                                    OMX_PTR ComponentParameterStructure)
 {
-    OMXDBG_PRINT(stderr, PRINT, 2, 0,"%d :: Entering OMX_GetParameter\n", __LINE__);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     AACDEC_COMPONENT_PRIVATE  *pComponentPrivate = NULL;
     OMX_PARAM_PORTDEFINITIONTYPE *pParameterStructure;
@@ -690,6 +689,7 @@ static OMX_ERRORTYPE GetParameter (OMX_HANDLETYPE hComp,
     AACDEC_OMX_CONF_CHECK_CMD(hComp,1,1)
         pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)(((OMX_COMPONENTTYPE*)hComp)->pComponentPrivate);
     AACDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, ComponentParameterStructure, 1)
+    OMX_PRINT1(pComponentPrivate->dbg, ":: Entering the GetParameter\n");
     if (ComponentParameterStructure == NULL) {
         eError = OMX_ErrorBadParameter;
         OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_ErrorBadPortIndex from GetParameter",__LINE__);
@@ -1220,26 +1220,22 @@ static OMX_ERRORTYPE SetCallbacks (OMX_HANDLETYPE pComponent,
                                    OMX_CALLBACKTYPE* pCallBacks,
                                    OMX_PTR pAppData)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*)pComponent;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate;
 
-
     AACDEC_OMX_CONF_CHECK_CMD(pHandle,1,1)
-        pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
+    pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
     AACDEC_OMX_CONF_CHECK_CMD(pComponentPrivate,1,1)
-
     AACDEC_OMX_CONF_CHECK_CMD(pCallBacks, pCallBacks->EventHandler, pCallBacks->EmptyBufferDone)
-        AACDEC_OMX_CONF_CHECK_CMD(pCallBacks->FillBufferDone, 1, 1)
+    AACDEC_OMX_CONF_CHECK_CMD(pCallBacks->FillBufferDone, 1, 1)
 
-        memcpy (&(pComponentPrivate->cbInfo), pCallBacks, sizeof(OMX_CALLBACKTYPE));
+    memcpy (&(pComponentPrivate->cbInfo), pCallBacks, sizeof(OMX_CALLBACKTYPE));
     pHandle->pApplicationPrivate = pAppData;
     OMX_PRSTATE2(pComponentPrivate->dbg, "****************** Component State Set to Loaded\n\n");
     pComponentPrivate->curState = OMX_StateLoaded;
 
- EXIT:
-    return eError;
+    return OMX_ErrorNone;
 }
 
 /* ================================================================================= * */
@@ -1274,6 +1270,7 @@ static OMX_ERRORTYPE GetComponentVersion (OMX_HANDLETYPE hComp,
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_COMPONENTTYPE *pHandle = (OMX_COMPONENTTYPE*) hComp;
     AACDEC_COMPONENT_PRIVATE *pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *) pHandle->pComponentPrivate;
+    AACDEC_OMX_CONF_CHECK_CMD(pSpecVersion, pComponentUUID, 1);
     
 #ifdef _ERROR_PROPAGATION__
     if (pComponentPrivate->curState == OMX_StateInvalid){
@@ -1743,6 +1740,8 @@ static OMX_ERRORTYPE ComponentTunnelRequest (OMX_HANDLETYPE hComp,
                                              OMX_U32 nTunneledPort,
                                              OMX_TUNNELSETUPTYPE* pTunnelSetup)
 {
+    AACDEC_OMX_CONF_CHECK_CMD(hComp, nPort, hTunneledComp);
+    AACDEC_OMX_CONF_CHECK_CMD(nTunneledPort, pTunnelSetup, 1);
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = OMX_ErrorNotImplemented;
     return eError;
@@ -2103,7 +2102,6 @@ static OMX_ERRORTYPE UseBuffer (
     OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: pPortDef = %p\n", __LINE__,pPortDef);
     OMX_PRCOMM2(pComponentPrivate->dbg, "%d :: pPortDef->bEnabled = %d\n", __LINE__,pPortDef->bEnabled);
 
-//
     AACDEC_OMX_CONF_CHECK_CMD(pPortDef, 1, 1);
     if (!pPortDef->bEnabled) {
         pComponentPrivate->AlloBuf_waitingsignal = 1;  
@@ -2112,7 +2110,7 @@ static OMX_ERRORTYPE UseBuffer (
         pthread_cond_wait(&pComponentPrivate->AlloBuf_threshold, &pComponentPrivate->AlloBuf_mutex);
         pthread_mutex_unlock(&pComponentPrivate->AlloBuf_mutex);
     }
-//
+
     if(!pPortDef->bEnabled) {
         AACDEC_OMX_ERROR_EXIT(eError,OMX_ErrorIncorrectStateOperation,
                               "Port is Disabled: OMX_ErrorIncorrectStateOperation");
@@ -2197,6 +2195,7 @@ static OMX_ERRORTYPE GetExtensionIndex(
             OMX_OUT OMX_INDEXTYPE* pIndexType) 
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    AACDEC_OMX_CONF_CHECK_CMD(hComponent, 1, 1);
 
     if (!(strcmp(cParameterName,"OMX.TI.index.config.aacdecHeaderInfo"))) {
         *pIndexType = OMX_IndexCustomAacDecHeaderInfoConfig;

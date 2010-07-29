@@ -1474,8 +1474,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 		/* Needed for port reconfiguration */   
                 AACDEC_CleanupInitParamsEx(pHandle,commandData);
                 AACDECFill_LCMLInitParamsEx(pHandle,commandData);
-////
-#if 1
 
                 for (i=0; i < pComponentPrivate->nNumInputBufPending; i++) {
                         OMX_PRBUFFER2(pComponentPrivate->dbg, "%d pComponentPrivate->pInputBufHdrPending[%lu] = %d\n",__LINE__,i,
@@ -1508,8 +1506,6 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
                         }
                 }
                 pComponentPrivate->nNumInputBufPending = 0;
-////
-#endif
             }
             else {
                 pComponentPrivate->bEnableCommandPending = 1;
@@ -3257,9 +3253,9 @@ int AACDec_GetSampleRateIndexL( const int aRate)
 }
 
 
-int AACDec_GetSampleRatebyIndex( const int index)
+OMX_U32 AACDec_GetSampleRatebyIndex( const int index)
 {
-    int sample_rate = 0;
+    OMX_U32 sample_rate = 0;
     OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d::index:%d\n",__LINE__,index);
 
     switch( index ){
@@ -3304,7 +3300,7 @@ int AACDec_GetSampleRatebyIndex( const int index)
         break;
     }
 
-    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d:: sample_rate: %d\n",__LINE__,sample_rate);
+    OMXDBG_PRINT(stderr, PRINT, 2, 0, "%d:: sample_rate: %d\n",__LINE__,(int)sample_rate);
     return sample_rate;
 }
 /* ========================================================================== */
