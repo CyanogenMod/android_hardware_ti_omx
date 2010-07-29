@@ -1395,12 +1395,6 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                 if (pComponentParam->nPortIndex == pComponentPrivate->pInPortDef->nPortIndex) {
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDefParam = (OMX_PARAM_PORTDEFINITIONTYPE *)pComponentParam;
                     OMX_PARAM_PORTDEFINITIONTYPE *pPortDef = pComponentPrivate->pInPortDef;
-                    if( pPortDefParam->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
-                        if (pPortDef->format.video.nFrameWidth < 32) {
-                            eError = OMX_ErrorUnsupportedSetting;
-                            goto EXIT;
-                        }
-                    }
 
                     /* Lets stagefright define the min buffer size of the input data
                        Only if the given size is zero or for WMV where OC is used, VD set the size */
@@ -1442,16 +1436,16 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                         default:
                             break;
                     }
-
-                    OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
-                    if ((pPortDefParam->format.video.nFrameWidth * pPortDefParam->format.video.nFrameHeight) > MAX_RESOLUTION)
-                    {
-                        /*if the resolution is not supported this is the place
-                         * to reject the creation of an instance.  This code is reached when 720p
-                         * decoder max instances were reached and TI Video Decoder is picked up. */
-                        eError = OMX_ErrorUnsupportedSetting;
+                    /* Verify if the resolution is supported by the
+                       component, depending in the format the limitations may vary */
+                    eError = IsResolutionSupported(pPortDef->format.video.nFrameWidth,
+                                                    pPortDef->format.video.nFrameHeight,
+                                                    pComponentPrivate);
+                    if (eError != OMX_ErrorNone) {
                         goto EXIT;
                     }
+                    OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d",
+                                pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                 }
                 else if (pComponentParam->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
                     OMX_U32 nMinOutputBufferSize = 0;

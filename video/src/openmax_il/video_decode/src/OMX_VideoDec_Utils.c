@@ -4439,15 +4439,10 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
 
         /* Verify if the resolution is supported by the component,
            depending in the format the limitations may vary */
-        if((nWidth > VIDDEC_D1MAX_WIDTH) || (nHeight > VIDDEC_D1MAX_HEIGHT) ||
-           (nWidth < VIDDEC_MIN_HEIGHT) || (nHeight < VIDDEC_MIN_HEIGHT) ||
-           (nWidth*nHeight > VIDDEC_D1MAX_HEIGHT*VIDDEC_VGA_HEIGHT) ||
-           (nWidth*nHeight < VIDDEC_MIN_WIDTH*VIDDEC_MIN_HEIGHT)){
-            OMX_PRINT4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
-            eError = OMX_ErrorUnsupportedSetting;
+        eError = IsResolutionSupported(nWidth, nHeight, pComponentPrivate);
+        if (eError != OMX_ErrorNone) {
             goto EXIT;
         }
-
 
         /*For MPeg4 WVGA SN requires that used resolutions be 854*/
         /*if parser read 864 it needs to be changed to 854*/
@@ -6289,9 +6284,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 lcml_dsp->ProfileID = 1;
             }
             else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
-                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= VIDDEC_MIN_WMV_WIDTH)) ||
                 ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
-                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
+                (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_WMV_HEIGHT))) {
                 lcml_dsp->ProfileID = 0;
             }
             else {
@@ -6520,9 +6515,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
             lcml_dsp->ProfileID = 2;
         }
         else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= VIDDEC_MIN_H264_WIDTH)) ||
             ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_H264_HEIGHT))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -6736,7 +6731,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     else if (nFrameWidth * nFrameHeight > 176 * 144) {
         lcml_dsp->ProfileID = 2;
     }
-    else if (nFrameWidth * nFrameHeight >= 16 * 16) {
+    else if (nFrameWidth * nFrameHeight >= VIDDEC_MIN_MPEG4_WIDTH * VIDDEC_MIN_MPEG4_HEIGHT) {
         lcml_dsp->ProfileID = 1;
     }
     else {
@@ -7098,9 +7093,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
             lcml_dsp->ProfileID = 2;
         }
         else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= VIDDEC_MIN_SPARK_WIDTH)) ||
             ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_SPARK_HEIGHT))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -7126,9 +7121,9 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
             lcml_dsp->ProfileID = 2;
         }
         else if (((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth <= 176) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= 16)) ||
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameWidth >= VIDDEC_MIN_SPARK_WIDTH)) ||
             ((OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight <= 144) &&
-            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= 16))) {
+            (OMX_U16)(pComponentPrivate->pInPortDef->format.video.nFrameHeight >= VIDDEC_MIN_SPARK_HEIGHT))) {
             lcml_dsp->ProfileID = 1;
         }
         else {
@@ -8735,6 +8730,65 @@ OMX_ERRORTYPE DecrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex) {
     if(pthread_mutex_unlock(pMutex)) {
        return OMX_ErrorUndefined;
     }
+    return eError;
+}
+
+OMX_ERRORTYPE IsResolutionSupported(OMX_S32 nWidth, OMX_S32 nHeight, VIDDEC_COMPONENT_PRIVATE* pComponentPrivate) {
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
+    OMX_VIDEO_CODINGTYPE eCompressionFormat = pComponentPrivate->pInPortDef->format.video.eCompressionFormat;
+    /* Verify max resolution limit - all formats have the same limit (Since SN 3.13 spark support WVGA also)*/
+    if((nWidth > VIDDEC_WVGA_WIDTH) || (nHeight > VIDDEC_WVGA_WIDTH) ||
+       nWidth*nHeight > VIDDEC_MAX_RESOLUTION_SIZE){
+        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+        eError = OMX_ErrorUnsupportedSetting;
+        goto EXIT;
+    }
+
+    /* Verify low resolution limits */
+    switch(eCompressionFormat){
+    case OMX_VIDEO_CodingMPEG4:
+    case OMX_VIDEO_CodingH263:
+        if((nWidth < VIDDEC_MIN_MPEG4_WIDTH) || (nHeight < VIDDEC_MIN_MPEG4_HEIGHT)){
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+        break;
+    case OMX_VIDEO_CodingAVC:
+        if((nWidth < VIDDEC_MIN_H264_WIDTH) || (nHeight < VIDDEC_MIN_H264_HEIGHT)){
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+        break;
+    case OMX_VIDEO_CodingWMV:
+        if((nWidth < VIDDEC_MIN_WMV_WIDTH) || (nHeight < VIDDEC_MIN_WMV_HEIGHT)){
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+        break;
+    case OMX_VIDEO_CodingUnused:
+        if(VIDDEC_SPARKCHECK){
+            if((nWidth < VIDDEC_MIN_SPARK_WIDTH) || (nHeight < VIDDEC_MIN_SPARK_HEIGHT)){
+                OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+                eError = OMX_ErrorUnsupportedSetting;
+                goto EXIT;
+            }
+        }
+        else{
+            OMX_ERROR4(pComponentPrivate->dbg, "error: Not recognized format or VideoDecodeCustomParamIsSparkInput not set!!");
+            eError = OMX_ErrorUnsupportedSetting;
+            goto EXIT;
+        }
+        break;
+    default:
+        OMX_ERROR4(pComponentPrivate->dbg, "error: Not recognized format!");
+        eError = OMX_ErrorUnsupportedSetting;
+        goto EXIT;
+    }
+
+EXIT:
     return eError;
 }
 

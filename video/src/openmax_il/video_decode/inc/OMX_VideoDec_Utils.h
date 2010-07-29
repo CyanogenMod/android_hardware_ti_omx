@@ -107,7 +107,6 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
     VIDDDEC_Enum_MemLevel4
 }VIDDEC_ENUM_MEMLEVELS;
 
-#define MAX_RESOLUTION 414720 /* 864x480(WVGA) - 720x576(D1-PAL) */
 #include "LCML_DspCodec.h"
 #include "LCML_Types.h"
 #include "LCML_CodecInterface.h"
@@ -345,8 +344,17 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
  #define VIDDEC_RM_FREQ_SPARK_VGA                     300
 #endif
 
-#define VIDDEC_MIN_WIDTH                              128
-#define VIDDEC_MIN_HEIGHT                             96
+#define VIDDEC_MIN_H264_WIDTH                         32
+#define VIDDEC_MIN_H264_HEIGHT                        32
+#define VIDDEC_MIN_WMV_WIDTH                          32
+#define VIDDEC_MIN_WMV_HEIGHT                         32
+#define VIDDEC_MIN_MPEG4_WIDTH                        16
+#define VIDDEC_MIN_MPEG4_HEIGHT                       16
+#define VIDDEC_MIN_SPARK_WIDTH                        16
+#define VIDDEC_MIN_SPARK_HEIGHT                       16
+
+#define VIDDEC_SQCIF_WIDTH                            128
+#define VIDDEC_SQCIF_HEIGHT                           96
 
 #define VIDDEC_QCIF_WIDTH                             176
 #define VIDDEC_QCIF_HEIGHT                            144
@@ -360,8 +368,13 @@ typedef enum VIDDEC_ENUM_MEMLEVELS{
 #define VIDDEC_VGA_WIDTH                              640
 #define VIDDEC_VGA_HEIGHT                             480
 
-#define VIDDEC_D1MAX_WIDTH                            864
-#define VIDDEC_D1MAX_HEIGHT                           VIDDEC_D1MAX_WIDTH
+#define VIDDEC_D1MAX_WIDTH                            720
+#define VIDDEC_D1MAX_HEIGHT                           576
+
+#define VIDDEC_WVGA_WIDTH                             864
+#define VIDDEC_WVGA_HEIGHT                            480
+
+#define VIDDEC_MAX_RESOLUTION_SIZE                    (VIDDEC_WVGA_WIDTH*VIDDEC_WVGA_HEIGHT) /* 864x480(WVGA) - 720x576(D1-PAL) */
 
 /* In the current release the suport for : VIDDEC_MAX_FRAMERATE  & VIDDEC_MAX_BITRATE
  * is not provided by the algorithm. But is require to set this field to a non-zero value */
@@ -1304,6 +1317,7 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_Set_SN_StreamType(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
+OMX_ERRORTYPE IsResolutionSupported(OMX_S32 nWidth, OMX_S32 nHeight, VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
 
 #ifdef VIDDEC_ACTIVATEPARSER
 OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_VC1( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead);
