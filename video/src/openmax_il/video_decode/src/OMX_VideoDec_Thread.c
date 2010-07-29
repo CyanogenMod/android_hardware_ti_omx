@@ -77,8 +77,8 @@
 
 
 extern OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE pHandle, OMX_U32 nParam1);
-extern OMX_ERRORTYPE VIDDEC_DisablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1);
-extern OMX_ERRORTYPE VIDDEC_EnablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1);
+extern OMX_ERRORTYPE VIDDEC_DisablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1);
+extern OMX_ERRORTYPE VIDDEC_EnablePort(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1);
 extern OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate);
 extern OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate );
 extern OMX_ERRORTYPE VIDDEC_HandleFreeDataBuf( VIDDEC_COMPONENT_PRIVATE *pComponentPrivate );
@@ -86,8 +86,11 @@ extern OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVA
 extern OMX_ERRORTYPE VIDDEC_Start_ComponentThread(OMX_HANDLETYPE pHandle);
 extern OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent);
 extern OMX_ERRORTYPE VIDDEC_HandleCommandMarkBuffer(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_PTR pCmdData);
-extern OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1, OMX_BOOL bPass);
+extern OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bPass);
 extern OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate);
+extern int pselect(int  n, fd_set*  readfds, fd_set*  writefds, fd_set*  errfds,
+        const struct timespec*  timeout, const sigset_t*  sigmask);
+
 
 /*----------------------------------------------------------------------------*/
 /**
@@ -112,7 +115,6 @@ void* OMX_VidDec_Thread (void* pThreadData)
     OMX_PTR pCmdData;
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate;
     LCML_DSP_INTERFACE *pLcmlHandle;
-    OMX_U32 aParam[4];
     OMX_BOOL bFlag = OMX_FALSE;
     /* Set the thread's name
      * */
@@ -313,7 +315,7 @@ void* OMX_VidDec_Thread (void* pThreadData)
     return (void *)eError;
 }
 
-void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnlyOne)
+void* OMX_VidDec_Return (void* pThreadData, OMX_U32 nPortId, OMX_BOOL bReturnOnlyOne)
 {
     int status = 0;
     struct timeval tv1;
@@ -326,7 +328,7 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
     VIDDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE*)pThreadData;
-    OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING Port #%d\n", nPortId);
+    OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING Port #%ld\n", nPortId);
     gettimeofday(&tv1, NULL);
     if ( nPortId == VIDDEC_INPUT_PORT || nPortId == OMX_ALL) {
         /*Looking for highest number of file descriptor for pipes in order to put in select loop */
@@ -338,7 +340,7 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
 
         /*remove extra parameters*/
         OMX_PRINT1(pComponentPrivate->dbg,
-            "Enter nCInBFApp %d nCInBFDsp %d\n",
+            "Enter nCInBFApp %ld nCInBFDsp %ld\n",
             pComponentPrivate->nCountInputBFromApp,
             pComponentPrivate->nCountInputBFromDsp);
         while (pComponentPrivate->nCountInputBFromApp != 0 ||
@@ -404,7 +406,7 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
             }
         }
         OMX_PRINT1(pComponentPrivate->dbg,
-            "Exit nCInBFApp %d nCInBFDsp %d\n",
+            "Exit nCInBFApp %ld nCInBFDsp %ld\n",
             pComponentPrivate->nCountInputBFromApp,
             pComponentPrivate->nCountInputBFromDsp);
     }
@@ -418,7 +420,7 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
         }
         
         OMX_PRINT1(pComponentPrivate->dbg,
-            "Enter nCOutBFDsp %d nCOutBFApp %d\n",
+            "Enter nCOutBFDsp %ld nCOutBFApp %ld\n",
             pComponentPrivate->nCountOutputBFromDsp,
             pComponentPrivate->nCountOutputBFromApp);
         while (pComponentPrivate->nCountOutputBFromApp != 0 ||
@@ -482,7 +484,7 @@ void* OMX_VidDec_Return (void* pThreadData, OMX_S32 nPortId, OMX_BOOL bReturnOnl
             }
         }
         OMX_PRINT1(pComponentPrivate->dbg,
-            "Exit nCOutBFDsp %d nCOutBFApp %d\n",
+            "Exit nCOutBFDsp %ld nCOutBFApp %ld\n",
             pComponentPrivate->nCountOutputBFromDsp,
             pComponentPrivate->nCountOutputBFromApp);
         pComponentPrivate->bPipeCleaned = OMX_TRUE;

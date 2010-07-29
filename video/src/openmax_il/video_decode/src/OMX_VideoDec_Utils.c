@@ -74,7 +74,8 @@ OMX_S32 Convert1ByteTo1BitMBErrorArray (OMX_U8* ErrMapFrom, OMX_U8* ErrMapTo,
     /* i Will parse the provided MB Error Array
      * j Will parse the new array
      * */
-    OMX_S32 i, j=-1;
+    OMX_U32 i = 0;
+    OMX_S32 j=-1;
     /* Loop thru the complete input array
      * */
     for (i=0; i < nErrMapSize; i++) {
@@ -284,7 +285,6 @@ OMX_ERRORTYPE VIDDEC_CircBuf_DeInit(VIDDEC_CIRCULAR_BUFFER* pCBuffer)
         pCBuffer->m_lock = NULL;
     }
 #endif
-EXIT:
     return eError;
 }
 
@@ -1294,7 +1294,7 @@ OMX_ERRORTYPE VIDDEC_Stop_ComponentThread(OMX_HANDLETYPE pComponent)
   **/
 /* ========================================================================== */
 
-OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1)
+OMX_ERRORTYPE VIDDEC_DisablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
@@ -1489,7 +1489,7 @@ OMX_ERRORTYPE VIDDEC_FillBufferDone(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
   *
   **/
 /* ========================================================================== */
-OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1, OMX_BOOL bRetDSP)
+OMX_ERRORTYPE VIDDEC_ReturnBuffers (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bRetDSP)
 {
     OMX_U8 i = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -1598,7 +1598,7 @@ EXIT:
   *
   **/
 /* ========================================================================== */
-OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_S32 nParam1)
+OMX_ERRORTYPE VIDDEC_EnablePort (VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_U32 nParam1)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
@@ -1713,7 +1713,7 @@ EXIT:
   **/
 /* ========================================================================== */
 
-OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_S32 nParam1, OMX_BOOL bPass)
+OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 nParam1, OMX_BOOL bPass)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_U32 aParam[4];
@@ -1841,7 +1841,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
    void* pMyLCML;
    VIDDEC_fpo fpGetHandle;
-   char* error;
+   const char* error;
 
     OMX_PRINT1(pComponentPrivate->dbg, "+++ENTERING\n");
     OMX_PRINT1(pComponentPrivate->dbg, "pComponentPrivate 0x%p phandle 0x%lx\n",pComponentPrivate, nParam1);
@@ -2437,7 +2437,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 else if (VIDDEC_SPARKCHECK) {
                     if(pComponentPrivate->eState == OMX_StateIdle) {
                         SPARKVDEC_UALGDynamicParams* pDynParams = NULL;
-                        char* pTmp = NULL;
                         OMX_U32 cmdValues[3] = {0, 0, 0};
                         OMX_U32 nDynParamSize = sizeof(SPARKVDEC_UALGDynamicParams);
 
@@ -3291,7 +3290,7 @@ OMX_U32 GET_NUM_BIT_REQ(OMX_U32 num)
 /*                                                                            */
 /*  desc                                                                      */
 /*  ==========================================================================*/
-OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG2( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
+OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG2( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32    nTempValue = 0;
@@ -3346,7 +3345,7 @@ EXIT:
 /*                                                                            */
 /*  desc                                                                      */
 /*  ==========================================================================*/
-OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_VC1( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
+OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_VC1( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32    nTempValue = 0;
@@ -3406,7 +3405,7 @@ EXIT:
 /*                                                                            */
 /*  desc                                                                      */
 /*  ==========================================================================*/
-OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_RCV( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
+OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_RCV( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32    nTempValue = 0;
@@ -3451,7 +3450,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_WMV9_RCV( OMX_S32* nWidth, OMX_S32* nHeight, OMX
 /*                                                                            */
 /*  desc                                                                      */
 /*  ==========================================================================*/
-OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
+OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32    nSartCode = 0;
@@ -3461,7 +3460,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_S32* nWidth, OMX_S32* nHeight, OMX_BU
     OMX_U8* pHeaderStream = (OMX_U8*)pBuffHead->pBuffer;
 
     VIDDEC_MPEG4_ParserParam MPEG4_Param;
-    VIDDEC_MPEG4UncompressedVideoFormat iOutputFormat = {0};
+    VIDDEC_MPEG4UncompressedVideoFormat iOutputFormat;
     VIDDEC_MPEG4_ParserParam* sMPEG4_Param = &MPEG4_Param;
     VIDDEC_VideoPictureHeader sPictHeaderDummy;
     VIDDEC_MPEG4VisualVOLHeader sVolHeaderDummy;
@@ -3888,12 +3887,12 @@ static OMX_U32 VIDDEC_ScanConfigBufferAVC(OMX_BUFFERHEADERTYPE* pBuffHead,  OMX_
 /*  desc                                                                      */
 /*  ==========================================================================*/
 OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate,
-                                     OMX_BUFFERHEADERTYPE* pBuffHead,OMX_S32* nWidth,
-                                     OMX_S32* nHeight, OMX_S32* nCropWidth,
-                                     OMX_S32* nCropHeight, OMX_U32 nType)
+                                     OMX_BUFFERHEADERTYPE* pBuffHead,OMX_U32* nWidth,
+                                     OMX_U32* nHeight, OMX_U32* nCropWidth,
+                                     OMX_U32* nCropHeight, OMX_U32 nType)
 {
     OMX_ERRORTYPE eError = OMX_ErrorBadParameter;
-    OMX_S32 i = 0;
+    OMX_U32 i = 0;
     VIDDEC_AVC_ParserParam* sParserParam = NULL;
     OMX_BOOL nStartFlag = OMX_FALSE;
     OMX_U32 nBitPosition = 0;
@@ -3902,7 +3901,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
     OMX_U32 nInBytePosition = 0;
     OMX_U32 nInPositionTemp = 0;
     OMX_U32 nNumOfBytesInRbsp = 0;
-    OMX_S32 nNumBytesInNALunit = 0;
+    OMX_U32 nNumBytesInNALunit = 0;
     OMX_U8* nBitStream = 0;
     OMX_U32 nNalUnitType = 0;
     OMX_U8* nRbspByte = NULL;
@@ -3949,7 +3948,7 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_H264(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
             /* Check if memcpy is safe*/
             if(pComponentPrivate->pInPortDef->nBufferSize >= pComponentPrivate->nInternalConfigBufferFilledAVC + pBuffHead->nFilledLen){
                 /*Append current buffer data to Internal Config Buffer */
-                if(memcpy((OMX_U8*)(pComponentPrivate->pInternalConfigBufferAVC + pComponentPrivate->nInternalConfigBufferFilledAVC),
+                if(memcpy((OMX_U8*)pComponentPrivate->pInternalConfigBufferAVC + pComponentPrivate->nInternalConfigBufferFilledAVC,
                         pBuffHead->pBuffer,
                         pBuffHead->nFilledLen) == NULL) {
                           eError = OMX_ErrorInsufficientResources;
@@ -4291,7 +4290,7 @@ OMX_S32 VIDDEC_UVLC_dec(OMX_U32 *nPosition, OMX_U8* pBuffer)
     OMX_U32 nLen = 1;
     OMX_U32 nCtrBit = 0;
     OMX_U32 nVal = 1;
-    OMX_S32 nInfoBit=0;
+    OMX_U32 nInfoBit=0;
 
     nCtrBit = pBuffer[nBytePosition] & (0x1 << (7-cBitPosition));
     while (nCtrBit==0)
@@ -4335,14 +4334,14 @@ OMX_S32 VIDDEC_UVLC_dec(OMX_U32 *nPosition, OMX_U8* pBuffer)
 OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OMX_BUFFERHEADERTYPE *pBuffHead)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_S32 nWidth = 0;
-    OMX_S32 nHeight = 0;
-    OMX_S32 nPadWidth = 0;
-    OMX_S32 nPadHeight = 0;
-    OMX_S32 nCropWidth = 0;
-    OMX_S32 nCropHeight = 0;
-    OMX_S32 nCroppedWidth = 0;
-    OMX_S32 nCroppedHeight = 0;
+    OMX_U32 nWidth = 0;
+    OMX_U32 nHeight = 0;
+    OMX_U32 nPadWidth = 0;
+    OMX_U32 nPadHeight = 0;
+    OMX_U32 nCropWidth = 0;
+    OMX_U32 nCropHeight = 0;
+    OMX_U32 nCroppedWidth = 0;
+    OMX_U32 nCroppedHeight = 0;
 
     OMX_U32 nOutMinBufferSize = 0;
     OMX_BOOL bInPortSettingsChanged = OMX_FALSE;
@@ -4359,12 +4358,12 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
     /*Get output port allocated buffer size*/
     nOutPortActualAllocLen =  pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[0]->pBufferHdr->nAllocLen;
 
-    OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %x, Original resolution IN %dx%d : OUT %dx%d\n",
-            (unsigned int)pBuffHead,
-            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-            (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,
-            (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
-            (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+    OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %p, Original resolution IN %ldx%ld : OUT %ldx%ld\n",
+            pBuffHead,
+            pComponentPrivate->pInPortDef->format.video.nFrameWidth,
+            pComponentPrivate->pInPortDef->format.video.nFrameHeight,
+            pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
+            pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
 
 
         if( pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
@@ -4427,7 +4426,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
             }
             nWidth  = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
             nHeight =  pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-            OMX_PRINT4(pComponentPrivate->dbg, "Error while persering: %x, %dx%d", eError, nWidth, nHeight);
+            OMX_PRINT4(pComponentPrivate->dbg, "Error while persering: %x, %ldx%ld", eError, nWidth, nHeight);
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                        OMX_EventError,
@@ -4497,7 +4496,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nPadWidth;
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nPadHeight;
                 bOutPortSettingsChanged = OMX_TRUE;
-                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: default new: %dx%d\n", nPadWidth, nPadHeight);
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: default new: %ldx%ld\n", nPadWidth, nPadHeight);
             }
         }
         else if(pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
@@ -4512,7 +4511,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nWidth;
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nHeight;
                 bOutPortSettingsChanged = OMX_TRUE;
-                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: new MPEG4: %dx%d\n", nWidth, nHeight);
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: new MPEG4: %ldx%ld\n", nWidth, nHeight);
             }
         }
         else{ /*OMX_VIDEO_CodingAVC*/
@@ -4535,7 +4534,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                 pComponentPrivate->pOutPortDef->format.video.nFrameWidth = nCroppedWidth;
                 pComponentPrivate->pOutPortDef->format.video.nFrameHeight = nCroppedHeight;
                 bOutPortSettingsChanged = OMX_TRUE;
-                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: AVC new: %dx%d \n", nCroppedWidth, nCroppedHeight);
+                OMX_PRINT1(pComponentPrivate->dbg, "Resolution: AVC new: %ldx%ld \n", nCroppedWidth, nCroppedHeight);
             }
         }
 
@@ -4546,18 +4545,18 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                             ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
 
         if(nOutPortActualAllocLen < nOutMinBufferSize || pComponentPrivate->pOutPortDef->nBufferSize < nOutMinBufferSize){
-            OMX_PRINT1(pComponentPrivate->dbg, " Previous: pOutPortDef->nBufferSize: %d", pComponentPrivate->pOutPortDef->nBufferSize);
+            OMX_PRINT1(pComponentPrivate->dbg, " Previous: pOutPortDef->nBufferSize: %ld", pComponentPrivate->pOutPortDef->nBufferSize);
             pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
             bOutPortSettingsChanged = OMX_TRUE;
-            OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%x \n", nOutMinBufferSize);
+            OMX_PRINT1(pComponentPrivate->dbg, "NEW output BUFFSIZE:0x%lx \n", nOutMinBufferSize);
         }
 
-        OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %x, Resolution after parser: IN %dx%d : OUT %dx%d\n",
-                (unsigned int)pBuffHead,
-                (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameWidth,
-                (unsigned int)pComponentPrivate->pInPortDef->format.video.nFrameHeight,
-                (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
-                (unsigned int)pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
+        OMX_PRINT1(pComponentPrivate->dbg, "pBuffHead %p,  Resolution after parser: IN %ldx%ld : OUT %ldx%ld\n",
+                pBuffHead,
+                pComponentPrivate->pInPortDef->format.video.nFrameWidth,
+                pComponentPrivate->pInPortDef->format.video.nFrameHeight,
+                pComponentPrivate->pOutPortDef->format.video.nFrameWidth,
+                pComponentPrivate->pOutPortDef->format.video.nFrameHeight);
 
         pComponentPrivate->bInPortSettingsChanged |= bInPortSettingsChanged;
         pComponentPrivate->bOutPortSettingsChanged |= bOutPortSettingsChanged;
@@ -4805,8 +4804,8 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
                     pComponentPrivate->nCodecDataSize = pBuffHead->nFilledLen;
                     if(pComponentPrivate->nCodecDataSize > VIDDEC_WMV_BUFFER_OFFSET){
-                        OMX_ERROR4(pComponentPrivate->dbg, "Insufficient space in buffer pbuffer %p - nCodecDataSize %p\n",
-                            (void *)pBuffHead->pBuffer,pComponentPrivate->nCodecDataSize);
+                        OMX_ERROR4(pComponentPrivate->dbg, "Insufficient space in buffer pbuffer %p - nCodecDataSize 0x%lx\n",
+                            pBuffHead->pBuffer,pComponentPrivate->nCodecDataSize);
                         eError = OMX_ErrorStreamCorrupt;
                         goto EXIT;
                     }
@@ -5079,7 +5078,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             if (pBuffHead != NULL) {
 
 #ifdef ANDROID
-                OMX_PRINT1(pComponentPrivate->dbg,"save 1st ccd buffer - pBuffhead->nFilledLen = %d\n", pBuffHead->nFilledLen);
+                OMX_PRINT1(pComponentPrivate->dbg,"save 1st ccd buffer - pBuffhead->nFilledLen = %ld\n", pBuffHead->nFilledLen);
                 eError = VIDDEC_SaveBuffer(pComponentPrivate, pBuffHead);
                 if(eError != OMX_ErrorNone){
                     goto EXIT;
@@ -5144,7 +5143,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
     pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pInputPortPrivate;
 
     if(pBuffHead->nFlags & OMX_BUFFERFLAG_EOS){
-        OMX_PRBUFFER2(pComponentPrivate->dbg, "End of Input EOS, nFlags=0x%x nFilledLen 0x%lx\n", pBuffHead->nFlags, pBuffHead->nFilledLen);
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "End of Input EOS, nFlags=%lx nFilledLen %lx\n", pBuffHead->nFlags, pBuffHead->nFilledLen);
         if (pBuffHead->nFilledLen > 0) { /*Code is ok, SN is not accepting zero lenght buffers*/
             if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                 pUalgInpParams = (OMX_PTR)pBufferPrivate->pUalgParam;
@@ -5697,7 +5696,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                                                         (OMX_U8*)&pComponentPrivate->pBufferTemp);
                         }
                         else if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263){
-                            OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT) -First buffer- , nFilledLen=0x%x nFlags=0x%x",
+                            OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT) -First buffer- , nFilledLen=0x%lx nFlags=0x%lx",
                                        pComponentPrivate->eFirstBuffer.pBufferHdr->nFilledLen,
                                        pComponentPrivate->eFirstBuffer.pBufferHdr->nFlags);
 
@@ -5734,7 +5733,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     }
 #endif
 
-                OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT), nFilledLen=0x%x nFlags=0x%x", pBuffHead->nFilledLen, pBuffHead->nFlags);
+                OMX_PRDSP2(pComponentPrivate->dbg, "LCML_QueueBuffer(INPUT), nFilledLen=0x%lx nFlags=0x%lx", pBuffHead->nFilledLen, pBuffHead->nFlags);
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                             pLcmlHandle)->pCodecinterfacehandle,
@@ -5832,14 +5831,14 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferSize fromDSP %lu \n",pBuffHead->nAllocLen);
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocLen: 0x%x, FilledLen: 0x%x\n", pBuffHead->nAllocLen, pBuffHead->nFilledLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocLen: 0x%lx, FilledLen: 0x%lx\n", pBuffHead->nAllocLen, pBuffHead->nFilledLen);
     OMX_PRSTATE1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
     if (pComponentPrivate->eState == OMX_StateLoaded || pComponentPrivate->eState == OMX_StateIdle) {
         eError = OMX_ErrorNone;
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "BufferSize fromDSP %lu \n",pBuffHead->nAllocLen);
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocLen: 0x%x, FilledLen: 0x%x\n", pBuffHead->nAllocLen, pBuffHead->nFilledLen);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "AllocLen: 0x%lx, FilledLen: 0x%lx\n", pBuffHead->nAllocLen, pBuffHead->nFilledLen);
     OMX_PRSTATE1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead,pComponentPrivate->eExecuteToIdle);
     if(pBuffHead != NULL) {
         OMX_S32 nErrorCode = 0;
@@ -6063,11 +6062,11 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
             goto EXIT;
         }
         if (pComponentPrivate->bFlushing) {
-            OMX_PRBUFFER2(pComponentPrivate->dbg, "Cleaning while flush 0x%x\n", pBuffHead);
+            OMX_PRBUFFER2(pComponentPrivate->dbg, "Cleaning while flush %p\n", pBuffHead);
             pBuffHead->nFilledLen = 0;
             pBuffHead->nTimeStamp = 0;
         }
-        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp, pBuffHead->nFlags);
+        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %lx\n", pBuffHead->nTimeStamp, pBuffHead->nFlags);
         if (pComponentPrivate->pCompPort[1]->hTunnelComponent != NULL) {
             if(pComponentPrivate->bFirstBuffer) {
                 OMX_PRBUFFER2(pComponentPrivate->dbg, "**** Setting OMX_BUFFERFLAG_STARTTIME\n");
@@ -6563,10 +6562,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
 
     nFrameWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
     nFrameHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %ld, nFrameHeight = %ld \n", nFrameWidth, nFrameHeight);
     if (nFrameWidth & 0xF) nFrameWidth = (nFrameWidth & 0xFFF0) + 0x10;
     if (nFrameHeight & 0xF) nFrameHeight = (nFrameHeight & 0xFFF0) + 0x10;
-    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %ld, nFrameHeight = %ld \n", nFrameWidth, nFrameHeight);
 
     pCreatePhaseArgs->unNumOfStreams            = 2;
     pCreatePhaseArgs->unInputStreamID           = 0;
@@ -6755,10 +6754,10 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
     /* ulMaxWidth and ulMaxHeight needs to be multiples of 16. */
     nFrameWidth = pComponentPrivate->pInPortDef->format.video.nFrameWidth;
     nFrameHeight = pComponentPrivate->pInPortDef->format.video.nFrameHeight;
-    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "Before Rounding: nFrameWidth = %ld, nFrameHeight = %ld \n", nFrameWidth, nFrameHeight);
     if (nFrameWidth & 0xF) nFrameWidth = (nFrameWidth & 0xFFF0) + 0x10;
     if (nFrameHeight & 0xF) nFrameHeight = (nFrameHeight & 0xFFF0) + 0x10;    
-    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %d, nFrameHeight = %d \n", nFrameWidth, nFrameHeight);
+    OMX_PRINT3(pComponentPrivate->dbg, "After Rounding: nFrameWidth = %ld, nFrameHeight = %ld \n", nFrameWidth, nFrameHeight);
 
     pCreatePhaseArgs->ulMaxWidth                = (OMX_U16)(nFrameWidth);
     pCreatePhaseArgs->ulMaxHeight               = (OMX_U16)(nFrameHeight);
@@ -7335,7 +7334,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
     else if (event == EMMCodecBufferProcessed) {
         OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecBufferProcessed 0x%lx\n", (OMX_U32)argsCb [0]);
         if (pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
-            OMX_PRBUFFER1(pComponentPrivate->dbg, "Drop buffer to DSP%p port %x\n", argsCb[7], (OMX_S32)argsCb [0]);
+            OMX_PRBUFFER1(pComponentPrivate->dbg, "Drop buffer to DSP%p port %lx\n", argsCb[7], (OMX_U32)argsCb [0]);
             goto EXIT;
         }
         if ((OMX_U32)argsCb [0] == EMMCodecOuputBuffer) {
@@ -7361,7 +7360,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                         }
 #endif
                         pBuffer = (OMX_U8*)argsCb[1];
-                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %x\n", pBuffHead->nTimeStamp, pBuffHead->nFlags);
+                        OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nTimeStamp %lld nflags %lx\n", pBuffHead->nTimeStamp, pBuffHead->nFlags);
                         if(pBuffHead != NULL){
                             pBuffHead->nFilledLen = (OMX_S32)argsCb[8];
                             OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead->nFilledLen %lu\n", pBuffHead->nFilledLen);
@@ -7477,7 +7476,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
         OMX_PRDSP2(pComponentPrivate->dbg, "EMMCodecBufferNotProcessed\n");
         /*buffer is already own by DSP it will be returned by Returnbuffers()*/
         if (pComponentPrivate->nLastErrorSeverity <= OMX_TI_ErrorSevere) {
-            OMX_PRBUFFER1(pComponentPrivate->dbg, "Drop buffer to DSP%p port %x\n", argsCb[7], (OMX_S32)argsCb [0]);
+            OMX_PRBUFFER1(pComponentPrivate->dbg, "Drop buffer to DSP%p port %lx\n", argsCb[7], (OMX_U32)argsCb [0]);
             goto EXIT;
         }
         if ((OMX_U32)argsCb [0] == EMMCodecOuputBuffer) {
@@ -7900,8 +7899,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     LCML_DSP_INTERFACE *pLcmlHandle = NULL;
     OMX_HANDLETYPE hLCML = NULL;
     void* p = NULL;
-   VIDDEC_fpo fpGetHandle;
-   char* error = NULL;
+    VIDDEC_fpo fpGetHandle;
+    const char* error = NULL;
     char value[PROPERTY_VALUE_MAX];
     OMX_U32 nDeringing = 0;
 
@@ -8478,13 +8477,12 @@ OMX_ERRORTYPE VIDDEC_Set_SN_StreamType(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
  
         WMV9DEC_UALGDynamicParams* pDynParams = NULL;
         LCML_DSP_INTERFACE* pLcmlHandle;
-        char* pTmp = NULL;
         OMX_U32 cmdValues[3] = {0, 0, 0};
         void* p = NULL;
         OMX_ERRORTYPE eError = OMX_ErrorUndefined;
         OMX_U32 nDynParamSize = sizeof(WMV9DEC_UALGDynamicParams);
 
-        OMX_PRDSP1(pComponentPrivate->dbg, "Initializing DSP for wmv9 eCompressionFormat 0x%x format %x\n",
+        OMX_PRDSP1(pComponentPrivate->dbg, "Initializing DSP for wmv9 eCompressionFormat %x format %lx\n",
             pComponentPrivate->pInPortDef->format.video.eCompressionFormat, pComponentPrivate->nWMVFileType);
 
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
@@ -8570,10 +8568,8 @@ OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPri
 {
     MP4VDEC_UALGDynamicParams* pDynParams = NULL;
     LCML_DSP_INTERFACE* pLcmlHandle = NULL;
-    char* pTmp = NULL;
     OMX_U32 cmdValues[3] = {0, 0, 0};
     void* p = NULL;
-    char value[PROPERTY_VALUE_MAX];
     OMX_BOOL bDisDeblocking = OMX_FALSE;
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
     OMX_U32 nDynParamSize = sizeof(MP4VDEC_UALGDynamicParams);
@@ -8733,13 +8729,13 @@ OMX_ERRORTYPE DecrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex) {
     return eError;
 }
 
-OMX_ERRORTYPE IsResolutionSupported(OMX_S32 nWidth, OMX_S32 nHeight, VIDDEC_COMPONENT_PRIVATE* pComponentPrivate) {
+OMX_ERRORTYPE IsResolutionSupported(OMX_U32 nWidth, OMX_U32 nHeight, VIDDEC_COMPONENT_PRIVATE* pComponentPrivate) {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_VIDEO_CODINGTYPE eCompressionFormat = pComponentPrivate->pInPortDef->format.video.eCompressionFormat;
     /* Verify max resolution limit - all formats have the same limit (Since SN 3.13 spark support WVGA also)*/
     if((nWidth > VIDDEC_WVGA_WIDTH) || (nHeight > VIDDEC_WVGA_WIDTH) ||
        nWidth*nHeight > VIDDEC_MAX_RESOLUTION_SIZE){
-        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
         eError = OMX_ErrorUnsupportedSetting;
         goto EXIT;
     }
@@ -8749,21 +8745,21 @@ OMX_ERRORTYPE IsResolutionSupported(OMX_S32 nWidth, OMX_S32 nHeight, VIDDEC_COMP
     case OMX_VIDEO_CodingMPEG4:
     case OMX_VIDEO_CodingH263:
         if((nWidth < VIDDEC_MIN_MPEG4_WIDTH) || (nHeight < VIDDEC_MIN_MPEG4_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
             eError = OMX_ErrorUnsupportedSetting;
             goto EXIT;
         }
         break;
     case OMX_VIDEO_CodingAVC:
         if((nWidth < VIDDEC_MIN_H264_WIDTH) || (nHeight < VIDDEC_MIN_H264_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
             eError = OMX_ErrorUnsupportedSetting;
             goto EXIT;
         }
         break;
     case OMX_VIDEO_CodingWMV:
         if((nWidth < VIDDEC_MIN_WMV_WIDTH) || (nHeight < VIDDEC_MIN_WMV_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
             eError = OMX_ErrorUnsupportedSetting;
             goto EXIT;
         }
@@ -8771,7 +8767,7 @@ OMX_ERRORTYPE IsResolutionSupported(OMX_S32 nWidth, OMX_S32 nHeight, VIDDEC_COMP
     case OMX_VIDEO_CodingUnused:
         if(VIDDEC_SPARKCHECK){
             if((nWidth < VIDDEC_MIN_SPARK_WIDTH) || (nHeight < VIDDEC_MIN_SPARK_HEIGHT)){
-                OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %d; nHeight = %d", nWidth, nHeight);
+                OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
                 eError = OMX_ErrorUnsupportedSetting;
                 goto EXIT;
             }
