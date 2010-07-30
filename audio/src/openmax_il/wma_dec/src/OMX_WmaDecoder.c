@@ -341,6 +341,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->pMarkData = NULL;
     pComponentPrivate->nEmptyBufferDoneCount = 0;
     pComponentPrivate->nEmptyThisBufferCount = 0;
+    pComponentPrivate->nFillBufferDoneCount = 0;
+    pComponentPrivate->nFillThisBufferCount = 0;
     pComponentPrivate->strmAttr = NULL;
     pComponentPrivate->bDisableCommandParam = 0;
     pComponentPrivate->bEnableCommandParam = 0;
@@ -1491,6 +1493,7 @@ static OMX_ERRORTYPE FillThisBuffer (OMX_HANDLETYPE pComponent,
     }
     else {
         pComponentPrivate->nUnhandledFillThisBuffers++;
+        pComponentPrivate->nFillThisBufferCount++;
     }
 
     return OMX_ErrorNone;

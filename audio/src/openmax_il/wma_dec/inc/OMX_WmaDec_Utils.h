@@ -663,6 +663,12 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     /** Keeps track of the number of EmptyBufferDone() calls */
     OMX_U32 nEmptyBufferDoneCount;
 
+    /** Keeps track of the number of FillThisBuffer() calls */
+    OMX_U32 nFillThisBufferCount;
+
+    /** Keeps track of the number of FillBufferDone() calls */
+    OMX_U32 nFillBufferDoneCount;
+
     /** Flag set when init params have been initialized */
     OMX_U32 bInitParamsInitialized;
 
@@ -765,6 +771,10 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     pthread_mutex_t codecFlush_mutex;    
     pthread_cond_t codecFlush_threshold;
     OMX_U8 codecFlush_waitingsignal;
+
+    /* pthread variable to indicate OMX returned all buffers to app */
+    pthread_mutex_t bufferReturned_mutex;
+    pthread_cond_t bufferReturned_condition;
     
     /* counts the number of unhandled FillThisBuffer() calls */
     OMX_U8 nUnhandledFillThisBuffers;
@@ -1244,5 +1254,28 @@ void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
 *  =========================================================================*/
 void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate);
 
+/**
+* @WMADEC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param WMADEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void WMADEC_waitForAllBuffersToReturn(
+                                      WMADEC_COMPONENT_PRIVATE *pComponentPrivate);
+
+/**
+* @WMADEC_SignalIfAllBuffersAreReturned() This function send signals if OMX returned all buffers to app
+*
+* @param WMADEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @pre None
+*
+* @post None
+*
+* @return None
+*/
+void WMADEC_SignalIfAllBuffersAreReturned(WMADEC_COMPONENT_PRIVATE *pComponentPrivate,
+                                          OMX_U8 counterport);
 #endif
 
