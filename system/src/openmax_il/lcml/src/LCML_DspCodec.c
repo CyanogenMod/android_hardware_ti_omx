@@ -284,13 +284,13 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         /* INITIALIZATION OF DSP */
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Entering Init_DSPSubSystem\n", __LINE__);
         status = DspManager_Open(0, NULL);
-        DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR);
+        DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR, hInt);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
         phandle->iDspOpenCount++;
 
         /* Attach and get handle to processor */
         status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
-        DSP_ERROR_EXIT(status, "Attach processor", ERROR);
+        DSP_ERROR_EXIT(status, "Attach processor", ERROR, hInt);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DSPProcessor_Attach Successful\n");
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "Base Image is Already Loaded\n");
 
@@ -309,7 +309,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             status = DSPManager_RegisterObject((struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
                                                 phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType, abs_dsp_path);
 
-            DSP_ERROR_EXIT (status, "Register Component Library", ERROR);
+            DSP_ERROR_EXIT (status, "Register Component Library", ERROR, hInt);
         }
 
         /* NODE specific data */
@@ -356,7 +356,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                                   (struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[0].uuid,
                                   (struct DSP_CBDATA*)&crData,
                                   &NodeAttrIn,&(phandle->dspCodec->hNode));
-        DSP_ERROR_EXIT(status, "Allocate Component", ERROR);
+        DSP_ERROR_EXIT(status, "Allocate Component", ERROR, hInt);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Allocate Successfully\n", __LINE__);
 
         pArgs = (struct DSP_CBDATA *)argsBuf;
@@ -374,7 +374,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                                       NULL,
                                       NULL,
                                       &(phandle->dspCodec->hDasfNode));
-            DSP_ERROR_EXIT(status, "DASF Allocate Component", ERROR);
+            DSP_ERROR_EXIT(status, "DASF Allocate Component", ERROR, hInt);
 
 
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DASF DSPNode_Allocate Successfully\n", __LINE__);
@@ -390,7 +390,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                                                0,
                                                (struct DSP_STRMATTR *)phandle->dspCodec->DeviceInfo.DspStream,
                                                pArgs);
-                    DSP_ERROR_EXIT(status, "Node Connect", ERROR);
+                    DSP_ERROR_EXIT(status, "Node Connect", ERROR, hInt);
                 }
                 else if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
                 {
@@ -402,7 +402,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                                                0,
                                                (struct DSP_STRMATTR *)phandle->dspCodec->DeviceInfo.DspStream,
                                                pArgs);
-                    DSP_ERROR_EXIT(status, "Node Connect", ERROR);
+                    DSP_ERROR_EXIT(status, "Node Connect", ERROR, hInt);
                 }
             }
             else
@@ -414,11 +414,11 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         }
 
         status = DSPNode_Create(phandle->dspCodec->hNode);
-        DSP_ERROR_EXIT(status, "Create the Node", ERROR);
+        DSP_ERROR_EXIT(status, "Create the Node", ERROR, hInt);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: After DSPNode_Create !!! \n", __LINE__);
 
         status = DSPNode_Run(phandle->dspCodec->hNode);
-        DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR);
+        DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR, hInt);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Run Successfully\n", __LINE__);
 
         if ((phandle->dspCodec->In_BufInfo.DataTrMethod == DMM_METHOD) || (phandle->dspCodec->Out_BufInfo.DataTrMethod == DMM_METHOD))
@@ -435,7 +435,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             memset(notification, 0, sizeof(struct DSP_NOTIFICATION));
 
             status = DSPNode_RegisterNotify(phandle->dspCodec->hNode, DSP_NODEMESSAGEREADY, DSP_SIGNALEVENT, notification);
-            DSP_ERROR_EXIT(status, "DSP node register notify", ERROR);
+            DSP_ERROR_EXIT(status, "DSP node register notify", ERROR, hInt);
             phandle->g_aNotificationObjects[0] = notification;
 #ifdef __ERROR_PROPAGATION__
             struct DSP_NOTIFICATION* notification_mmufault;
@@ -451,7 +451,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
 
             status = DSPProcessor_RegisterNotify(phandle->dspCodec->hProc, DSP_MMUFAULT, DSP_SIGNALEVENT, notification_mmufault);
-            DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", ERROR);
+            DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", ERROR, hInt);
             phandle->g_aNotificationObjects[1] =  notification_mmufault;
 
             struct DSP_NOTIFICATION* notification_syserror ;
@@ -467,7 +467,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
 
             status = DSPProcessor_RegisterNotify(phandle->dspCodec->hProc, DSP_SYSERROR, DSP_SIGNALEVENT, notification_syserror);
-            DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", ERROR);
+            DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", ERROR, hInt);
             phandle->g_aNotificationObjects[2] =  notification_syserror;
 #endif
         }
@@ -598,14 +598,14 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     /* INITIALIZATION OF DSP */
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Entering Init_DSPSubSystem\n", __LINE__);
     status = DspManager_Open(0, NULL);
-    DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR);
+    DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
     /* DSPManager_Open is successful, increment counter so that we can keep open/close to a 1:1 ratio. */
     phandle->iDspOpenCount++;
 
     /* Attach and get handle to processor */
     status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
-    DSP_ERROR_EXIT(status, "Attach processor", ERROR);
+    DSP_ERROR_EXIT(status, "Attach processor", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DSPProcessor_Attach Successful\n");
     OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "Base Image is Already Loaded\n");
 
@@ -625,7 +625,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                                                phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType,
                                                abs_dsp_path);
 
-        DSP_ERROR_EXIT (status, "Register Component Library", ERROR)
+        DSP_ERROR_EXIT (status, "Register Component Library", ERROR, hInt);
     }
 
     /* NODE specific data */
@@ -674,7 +674,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                              (struct DSP_UUID *)phandle->dspCodec->NodeInfo.AllUUIDs[0].uuid,
                              (struct DSP_CBDATA*)&crData, &NodeAttrIn,
                              &(phandle->dspCodec->hNode));
-    DSP_ERROR_EXIT(status, "Allocate Component", ERROR);
+    DSP_ERROR_EXIT(status, "Allocate Component", ERROR, hInt);
     OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Allocate Successfully\n", __LINE__);
 
     if(phandle->dspCodec->DeviceInfo.TypeofDevice == 1)
@@ -685,7 +685,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                                  NULL,
                                  NULL,
                                  &(phandle->dspCodec->hDasfNode));
-        DSP_ERROR_EXIT(status, "DASF Allocate Component", ERROR);
+        DSP_ERROR_EXIT(status, "DASF Allocate Component", ERROR, hInt);
 
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DASF DSPNode_Allocate Successfully\n", __LINE__);
         if(phandle->dspCodec->DeviceInfo.DspStream !=NULL)
@@ -699,7 +699,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                                          phandle->dspCodec->hDasfNode,
                                          0,
                                          (struct DSP_STRMATTR *)phandle->dspCodec->DeviceInfo.DspStream);
-                DSP_ERROR_EXIT(status, "Node Connect", ERROR);
+                DSP_ERROR_EXIT(status, "Node Connect", ERROR, hInt);
             }
             else if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
             {
@@ -710,7 +710,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
                                          phandle->dspCodec->hNode,
                                          0,
                                          (struct DSP_STRMATTR *)phandle->dspCodec->DeviceInfo.DspStream);
-                DSP_ERROR_EXIT(status, "Node Connect", ERROR);
+                DSP_ERROR_EXIT(status, "Node Connect", ERROR, hInt);
             }
         }
         else
@@ -722,11 +722,11 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     }
 
     status = DSPNode_Create(phandle->dspCodec->hNode);
-    DSP_ERROR_EXIT(status, "Create the Node", ERROR);
+    DSP_ERROR_EXIT(status, "Create the Node", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: After DSPNode_Create !!! \n", __LINE__);
 
     status = DSPNode_Run (phandle->dspCodec->hNode);
-    DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR);
+    DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Run Successfully\n", __LINE__);
 
     if ((phandle->dspCodec->In_BufInfo.DataTrMethod == DMM_METHOD) ||
@@ -744,7 +744,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         memset(notification,0,sizeof(struct DSP_NOTIFICATION));
 
         status = DSPNode_RegisterNotify(phandle->dspCodec->hNode, DSP_NODEMESSAGEREADY, DSP_SIGNALEVENT, notification);
-        DSP_ERROR_EXIT(status, "DSP node register notify", ERROR);
+        DSP_ERROR_EXIT(status, "DSP node register notify", ERROR, hInt);
         phandle->g_aNotificationObjects[0] =  notification;
 #ifdef __ERROR_PROPAGATION__
         struct DSP_NOTIFICATION* notification_mmufault;
@@ -760,7 +760,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         memset(notification_mmufault,0,sizeof(struct DSP_NOTIFICATION));
 
         status = DSPProcessor_RegisterNotify(phandle->dspCodec->hProc, DSP_MMUFAULT, DSP_SIGNALEVENT, notification_mmufault);
-        DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", ERROR);
+        DSP_ERROR_EXIT(status, "DSP node register notify DSP_MMUFAULT", ERROR, hInt);
         phandle->g_aNotificationObjects[1] =  notification_mmufault;
 
         struct DSP_NOTIFICATION* notification_syserror ;
@@ -776,7 +776,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         memset(notification_syserror,0,sizeof(struct DSP_NOTIFICATION));
 
         status = DSPProcessor_RegisterNotify(phandle->dspCodec->hProc, DSP_SYSERROR, DSP_SIGNALEVENT, notification_syserror);
-        DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", ERROR);
+        DSP_ERROR_EXIT(status, "DSP node register notify DSP_SYSERROR", ERROR, hInt);
         phandle->g_aNotificationObjects[2] =  notification_syserror;
 #endif
     }
@@ -1151,7 +1151,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
     status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
     OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "after SETBUFF \n");
-    DSP_ERROR_EXIT (status, "Send message to node", MUTEX_UNLOCK);
+    DSP_ERROR_EXIT (status, "Send message to node", MUTEX_UNLOCK, hComponent);
 MUTEX_UNLOCK:
     pthread_mutex_unlock(&phandle->mutex);
 EXIT:
@@ -1207,7 +1207,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+            DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
             break;
         }
         case EMMCodecControlStart:
@@ -1221,7 +1221,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+            DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
             break;
         }
         case MMCodecControlStop:
@@ -1235,7 +1235,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+            DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
             break;
         }
         case EMMCodecControlDestroy:
@@ -1318,7 +1318,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                 PERF_ModuleSocketNode);
 #endif
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+            DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
             break;
         }
         case EMMCodecControlAlgCtrl:
@@ -1365,7 +1365,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
 #endif
                     status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
                     pthread_mutex_unlock(&phandle->mutex);
-                    DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+                    DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
                     break;
                 }
             }
@@ -1445,7 +1445,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
             }
             status = DSPNode_PutMessage (phandle->dspCodec->hNode, &msg, DSP_FOREVER);
             pthread_mutex_unlock(&phandle->mutex);
-            DSP_ERROR_EXIT (status, "Send message to node", EXIT);
+            DSP_ERROR_EXIT (status, "Send message to node", EXIT, hComponent);
 
             OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "STRMControl: arg[0]: message = %x\n",(int)args[0]);
             OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "STRMControl: arg[1]: address = %p\n",args[1]);
@@ -1659,7 +1659,7 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
     /* Get current state of node, if it is running, then only terminate it */
 
     status = DSPNode_GetAttr(hInterface->dspCodec->hNode, &nodeAttr, sizeof(nodeAttr));
-    DSP_ERROR_EXIT (status, "DeInit: Error in Node GetAtt ", EXIT);
+    DSP_ERROR_EXIT (status, "DeInit: Error in Node GetAtt ", EXIT, hInterface->pCodecinterfacehandle);
         status = DSPNode_Terminate(hInterface->dspCodec->hNode, &nExit);
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: LCML:: Node Has Been Terminated --1\n",__LINE__);
     codec = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle)->pCodec);
@@ -1670,18 +1670,18 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
     if(codec->g_aNotificationObjects[1]!= NULL)
     {
        /* status = DSPNode_RegisterNotify(hInterface->dspCodec->hProc, 0, DSP_SIGNALEVENT, codec->g_aNotificationObjects[1]);
-        DSP_ERROR_EXIT(status, "DSP node de-register notify", EXIT);*/
+        DSP_ERROR_EXIT(status, "DSP node de-register notify", EXIT, hInterface->pCodecinterfacehandle);*/
     }
 #endif
     if (hInterface->dspCodec->DeviceInfo.TypeofDevice == 1) {
         /* delete DASF node */
         status = DSPNode_Delete(hInterface->dspCodec->hDasfNode);
-        DSP_ERROR_EXIT (status, "DeInit: DASF Node Delete ", EXIT);
+        DSP_ERROR_EXIT (status, "DeInit: DASF Node Delete ", EXIT, hInterface->pCodecinterfacehandle);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Deleted the DASF node Successfully\n",__LINE__);
     }
 	/* delete SN */
     status = DSPNode_Delete(hInterface->dspCodec->hNode);
-    DSP_ERROR_EXIT (status, "DeInit: Codec Node Delete ", EXIT);
+    DSP_ERROR_EXIT (status, "DeInit: Codec Node Delete ", EXIT, hInterface->pCodecinterfacehandle);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Deleted the node Successfully\n",__LINE__);
 
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Entering UnLoadDLLs \n", __LINE__);
@@ -1690,7 +1690,7 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Register Component Node\n",hInterface->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
         status = DSPManager_UnregisterObject ((struct DSP_UUID *) hInterface->dspCodec->NodeInfo.AllUUIDs[dllinfo].uuid,
                                                                                         hInterface->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
-        /*DSP_ERROR_EXIT (status, "Unregister DSP Object, Socket UUID ", EXIT);*/
+        /*DSP_ERROR_EXIT (status, "Unregister DSP Object, Socket UUID ", EXIT, hInterface->pCodecinterfacehandle);*/
     }
 
 EXIT:
