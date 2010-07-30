@@ -2409,7 +2409,7 @@ int LoadBaseImage() {
     
     struct DSP_PROCESSORINFO dspInfo;
     DSP_HPROCESSOR hProc;
-    DSP_STATUS status = DSP_SOK;
+    DSP_STATUS status = 0;
     unsigned int numProcs;
     char* argv[2];
    
@@ -2425,7 +2425,7 @@ int LoadBaseImage() {
         if ((dspInfo.uProcessorType == DSPTYPE_55) || 
             (dspInfo.uProcessorType == DSPTYPE_64)) {
             uProcId = index;
-            status = DSP_SOK;
+            status = 0;
             break;
         }
         index++;
