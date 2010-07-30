@@ -8731,11 +8731,12 @@ OMX_ERRORTYPE DecrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex) {
 
 OMX_ERRORTYPE IsResolutionSupported(OMX_U32 nWidth, OMX_U32 nHeight, VIDDEC_COMPONENT_PRIVATE* pComponentPrivate) {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    OMX_U32 minWidth, minHeight = 0;
     OMX_VIDEO_CODINGTYPE eCompressionFormat = pComponentPrivate->pInPortDef->format.video.eCompressionFormat;
     /* Verify max resolution limit - all formats have the same limit (Since SN 3.13 spark support WVGA also)*/
     if((nWidth > VIDDEC_WVGA_WIDTH) || (nHeight > VIDDEC_WVGA_WIDTH) ||
        nWidth*nHeight > VIDDEC_MAX_RESOLUTION_SIZE){
-        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
+        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported high resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
         eError = OMX_ErrorUnsupportedSetting;
         goto EXIT;
     }
@@ -8744,33 +8745,21 @@ OMX_ERRORTYPE IsResolutionSupported(OMX_U32 nWidth, OMX_U32 nHeight, VIDDEC_COMP
     switch(eCompressionFormat){
     case OMX_VIDEO_CodingMPEG4:
     case OMX_VIDEO_CodingH263:
-        if((nWidth < VIDDEC_MIN_MPEG4_WIDTH) || (nHeight < VIDDEC_MIN_MPEG4_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
-            eError = OMX_ErrorUnsupportedSetting;
-            goto EXIT;
-        }
+        minWidth = VIDDEC_MIN_MPEG4_WIDTH;
+        minHeight = VIDDEC_MIN_MPEG4_HEIGHT;
         break;
     case OMX_VIDEO_CodingAVC:
-        if((nWidth < VIDDEC_MIN_H264_WIDTH) || (nHeight < VIDDEC_MIN_H264_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
-            eError = OMX_ErrorUnsupportedSetting;
-            goto EXIT;
-        }
+        minWidth = VIDDEC_MIN_H264_WIDTH;
+        minHeight = VIDDEC_MIN_H264_HEIGHT;
         break;
     case OMX_VIDEO_CodingWMV:
-        if((nWidth < VIDDEC_MIN_WMV_WIDTH) || (nHeight < VIDDEC_MIN_WMV_HEIGHT)){
-            OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
-            eError = OMX_ErrorUnsupportedSetting;
-            goto EXIT;
-        }
+        minWidth = VIDDEC_MIN_WMV_WIDTH;
+        minHeight = VIDDEC_MIN_WMV_HEIGHT;
         break;
     case OMX_VIDEO_CodingUnused:
         if(VIDDEC_SPARKCHECK){
-            if((nWidth < VIDDEC_MIN_SPARK_WIDTH) || (nHeight < VIDDEC_MIN_SPARK_HEIGHT)){
-                OMX_ERROR4(pComponentPrivate->dbg, "Unsuported resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
-                eError = OMX_ErrorUnsupportedSetting;
-                goto EXIT;
-            }
+            minWidth = VIDDEC_MIN_SPARK_WIDTH;
+            minHeight = VIDDEC_MIN_SPARK_HEIGHT;
         }
         else{
             OMX_ERROR4(pComponentPrivate->dbg, "error: Not recognized format or VideoDecodeCustomParamIsSparkInput not set!!");
@@ -8780,6 +8769,12 @@ OMX_ERRORTYPE IsResolutionSupported(OMX_U32 nWidth, OMX_U32 nHeight, VIDDEC_COMP
         break;
     default:
         OMX_ERROR4(pComponentPrivate->dbg, "error: Not recognized format!");
+        eError = OMX_ErrorUnsupportedSetting;
+        goto EXIT;
+    }
+
+    if((nWidth < minWidth) || (nHeight < minHeight)){
+        OMX_ERROR4(pComponentPrivate->dbg, "Unsuported low resolution, nWidth = %ld; nHeight = %ld", nWidth, nHeight);
         eError = OMX_ErrorUnsupportedSetting;
         goto EXIT;
     }
