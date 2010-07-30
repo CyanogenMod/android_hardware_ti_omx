@@ -1552,7 +1552,7 @@ EXIT:
 ** ==========================================================================*/
 OMX_ERRORTYPE DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg )
 {
-    DSP_STATUS status = DSP_SOK;
+    DSP_STATUS status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     if(pMapPtr == NULL)
@@ -1725,7 +1725,7 @@ EXIT:
 void* MessagingThread(void* arg)
 {
     /* OMX_ERRORTYPE eError = OMX_ErrorUndefined; */
-    DSP_STATUS status = DSP_SOK;
+    DSP_STATUS status = 0;
     struct DSP_MSG msg = {0,0,0};
     unsigned int index=0;
     LCML_MESSAGINGTHREAD_STATE threadState = EMessagingThreadCodecStopped;
