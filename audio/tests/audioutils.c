@@ -182,6 +182,6 @@ int unparse_rca(OMX_U8* pBuffer, int * payload){
   tempBuffer+=8;
   memcpy(pBuffer+22,tempBuffer,sizeof(OMX_U16));
   tempBuffer += 7;
-  *payload = *((OMX_U16*)tempBuffer);
+  memcpy(payload,tempBuffer,2);
   return 28;
 }
