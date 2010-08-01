@@ -3892,13 +3892,13 @@ OMX_ERRORTYPE WMADEC_Parser(OMX_U8* pBuffer, RCA_HEADER *pStreamData, struct OMX
 
     //These are the important fields that the socket node needs
     pStreamData->iTypeSpecific=0x1c;
-    pStreamData->iFormatTag= *((OMX_U16*)(pBuffer));
-    pStreamData->iChannel=*((OMX_U16 *)(pBuffer+2));    
-    pStreamData->iSamplePerSec=*((OMX_U32 *)(pBuffer+4));
-    pStreamData->iAvgBytesPerSec=*((OMX_U32 *)(pBuffer+8)); //check
-    pStreamData->iBlockAlign=*((OMX_U16 *)(pBuffer+2+4+4+2));
-    pStreamData->iValidBitsPerSample=*((OMX_U16 *)(pBuffer+2+4+4+2+2));   
-    pStreamData->iEncodeOptV=*((OMX_U16 *)(pBuffer+2+4+4+2+2+2+2+2+2));
+    memcpy(&pStreamData->iFormatTag,pBuffer,sizeof(OMX_U16));
+    memcpy(&pStreamData->iChannel,pBuffer+2,sizeof(OMX_U16));
+    memcpy(&pStreamData->iSamplePerSec,pBuffer+4,sizeof(OMX_U32));
+    memcpy(&pStreamData->iAvgBytesPerSec,pBuffer+8,sizeof(OMX_U32));
+    memcpy(&pStreamData->iBlockAlign,pBuffer+12,sizeof(OMX_U16));
+    memcpy(&pStreamData->iValidBitsPerSample,pBuffer+14,sizeof(OMX_U16));
+    memcpy(&pStreamData->iEncodeOptV,pBuffer+22,sizeof(OMX_U16));
     pStreamData->iMaxPacketSize=pStreamData->iBlockAlign+31;
 
     /*After this, the buffer has extra info, the Codc Specific Data Size which has 16 bites of length (2 bytes), and the Codec Specific Data of vari*/
