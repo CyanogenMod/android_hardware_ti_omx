@@ -1639,7 +1639,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pBufHeader->nFilledLen = 0;
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       pComponentPrivate->pInputBufferList->pBufHdr[0]);
+                                                       pBufHeader);
                 
             pComponentPrivate->nEmptyBufferDoneCount++;
                 
@@ -1691,39 +1691,38 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                           0,
                           PERF_ModuleCommonLayer);
 #endif
-         if (pComponentPrivate->bBypassDSP == 0) {
-             if (pComponentPrivate->curState == OMX_StateExecuting) {
-                 if(!(pComponentPrivate->reconfigInputPort || pComponentPrivate->reconfigOutputPort)){
-                     if (!WMADEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)){
-                        if(!pComponentPrivate->bDspStoppedWhileExecuting){
-                            WMADEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput);
-                            eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                      EMMCodecOuputBuffer, 
-                                                      (OMX_U8 *)pBufHeader->pBuffer, 
-                                                      pBufHeader->nAllocLen,
-                                                      pBufHeader->nAllocLen,
-                                                      (OMX_U8*)pLcmlHdr->pOpParam,
-                                                      sizeof(WMADEC_UAlgOutBufParamStruct),
-                                                      NULL);
-                            if (eError != OMX_ErrorNone )
-                            {
-                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
-                                               __LINE__);
-                                WMADEC_FatalErrorRecover(pComponentPrivate);
-                                eError = OMX_ErrorHardware;
-                                return eError;
-                            }
-                            pComponentPrivate->lcml_nOpBuf++;
-                        }
-                    }
-                } else{
-                     pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
-		   OMX_PRBUFFER2(pComponentPrivate->dbg, "Don't queue while doing a reconfig:: output buffer, num pending = %ld", pComponentPrivate->nNumOutputBufPending);
-                }
-             }else if (pComponentPrivate->curState == OMX_StatePause) {
+         if (pComponentPrivate->curState == OMX_StateExecuting) {
+             if(!(pComponentPrivate->reconfigInputPort || pComponentPrivate->reconfigOutputPort)){
+                 if (!WMADEC_IsPending(pComponentPrivate,pBufHeader,OMX_DirOutput)){
+                     if(!pComponentPrivate->bDspStoppedWhileExecuting){
+                         WMADEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput);
+                         eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
+                                                   EMMCodecOuputBuffer,
+                                                   (OMX_U8 *)pBufHeader->pBuffer,
+                                                   pBufHeader->nAllocLen,
+                                                   pBufHeader->nAllocLen,
+                                                   (OMX_U8*)pLcmlHdr->pOpParam,
+                                                   sizeof(WMADEC_UAlgOutBufParamStruct),
+                                                   NULL);
+                         if (eError != OMX_ErrorNone )
+                         {
+                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: IssuingDSP OP: Error Occurred",
+                                        __LINE__);
+                             WMADEC_FatalErrorRecover(pComponentPrivate);
+                             eError = OMX_ErrorHardware;
+                             return eError;
+                         }
+                         pComponentPrivate->lcml_nOpBuf++;
+                     }
+                 }
+             } else{
                  pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
+		 OMX_PRBUFFER2(pComponentPrivate->dbg, "Don't queue while doing a reconfig:: output buffer, num pending = %ld", pComponentPrivate->nNumOutputBufPending);
              }
+         }else if (pComponentPrivate->curState == OMX_StatePause) {
+             pComponentPrivate->pOutputBufHdrPending[pComponentPrivate->nNumOutputBufPending++] = pBufHeader;
          }
+
          if (pComponentPrivate->bFlushOutputPortCommandPending) {
             OMX_SendCommand( pComponentPrivate->pHandle, OMX_CommandFlush, 1, NULL);
          }
