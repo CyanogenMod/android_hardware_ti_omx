@@ -374,7 +374,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
         eError = OMX_ErrorInsufficientResources;
         goto EXIT;
     }
-    pComponentPrivate->pBufferRCV.pBuffer = pComponentPrivate->pBufferRCV.sStructRCV;
+    pComponentPrivate->pBufferRCV.pBuffer = (OMX_U8 *)pComponentPrivate->pBufferRCV.sStructRCV;
 
     OMX_CONF_INIT_STRUCT( &pComponentPrivate->componentRole, OMX_PARAM_COMPONENTROLETYPE, pComponentPrivate->dbg);
     VIDDEC_Load_Defaults( pComponentPrivate, VIDDEC_INIT_ALL);
@@ -757,7 +757,7 @@ static OMX_ERRORTYPE VIDDEC_SendCommand (OMX_HANDLETYPE hComponent,
             }
             break;
         case OMX_CommandFlush:
-            if ( nParam1 > 1 && nParam1 != -1 ) {
+            if ( nParam1 > 1 && nParam1 != OMX_ALL ) {
                 eError = OMX_ErrorBadPortIndex;
                 goto EXIT;
             }
@@ -1444,7 +1444,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                     if (eError != OMX_ErrorNone) {
                         goto EXIT;
                     }
-                    OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %dx%d, nBufferSize: %d",
+                    OMX_PRINT3(pComponentPrivate->dbg, "Set i/p resolution: %ldx%ld, nBufferSize: %ld",
                                 pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                 }
                 else if (pComponentParam->nPortIndex == pComponentPrivate->pOutPortDef->nPortIndex) {
@@ -1480,7 +1480,7 @@ static OMX_ERRORTYPE VIDDEC_SetParameter (OMX_HANDLETYPE hComp,
                         ((pPortDef->format.video.eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
                     pPortDef->nBufferSize = nMinOutputBufferSize;
 
-                    OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %dx%d, nBufferSize: %d", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
+                    OMX_PRINT3(pComponentPrivate->dbg, "Set OUT/p resolution: %ldx%ld, nBufferSize: %ld", pPortDefParam->format.video.nFrameWidth, pPortDefParam->format.video.nFrameHeight, pPortDef->nBufferSize);
                 }
                 else {
                     eError = OMX_ErrorBadPortIndex;
@@ -2136,8 +2136,8 @@ static OMX_ERRORTYPE VIDDEC_EmptyThisBuffer (OMX_HANDLETYPE pComponent,
     pHandle = (OMX_COMPONENTTYPE *)pComponent;
     pComponentPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
 
-    OMX_PRBUFFER1(pComponentPrivate->dbg, "+++Entering pHandle 0x%p pBuffer 0x%p Index %lu  state %x  nflags  %x  isfirst %x\n",pComponent,
-            pBuffHead, pBuffHead->nInputPortIndex,pComponentPrivate->eState,pBuffHead->nFlags,pComponentPrivate->bFirstHeader);
+    OMX_PRBUFFER1(pComponentPrivate->dbg, "+++Entering pHandle 0x%p pBuffer 0x%p Index %lu  state %x  nflags  %lx  isfirst %x\n",
+                pComponent, pBuffHead, pBuffHead->nInputPortIndex,pComponentPrivate->eState,(OMX_U32)pBuffHead->nFlags,(OMX_BOOL)pComponentPrivate->bFirstHeader);
 
 #ifdef __PERF_INSTRUMENTATION__
     PERF_ReceivedFrame(pComponentPrivate->pPERF,
@@ -3519,7 +3519,7 @@ static OMX_ERRORTYPE VIDDEC_Allocate_DSPResources(VIDDEC_COMPONENT_PRIVATE *pCom
     it means just one variable for both index*/
     void *pUalgOutParams[1];
     void *pUalgInpParams[1];
-    OMX_U8* pTemp = NULL;
+
     OMX_U8 nBufferCnt = pComponentPrivate->pCompPort[nPortIndex]->nBufferCnt;
     OMX_PARAM_PORTDEFINITIONTYPE* pPortDefIn = pComponentPrivate->pInPortDef;
     VIDDEC_BUFFER_PRIVATE* pBufferPrivate = NULL;
@@ -3679,7 +3679,7 @@ EXIT:
 /*-------------------------------------------------------------------*/
 static OMX_ERRORTYPE VIDDEC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent, OMX_IN OMX_STRING cParameterName, OMX_OUT OMX_INDEXTYPE* pIndexType)
 {
-    int nIndex;
+    OMX_U32 nIndex;
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
 
     OMX_CONF_CHECK_CMD(hComponent, OMX_TRUE, OMX_TRUE);
