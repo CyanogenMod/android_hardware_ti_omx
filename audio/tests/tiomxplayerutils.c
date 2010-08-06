@@ -78,6 +78,18 @@ void event_signal(Event_t* event) {
   pthread_cond_signal(&event->cond);
   pthread_mutex_unlock(&event->mutex);
 }
+/**
+ * Application timeout, need to kill the process to continue
+ *
+ * @param int signal
+ *
+*/
+void handle_watchdog(int sig)
+{
+    APP_DPRINT("Application timeout, killing !!!\n");
+    /*using 2 as return value to inform that app hanged*/
+    exit(2);
+}
 
 /** Waits for the OMX component to change to the desired state
  *
@@ -118,6 +130,9 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
   case OMX_EventCmdComplete:
     if (nData1 == OMX_CommandStateSet){
       APP_DPRINT("OMX_EventCmdComplete %ld\n",nData2);
+      if(appPrvt->state != OMX_StatePause){
+          appPrvt->stateToPause=0;
+      }
       event_wakeup(appPrvt->state);
     }
     if (nData1 == OMX_CommandPortDisable){
@@ -186,7 +201,11 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
   default:
     break;
   }
-   return OMX_ErrorNone;
+  /*Reset timer*/
+  if(appPrvt->wd_isSet){
+      alarm (appPrvt->wd_timeout);
+  }
+  return OMX_ErrorNone;
 }
 
 OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
@@ -197,6 +216,7 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
   OMX_ERRORTYPE error = OMX_ErrorNone;
   appPrivateSt* appPrvt = (appPrivateSt*)ptr;
   static long bytes_wrote = 0;
+
   if(!appPrvt->done_flag){
     if(FILE_MODE== appPrvt->mode||
        (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
@@ -213,15 +233,23 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
                pBuffer->nFilledLen,
                (unsigned int)pBuffer->nFlags);*/
     /*APP_DPRINT("TS %lld TC %ld\n",pBuffer->nTimeStamp,pBuffer->nTickCount);*/
-    error = OMX_FillThisBuffer(hComponent,pBuffer);
-    if(error != OMX_ErrorNone){
-      APP_DPRINT("Warning: buffer (%p) dropped!\n",pBuffer);
+    /* FIX ME */
+    if(!appPrvt->stateToPause){
+        error = OMX_FillThisBuffer(hComponent,pBuffer);
+        if(error != OMX_ErrorNone){
+            APP_DPRINT("Warning: buffer (%p) dropped!\n",pBuffer);
+        }
     }
   }else{
       if(FILE_MODE== appPrvt->mode||
          (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
           APP_DPRINT(" %ld Bytes wrote\n",sizeof(OMX_U32)*(bytes_wrote - 1));
       }
+  }
+
+  /*Reset timer*/
+  if(appPrvt->wd_isSet){
+      alarm (appPrvt->wd_timeout);
   }
 
   return error;
@@ -233,12 +261,17 @@ OMX_ERRORTYPE EmptyBufferDone(OMX_HANDLETYPE hComponent,
 {
   OMX_ERRORTYPE error = OMX_ErrorNone;
   appPrivateSt* appPrvt = (appPrivateSt*)ptr;
-
-  error = send_input_buffer(appPrvt,pBuffer);
-  if(error != OMX_ErrorNone){
-    APP_DPRINT("Error from send_input_buffer: %d\n",error);
+  /* FIX ME */
+  if(!appPrvt->stateToPause){
+      error = send_input_buffer(appPrvt,pBuffer);
+      if(error != OMX_ErrorNone){
+          APP_DPRINT("Error from send_input_buffer: %d\n",error);
+      }
   }
-
+  /*Reset timer*/
+  if(appPrvt->wd_isSet){
+      alarm (appPrvt->wd_timeout);
+  }
   return error;
 }
 
@@ -348,6 +381,9 @@ int send_dec_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
           nread = process_g729(appPrvt,buffer->pBuffer);
           break;
       case OMX_AUDIO_CodingWMA:
+          if(appPrvt->fileReRead){
+              first_buff=OMX_TRUE;
+          }
           if(first_buff){
               buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG;
               first_buff =  OMX_FALSE;
@@ -381,7 +417,7 @@ int send_dec_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
 	  }
       }
       appPrvt->processed_buffers++;
-      if((appPrvt->tc == 2) && (appPrvt->processed_buffers == 50)){
+      if((appPrvt->tc == 2 || appPrvt->tc == 3 || appPrvt->tc == 4) && (appPrvt->processed_buffers == 50)){
           event_wakeup(appPrvt->pause);
           return 0;
       }
@@ -549,21 +585,8 @@ int test_play(appPrivateSt *appPrvt){
   if(error != OMX_ErrorNone){
     return 1;
   }
-
-  for (i=0; i < appPrvt->out_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send OUT buffer %p\n",appPrvt->out_buffers[i]);
-    error = OMX_FillThisBuffer(appPrvt->phandle,appPrvt->out_buffers[i]);
-    if(error != OMX_ErrorNone) {
-      APP_DPRINT("Warning: buffer (%p) dropped!\n",appPrvt->in_buffers[i]);
-    }
-  }
-  for (i=0; i < appPrvt->in_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send IN buffer %p\n",appPrvt->in_buffers[i]);
-    error = send_input_buffer(appPrvt,appPrvt->in_buffers[i]);
-    if(error) {
-      APP_DPRINT("Warning: buffer (%p) not sent!\n",appPrvt->in_buffers[i]);
-    }
-  }
+  /*Start sending input and output buffers*/
+  startSendingBuffers(appPrvt);
 
   /* Now wait for EOS.... */
   APP_DPRINT("Now wait for EOS to finish....\n");
@@ -593,28 +616,14 @@ int test_repeat(appPrivateSt *appPrvt){
     }
 
     if((error = test_play(appPrvt))){
-      APP_DPRINT("FAILED!!\n");
-      return 1;
-    }
-
-
-    APP_DPRINT("Change state to Idle\n");
-    error = OMX_SendCommand(appPrvt->phandle,
-                            OMX_CommandStateSet,
-                            OMX_StateIdle,
-                            NULL);
-    if(error != OMX_ErrorNone){
-        APP_DPRINT("Error when trying to change to idle \n");
+        APP_DPRINT("FAILED!!\n");
         return 1;
     }
 
-    error = WaitForState(appPrvt->phandle,
-                         OMX_StateIdle,
-                         appPrvt->state);
-
+    APP_DPRINT("Change state to Idle\n");
+    error = SetOMXState(appPrvt, OMX_StateIdle);
     if(error != OMX_ErrorNone){
-        printf("error \n");
-      return 1;
+        return 1;
     }
 
     event_reset(appPrvt->eos);
@@ -650,21 +659,8 @@ int test_pause_resume(appPrivateSt *appPrvt){
   if(error != OMX_ErrorNone){
     return 1;
   }
-  for (i=0; i < appPrvt->out_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send OUT buffer %p\n",appPrvt->out_buffers[i]);
-    error = OMX_FillThisBuffer(appPrvt->phandle,appPrvt->out_buffers[i]);
-    if(error != OMX_ErrorNone) {
-      APP_DPRINT("Warning: buffer (%p) dropped!\n",appPrvt->in_buffers[i]);
-    }
-  }
-  for (i=0; i < appPrvt->in_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send IN buffer %p\n",appPrvt->in_buffers[i]);
-    error = send_input_buffer(appPrvt,appPrvt->in_buffers[i]);
-    if(error) {
-      APP_DPRINT("Warning: buffer (%p) not sent!\n",appPrvt->in_buffers[i]);
-    }
-  }
-
+  /*Start sending input and output buffers*/
+  startSendingBuffers(appPrvt);
   /* Now wait for pause.... */
   APP_DPRINT("Process some buffers....\n");
   event_block(appPrvt->pause);
@@ -677,7 +673,9 @@ int test_pause_resume(appPrivateSt *appPrvt){
   if(error != OMX_ErrorNone){
       return 1;
   }
-
+  /* FIX ME */
+  /*  We need to implement buffer control logic in order to get rid of this flag */
+  appPrvt->stateToPause=1;
   error = SetOMXState(appPrvt,OMX_StatePause);
   if(error != OMX_ErrorNone){
       return 1;
@@ -688,29 +686,67 @@ int test_pause_resume(appPrivateSt *appPrvt){
   APP_DPRINT("Resume Playback\n");
 
   error = SetOMXState(appPrvt, OMX_StateExecuting);
+
   if(error != OMX_ErrorNone){
     return 1;
   }
-
-  for (i=0; i < appPrvt->out_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send OUT buffer %p\n",appPrvt->out_buffers[i]);
-    error = OMX_FillThisBuffer(appPrvt->phandle,appPrvt->out_buffers[i]);
-    if(error != OMX_ErrorNone) {
-      APP_DPRINT("Warning: buffer (%p) dropped!\n",appPrvt->in_buffers[i]);
-    }
-  }
-  for (i=0; i < appPrvt->in_port->nBufferCountActual; i++) {
-    APP_DPRINT( "Send IN buffer %p\n",appPrvt->in_buffers[i]);
-    error = send_input_buffer(appPrvt,appPrvt->in_buffers[i]);
-    if(error) {
-      APP_DPRINT("Warning: buffer (%p) not sent!\n",appPrvt->in_buffers[i]);
-    }
-  }
-
+  /*Start sending input and output buffers*/
+  startSendingBuffers(appPrvt);
   /* Now wait for EOS.... */
   APP_DPRINT("Now wait for EOS to finish....\n");
   event_block(appPrvt->eos);
 
+  return 0;
+}
+
+/** test_stop_play: Stop-Play
+ *
+ * @param appPrvt Handle to the app component structure.
+ *
+ */
+int test_stop_play(appPrivateSt *appPrvt){
+
+  int i;
+  int error = 0;
+
+  sleep(1);
+  error = SetOMXState(appPrvt, OMX_StateExecuting);
+  if(error != OMX_ErrorNone){
+    return 1;
+  }
+  /*Start sending input and output buffers*/
+  startSendingBuffers(appPrvt);
+  /* Now wait for stop.... */
+  APP_DPRINT("Process some buffers....\n");
+  event_block(appPrvt->pause);
+
+  error = SetOMXState(appPrvt, OMX_StateIdle);
+  if(error != OMX_ErrorNone){
+    return 1;
+  }
+  if(appPrvt->tc==3){
+      /*Test case selected was stop and play*/
+      sleep(3);
+
+      appPrvt->fileReRead=OMX_TRUE;
+      event_reset(appPrvt->eos);
+      appPrvt->done_flag = OMX_FALSE;
+      if(RECORD != appPrvt->appType){
+          rewind(infile);
+      }
+
+      APP_DPRINT("Resume Playback after stop\n");
+
+      error = SetOMXState(appPrvt, OMX_StateExecuting);
+      if(error != OMX_ErrorNone){
+          return 1;
+      }
+      /*Start sending input and output buffers, again*/
+      startSendingBuffers(appPrvt);
+      /* Now wait for EOS.... */
+      APP_DPRINT("Now wait for EOS to finish....\n");
+      event_block(appPrvt->eos);
+  }
   return 0;
 }
 
@@ -731,6 +767,25 @@ int SetOMXState(appPrivateSt *appPrvt,OMX_STATETYPE DesiredState){
         return error;
     }
     return error;
+}
+
+void startSendingBuffers(appPrivateSt *appPrvt){
+    int i=0;
+    int error = 0;
+    for (i=0; i < appPrvt->out_port->nBufferCountActual; i++) {
+        APP_DPRINT( "Send OUT buffer %p\n",appPrvt->out_buffers[i]);
+        error = OMX_FillThisBuffer(appPrvt->phandle,appPrvt->out_buffers[i]);
+        if(error != OMX_ErrorNone) {
+            APP_DPRINT("Warning: buffer (%p) dropped!\n",appPrvt->in_buffers[i]);
+        }
+    }
+    for (i=0; i < appPrvt->in_port->nBufferCountActual; i++) {
+        APP_DPRINT( "Send IN buffer %p\n",appPrvt->in_buffers[i]);
+        error = send_input_buffer(appPrvt,appPrvt->in_buffers[i]);
+        if(error) {
+            APP_DPRINT("Warning: buffer (%p) not sent!\n",appPrvt->in_buffers[i]);
+        }
+    }
 }
 
 int setAudioFormat(appPrivateSt *appPrvt, char *fname){

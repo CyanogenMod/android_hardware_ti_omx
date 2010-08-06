@@ -177,6 +177,22 @@ int test(appPrivateSt *appPrvt){
       APP_DPRINT("********TEST PAUSE-RESUME EXITED********\n");
     }
     break;
+  case 3:
+    APP_DPRINT("********TEST STOP-PLAY BEGIN********\n");
+    if(!(error = test_stop_play(appPrvt))){
+      APP_DPRINT("********TEST STOP-PLAY FINISHED********\n");
+    }else{
+      APP_DPRINT("********TEST STOP-PLAY EXITED********\n");
+    }
+    break;
+  case 4:
+    APP_DPRINT("********TEST BASIC STOP BEGIN********\n");
+    if(!(error = test_stop_play(appPrvt))){
+      APP_DPRINT("********TEST BASIC STOP FINISHED********\n");
+    }else{
+      APP_DPRINT("********TEST BASIC STOP EXITED********\n");
+    }
+    break;
     //TODO: ADD MORE TEST CASES
   default:
     break;
@@ -203,6 +219,7 @@ void display_help()
     printf("       -Y output buffer size:  Output buffer size in bytes \n");
     printf("       -t test_case:  Specify test case number. Default value is 1 (play until EOF) \n");
     printf("       -D Device:  Specify the Device to render audio through ALSA\n");
+    printf("       -w watchdog timeout:  enable application timeout \n");
     printf("       -h : Display help \n");
     printf("\n");
 
@@ -237,7 +254,7 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         else{
             APP_DPRINT("Application name should be tiomxplayer or tiomxrecord \n");
         }
-        while ((c = getopt (argc, argv, "o:c:r:t:x:b:p:f:X:y:Y:i:D:s:dRh")) != -1)
+        while ((c = getopt (argc, argv, "o:c:r:t:x:b:p:f:X:y:Y:i:D:s:w:dRh")) != -1)
         switch (c)
         {
         case 'o':
@@ -293,6 +310,10 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         case 's':
             appPrvt->recordTime = atoi(optarg)*1000000;
             break;
+        case 'w':
+            appPrvt->wd_isSet=1;
+            appPrvt->wd_timeout = atoi(optarg);
+            break;
         case '?':
             if (optopt == 'o')
             fprintf (stderr, "Option -%c requires an argument.\n", optopt);
@@ -313,6 +334,8 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
             else if (optopt == 'i')
             fprintf (stderr, "Option -%c requires an argument.\n", optopt);
             else if (optopt == 'D')
+            fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (optopt == 'w')
             fprintf (stderr, "Option -%c requires an argument.\n", optopt);
             else if (isprint (optopt))
             fprintf (stderr, "Unknown option `-%c'.\n", optopt);
@@ -462,6 +485,8 @@ appPrivateSt* app_core_new(void){
   me->fileReRead = OMX_FALSE;
   me->frameSizeRecord=4096;
   me->commFunc =NULL;
+  me->wd_timeout=30;
+  me->wd_isSet=0;
   return me;
 }
 
@@ -769,7 +794,11 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
     if(appPrvt->mode==ALSA_MODE){
       alsa_setAudioParams(appPrvt) ;
     }
-
+    /*raise watchdog signal*/
+    if(appPrvt->wd_isSet){
+        signal (SIGALRM, handle_watchdog);
+        alarm (appPrvt->wd_timeout);
+    }
     /*Adding keyboard listener*/
     error = pthread_create (&appPrvt->commFunc, NULL, TIOMX_CommandListener, appPrvt);
     if (error != OMX_ErrorNone) {

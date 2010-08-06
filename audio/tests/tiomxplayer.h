@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <alsa/asoundlib.h>
+#include <signal.h>
 
 #define OMAP3
 #define IN_BUFFER_SIZE 1024*2
@@ -135,7 +136,10 @@ typedef struct{
   OMX_U32 recordTime;
   OMX_U32 frameSizeRecord;
   volatile OMX_U8 comthrdstop;
+  volatile OMX_U8 stateToPause;
   pthread_t commFunc;
+  OMX_U16 wd_timeout;
+  OMX_U8 wd_isSet;
 }appPrivateSt;
 
 /** Initializes the event at a given value
@@ -253,6 +257,12 @@ int test_pause_resume(appPrivateSt *appPrvt);
  */
 int test_repeat(appPrivateSt *appPrvt);
 
+/** test_stop_play: Stop-Play
+ *
+ * @param appPrvt Handle to the app component structure.
+ *
+ */
+int test_stop_play(appPrivateSt *appPrvt);
 /** Waits for the OMX component to change to the desired state
  *
  * @param pHandle Handle to the component
@@ -390,4 +400,21 @@ void* TIOMX_CommandListener();
  * Transition to a desired state
  */
 int SetOMXState(appPrivateSt *appPrvt,OMX_STATETYPE DesiredState);
+
+/**
+ * Process: startSendingbuffers
+ *
+ * @param appPrvt Application private variables
+ *
+ * Application starts to send input and output buffers
+*/
+void startSendingBuffers(appPrivateSt *appPrvt);
+/**
+ * Process: handle_watchdog
+ *
+ * @param int signal
+ *
+ * Application timeout, need to kill the process to continue
+*/
+void handle_watchdog(int sig);
 #endif
