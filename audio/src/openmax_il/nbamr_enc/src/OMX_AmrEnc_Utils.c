@@ -1822,6 +1822,7 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                         (pLcmlHdr->pDmmBuf), pComponentPrivate->dbg);
                     if (eError != OMX_ErrorNone){
                         OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n\n");
+                        NBAMRENC_FatalErrorRecover(pComponentPrivate);
                         goto EXIT;
                     }
                     pLcmlHdr->pBufferParam->pParamElem = (NBAMRENC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/
@@ -1968,8 +1969,9 @@ OMX_ERRORTYPE NBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                    if (eError != OMX_ErrorNone)
                    {
-                               OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n");
-                               goto EXIT;
+                       OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n");
+                       NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                       goto EXIT;
                    }
                    pLcmlHdr->pBufferParam->pParamElem = (NBAMRENC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/
          }
@@ -2621,15 +2623,8 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                 case USN_ERR_STRMCTRL:
                 case USN_ERR_UNKNOWN_MSG: 
                 {
-                    pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
-                    pComponentPrivate_CC->curState = OMX_StateInvalid;
-                    pHandle = pComponentPrivate_CC->pHandle;
-                    pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                            pHandle->pApplicationPrivate,
-                            OMX_EventError,
-                            OMX_ErrorInvalidState, 
-                            OMX_TI_ErrorSevere,
-                            NULL);
+                    OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: USN ERROR %d \n",__LINE__, args[4]);
+                    NBAMRENC_FatalErrorRecover(pComponentPrivate_CC);
                 }
                     break;
 #endif
@@ -3109,6 +3104,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
     if(DSP_FAILED(status))
     {
         OMX_ERROR4 (dbg, "Unable to flush mapped buffer: error 0x%x",(int)status);
+        eError = OMX_ErrorHardware;
         goto EXIT;
     }
     eError = OMX_ErrorNone;
@@ -3155,6 +3151,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
     if(DSP_FAILED(status))
     {
         OMX_ERROR4 (dbg, "DSPProcessor_UnMap() failed - error 0x%x",(int)status);
+        eError = OMX_ErrorHardware;
     }
 
     OMX_PRSTATE2 (dbg, "unreserving  structure =0x%p\n",pResPtr);
@@ -3162,6 +3159,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
     if(DSP_FAILED(status))
     {
         OMX_ERROR4 (dbg, "DSPProcessor_UnReserveMemory() failed - error 0x%x", (int)status);
+        eError = OMX_ErrorHardware;
     }
 
 EXIT:
@@ -3244,16 +3242,9 @@ void NBAMRENC_HandleUSNError (AMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U
         {
         /* all of these are fatal messages, Algo can not recover
                  * hence return an error */
-                pComponentPrivate->bIsInvalidState=OMX_TRUE;
-                pComponentPrivate->curState = OMX_StateInvalid;
-                pHandle = pComponentPrivate->pHandle;
-                pComponentPrivate->cbInfo.EventHandler(pHandle,
-                        pHandle->pApplicationPrivate,
-                        OMX_EventError,
-                        OMX_ErrorInvalidState,
-                        OMX_TI_ErrorSevere,
-                        NULL);
-            }
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: USN ERROR %d \n",__LINE__, arg);
+                NBAMRENC_FatalErrorRecover(pComponentPrivate);
+        }
             break;
 #endif
         default:
@@ -3286,6 +3277,8 @@ void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     }
 #endif
 
+    NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+
     pComponentPrivate->curState = OMX_StateInvalid;
     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3293,7 +3286,6 @@ void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
