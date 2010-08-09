@@ -1910,6 +1910,7 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     JPEGDEC_BUFFER_PRIVATE* pBuffPrivate = NULL;
+    JPEGDEC_UAlgOutBufParamStruct *ptJPGDecUALGOutBufParam = NULL;
 
     OMX_CHECK_PARAM(pComponentPrivate);
     JPEGDEC_OMX_CONF_CHECK_CMD(pComponentPrivate, 1, 1);
@@ -1966,6 +1967,13 @@ OMX_ERRORTYPE HandleDataBuf_FromDspJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
         if (pBuffPrivate->eBufferOwner != JPEGDEC_BUFFER_CLIENT) {
             pBuffPrivate->eBufferOwner = JPEGDEC_BUFFER_CLIENT;
 
+            /*Get the updated output resolution modified by the codec.
+              Output resolution would have been scaled down by the codec if the resolution is
+              greater the maximum resolution supported.
+            */
+            ptJPGDecUALGOutBufParam = (JPEGDEC_UAlgOutBufParamStruct *)pBuffPrivate->pUALGParams;
+            pComponentPrivate->sOutputResolution.nWidth = ptJPGDecUALGOutBufParam->ulOutputWidth;
+            pComponentPrivate->sOutputResolution.nHeight = ptJPGDecUALGOutBufParam->ulOutputHeight;
             pComponentPrivate->cbInfo.FillBufferDone(pComponentPrivate->pHandle,
                                                  pComponentPrivate->pHandle->pApplicationPrivate,
                                                  pBuffHead);

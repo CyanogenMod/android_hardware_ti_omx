@@ -547,6 +547,7 @@ typedef struct JPEGDEC_COMPONENT_PRIVATE
     OMX_CUSTOM_IMAGE_DECODE_SECTION* pSectionDecode;
     OMX_CUSTOM_IMAGE_DECODE_SUBREGION* pSubRegionDecode;
     OMX_CUSTOM_RESOLUTION sMaxResolution;
+    OMX_CUSTOM_RESOLUTION sOutputResolution;
     struct OMX_TI_Debug dbg;
 } JPEGDEC_COMPONENT_PRIVATE;
 
@@ -616,6 +617,7 @@ typedef enum OMX_INDEXIMAGETYPE
     OMX_IndexCustomSectionDecode,
     OMX_IndexCustomSubRegionDecode,
     OMX_IndexCustomSetMaxResolution,
+    OMX_IndexCustomOutputResolution,
     OMX_IndexCustomDebug
 }OMX_INDEXIMAGETYPE;
 
