@@ -3311,8 +3311,8 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         OMX_PRDSP2(pComponentPrivate->dbg, "Unsupported YUV format.\n");
         OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorUnsupportedSetting);
     }
-
-    pCreatePhaseArgs->ucUnrestrictedMV        = pComponentPrivate->ucUnrestrictedMV;
+    /* UPDATED:ucUnrestrictedMV */
+    pCreatePhaseArgs->ucUnrestrictedMV        = 1;
     pCreatePhaseArgs->ucNumRefFrames          = 1;
 
     if (pVidParamBitrate->eControlRate == OMX_Video_ControlRateVariable)
@@ -3352,6 +3352,8 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
     pCreatePhaseArgs->ucMVRange               = (pMotionVector->sXSearchRange > pMotionVector->sYSearchRange ? pMotionVector->sXSearchRange : pMotionVector->sYSearchRange);
     pCreatePhaseArgs->ucQPIFrame              = 28;
     pCreatePhaseArgs->ucProfile               = 66;
+    /* UPDATED:  ulIntraFramePeriod to 30 */
+    pComponentPrivate->nIntraFrameInterval    = 30;
     pCreatePhaseArgs->ulIntraFramePeriod      = pComponentPrivate->nIntraFrameInterval;
 
     if (pH264->eLevel == OMX_VIDEO_AVCLevel1b)
@@ -3418,7 +3420,7 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         /* Constant bit rate control enabled */
         /*pCreatePhaseArgs->ucRateControlAlgorithm = 1;*/
         /* Disable deblocking */
-        pCreatePhaseArgs->ucDeblockingEnable  = 0;
+        /* pCreatePhaseArgs->ucDeblockingEnable  = 0; */
         /*pCreatePhaseArgs->ucLevel = 30;*/
     }
 
