@@ -2712,7 +2712,10 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulHecInterval        = 0;
     pUalgInpParams->ulAIRRate            = pCompPortOut->pIntraRefreshType->nAirRef;
     pUalgInpParams->ulMIRRate            = pComponentPrivate->nMIRRate;
-    pUalgInpParams->ulfCode              = 5;
+    if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
+         pUalgInpParams->ulfCode         = 3; /* set to 3 for better quality */
+    else
+         pUalgInpParams->ulfCode         = 5;
     pUalgInpParams->ulHalfPel            = 1;
     pUalgInpParams->ul4MV                = 0;
     pUalgInpParams->ulIntraFrameInterval = pComponentPrivate->nIntraFrameInterval;
@@ -2720,17 +2723,18 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     /*Set nQPI Value*/
     pUalgInpParams->ulQPIntra = pComponentPrivate->nQPI;
 
+    /* Updated: enable UMV for H263 and Mpeg4 */
+    pUalgInpParams->uluseUMV              =1;
+
     /*Set segment mode params*/
     if (pComponentPrivate->bMVDataEnable)
     {
         pUalgInpParams->ul4MV                 =1;
-        pUalgInpParams->uluseUMV              =1;
         pUalgInpParams->ulMVDataEnable        =1;
     }
     else
     {
         pUalgInpParams->ul4MV                 =0;
-        pUalgInpParams->uluseUMV              =0;
         pUalgInpParams->ulMVDataEnable        =0;
     }
     if (pComponentPrivate->bResyncDataEnable)
@@ -3759,11 +3763,17 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
     pCreatePhaseArgs->ulVbvParamEnable        = 0;
     pCreatePhaseArgs->ulH263SliceMode         = 0;
     #endif
-    pCreatePhaseArgs->ulUseGOV                = 0;
+
     if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4)
+    {
+        pCreatePhaseArgs->ulUseGOV            = 1; /* set to 1 for MPEG4 encoder */
         pCreatePhaseArgs->ulUseVOS            = 1;//needed to generate VOL Header
+    }
     else
+    {
+        pCreatePhaseArgs->ulUseGOV            = 0;
         pCreatePhaseArgs->ulUseVOS            = 0;
+    }
     pCreatePhaseArgs->endArgs                 = END_OF_CR_PHASE_ARGS;
     pTmp = memcpy(nArr, pCreatePhaseArgs, sizeof(MP4VE_GPP_SN_Obj_CreatePhase));
     if (pTmp == NULL)
