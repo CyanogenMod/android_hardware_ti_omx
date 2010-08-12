@@ -2027,6 +2027,10 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     pComponentPrivate->num_Sent_Ip_Buff++;
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending Input buffer to Codec\n");
                 }
+                else{
+                    OMX_PRBUFFER2(pComponentPrivate->dbg, "App sent an input buffer that OMX or DSP already owns");
+                    MP3DEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
+                }
             }
             else if (pComponentPrivate->curState == OMX_StatePause) {
                 pComponentPrivate->pInputBufHdrPending[pComponentPrivate->nNumInputBufPending++] = pBufHeader;
@@ -2125,6 +2129,10 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                                   pBufHeader);
                             MP3DEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
                         }
+                    }
+                    else{
+                        OMX_PRBUFFER2(pComponentPrivate->dbg, "App sent an output buffer that OMX or DSP already owns");
+                        MP3DEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
                     }
                        
                 } else{
