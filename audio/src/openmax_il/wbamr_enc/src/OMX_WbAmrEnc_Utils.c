@@ -1951,7 +1951,8 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
                 if (eError != OMX_ErrorNone) {
                     OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n");
-                    goto EXIT;
+                    WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                    return eError;
                 }
 
                 pLcmlHdr->pBufferParam->pParamElem = (WBAMRENC_FrameStruct *) pLcmlHdr->pDmmBuf->pMapped;/*DSP Address*/
@@ -2092,7 +2093,8 @@ OMX_ERRORTYPE WBAMRENC_HandleDataBufFromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
             if (eError != OMX_ErrorNone) {
                 OMX_ERROR4(pComponentPrivate->dbg, "OMX_DmmMap ERRROR!!!!\n");
-                goto EXIT;
+                WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                return eError;
             }
 
             pLcmlHdr->pBufferParam->pParamElem = (WBAMRENC_FrameStruct *)pLcmlHdr->pDmmBuf->pMapped; /*DSP Address*/
@@ -3257,8 +3259,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
 
     if (DSP_FAILED(status)) {
         OMX_ERROR4 (dbg, "DSPProcessor_ReserveMemory() failed - error 0x%x", (int) status);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        return OMX_ErrorHardware;
     }
 
     pDmmBuf->nSize = size;
@@ -3277,8 +3278,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
     if (DSP_FAILED(status)) {
         OMX_ERROR4 (dbg, "DSPProcessor_Map() failed - error 0x%x",
                     (int)status);
-        eError = OMX_ErrorHardware;
-        goto EXIT;
+        return OMX_ErrorHardware;
     }
 
     OMX_PRBUFFER2 (dbg, "DMM Mapped: %p, size 0x%x (%d)\n",
@@ -3290,7 +3290,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
     if (DSP_FAILED(status)) {
         OMX_ERROR4 (dbg, "Unable to flush mapped buffer: error 0x%x",
                     (int)status);
-        goto EXIT;
+        return OMX_ErrorHardware;
     }
 
     eError = OMX_ErrorNone;
@@ -3330,6 +3330,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
     if (DSP_FAILED(status)) {
         OMX_ERROR4 (dbg, "DSPProcessor_UnMap() failed - error 0x%x", (int)status);
+        return OMX_ErrorHardware;
     }
 
     OMX_PRINT2 (dbg, "unreserving  structure =0x%p\n", pResPtr);
@@ -3337,6 +3338,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResP
 
     if (DSP_FAILED(status)) {
         OMX_ERROR4(dbg, "DSPProcessor_UnReserveMemory() failed - error 0x%x", (int)status);
+        return OMX_ErrorHardware;
     }
 
 EXIT:
@@ -3455,6 +3457,8 @@ void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     }
 #endif
 
+    WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+
     pComponentPrivate->curState = OMX_StateInvalid;
     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                        pComponentPrivate->pHandle->pApplicationPrivate,
@@ -3462,7 +3466,6 @@ void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
