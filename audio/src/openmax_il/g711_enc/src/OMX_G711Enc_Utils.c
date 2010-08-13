@@ -237,12 +237,7 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
-        
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
-        if(NULL == pTemp_lcml->pIpParam){
-            G711ENC_CleanupInitParams(pComponent);
-            return OMX_ErrorInsufficientResources;
-        }
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
         if(NULL == pTemp_lcml->pBufferParam){
             G711ENC_CleanupInitParams(pComponent);
@@ -289,13 +284,7 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParams(OMX_HANDLETYPE pComponent,
         pTemp_lcml->buffer = pTemp;
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,sizeof(G711ENC_UAlgOutBufParamStruct),G711ENC_UAlgOutBufParamStruct);
-        if(NULL == pTemp_lcml->pOpParam){
-            G711ENC_CleanupInitParams(pComponent);
-            return OMX_ErrorInsufficientResources;
-        }
-        pTemp_lcml->pOpParam->ulFrameCount = 0;
-        
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
         if(NULL == pTemp_lcml->pBufferParam){
             G711ENC_CleanupInitParams(pComponent);
@@ -504,7 +493,6 @@ OMX_ERRORTYPE G711ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G711ENC_INPUT_PORT];
     nIpBuf = pComponentPrivate->nRuntimeInputBuffers;
     for(i=0; i<nIpBuf; i++) {
-        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pIpParam,G711ENC_ParamStruct);
         OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam,G711ENC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
         OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam,G711ENC_FrameStruct);
@@ -514,7 +502,6 @@ OMX_ERRORTYPE G711ENC_CleanupInitParams(OMX_HANDLETYPE pComponent)
     pTemp_lcml = pComponentPrivate->pLcmlBufHeader[G711ENC_OUTPUT_PORT];
     nOpBuf =  pComponentPrivate->nRuntimeOutputBuffers;
     for(i=0; i<nOpBuf; i++) {
-        OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pOpParam,G711ENC_UAlgOutBufParamStruct);
         OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pBufferParam,G711ENC_ParamStruct);
         OMX_MEMFREE_STRUCT(pTemp_lcml->pDmmBuf);
         OMX_MEMFREE_STRUCT_DSPALIGN(pTemp_lcml->pFrameParam,G711ENC_FrameStruct);
@@ -892,7 +879,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
                                                       pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
                                                       pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
-                                                      (OMX_U8 *) pLcmlHdr->pIpParam,
+                                                      (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                       sizeof(G711ENC_ParamStruct),
                                                       NULL);
                                                         
@@ -911,7 +898,7 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
                                                       pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
                                                       pComponentPrivate->pOutputBufHdrPending[i]->nFilledLen,
-                                                      (OMX_U8 *) pLcmlHdr->pIpParam,
+                                                      (OMX_U8 *) pLcmlHdr->pBufferParam,
                                                       sizeof(G711ENC_ParamStruct),
                                                       NULL);
                                                         
@@ -2320,15 +2307,7 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirInput;
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pIpParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
-        if(NULL == pTemp_lcml->pIpParam){
-            G711ENC_CleanupInitParams(pComponent);
-            return OMX_ErrorInsufficientResources;
-        }
-        /* pTemp_lcml->pIpParam->usEndOfFile = 0; */
-        /* This means, it is not a last buffer. This flag is to be modified by
-         * the application to indicate the last buffer */
-         
+
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam, sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
         if(NULL == pTemp_lcml->pBufferParam){
             G711ENC_CleanupInitParams(pComponent);
@@ -2373,12 +2352,6 @@ OMX_ERRORTYPE G711ENC_FillLCMLInitParamsEx(OMX_HANDLETYPE pComponent)
         pTemp_lcml->buffer = pTemp;
         G711ENC_DPRINT("%d :: pTemp_lcml->buffer->pBuffer = %p \n",__LINE__,pTemp_lcml->buffer->pBuffer);
         pTemp_lcml->eDir = OMX_DirOutput;
-        OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pOpParam,sizeof(G711ENC_UAlgOutBufParamStruct),G711ENC_UAlgOutBufParamStruct);
-        if(NULL == pTemp_lcml->pOpParam){
-            G711ENC_CleanupInitParams(pComponent);
-            return OMX_ErrorInsufficientResources;
-        }
-        pTemp_lcml->pOpParam->ulFrameCount = 0;
 
         OMX_MALLOC_SIZE_DSPALIGN(pTemp_lcml->pBufferParam,sizeof(G711ENC_ParamStruct),G711ENC_ParamStruct);
         if(NULL == pTemp_lcml->pBufferParam){

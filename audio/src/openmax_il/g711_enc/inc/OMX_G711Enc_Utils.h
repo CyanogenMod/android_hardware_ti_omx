@@ -455,8 +455,6 @@ typedef struct {
 /* =================================================================================== */
 typedef struct G711ENC_LCML_BUFHEADERTYPE {
     G711ENC_BUFFER_Dir eDir;
-    G711ENC_ParamStruct *pIpParam;
-    G711ENC_UAlgOutBufParamStruct *pOpParam;
     OMX_BUFFERHEADERTYPE* buffer;
     G711ENC_FrameStruct *pFrameParam;
     G711ENC_ParamStruct *pBufferParam;
