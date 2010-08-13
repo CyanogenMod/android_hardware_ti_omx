@@ -2441,21 +2441,9 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                  OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
                  // Free memories allocated
                  OMX_MEMFREE_STRUCT(TOCframetype);
-
-                 if (eError != OMX_ErrorNone) {
-                     // Free memories allocated
-                     OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
-                     OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
-                     OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, AMRDEC_AudioCodecParams);
-
-                     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                            pComponentPrivate->pHandle->pApplicationPrivate,
-                                                            OMX_EventError,
-                                                            eError,
-                                                            OMX_TI_ErrorSevere,
-                                                            NULL);
-                 }
-                 return eError;
+                 OMX_MEMFREE_STRUCT(pComponentPrivate->pHoldBuffer);
+                 NBAMRDEC_FatalErrorRecover(pComponentPrivate);
+                 return OMX_ErrorHardware;
                }
             }
             pLcmlHdr->pBufferParam->usNbFrames = nFrames;
@@ -2677,16 +2665,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
            OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
            // Free memories allocated
            OMX_MEMFREE_STRUCT(TOCframetype);
-           OMX_MEMFREE_STRUCT_DSPALIGN(pLcmlHdr->pFrameParam, NBAMRDEC_FrameStruct);
-
-           if (eError != OMX_ErrorNone ) {
-               pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
-           }
+           NBAMRDEC_FatalErrorRecover(pComponentPrivate);
            return eError;
         }
 
