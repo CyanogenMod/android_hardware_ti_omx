@@ -3195,7 +3195,9 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
             OMX_PRBUFFER4(pComponentPrivate->dbg, "ERROR: VIDDEC_HandleFreeOutputBufferFromApp: VIDDEC_FillBufferDone()\n");
             VIDDEC_FillBufferDone(pComponentPrivate, pBuffHead);
         }
-        eError = OMX_ErrorNone;
+        /* In case of critical error due to DSP failure, it is better to return OMX_ErrorHardware */
+        if(pComponentPrivate->nLastErrorSeverity < OMX_TI_ErrorSevere) eError = OMX_ErrorHardware;
+        else eError = OMX_ErrorNone;
         goto EXIT;
     }
     OMX_PRBUFFER1(pComponentPrivate->dbg, "pBuffHead 0x%p eExecuteToIdle 0x%x\n", pBuffHead, pComponentPrivate->eExecuteToIdle);
@@ -7620,6 +7622,7 @@ OMX_ERRORTYPE VIDDEC_LCML_Callback (TUsnCodecEvent event,void * argsCb [10])
                 pComponentPrivate->nLastErrorSeverity = OMX_TI_ErrorCritical;
             }
             pComponentPrivate->pHandle->SendCommand( pComponentPrivate->pHandle, OMX_CommandStateSet, -2, 0);
+            goto EXIT;
         }
         if((int)argsCb[5] == IUALG_ERR_NOT_SUPPORTED)
         {
