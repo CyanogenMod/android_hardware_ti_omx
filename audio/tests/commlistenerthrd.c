@@ -22,6 +22,9 @@ void* TIOMX_CommandListener(void* pThreadData){
         switch (tolower(key)){
         case 'p':
             APP_DPRINT("Pausing \n");
+            /* FIX ME */
+            /*  We need to implement buffer control logic in order to get rid of this flag */
+            appPrvt->stateToPause=1;
             error = SetOMXState(appPrvt, OMX_StatePause);
             break;
         case 'r':
