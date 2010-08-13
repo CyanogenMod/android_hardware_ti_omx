@@ -911,7 +911,7 @@ OMX_U32 WMADECHandleCommand (WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
                     pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pComponentPrivate->pInputBufferList->pBufHdr[i]);
-                    pComponentPrivate->nEmptyBufferDoneCount++;
+                    WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
                 }
             }
             pComponentPrivate->pPortDef[INPUT_PORT]->bEnabled = OMX_FALSE;
@@ -1332,6 +1332,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        pBufHeader);
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return input buffers", __LINE__, __FUNCTION__);
             pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
@@ -1468,7 +1469,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pBufHeader
                                                                );
-                    pComponentPrivate->nEmptyBufferDoneCount++;
+                    WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
 
                     // }
                     pComponentPrivate->first_buffer = 1;
@@ -1618,7 +1619,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                     pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pBufHeader);
-            
+                    WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
                 }
             }
             else if (pComponentPrivate->curState == OMX_StatePause)
@@ -1641,7 +1642,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
                                                        pBufHeader);
                 
-            pComponentPrivate->nEmptyBufferDoneCount++;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
                 
         }
         if(pBufHeader->pMarkData)
@@ -1674,6 +1675,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->cbInfo.FillBufferDone (pComponentPrivate->pHandle,
                                                       pComponentPrivate->pHandle->pApplicationPrivate,
                                                       pBufHeader);
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
             OMX_PRBUFFER2(pComponentPrivate->dbg, ":: %d %s In idle state return output buffers", __LINE__, __FUNCTION__);
             return eError;
         }
@@ -1859,7 +1861,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
                                                        pHandle->pApplicationPrivate,
                                                        msgBuffer->buffer);
                                        
-            pComponentPrivate->nEmptyBufferDoneCount++;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
         }
         else if (msgBuffer->eDir == OMX_DirOutput)
         {
@@ -1885,6 +1887,8 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
                                                       msgBuffer->buffer);
                                                        
             pComponentPrivate->nOutStandingFillDones--;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
+
             OMX_PRSTATE2(pComponentPrivate->dbg, "nOutstandingFillDones = %ld\n", pComponentPrivate->nOutStandingFillDones);
         }
         else
@@ -1914,7 +1918,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
             pComponentPrivate->cbInfo.EmptyBufferDone (pHandle,
                                                        pHandle->pApplicationPrivate,
                                                        msgBuffer->buffer);
-            pComponentPrivate->nEmptyBufferDoneCount++;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
         }
         else if (msgBuffer->eDir == OMX_DirOutput)
         {
@@ -1933,6 +1937,7 @@ OMX_ERRORTYPE WMADECHandleDataBuf_FromLCML(WMADEC_COMPONENT_PRIVATE* pComponentP
                                                       pHandle->pApplicationPrivate,
                                                       msgBuffer->buffer);
             pComponentPrivate->nOutStandingFillDones--;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirOutput);
             OMX_PRCOMM2(pComponentPrivate->dbg, "nOutstandingFillDones = %ld\n", pComponentPrivate->nOutStandingFillDones);
         }
     }
@@ -2071,6 +2076,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                                              pComponentPrivate_CC->pOutputBufferList->pBufHdr[pComponentPrivate_CC->nInvalidFrameCount++]
                                                              );
                 pComponentPrivate_CC->nOutStandingFillDones--;
+                WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirOutput);
             }
             else
             {
@@ -2143,7 +2149,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                         pComponentPrivate_CC->cbInfo.EmptyBufferDone (pComponentPrivate_CC->pHandle,
                                                                       pComponentPrivate_CC->pHandle->pApplicationPrivate,
                                                                       pComponentPrivate_CC->pInputBufHdrPending[i]);
-                        pComponentPrivate_CC->nEmptyBufferDoneCount++;
+                        WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirInput);
                         pComponentPrivate_CC->pInputBufHdrPending[i] = NULL;
                     }
                     pComponentPrivate_CC->nNumInputBufPending=0; 
@@ -2185,6 +2191,7 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                                                      pComponentPrivate_CC->pOutputBufHdrPending[i]
                                                                      );
                         pComponentPrivate_CC->nOutStandingFillDones--;
+                        WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirOutput);
                         pComponentPrivate_CC->pOutputBufHdrPending[i] = NULL;
                     }
                     pComponentPrivate_CC->nNumOutputBufPending=0;
@@ -2216,32 +2223,35 @@ OMX_ERRORTYPE WMADECLCML_Callback (TUsnCodecEvent event,void * args [10])
     else if(event == EMMCodecProcessingStoped)
     {
 
-	for (i = 0; i < pComponentPrivate_CC->nNumInputBufPending; i++) {
-		pComponentPrivate_CC->cbInfo.EmptyBufferDone (pComponentPrivate_CC->pHandle,
-				pComponentPrivate_CC->pHandle->pApplicationPrivate,
-				pComponentPrivate_CC->pInputBufHdrPending[i]);
-				pComponentPrivate_CC->pInputBufHdrPending[i] = NULL;
-	}
-	pComponentPrivate_CC->nNumInputBufPending = 0;
-	for (i=0; i < pComponentPrivate_CC->nNumOutputBufPending; i++) {
-		pComponentPrivate_CC->cbInfo.FillBufferDone (pComponentPrivate_CC->pHandle,
-			pComponentPrivate_CC->pHandle->pApplicationPrivate,
-			pComponentPrivate_CC->pOutputBufHdrPending[i]);
-		pComponentPrivate_CC->nOutStandingFillDones--;
-		pComponentPrivate_CC->pOutputBufHdrPending[i] = NULL;
-	}
-	pComponentPrivate_CC->nNumOutputBufPending=0;
-	pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex);
+        for (i = 0; i < pComponentPrivate_CC->nNumInputBufPending; i++) {
+            pComponentPrivate_CC->cbInfo.EmptyBufferDone (pComponentPrivate_CC->pHandle,
+                                                          pComponentPrivate_CC->pHandle->pApplicationPrivate,
+                                                          pComponentPrivate_CC->pInputBufHdrPending[i]);
+            pComponentPrivate_CC->pInputBufHdrPending[i] = NULL;
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirInput);
+        }
+        pComponentPrivate_CC->nNumInputBufPending = 0;
+        for (i=0; i < pComponentPrivate_CC->nNumOutputBufPending; i++) {
+            pComponentPrivate_CC->cbInfo.FillBufferDone (pComponentPrivate_CC->pHandle,
+                                                         pComponentPrivate_CC->pHandle->pApplicationPrivate,
+                                                         pComponentPrivate_CC->pOutputBufHdrPending[i]);
+            WMADEC_SignalIfAllBuffersAreReturned(pComponentPrivate_CC, OMX_DirOutput);
+            pComponentPrivate_CC->nOutStandingFillDones--;
+            pComponentPrivate_CC->pOutputBufHdrPending[i] = NULL;
+        }
+        pComponentPrivate_CC->nNumOutputBufPending=0;
+        pthread_mutex_lock(&pComponentPrivate_CC->codecStop_mutex);
         if(pComponentPrivate_CC->codecStop_waitingsignal == 0){
             pComponentPrivate_CC->codecStop_waitingsignal = 1;             
             pthread_cond_signal(&pComponentPrivate_CC->codecStop_threshold);
             OMX_PRCOMM2(pComponentPrivate_CC->dbg, "stop ack. received. stop waiting for sending disable command completed");
         }
-	  pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
+        pthread_mutex_unlock(&pComponentPrivate_CC->codecStop_mutex);
 
         if (!pComponentPrivate_CC->bNoIdleOnStop)
         {
             pComponentPrivate_CC->curState = OMX_StateIdle;
+            WMADEC_waitForAllBuffersToReturn(pComponentPrivate_CC);
 #ifdef RESOURCE_MANAGER_ENABLED        
             eError = RMProxy_NewSendCommand(pHandle, RMProxy_StateSet, 
                                             OMX_WMA_Decoder_COMPONENT, 
@@ -4079,4 +4089,56 @@ void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate){
     WMADEC_CleanupInitParams(pComponentPrivate->pHandle);
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
+}
+/**
+* @WMADEC_waitForAllBuffersToReturn This function waits for all buffers to return
+*
+* @param WMADEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @return None
+*/
+void WMADEC_waitForAllBuffersToReturn(
+        WMADEC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex);
+    while (pComponentPrivate->nEmptyThisBufferCount != pComponentPrivate->nEmptyBufferDoneCount ||
+           pComponentPrivate->nFillThisBufferCount  != pComponentPrivate->nFillBufferDoneCount) {
+        pthread_cond_wait(&pComponentPrivate->bufferReturned_condition, &pComponentPrivate->bufferReturned_mutex);
+    }
+    pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
+    OMX_PRINT2(pComponentPrivate->dbg, ":: OMX has returned all input and output buffers\n");
+}
+
+/**
+* @WMADEC_SignalIfAllBuffersAreReturned() This function send signals if OMX returned all buffers to app
+*
+* @param WMADEC_COMPONENT_PRIVATE *pComponentPrivate
+*
+* @pre None
+*
+* @post None
+*
+* @return None
+*/
+void WMADEC_SignalIfAllBuffersAreReturned(WMADEC_COMPONENT_PRIVATE *pComponentPrivate,
+                                          OMX_U8 counterport)
+{
+    if(pthread_mutex_lock(&pComponentPrivate->bufferReturned_mutex) != 0)
+    {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::bufferReturned_mutex mutex lock error\n",__LINE__);
+    }
+    if(!counterport)
+        pComponentPrivate->nEmptyBufferDoneCount++;
+    else
+        pComponentPrivate->nFillBufferDoneCount++;
+    if((pComponentPrivate->nEmptyThisBufferCount == pComponentPrivate->nEmptyBufferDoneCount)
+       && (pComponentPrivate->nFillThisBufferCount == pComponentPrivate->nFillBufferDoneCount))
+    {
+        pthread_cond_broadcast(&pComponentPrivate->bufferReturned_condition);
+        OMX_PRINT2(pComponentPrivate->dbg, ":: Sending pthread signal that OMX has returned all buffers to app\n");
+     }
+    if(pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex) != 0)
+    {
+        OMX_ERROR4(pComponentPrivate->dbg, "%d ::bufferReturned_mutex mutex unlock error\n",__LINE__);
+    }
 }
