@@ -2588,6 +2588,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 #endif
                 OMX_VidDec_Return (pComponentPrivate, OMX_ALL, OMX_FALSE);
                 pComponentPrivate->eIdleToLoad = OMX_StateLoaded;
+                pthread_mutex_lock(&pComponentPrivate->mutexRMRecovery);
                 if (pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                     pComponentPrivate->pLCML != NULL) {
                     OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
@@ -2615,6 +2616,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->pLCML = NULL;
                 }
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
+                pthread_mutex_unlock(&pComponentPrivate->mutexRMRecovery);
 
                 /* Free eFirstBuffer allocated data */
                 pComponentPrivate->eFirstBuffer.bSaveFirstBuffer = OMX_FALSE;
@@ -2637,6 +2639,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->nCodecDataSize = 0;
 #ifdef RESOURCE_MANAGER_ENABLED
                 if(pComponentPrivate->eRMProxyState == VidDec_RMPROXY_State_Registered){
+                    pthread_mutex_lock(&pComponentPrivate->mutexRMRecovery);
                         OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 4 %d : %d bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
                     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
                             eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle, RMProxy_FreeResource, OMX_H264_Decode_COMPONENT, 0, VIDDEC_MEMUSAGE, NULL);
@@ -2681,6 +2684,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         goto EXIT;
                     }
                     pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Load;
+                    pthread_mutex_unlock(&pComponentPrivate->mutexRMRecovery);
                 }
 #endif
                OMX_PRDSP1(pComponentPrivate->dbg, "Closed LCML lib 0x%p\n",pComponentPrivate->pModLCML);
@@ -2945,6 +2949,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                     pComponentPrivate->eLCMLState = VidDec_LCML_State_Stop;
                 }
+                pthread_mutex_lock(&pComponentPrivate->mutexRMRecovery);
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                     pComponentPrivate->pLCML != NULL){
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
@@ -2972,6 +2977,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         pComponentPrivate->eLCMLState = VidDec_LCML_State_Unload;
                     }
                 }
+                pthread_mutex_unlock(&pComponentPrivate->mutexRMRecovery);
+
                 for (count = 0; count < MAX_PRIVATE_BUFFERS; count++) {
                     if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
                         if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr != NULL) {
@@ -2992,6 +2999,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
                 }
 #ifdef RESOURCE_MANAGER_ENABLED
+                pthread_mutex_lock(&pComponentPrivate->mutexRMRecovery);
                 if(pComponentPrivate->eRMProxyState == VidDec_RMPROXY_State_Registered){
                     OMX_PRMGR2(pComponentPrivate->dbg, "memory usage 4 %d : %d bytes\n",(unsigned int)pComponentPrivate->nMemUsage[VIDDDEC_Enum_MemLevel0],(unsigned int)VIDDEC_MEMUSAGE);
                     if (pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingAVC) {
@@ -3045,6 +3053,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     }
                     pComponentPrivate->eRMProxyState = VidDec_RMPROXY_State_Unload;
                 }
+                pthread_mutex_unlock(&pComponentPrivate->mutexRMRecovery);
 #endif
                 eError = OMX_ErrorInvalidState;
                 pComponentPrivate->eState = OMX_StateInvalid;
@@ -8321,6 +8330,7 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     if(pComponentPrivate->pModLCML == NULL){
         goto EXIT;
     }
+    pthread_mutex_lock(&pComponentPrivate->mutexRMRecovery);
     if (!(pComponentPrivate->eState == OMX_StateLoaded) &&
         !(pComponentPrivate->eState == OMX_StateWaitForResources)) {
         pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
@@ -8454,10 +8464,11 @@ OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
         }
     }
 #endif
-EXIT:
     /* regardless of success from above,
        still send the Invalid State error to client */
     eError = VIDDEC_Handle_InvalidState(pComponentPrivate);
+    pthread_mutex_unlock(&pComponentPrivate->mutexRMRecovery);
+EXIT:
     OMX_PRDSP1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
