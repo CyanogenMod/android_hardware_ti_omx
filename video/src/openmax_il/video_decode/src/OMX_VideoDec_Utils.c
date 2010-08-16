@@ -7215,6 +7215,7 @@ OMX_ERRORTYPE VIDDEC_Handle_InvalidState (VIDDEC_COMPONENT_PRIVATE* pComponentPr
 
     if(pComponentPrivate->eState != OMX_StateInvalid) {
         pComponentPrivate->eState = OMX_StateInvalid;
+        VIDDEC_FatalErrorRecover(pComponentPrivate);
         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                OMX_EventError,
@@ -7718,7 +7719,7 @@ void VIDDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
     pCompPrivate = (VIDDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
     pCompPrivate->nLastErrorSeverity = OMX_TI_ErrorCritical;
     if (*(cbData.RM_Error) == OMX_RmProxyCallback_FatalError) {
-        VIDDEC_FatalErrorRecover(pCompPrivate);
+        pCompPrivate->pHandle->SendCommand( pCompPrivate->pHandle, OMX_CommandStateSet, -2, 0);
     }
 }
 #endif
