@@ -2202,8 +2202,6 @@ OMX_ERRORTYPE HandleJpegEncFreeOutputBufferFromApp(JPEGENC_COMPONENT_PRIVATE *pC
                               (OMX_U8 *)  pBuffHead);
 #endif
     if (eError != OMX_ErrorNone) {
-        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
-        eError = OMX_ErrorNone; /* don't want to double notify app */
         goto EXIT;
     }
     OMX_PRINT1(pComponentPrivate->dbg, "Error is %x\n",eError);
@@ -2725,8 +2723,6 @@ OMX_ERRORTYPE HandleJpegEncDataBuf_FromApp(JPEGENC_COMPONENT_PRIVATE *pComponent
     OMX_PRDSP2(pComponentPrivate->dbg, "Input: after queue buffer %p\n", pBuffHead);
 
     if (eError != OMX_ErrorNone) {
-        Jpeg_Enc_FatalErrorRecover(pComponentPrivate);
-        eError = OMX_ErrorNone; /* don't want to double notify app */
         goto EXIT;
     }
     OMX_PRINT1(pComponentPrivate->dbg, "Error is %x\n",eError);
@@ -3305,10 +3301,13 @@ void Jpeg_Enc_FatalErrorRecover(JPEGENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
     char *pArgs = "";
     OMX_ERRORTYPE eError = OMX_ErrorNone;
+    int nDestroyCodec = 1;
+
     LOGD("Jpeg_Enc_FatalErrorRecover nCurState = %d nToState=%d", pComponentPrivate->nCurState,  pComponentPrivate->nToState);
-    if (pComponentPrivate->nCurState != OMX_StateWaitForResources &&
-        pComponentPrivate->nCurState != OMX_StateInvalid &&
-        (pComponentPrivate->nCurState != OMX_StateLoaded))
+   // if (pComponentPrivate->nCurState != OMX_StateWaitForResources &&
+     //   pComponentPrivate->nCurState != OMX_StateInvalid &&
+       // (pComponentPrivate->nCurState != OMX_StateLoaded))
+    if (nDestroyCodec == 1)
     {
         pthread_mutex_lock(&(pComponentPrivate->jpege_mutex_destroy));
         if (pComponentPrivate->pLCML != NULL) {

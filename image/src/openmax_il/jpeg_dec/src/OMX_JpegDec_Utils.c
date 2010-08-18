@@ -1132,7 +1132,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
     LCML_CALLBACKTYPE cb;
     OMX_U8 nCount = 0;
     int    nBufToReturn;
-    int initMMCodecRetryCnt = -1;
+    int initMMCodecRetryCnt = 0;
 #ifdef RESOURCE_MANAGER_ENABLED
     OMX_U16 nMHzRM = 0;
     OMX_U32 lImageResolution = 0;
@@ -1229,7 +1229,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
 
             /*calling initMMCodec to init codec with details filled earlier */
             do{
-                if(initMMCodecRetryCnt != -1){ // InitMM failed once, so wait for a specified amount of time and try again
+                if(initMMCodecRetryCnt != 0){ // InitMM failed once, so wait for a specified amount of time and try again
                     OMX_PRDSP4(pComponentPrivate->dbg, "InitMMCodec failed, retyring %d out of %d times...\n", initMMCodecRetryCnt+1, NUM_OF_INIT_RETRIES);
                     msleep(TIME_BETWEEN_INIT_MS);
                 }
@@ -1274,6 +1274,7 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
                                                    OMX_CommandStateSet,
                                                    pComponentPrivate->nCurState,
                                                    NULL);
+
             break;
             OMX_PRSTATE2(pComponentPrivate->dbg, "JPEGDEC: State has been Set to Idle\n");
         }
@@ -1523,7 +1524,6 @@ OMX_U32 HandleCommandJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate,
             eError = HandleInternalFlush(pComponentPrivate, OMX_ALL); /*OMX_ALL = -1 OpenMax 1.1*/
             if(eError != OMX_ErrorNone){
                 OMX_PRBUFFER4(pComponentPrivate->dbg, "eError from HandleInternalFlush = %x\n", eError);
-                JpegDec_FatalErrorRecover(pComponentPrivate, NULL);
                 eError = OMX_ErrorNone; /* Clean error, already sending the component to Invalid state*/
             }
         }
@@ -1761,8 +1761,7 @@ OMX_ERRORTYPE HandleFreeOutputBufferFromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pC
                               sizeof(JPEGDEC_UAlgOutBufParamStruct),
                               (OMX_U8*)pBuffHead);
     if (eError != OMX_ErrorNone) {
-        JpegDec_FatalErrorRecover(pComponentPrivate, NULL);
-        eError = OMX_ErrorNone; /* don't want to double notify app */
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "%s: ERROR:After  LCML_QueueBuffer()\n", __FUNCTION__);
         goto EXIT;
     }
 EXIT:
@@ -1885,8 +1884,7 @@ OMX_ERRORTYPE HandleDataBuf_FromAppJpegDec(JPEGDEC_COMPONENT_PRIVATE *pComponent
                               (OMX_U8 *)pBuffHead);
 
     if (eError != OMX_ErrorNone) {
-        JpegDec_FatalErrorRecover(pComponentPrivate, NULL);
-        eError = OMX_ErrorNone; /* don't want to double notify app */
+        OMX_PRBUFFER2(pComponentPrivate->dbg, "%s: ERROR:After  LCML_QueueBuffer()\n", __FUNCTION__);
         goto EXIT;
     }
 
@@ -2194,7 +2192,9 @@ OMX_ERRORTYPE LCML_CallbackJpegDec (TUsnCodecEvent event,
                                                    OMX_ErrorHardware,
                                                    OMX_TI_ErrorCritical,
                                                    NULL);
-            JpegDec_FatalErrorRecover(pComponentPrivate, "DSP Hardware Error");
+            /* Here it is not required to call JpegDec_FatalErrorRecover(). After the above error event sent to the IL
+               client, the de-init/recovery will start from the IL client by  forcing the comp to invalid state.
+            */
         }
         goto EXIT;
 
@@ -2457,6 +2457,8 @@ void LinkedList_Destroy(LinkedList *LinkedList) {
 
 void JpegDec_FatalErrorRecover(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, const char* error_msg){
     char *pArgs = "";
+    LCML_DSP_INTERFACE * phandle;
+    LCML_DSP_INTERFACE * pTemp;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int bDestroyCodec = 1;
 
@@ -2471,6 +2473,10 @@ void JpegDec_FatalErrorRecover(JPEGDEC_COMPONENT_PRIVATE *pComponentPrivate, con
         (pComponentPrivate->nCurState != OMX_StateLoaded) &&
         (pComponentPrivate->nIsLCMLActive == 1);
 #endif
+
+    pTemp = ((LCML_DSP_INTERFACE*)pComponentPrivate->pLCML)->pCodecinterfacehandle;
+    phandle = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE *)pTemp)->pCodec);
+    LOGD("\n%s()::%d::=====phandle->iDspOpenCount=%d=====\n",__FUNCTION__,__LINE__,phandle->iDspOpenCount);
 
     if (bDestroyCodec) {
         eError = LCML_ControlCodec(((
