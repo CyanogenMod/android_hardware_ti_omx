@@ -2372,11 +2372,13 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
             pBuffHead = pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
             if(pBuffHead != NULL){
                 if(pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
-                        OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
+                    VIDDEC_BUFFER_PRIVATE* pBufferPrivate = pBuffHead->pInputPortPrivate;
+                    if(pBufferPrivate->pOriginalBuffer != NULL)
+                       free(pBufferPrivate->pOriginalBuffer);
+                    else
+                       OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
                 }
                 free(pBuffHead);
-                pBuffHead = NULL;
-                pComponentPrivate->pCompPort[VIDDEC_INPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
         }
     }
@@ -2387,11 +2389,13 @@ static OMX_ERRORTYPE VIDDEC_ComponentDeInit(OMX_HANDLETYPE hComponent)
             pBuffHead = pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr;
             if(pBuffHead != NULL){
 	         if(pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->bAllocByComponent == OMX_TRUE){
-                        OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
+                 VIDDEC_BUFFER_PRIVATE* pBufferPrivate = pBuffHead->pOutputPortPrivate;
+                 if(pBufferPrivate->pOriginalBuffer != NULL)
+                     free(pBufferPrivate->pOriginalBuffer);
+                 else
+                     OMX_MEMFREE_STRUCT_DSPALIGN(pBuffHead->pBuffer,OMX_U8);
 	         }
                 free(pBuffHead);
-                pBuffHead = NULL;
-                pComponentPrivate->pCompPort[VIDDEC_OUTPUT_PORT]->pBufferPrivate[count]->pBufferHdr = NULL;
             }
         }
     }
