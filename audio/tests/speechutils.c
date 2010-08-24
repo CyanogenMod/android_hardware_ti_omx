@@ -24,12 +24,9 @@ int config_nbamr(appPrivateSt* appPrvt){
   }
 
   /* select the amr format: Mime, IF2 or Conformance */
-  appPrvt->nbamr->eAMRFrameFormat = OMX_AUDIO_AMRFrameFormatFSF; /*MIME*/
-  /*appPrvt->nbamr->eAMRFrameFormat = OMX_AUDIO_AMRFrameFormatConformance;*/
-  //appPrvt->nbamr->eAMRFrameFormat =  OMX_AUDIO_AMRFrameFormatIF2; /*IF2*/
-  appPrvt->nbamr->eAMRBandMode = OMX_AUDIO_AMRBandModeNB0;
-  //appPrvt->nbamr->eAMRDTXMode = OMX_AUDIO_AMRDTXModeOff;
-  appPrvt->nbamr->eAMRDTXMode = OMX_AUDIO_AMRDTXModeOnVAD1;
+  appPrvt->nbamr->eAMRFrameFormat  = appPrvt->frameFormat;
+  appPrvt->nbamr->eAMRBandMode = appPrvt->bandMode;
+  appPrvt->nbamr->eAMRDTXMode = appPrvt->dtxMode;
 
   APP_DPRINT("call set_parameter for OMX_IndexParamAudioAmr\n");
   error = OMX_SetParameter (appPrvt->phandle,
@@ -65,12 +62,9 @@ int config_wbamr(appPrivateSt* appPrvt){
   }
 
   /* select the amr format: Mime, IF2 or Conformance */
-  //appPrvt->wbamr->eAMRFrameFormat = OMX_AUDIO_AMRFrameFormatFSF; /*MIME*/
-  appPrvt->wbamr->eAMRFrameFormat = OMX_AUDIO_AMRFrameFormatConformance;
-  //appPrvt->wbamr->eAMRFrameFormat =  OMX_AUDIO_AMRFrameFormatIF2; /*IF2*/
-  appPrvt->wbamr->eAMRBandMode = OMX_AUDIO_AMRBandModeWB0;
-  appPrvt->wbamr->eAMRDTXMode = OMX_AUDIO_AMRDTXModeOff;
-  //appPrvt->wbamr->eAMRDTXMode = OMX_AUDIO_AMRDTXModeOnVAD1;
+  appPrvt->wbamr->eAMRFrameFormat = appPrvt->frameFormat;
+  appPrvt->wbamr->eAMRBandMode = appPrvt->bandMode;
+  appPrvt->wbamr->eAMRDTXMode = appPrvt->dtxMode;
 
   APP_DPRINT("call set_parameter for OMX_IndexParamAudioAmr\n");
   error = OMX_SetParameter (appPrvt->phandle,
