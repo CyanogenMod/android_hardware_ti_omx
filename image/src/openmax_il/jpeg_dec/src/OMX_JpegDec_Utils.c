@@ -650,44 +650,34 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     nFrameHeight = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;    
     
     if (pComponentPrivate->nProgressive == 1) {
-        if (nFrameHeight <= 144 &&
-            nFrameWidth<= 176) {
+        if ( (nFrameHeight * nFrameWidth) <= (144 * 176) ) {
             lcml_dsp->ProfileID = 0;
         }
-        else if (nFrameHeight <= 288 &&
-            nFrameWidth<= 352) {
+        else if ( (nFrameHeight * nFrameWidth) <= (288 * 352) ) {
             lcml_dsp->ProfileID = 1;
         }
-        else if (nFrameHeight <= 480 &&
-            nFrameWidth <= 640) {
+        else if ( (nFrameHeight * nFrameWidth) <= (480 * 640) ) {
             lcml_dsp->ProfileID = 2;
         }
-        else if (nFrameHeight<= 1024 &&
-            nFrameWidth <= 1280) {
+        else if ( (nFrameHeight * nFrameWidth) <= (1024 * 1280) ) {
             lcml_dsp->ProfileID = 4;
         }
-        else if (nFrameHeight <= 1200 &&
-            nFrameWidth<= 1920) {
+        else if ( (nFrameHeight * nFrameWidth) <= (1200 * 1920) ) {
             lcml_dsp->ProfileID = 5;
         }
-        else if (nFrameHeight<= 1536 &&
-            nFrameWidth<= 2048) {
+        else if ( (nFrameHeight * nFrameWidth) <= (1536 * 2048) ) {
             lcml_dsp->ProfileID = 6;
         }
-        else if (nFrameHeight<= 1600 &&
-            nFrameWidth<= 2560) {
+        else if ( (nFrameHeight * nFrameWidth) <= (1600 * 2560) ) {
             lcml_dsp->ProfileID = 7;
         }
-        else if (nFrameHeight <= 2048 &&
-            nFrameWidth<= 2560) {
+        else if ( (nFrameHeight * nFrameWidth) <= (2048 * 2560) ) {
             lcml_dsp->ProfileID = 8;
         }
-        else if (nFrameHeight <= 2048 &&
-            nFrameWidth<= 3200) {
+        else if ( (nFrameHeight * nFrameWidth) <= (2048 * 3200) ) {
             lcml_dsp->ProfileID = 9;
         }
-        else if (nFrameHeight <= JPGDEC_SNTEST_MAX_HEIGHT &&
-            nFrameWidth<= JPGDEC_SNTEST_MAX_WIDTH ) {
+        else if ( (nFrameHeight * nFrameWidth)  <= (JPGDEC_SNTEST_MAX_HEIGHT * JPGDEC_SNTEST_MAX_WIDTH) ) {
             lcml_dsp->ProfileID = 10;
         }
         else {
