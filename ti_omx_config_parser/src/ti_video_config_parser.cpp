@@ -276,7 +276,11 @@ int32 GetNAL_Config(uint8** bitstream, int32* size)
     /* found the SC at the beginning of the NAL, now find the SC at the beginning of the next NAL */
     while (i < *size)
     {
-        if (count == 2 && nal_unit[i] == 0x01)
+        /* It is possible that we have trailing_zero_8bits(0x00) after
+         * the first NAL sequence. Hence we need to traverse till we reach the
+         * next NAL sequence (start_code_prefix_one_3bytes-0x000001) and then
+         * point to the starting byte of NAL sequence */
+        if (count >= 2 && nal_unit[i] == 0x01)
         {
             i -= 2;
             break;
