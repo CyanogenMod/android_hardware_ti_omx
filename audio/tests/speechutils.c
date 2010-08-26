@@ -122,6 +122,10 @@ int process_nbamr(appPrivateSt* appPrvt, OMX_U8* pBuf){
     static OMX_S16 fileHdrReadFlag = 0;
     OMX_S8 first_char = 0;
 
+    if(appPrvt->fileReRead){
+        totalRead = 0;
+    }
+
     if (appPrvt->nbamr->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatIF2){
         static const OMX_U8 FrameLength[] = {13, 14, 16, 18, 19, 21, 26, 31, 6};/*List of valid IF2 frame length*/
         OMX_S8 size = 0;
@@ -229,6 +233,10 @@ int process_wbamr(appPrivateSt* appPrvt, OMX_U8* pBuf){
     static OMX_S16 totalRead = 0;
     static OMX_S16 fileHdrReadFlag = 0;
     OMX_S8 first_char = 0;
+
+    if(appPrvt->fileReRead){
+        totalRead = 0;
+    }
 
     if (appPrvt->wbamr->eAMRFrameFormat == OMX_AUDIO_AMRFrameFormatIF2){
         static const OMX_U8 FrameLength[] = {18, 23, 33, 37, 41, 47, 51, 59, 61, 6};/*List of valid IF2 frame length*/
