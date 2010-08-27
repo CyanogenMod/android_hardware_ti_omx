@@ -94,6 +94,14 @@ typedef struct{
   snd_pcm_uframes_t frames;
 }alsaPrvtSt;
 
+typedef struct G711DEC_FTYPES{
+    unsigned short FrameSizeType;
+    unsigned short NmuNLvl;
+    unsigned short NoiseLp;
+    unsigned short  dBmNoise;
+    unsigned short plc;
+}G711DEC_FTYPES;
+
 typedef struct{
   OMX_HANDLETYPE phandle;
   OMX_PARAM_PORTDEFINITIONTYPE *in_port;
@@ -106,6 +114,9 @@ typedef struct{
   OMX_AUDIO_PARAM_WMATYPE *wma;
   OMX_AUDIO_PARAM_AMRTYPE *nbamr;
   OMX_AUDIO_PARAM_AMRTYPE *wbamr;
+  OMX_AUDIO_PARAM_PCMMODETYPE *g711;
+  OMX_AUDIO_PARAM_PCMMODETYPE *g722;
+  OMX_AUDIO_PARAM_G726TYPE *g726;
   OMX_AUDIO_PARAM_G729TYPE *g729;
   OMX_PARAM_COMPONENTROLETYPE *pCompRoleStruct;
   OMX_AUDIO_CODINGTYPE eEncoding;
@@ -343,6 +354,24 @@ int config_nbamr(appPrivateSt* appPrvt);
  *
  */
 int config_wbamr(appPrivateSt* appPrvt);
+/** Configure g711 input params
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+int config_g711(appPrivateSt* appPrvt);
+/** Configure g722 input params
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+int config_g722(appPrivateSt* appPrvt);
+/** Configure g726 input params
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+int config_g726(appPrivateSt* appPrvt);
 /** Configure g729 input params
  *
  * @param appPrvt Aplication private variables
