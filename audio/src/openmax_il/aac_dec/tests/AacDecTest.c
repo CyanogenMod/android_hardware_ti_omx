@@ -110,7 +110,6 @@ FILE *fpRes = NULL;
 #define APP_OUTPUT_FILE "output.pcm"
 #define SLEEP_TIME 5
 #define AACDEC_APP_ID  100
-#define MAX_NUM_OF_BUFS_AACDEC 10
 #define INPUT_PORT  0
 #define OUTPUT_PORT 1
 #undef AACDEC_DEBUGMEM
@@ -263,7 +262,9 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
                            OMX_U32 nData1, OMX_U32 nData2, OMX_PTR pEventData) {
 
     OMX_U8 writeValue = 0;
+    OMX_S32 nData1Temp = (OMX_S32)nData1;
 
+    AACDEC_OMX_CONF_CHECK_CMD(hComponent, pAppData, 1);
     switch (eEvent) {
 
         case OMX_EventCmdComplete:
@@ -301,13 +302,13 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
                             String :%s\n", __LINE__, (int)nData1, (OMX_STRING)pEventData);
             }
 
-            if (nData1 == OMX_ErrorInvalidState) {
+            if (nData1Temp== OMX_ErrorInvalidState) {
                 bInvalidState = OMX_TRUE;
-            } else if (nData1 == OMX_ErrorResourcesPreempted) {
+            } else if (nData1Temp== OMX_ErrorResourcesPreempted) {
                 preempted = 1;
                 writeValue = 0;
                 write(Event_Pipe[1], &writeValue, sizeof(OMX_U8));
-            } else if (nData1 == OMX_ErrorResourcesLost) {
+            } else if (nData1Temp== OMX_ErrorResourcesLost) {
                 WaitForState_flag = 0;
                 pthread_mutex_lock(&WaitForState_mutex);
                 pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
@@ -378,6 +379,10 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
             APP_DPRINT ("%d: APP: OMX_EventPortFormatDetected has been reported \n", __LINE__);
 
             break;
+        default:
+            APP_DPRINT ("%d: APP: EventHandler: eEvent: \
+                        nothing to do for this case::\n", __LINE__);
+            break;
     }
 
     return OMX_ErrorNone;
@@ -426,7 +431,7 @@ int main(int argc, char* argv[]) {
 #ifdef AM_APP
     AM_COMMANDDATATYPE cmd_data;
 #else
-    TI_OMX_STREAM_INFO am_streaminfo;
+/*    TI_OMX_STREAM_INFO am_streaminfo; */
 #endif
     OMX_PARAM_PORTDEFINITIONTYPE* pCompPrivateStruct = NULL;
     OMX_AUDIO_PARAM_AACPROFILETYPE *pAacParam = NULL;
@@ -435,7 +440,6 @@ int main(int argc, char* argv[]) {
     OMX_BUFFERHEADERTYPE* pOutputBufferHeader[MAX_NUM_OF_BUFS_AACDEC] = { NULL };
     OMX_S16 numOfInputBuffer = 0;
     OMX_S16 numOfOutputBuffer = 0;
-    OMX_INDEXTYPE index;
 #ifdef USE_BUFFER
     OMX_U8* pInputBuffer[10] = {NULL};
     OMX_U8* pOutputBuffer[10] = {NULL};
@@ -466,7 +470,10 @@ int main(int argc, char* argv[]) {
 
 
     bInvalidState = OMX_FALSE;
+#ifndef ANDROID
+    OMX_INDEXTYPE index;
     TI_OMX_DATAPATH dataPath;
+#endif
 #ifdef AM_APP
     int aacdecfdwrite = 0;
     int aacdecfdread = 0;
@@ -1586,7 +1593,7 @@ int main(int argc, char* argv[]) {
                                 } else
                                     printf("%d :: [APP] : No SBR or PS Detected \n", __LINE__);
 
-                                if (nProfile != pAacParam_SBR_PS->eAACProfile) {
+                                if (pAacParam->eAACProfile != pAacParam_SBR_PS->eAACProfile) {
                                     if (ConfigChanged )
                                         printf("%d :: [APP] : File is SBR or PS and the parameter is not set \n", __LINE__);
                                 }
@@ -1636,7 +1643,7 @@ int main(int argc, char* argv[]) {
                         } else
                             printf("%d :: [APP] : No SBR or PS Detected \n", __LINE__);
 
-                        if (nProfile != pAacParam_SBR_PS->eAACProfile) {
+                        if (pAacParam->eAACProfile != pAacParam_SBR_PS->eAACProfile) {
                             if (ConfigChanged )
                                 printf("%d :: [APP] : File is SBR or PS and the parameter is not set \n", __LINE__);
                         }
@@ -1760,7 +1767,7 @@ int main(int argc, char* argv[]) {
                             } else
                                 printf("%d :: [APP] : No SBR or PS Detected \n", __LINE__);
 
-                            if (nProfile != pAacParam_SBR_PS->eAACProfile) {
+                            if (pAacParam->eAACProfile != pAacParam_SBR_PS->eAACProfile) {
                                 if (ConfigChanged )
                                     printf("%d :: [APP] : File is SBR or PS and the parameter is not set \n", __LINE__);
                             }
@@ -2198,6 +2205,7 @@ FILE *fIn) {
     OMX_ERRORTYPE error = OMX_ErrorNone;
     int nRead = 0;
     int framelen[2] = {0};
+    OMX_S32 nAllocLenTemp = (OMX_S32)pBuffer->nAllocLen;
 
     if (!framemode) {
         nRead = fill_data (pBuffer, fIn);
@@ -2208,7 +2216,7 @@ FILE *fIn) {
             return error;
         }
 
-        if (nRead < pBuffer->nAllocLen && !lastinputbuffersent ) {
+        if (nRead < nAllocLenTemp && !lastinputbuffersent ) {
             if (ringCount > 0) {
                 printf("Rings left: %d\n", ringCount);
                 fseek(fIn, 0L, SEEK_SET);

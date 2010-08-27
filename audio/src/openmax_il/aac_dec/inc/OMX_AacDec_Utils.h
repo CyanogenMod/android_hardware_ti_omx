@@ -233,8 +233,8 @@
 #define AACDEC_OMX_CONF_CHECK_CMD(_ptr1, _ptr2, _ptr3)  \
     {                                                   \
         if(!_ptr1 || !_ptr2 || !_ptr3){                 \
-            eError = OMX_ErrorBadParameter;             \
-            goto EXIT;                                  \
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d : AACDEC_OMX_CONF_CHECK_CMD - Invalid Pointer",__LINE__);\
+            return OMX_ErrorBadParameter;             \
         }                                               \
     }
 
@@ -1170,7 +1170,7 @@ void AACDEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData);
  */
 /*=======================================================================*/
 int AACDec_GetSampleRateIndexL( const int aRate);
-int AACDec_GetSampleRatebyIndex( const int index);
+OMX_U32 AACDec_GetSampleRatebyIndex( const int index);
 void* AACDEC_ComponentThread (void* pThreadData);
 
 OMX_U32 AACDEC_ParseHeader(OMX_BUFFERHEADERTYPE* pBufHeader,
