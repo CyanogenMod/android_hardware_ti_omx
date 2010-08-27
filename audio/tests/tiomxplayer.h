@@ -110,6 +110,9 @@ typedef struct{
   OMX_PARAM_COMPONENTROLETYPE *pCompRoleStruct;
   OMX_AUDIO_CODINGTYPE eEncoding;
   OMX_U8 mode;
+  OMX_U8 bandMode;
+  OMX_U8 frameFormat;
+  OMX_U8 dtxMode;
   OMX_U8 appType;
   OMX_U16 iterations;
   OMX_U8 channels;

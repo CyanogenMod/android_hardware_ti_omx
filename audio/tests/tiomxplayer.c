@@ -254,7 +254,7 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         else{
             APP_DPRINT("Application name should be tiomxplayer or tiomxrecord \n");
         }
-        while ((c = getopt (argc, argv, "o:c:r:t:x:b:p:f:X:y:Y:i:D:s:w:dRh")) != -1)
+        while ((c = getopt (argc, argv, "o:c:r:t:x:b:p:f:X:y:Y:i:D:s:w:B:F:q:dRh")) != -1)
         switch (c)
         {
         case 'o':
@@ -313,6 +313,15 @@ static int parameter_check(int argc,char **argv, appPrivateSt *appPrvt)
         case 'w':
             appPrvt->wd_isSet=1;
             appPrvt->wd_timeout = atoi(optarg);
+            break;
+        case 'B':
+            appPrvt->bandMode= atoi(optarg);
+            break;
+        case 'F':
+            appPrvt->frameFormat= atoi(optarg);
+            break;
+        case 'q':
+            appPrvt->dtxMode= atoi(optarg);
             break;
         case '?':
             if (optopt == 'o')
@@ -468,6 +477,9 @@ appPrivateSt* app_core_new(void){
   me->bitrate = 128000;
   me->profile = OMX_AUDIO_AACObjectLC;
   me->fileformat = OMX_AUDIO_AACStreamFormatMP4ADTS;
+  me->frameFormat= OMX_AUDIO_AMRFrameFormatFSF;
+  me->bandMode = OMX_AUDIO_AMRBandModeNB0;
+  me->dtxMode = OMX_AUDIO_AMRDTXModeOnVAD1;
   me->nIpBuf = 1;
   me->IpBufSize = IN_BUFFER_SIZE;
   me->nOpBuf = 1;
