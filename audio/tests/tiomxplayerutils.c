@@ -241,12 +241,18 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
         }
     }
   }else{
-      if(FILE_MODE== appPrvt->mode||
+      if(ALSA_MODE == appPrvt->mode && PLAYER == appPrvt->appType){
+          alsa_pcm_write(appPrvt, pBuffer);
+      }
+      else if(FILE_MODE== appPrvt->mode||
          (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
+          bytes_wrote += fwrite(pBuffer->pBuffer,
+                                sizeof(OMX_U32),
+                                pBuffer->nFilledLen/sizeof(OMX_U32),
+                                outfile);
           APP_DPRINT(" %ld Bytes wrote\n",sizeof(OMX_U32)*(bytes_wrote - 1));
       }
   }
-
   /*Reset timer*/
   if(appPrvt->wd_isSet){
       alarm (appPrvt->wd_timeout);
@@ -259,6 +265,7 @@ OMX_ERRORTYPE EmptyBufferDone(OMX_HANDLETYPE hComponent,
                               OMX_PTR ptr,
                               OMX_BUFFERHEADERTYPE* pBuffer)
 {
+
   OMX_ERRORTYPE error = OMX_ErrorNone;
   appPrivateSt* appPrvt = (appPrivateSt*)ptr;
   /* FIX ME */
@@ -408,13 +415,6 @@ int send_dec_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
           eos_flag = OMX_TRUE;
           APP_DPRINT("EOS marked!\n");
           APP_DPRINT("End of file reached (%ld)!\n",file_size);
-	  if(appPrvt->in_port->format.audio.eEncoding == OMX_AUDIO_CodingAMR){
-	    if(!appPrvt->amr_mode){
-	      appPrvt->done_flag = OMX_TRUE;
-	      event_wakeup(appPrvt->eos);
-	      return 0;
-	    }
-	  }
       }
       appPrvt->processed_buffers++;
       if((appPrvt->tc == 2 || appPrvt->tc == 3 || appPrvt->tc == 4) && (appPrvt->processed_buffers == 50)){
