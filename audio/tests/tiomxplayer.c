@@ -210,8 +210,8 @@ void display_help()
     printf("       -c num_channels: To decode in a specific channel number (MONO/STEREO). Default value is STEREO \n");
     printf("       -r sampling rate:  To decode in a specific frequency. Default value is 44100 \n");
     printf("       -b bit rate:  To encode in a specific bitrate. Default value is 128000 \n");
-    printf("       -p profile:  AAC encoding Profile, default is LC \n");
-    printf("       -f file format:  AAC encoding File format, default is MP4 ADTS \n");
+    printf("       -p profile:  AAC encoding Profile, default is LC or  G711 PCM Mode\n");
+    printf("       -f file format:  AAC encoding File format, default is MP4 ADTS or G711 frame format\n");
     printf("       -s seconds: Amount of seconds to encode on alsa capture mode \n");
     printf("       -x input buffer amount:  Amount of input buffers, default is 1 \n");
     printf("       -X input buffer size:  Input buffer size in bytes \n");
@@ -441,6 +441,15 @@ static int config_params(appPrivateSt* appPrvt)
   case OMX_AUDIO_CodingG729:
       config_g729(appPrvt);
       break;
+  case OMX_AUDIO_CodingG711:
+      config_g711(appPrvt);
+      break;
+  case OMX_AUDIO_CodingADPCM:
+      config_g722(appPrvt);
+      break;
+  case OMX_AUDIO_CodingG726:
+      config_g726(appPrvt);
+      break;
     /*TODO: add other components */
   default:
     APP_DPRINT("OMX_AUDIO_CodingXXX not found\n");
@@ -568,6 +577,27 @@ static int alloc_app_resources(appPrivateSt* appPrvt)
         appPrvt->g729 = malloc (sizeof(OMX_AUDIO_PARAM_G729TYPE));
         if (NULL == appPrvt->g729) {
             perror("malloc-g729");
+            return 1;
+        }
+        break;
+    case OMX_AUDIO_CodingG711:
+        appPrvt->g711 = malloc (sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
+        if (NULL == appPrvt->g711) {
+            perror("malloc-g711");
+            return 1;
+        }
+        break;
+    case OMX_AUDIO_CodingADPCM:
+        appPrvt->g722 = malloc (sizeof(OMX_AUDIO_PARAM_PCMMODETYPE));
+        if (NULL == appPrvt->g722) {
+            perror("malloc-g722");
+            return 1;
+        }
+        break;
+    case OMX_AUDIO_CodingG726:
+        appPrvt->g726 = malloc (sizeof(OMX_AUDIO_PARAM_G726TYPE));
+        if (NULL == appPrvt->g726) {
+            perror("malloc-g726");
             return 1;
         }
         break;
@@ -716,6 +746,15 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
     case OMX_AUDIO_CodingG729:
         strcpy ((char*)audio_string , "OMX.TI.G729.");
         break;
+    case OMX_AUDIO_CodingG711:
+        strcpy ((char*)audio_string , "OMX.TI.G711.");
+        break;
+    case OMX_AUDIO_CodingADPCM:
+        strcpy ((char*)audio_string , "OMX.TI.G722.");
+        break;
+    case OMX_AUDIO_CodingG726:
+        strcpy ((char*)audio_string , "OMX.TI.G726.");
+        break;
     default:
         APP_DPRINT("Component index not found \n");
         break;
@@ -786,6 +825,15 @@ static int prepare(appPrivateSt* appPrvt, OMX_CALLBACKTYPE callbacks)
         break;
     case OMX_AUDIO_CodingG729:
         strcat((char*)appPrvt->pCompRoleStruct->cRole,"g729");
+        break;
+    case OMX_AUDIO_CodingG711:
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"g711");
+        break;
+    case OMX_AUDIO_CodingADPCM:
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"g722");
+        break;
+    case OMX_AUDIO_CodingG726:
+        strcat((char*)appPrvt->pCompRoleStruct->cRole,"g726");
         break;
     default:
         strcat((char*)appPrvt->pCompRoleStruct->cRole,"mp3");
@@ -868,6 +916,20 @@ static int free_app_resources(appPrivateSt* appPrvt)
       APP_DPRINT("Free g729 params\n");
       free(appPrvt->g729);
       appPrvt->g729 = NULL;
+  case OMX_AUDIO_CodingG711:
+      APP_DPRINT("Free g711 params\n");
+      free(appPrvt->g711);
+      appPrvt->g711 = NULL;
+      break;
+  case OMX_AUDIO_CodingADPCM:
+      APP_DPRINT("Free g722 params\n");
+      free(appPrvt->g722);
+      appPrvt->g722 = NULL;
+      break;
+  case OMX_AUDIO_CodingG726:
+      APP_DPRINT("Free g726 params\n");
+      free(appPrvt->g726);
+      appPrvt->g726 = NULL;
       break;
     /*TODO: add other components */
   default:

@@ -78,6 +78,156 @@ int config_wbamr(appPrivateSt* appPrvt){
 
   return 0;
 }
+
+/** Configure g711 input params
+ *
+ * @param appPrvt appPrvt Handle to the app component structure.
+ *
+ */
+int config_g711(appPrivateSt* appPrvt){
+
+  OMX_ERRORTYPE error = OMX_ErrorNone;
+  G711DEC_FTYPES frameinfo;
+  OMX_INDEXTYPE index = 0;
+
+  OMX_INIT_STRUCT(appPrvt->g711,OMX_AUDIO_PARAM_PCMMODETYPE);
+
+  APP_DPRINT("call get_parameter for OMX_IndexParamAudioG711\n");
+  appPrvt->g711->nPortIndex = OMX_DirInput;
+  error = OMX_GetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioPcm,
+                            appPrvt->g711);
+  if (error != OMX_ErrorNone) {
+    APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
+    return 1;
+  }
+  appPrvt->g711->nChannels = 1; /* mono */
+  appPrvt->g711->eNumData = OMX_NumericalDataUnsigned;
+  appPrvt->g711->eEndian = OMX_EndianLittle;
+  appPrvt->g711->bInterleaved = OMX_FALSE;
+  appPrvt->g711->nBitPerSample = 8;
+  appPrvt->g711->nSamplingRate = 0; /* means undefined in the OMX standard */
+
+  /** Getting the frame params */
+  frameinfo.FrameSizeType = appPrvt->fileformat;
+  frameinfo.NmuNLvl = 0;
+  frameinfo.NoiseLp = 2;
+  frameinfo.dBmNoise = 5;
+  frameinfo.plc = -70;
+
+  error = OMX_GetExtensionIndex(appPrvt->phandle, "OMX.TI.index.config.g711dec.frameparams",&index);
+  if (error != OMX_ErrorNone) {
+      printf("Error getting extension index\n");
+  }
+
+  error = OMX_SetConfig (appPrvt->phandle, index, &frameinfo);
+  if(error != OMX_ErrorNone) {
+      APP_DPRINT("%d :: Error from OMX_SetConfig() function\n",__LINE__);
+  }
+
+  /*Alaw = 1 MuLaw=2 */
+  appPrvt->g711->ePCMMode = appPrvt->profile;
+
+  APP_DPRINT("call set_parameter for OMX_IndexParamAudioG711\n");
+  error = OMX_SetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioPcm,
+                            appPrvt->g711);
+  if (error != OMX_ErrorNone) {
+      APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
+      return 1;
+  }
+
+  printf("Exiting config g711 \n");
+  return 0;
+}
+/** Configure g722 input params
+ *
+ * @param appPrvt appPrvt Handle to the app component structure.
+ *
+ */
+int config_g722(appPrivateSt* appPrvt){
+  OMX_ERRORTYPE error = OMX_ErrorNone;
+
+  OMX_INIT_STRUCT(appPrvt->g722,OMX_AUDIO_PARAM_PCMMODETYPE);
+
+  APP_DPRINT("call get_parameter for OMX_IndexParamAudioG722\n");
+  appPrvt->g722->nPortIndex = OMX_DirInput;
+  error = OMX_GetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioPcm,
+                            appPrvt->g722);
+  if (error != OMX_ErrorNone) {
+    APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
+    return 1;
+  }
+
+  error = OMX_SetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioPcm,
+                            appPrvt->g722);
+  if (error != OMX_ErrorNone) {
+      APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
+      return 1;
+  }
+
+  printf("Exiting config g722 \n");
+  return 0;
+};
+
+/** Configure g726 input params
+ *
+ * @param appPrvt appPrvt Handle to the app component structure.
+ *
+ */
+int config_g726(appPrivateSt* appPrvt){
+  OMX_ERRORTYPE error = OMX_ErrorNone;
+  OMX_INIT_STRUCT(appPrvt->g726,OMX_AUDIO_PARAM_G726TYPE);
+
+  APP_DPRINT("call get_parameter for OMX_IndexParamAudioG726\n");
+  appPrvt->g726->nPortIndex = OMX_DirInput;
+  error = OMX_GetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioG726,
+                            appPrvt->g726);
+  if (error != OMX_ErrorNone) {
+      APP_DPRINT("OMX_ErrorBadParameter in GetParameter\n");
+      /*FIX ME*/
+      /*GetParameter returns error*/
+      //return 1;
+  }
+
+  appPrvt->g726->nSize                    = sizeof(OMX_AUDIO_PARAM_G726TYPE);
+  appPrvt->g726->nVersion.s.nVersionMajor = 1;
+  appPrvt->g726->nVersion.s.nVersionMinor = 1;
+  appPrvt->g726->nPortIndex               = OMX_DirInput;
+  appPrvt->g726->nChannels                = 1; /* mono */
+
+  switch(appPrvt->bitrate){
+  case 16:
+      appPrvt->g726->eG726Mode = OMX_AUDIO_G726Mode16;
+      break;
+  case 24:
+      appPrvt->g726->eG726Mode = OMX_AUDIO_G726Mode24;
+      break;
+  case 32:
+      appPrvt->g726->eG726Mode = OMX_AUDIO_G726Mode32;
+      break;
+  case 40:
+      appPrvt->g726->eG726Mode = OMX_AUDIO_G726Mode40;
+      break;
+  default:
+      printf("Invalid Bitrate!\n");
+      break;
+  }
+  APP_DPRINT("call set_parameter for OMX_IndexParamAudioG726\n");
+  error = OMX_SetParameter (appPrvt->phandle,
+                            OMX_IndexParamAudioG726,
+                            appPrvt->g726);
+  if (error != OMX_ErrorNone) {
+    APP_DPRINT("OMX_ErrorBadParameter in SetParameter\n");
+    return 1;
+  }
+  printf("Exiting config g726 \n");
+  return 0;
+}
+
 /** Configure g729 input params
  *
  * @param appPrvt appPrvt Handle to the app component structure.

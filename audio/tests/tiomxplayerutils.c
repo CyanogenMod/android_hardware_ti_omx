@@ -824,6 +824,18 @@ int setAudioFormat(appPrivateSt *appPrvt, char *fname){
         appPrvt->eEncoding= OMX_AUDIO_CodingG729;
         APP_DPRINT("G729 Format is selected\n");
     }
+    else if((strcasecmp((fname+fn_index -5),".g711")==0) ){
+        appPrvt->eEncoding= OMX_AUDIO_CodingG711;
+        APP_DPRINT("G711 Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -5),".g722")==0) ){
+        appPrvt->eEncoding=OMX_AUDIO_CodingADPCM;
+        APP_DPRINT("G722 Format is selected\n");
+    }
+    else if((strcasecmp((fname+fn_index -5),".g726")==0) ){
+        appPrvt->eEncoding=OMX_AUDIO_CodingG726;
+        APP_DPRINT("G726 Format is selected\n");
+    }
     else{
         printf("Format not recognized\n");
         error = 1;
