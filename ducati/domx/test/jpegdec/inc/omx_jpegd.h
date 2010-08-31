@@ -6,11 +6,11 @@
 *  in the license agreement under which this software has been supplied.
 * =========================================================================== */
 /**
-* 
+*
 *
 * This File contains testcase table for JPEG decoder.
 *
-* @path  
+* @path
 *
 * @rev  0.1
 */
@@ -53,7 +53,7 @@
 #define OMX_JPEGD_TEST_OUTPUT_PORT  1
 
 #define OMX_JPEGD_TEST_PIPE_SIZE      1024
-#define OMX_JPEGD_TEST_PIPE_MSG_SIZE  4 //128 /* Do not want to use this so check */
+#define OMX_JPEGD_TEST_PIPE_MSG_SIZE  4	//128 /* Do not want to use this so check */
 
 /*
  *     M A C R O S
@@ -109,7 +109,7 @@ goto EXIT; }
         eError = ERRORCODE;\
         goto EXIT;\
     }\
-} 
+}
 
 /****************************************************************
 *  EXTERNAL REFERENCES NOTE : only use if not found in header file
@@ -132,17 +132,17 @@ goto EXIT; }
 /*Jpeg Decoder Test Case Object*/
 typedef struct JPEGDTestCaseParams
 {
-    OMX_U32 unOpImageWidth;
-    OMX_U32 unOpImageHeight;
-    OMX_U32 unSliceHeight;
-    //OMX_U32 unQFactor;
-    OMX_COLOR_FORMATTYPE eInColorFormat;
-    OMX_COLOR_FORMATTYPE eOutColorFormat;
-    OMX_JPEG_UNCOMPRESSEDMODETYPE eOutputImageMode;
-    OMX_BOOL bIsApplnMemAllocatorforInBuff ;
-    OMX_BOOL bIsApplnMemAllocatorforOutBuff;
-    
-}JPEGDTestCaseParams;
+	OMX_U32 unOpImageWidth;
+	OMX_U32 unOpImageHeight;
+	OMX_U32 unSliceHeight;
+	//OMX_U32 unQFactor;
+	OMX_COLOR_FORMATTYPE eInColorFormat;
+	OMX_COLOR_FORMATTYPE eOutColorFormat;
+	OMX_JPEG_UNCOMPRESSEDMODETYPE eOutputImageMode;
+	OMX_BOOL bIsApplnMemAllocatorforInBuff;
+	OMX_BOOL bIsApplnMemAllocatorforOutBuff;
+
+} JPEGDTestCaseParams;
 
 
 
@@ -150,154 +150,145 @@ typedef struct JPEGDTestCaseParams
 /* For EXIF reading */
 typedef struct OMX_EXIF_THUMBNAIL_INFO
 {
-    OMX_U32   ImageWidth;
-    OMX_U32   ImageHeight;
-    OMX_U32   StripOffset;
-    OMX_U32   RowsPerStrip;
-    OMX_U32   StripByteCount;
-    OMX_U32   PlanarConfiguration;
-    OMX_U32   YCbCrSubSamplingOffset;
-    OMX_U32   YCbCrPositioning;
-    OMX_U32   SamplesPerPixel;
-    OMX_U32   PhotometricInterpretation;
-    OMX_U32   Compression;
-    OMX_U32   BitsPerSampleOffset;
-    OMX_U32   JPEGInterchangeFormat;
-    OMX_U32   JPEGInterchangeFormatLength;
-    //OMX_U32   JPEGImageOffset;
+	OMX_U32 ImageWidth;
+	OMX_U32 ImageHeight;
+	OMX_U32 StripOffset;
+	OMX_U32 RowsPerStrip;
+	OMX_U32 StripByteCount;
+	OMX_U32 PlanarConfiguration;
+	OMX_U32 YCbCrSubSamplingOffset;
+	OMX_U32 YCbCrPositioning;
+	OMX_U32 SamplesPerPixel;
+	OMX_U32 PhotometricInterpretation;
+	OMX_U32 Compression;
+	OMX_U32 BitsPerSampleOffset;
+	OMX_U32 JPEGInterchangeFormat;
+	OMX_U32 JPEGInterchangeFormatLength;
+	//OMX_U32   JPEGImageOffset;
 
-    OMX_U32     nFields;/*total number of fields in the EXIF Thumbnail that are to be supported*/
-    
-}OMX_EXIF_THUMBNAIL_INFO;
+	OMX_U32 nFields;	/*total number of fields in the EXIF Thumbnail that are to be supported */
 
-
-typedef enum 
-{
-    EXIF_ERROR,
-    EXIF_NOT_SUPPORTED,
-    EXIF_BITSTREAM_FORMAT_ERROR,
-    EXIF_SUCCESS
-}OMX_EXIF_RETURN_PARAM;
+} OMX_EXIF_THUMBNAIL_INFO;
 
 
 typedef enum
 {
-    PARSE_EXIF_INFO,
-    WRITE_EXIF_INFO
-}EXIF_OPERATION;
+	EXIF_ERROR,
+	EXIF_NOT_SUPPORTED,
+	EXIF_BITSTREAM_FORMAT_ERROR,
+	EXIF_SUCCESS
+} OMX_EXIF_RETURN_PARAM;
 
 
 typedef enum
 {
-    TAG_TYPE_BYTE = 0x1,
-    TAG_TYPE_ASCII = 0x2,
-    TAG_TYPE_SHORT = 0x3,
-    TAG_TYPE_LONG = 0x4,
-    TAG_TYPE_RATIONAL = 0x5,
-    TAG_TYPE_UNDEFINED = 0x7,
-    TAG_TYPE_SLONG = 0x9,
-    TAG_TYPE_SRATIONAL = 0xA
-}EXIF_TAG_TYPE; 
+	PARSE_EXIF_INFO,
+	WRITE_EXIF_INFO
+} EXIF_OPERATION;
 
 
-typedef enum   {  // Enumerator for the file orientation
-Exif_OrientationUnknown = 0x00,
-Exif_OrientationTopLeft = 0x01,
-Exif_OrientationTopRight = 0x02,
-Exif_OrientationBottomRight = 0x03,
-Exif_OrientationBottomLeft = 0x04,
-Exif_OrientationLeftTop = 0x05,
-Exif_OrientationRightTop = 0x06,
-Exif_OrientationRightBottom = 0x07,
-Exif_OrientationLeftBottom = 0x08
-}Exif_Orientation;
+typedef enum
+{
+	TAG_TYPE_BYTE = 0x1,
+	TAG_TYPE_ASCII = 0x2,
+	TAG_TYPE_SHORT = 0x3,
+	TAG_TYPE_LONG = 0x4,
+	TAG_TYPE_RATIONAL = 0x5,
+	TAG_TYPE_UNDEFINED = 0x7,
+	TAG_TYPE_SLONG = 0x9,
+	TAG_TYPE_SRATIONAL = 0xA
+} EXIF_TAG_TYPE;
+
+
+typedef enum
+{				// Enumerator for the file orientation
+	Exif_OrientationUnknown = 0x00,
+	Exif_OrientationTopLeft = 0x01,
+	Exif_OrientationTopRight = 0x02,
+	Exif_OrientationBottomRight = 0x03,
+	Exif_OrientationBottomLeft = 0x04,
+	Exif_OrientationLeftTop = 0x05,
+	Exif_OrientationRightTop = 0x06,
+	Exif_OrientationRightBottom = 0x07,
+	Exif_OrientationLeftBottom = 0x08
+} Exif_Orientation;
 
 
 typedef struct OMX_EXIF_INFO_SUPPORTED
 {
-    Exif_Orientation/*uint16*/    Orientation;
-    char    *pCreationDateTime;
-    char    *pLastChangeDateTime;
-    char    *pImageDescription;
-    char    *pMake;
-    char    *pModel;
-    char    *pSoftware;
-    char    *pArtist;
-    char    *pCopyright;
-    OMX_U32    ulImageWidth;
-    OMX_U32    ulImageHeight;
-    OMX_U32  ulExifSize;    
-    OMX_EXIF_THUMBNAIL_INFO *pThumbnailInfo;
-    OMX_U32    nFields;/*total number of fields in the EXIF format that are to be supported*/
-    
-}OMX_EXIF_INFO_SUPPORTED;
+	Exif_Orientation /*uint16 */ Orientation;
+	char *pCreationDateTime;
+	char *pLastChangeDateTime;
+	char *pImageDescription;
+	char *pMake;
+	char *pModel;
+	char *pSoftware;
+	char *pArtist;
+	char *pCopyright;
+	OMX_U32 ulImageWidth;
+	OMX_U32 ulImageHeight;
+	OMX_U32 ulExifSize;
+	OMX_EXIF_THUMBNAIL_INFO *pThumbnailInfo;
+	OMX_U32 nFields;	/*total number of fields in the EXIF format that are to be supported */
+
+} OMX_EXIF_INFO_SUPPORTED;
 
 
 /*Jpeg Decoder Test Case Object*/
 typedef struct JpegDecoderTestObject
 {
-    /* Semaphores for storing various events*/
-    TIMM_OSAL_PTR pOmxJpegdecSem_dummy;
-    TIMM_OSAL_PTR pOmxJpegdecSem_events;
-    TIMM_OSAL_PTR pOmxJpegdecSem_ETB;
-    TIMM_OSAL_PTR pOmxJpegdecSem_FTB;
+	/* Semaphores for storing various events */
+	TIMM_OSAL_PTR pOmxJpegdecSem_dummy;
+	TIMM_OSAL_PTR pOmxJpegdecSem_events;
+	TIMM_OSAL_PTR pOmxJpegdecSem_ETB;
+	TIMM_OSAL_PTR pOmxJpegdecSem_FTB;
 
-    /* Data pipes for both the ports */
-    TIMM_OSAL_PTR dataPipes[OMX_JPEGD_TEST_NUM_PORTS];
+	/* Data pipes for both the ports */
+	TIMM_OSAL_PTR dataPipes[OMX_JPEGD_TEST_NUM_PORTS];
 
-    /*OMX_JPEG DEC Handle*/
-    OMX_PTR hOMXJPEGD;
-   
-    OMX_BUFFERHEADERTYPE *pInBufHeader, *pOutBufHeader;
+	/*OMX_JPEG DEC Handle */
+	OMX_PTR hOMXJPEGD;
 
-    /*Set parameter structures */
-    OMX_PORT_PARAM_TYPE tJpegdecPortInit;
-    OMX_PARAM_PORTDEFINITIONTYPE tInputPortDefnType;
-    OMX_PARAM_PORTDEFINITIONTYPE tOutputPortDefnType;
-    OMX_IMAGE_PARAM_PORTFORMATTYPE tJpegdecPortFormat;
-    //OMX_IMAGE_PARAM_QFACTORTYPE tQfactor;
-    OMX_JPEG_PARAM_UNCOMPRESSEDMODETYPE tUncompressedMode;
-    OMX_IMAGE_PARAM_DECODE_SUBREGION pSubRegionDecode;
+	OMX_BUFFERHEADERTYPE *pInBufHeader, *pOutBufHeader;
 
-    /*Buffer header sent during EmptyThisBuffer Call*/
-     OMX_BUFFERHEADERTYPE tBufHeader;
- 
-    /*TestCase Parameter structure */
-     JPEGDTestCaseParams tTestcaseParam;
+	/*Set parameter structures */
+	OMX_PORT_PARAM_TYPE tJpegdecPortInit;
+	OMX_PARAM_PORTDEFINITIONTYPE tInputPortDefnType;
+	OMX_PARAM_PORTDEFINITIONTYPE tOutputPortDefnType;
+	OMX_IMAGE_PARAM_PORTFORMATTYPE tJpegdecPortFormat;
+	//OMX_IMAGE_PARAM_QFACTORTYPE tQfactor;
+	OMX_JPEG_PARAM_UNCOMPRESSEDMODETYPE tUncompressedMode;
+	OMX_IMAGE_PARAM_DECODE_SUBREGION pSubRegionDecode;
+
+	/*Buffer header sent during EmptyThisBuffer Call */
+	OMX_BUFFERHEADERTYPE tBufHeader;
+
+	/*TestCase Parameter structure */
+	JPEGDTestCaseParams tTestcaseParam;
 
 	/** Pointer to EXIF Data Structure */
-    OMX_EXIF_INFO_SUPPORTED *pExifInfoSupport;
+	OMX_EXIF_INFO_SUPPORTED *pExifInfoSupport;
 
-}JpegDecoderTestObject;
+} JpegDecoderTestObject;
 
 
 /*--------function prototypes ---------------------------------*/
 
-OMX_TestStatus JPEGD_TestFrameMode(uint32_t uMsg, void *pParam, uint32_t paramSize);
-OMX_TestStatus JPEGD_TestSliceMode(uint32_t uMsg, void *pParam, uint32_t paramSize);
+OMX_TestStatus JPEGD_TestFrameMode(uint32_t uMsg, void *pParam,
+    uint32_t paramSize);
+OMX_TestStatus JPEGD_TestSliceMode(uint32_t uMsg, void *pParam,
+    uint32_t paramSize);
 
-OMX_ERRORTYPE OMX_JPEGD_TEST_EmptyBufferDone(
-                                  OMX_IN OMX_HANDLETYPE hComponent,
-                                  OMX_IN OMX_PTR pAppData,
-                                  OMX_IN OMX_BUFFERHEADERTYPE* pBufferHeader);
+OMX_ERRORTYPE OMX_JPEGD_TEST_EmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
+    OMX_IN OMX_PTR pAppData, OMX_IN OMX_BUFFERHEADERTYPE * pBufferHeader);
 
-OMX_ERRORTYPE OMX_JPEGD_TEST_FillBufferDone (
-                                  OMX_OUT OMX_HANDLETYPE hComponent,
-                                  OMX_OUT OMX_PTR pAppData,
-                                  OMX_OUT OMX_BUFFERHEADERTYPE* pBufferHeader);
+OMX_ERRORTYPE OMX_JPEGD_TEST_FillBufferDone(OMX_OUT OMX_HANDLETYPE hComponent,
+    OMX_OUT OMX_PTR pAppData, OMX_OUT OMX_BUFFERHEADERTYPE * pBufferHeader);
 
-OMX_ERRORTYPE OMX_JPEGD_TEST_EventHandler(
-                                  OMX_IN OMX_HANDLETYPE hComponent,
-                                  OMX_IN OMX_PTR pAppData,
-                                  OMX_IN OMX_EVENTTYPE eEvent,
-                                  OMX_IN OMX_U32 nData1,
-                                  OMX_IN OMX_U32 nData2,
-                                  OMX_IN OMX_PTR pEventData);
-								   
-OMX_TestStatus JPEGD_TestEntry_Exif(uint32_t uMsg, void *pParam, uint32_t paramSize);
+OMX_ERRORTYPE OMX_JPEGD_TEST_EventHandler(OMX_IN OMX_HANDLETYPE hComponent,
+    OMX_IN OMX_PTR pAppData,
+    OMX_IN OMX_EVENTTYPE eEvent,
+    OMX_IN OMX_U32 nData1, OMX_IN OMX_U32 nData2, OMX_IN OMX_PTR pEventData);
 
-
-
-
-
-
+OMX_TestStatus JPEGD_TestEntry_Exif(uint32_t uMsg, void *pParam,
+    uint32_t paramSize);

@@ -7,7 +7,7 @@
  * ==================================================================== */
 /*
 *  @file timm_osal_defines.h
-*  The osal header file defines 
+*  The osal header file defines
 *  @path
 *
 */
@@ -23,8 +23,9 @@
 #define _TIMM_OSAL_SEMAPHORE_H_
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /*******************************************************************************
 * Includes
@@ -32,16 +33,22 @@ extern "C" {
 
 #include "timm_osal_types.h"
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreCreate(TIMM_OSAL_PTR *pSemaphore, TIMM_OSAL_U32 uInitCount);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreDelete(TIMM_OSAL_PTR pSemaphore);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreObtain(TIMM_OSAL_PTR pSemaphore, TIMM_OSAL_U32 uTimeOut);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreRelease(TIMM_OSAL_PTR pSemaphore);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreReset(TIMM_OSAL_PTR pSemaphore, TIMM_OSAL_U32 uInitCount);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_GetSemaphoreCount(TIMM_OSAL_PTR pSemaphore, TIMM_OSAL_U32 *count);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreCreate(TIMM_OSAL_PTR *
+	    pSemaphore, TIMM_OSAL_U32 uInitCount);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreDelete(TIMM_OSAL_PTR
+	    pSemaphore);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreObtain(TIMM_OSAL_PTR
+	    pSemaphore, TIMM_OSAL_U32 uTimeOut);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreRelease(TIMM_OSAL_PTR
+	    pSemaphore);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreReset(TIMM_OSAL_PTR pSemaphore,
+	    TIMM_OSAL_U32 uInitCount);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_GetSemaphoreCount(TIMM_OSAL_PTR
+	    pSemaphore, TIMM_OSAL_U32 * count);
 
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
-#endif /* _TIMM_OSAL_SEMAPHORE_H_ */
+#endif				/* _TIMM_OSAL_SEMAPHORE_H_ */

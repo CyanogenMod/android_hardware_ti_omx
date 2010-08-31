@@ -80,49 +80,55 @@ uint getDSSBuffers(uint count, struct dss_buffers *buffers, int vid1_fd)
 	reqbuf.memory = V4L2_MEMORY_MMAP;
 	reqbuf.count = count;
 	result = ioctl(vid1_fd, VIDIOC_REQBUFS, &reqbuf);
-	if (result != 0) {
+	if (result != 0)
+	{
 		perror("VIDEO_REQBUFS");
 		return -1;
 	}
 	dprintf(2, "\nDSS driver allocated %d buffers \n", reqbuf.count);
-	if (reqbuf.count != count) {
+	if (reqbuf.count != count)
+	{
 		dprintf(0, "\nDSS DRIVER FAILED To allocate the requested ");
-		dprintf(0, " Number of Buffers This is a stritct error check ");
+		dprintf(0,
+		    " Number of Buffers This is a stritct error check ");
 		dprintf(0, " So the application may fail.\n");
 	}
 
-	for (i = 0; i < reqbuf.count ; ++i) {
+	for (i = 0; i < reqbuf.count; ++i)
+	{
 		struct v4l2_buffer buffer;
 		buffer.type = reqbuf.type;
 		buffer.index = i;
 
 		result = ioctl(vid1_fd, VIDIOC_QUERYBUF, &buffer);
-		if (result != 0) {
+		if (result != 0)
+		{
 			perror("VIDIOC_QUERYBUF");
 			return -1;
 		}
 		dprintf(2, "%d: buffer.length=%d, buffer.m.offset=%d\n",
-				i, buffer.length, buffer.m.offset);
+		    i, buffer.length, buffer.m.offset);
 		buffers[i].length = buffer.length;
-		buffers[i].start = mmap(NULL, buffer.length, PROT_READ|
-						PROT_WRITE, MAP_SHARED,
-						vid1_fd, buffer.m.offset);
-		if (buffers[i].start == MAP_FAILED) {
+		buffers[i].start = mmap(NULL, buffer.length, PROT_READ |
+		    PROT_WRITE, MAP_SHARED, vid1_fd, buffer.m.offset);
+		if (buffers[i].start == MAP_FAILED)
+		{
 			perror("mmap");
 			return -1;
 		}
 
 		dprintf(0, "Buffers[%d].start = %x  length = %d\n", i,
-			buffers[i].start, buffers[i].length);
+		    buffers[i].start, buffers[i].length);
 	}
 	return 0;
 
 }
+
 /*========================================================*/
 /* @ fn getv4l2pixformat: Get V4L2 Pixel format based on  */
 /* the format input from user                             */
 /*========================================================*/
-unsigned int  getv4l2pixformat(const char *image_fmt)
+unsigned int getv4l2pixformat(const char *image_fmt)
 {
 	if (!strcmp(image_fmt, "YUYV"))
 		return V4L2_PIX_FMT_YUYV;
@@ -138,9 +144,10 @@ unsigned int  getv4l2pixformat(const char *image_fmt)
 		return V4L2_PIX_FMT_RGB32;
 	else if (!strcmp(image_fmt, "NV12"))
 		return V4L2_PIX_FMT_NV12;
-	else {
+	else
+	{
 		printf("fmt has to be NV12, UYVY, RGB565, RGB32, "
-			"RGB24, UYVY or RGB565X!\n");
+		    "RGB24, UYVY or RGB565X!\n");
 		return -1;
 	}
 }
@@ -150,24 +157,26 @@ unsigned int  getv4l2pixformat(const char *image_fmt)
 /* height of DSS Driver                                   */
 /*========================================================*/
 int SetFormatforDSSvid(unsigned int width, unsigned int height,
-				const char *image_fmt, int vid1_fd)
+    const char *image_fmt, int vid1_fd)
 {
 	struct v4l2_format format;
 	int result;
 	unsigned int v4l2pixformat;
 	v4l2pixformat = getv4l2pixformat(image_fmt);
-	if (v4l2pixformat == -1) {
+	if (v4l2pixformat == -1)
+	{
 		printf("Pixel Format is not supported\n");
 		return -1;
 	}
 
-	format.fmt.pix.width  = width;
+	format.fmt.pix.width = width;
 	format.fmt.pix.height = height;
-	format.type           = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+	format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	format.fmt.pix.pixelformat = v4l2pixformat;
 	/* set format of the picture captured */
 	result = ioctl(vid1_fd, VIDIOC_S_FMT, &format);
-	if (result != 0) {
+	if (result != 0)
+	{
 		perror("VIDIOC_S_FMT");
 		return result;
 	}
@@ -184,26 +193,30 @@ int open_video1()
 	struct v4l2_format format;
 	int vid1_fd;
 	vid1_fd = open(VIDEO_DEVICE1, O_RDWR);
-	if (vid1_fd <= 0) {
+	if (vid1_fd <= 0)
+	{
 		dprintf(0, "\n Failed to open the DSS Video Device\n");
 		return -1;
 	} else
 		dprintf(3, "\nVideo 1 opened successfully \n");
 	dprintf(2, "\nopened Video Device 1 for preview \n");
 	result = ioctl(vid1_fd, VIDIOC_QUERYCAP, &capability);
-	if (result != 0) {
+	if (result != 0)
+	{
 		perror("VIDIOC_QUERYCAP");
 		return -1;
 	}
-	if (capability.capabilities & V4L2_CAP_STREAMING == 0) {
+	if (capability.capabilities & V4L2_CAP_STREAMING == 0)
+	{
 		dprintf(0, "VIDIOC_QUERYCAP indicated that driver is not "
-			"capable of Streaming \n");
+		    "capable of Streaming \n");
 		return -1;
 	}
 	format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	result = ioctl(vid1_fd, VIDIOC_G_FMT, &format);
 
-	if (result != 0) {
+	if (result != 0)
+	{
 		perror("VIDIOC_G_FMT");
 		return -1;
 	}
@@ -228,26 +241,28 @@ int SendbufferToDss(int index, int vid1_fd)
 
 	dprintf(2, "\n Before DSS VIDIOC_QBUF()of buffer index %d\n", index);
 	result = ioctl(vid1_fd, VIDIOC_QBUF, &filledbuffer);
-	if (result != 0) {
+	if (result != 0)
+	{
 		perror("VIDIOC_QBUF FAILED ");
 		dprintf(0, "filldbuffer.index = %d \n", filledbuffer.index);
 	}
 
 	++time_to_streamon;
-	if (time_to_streamon == 1) {
+	if (time_to_streamon == 1)
+	{
 		dprintf(3, "\n STREAM ON DONE !!! \n");
-		result = ioctl(vid1_fd, VIDIOC_STREAMON,
-							&filledbuffer.type);
+		result = ioctl(vid1_fd, VIDIOC_STREAMON, &filledbuffer.type);
 		dprintf(3, "\n STREAMON result = %d\n", result);
 		if (result != 0)
 			perror("VIDIOC_STREAMON FAILED");
 	}
 	filledbuffer.flags = 0;
-	if (time_to_streamon > 1) {
+	if (time_to_streamon > 1)
+	{
 		dprintf(3, "\n DQBUF CALLED \n");
 		result = ioctl(vid1_fd, VIDIOC_DQBUF, &filledbuffer);
-		dprintf(3, "\n DQBUF buffer index got = %d\n",\
-						filledbuffer.index);
+		dprintf(3, "\n DQBUF buffer index got = %d\n",
+		    filledbuffer.index);
 		if (result != 0)
 			perror("VIDIOC_DQBUF FAILED ");
 	} else

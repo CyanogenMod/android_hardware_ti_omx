@@ -30,7 +30,7 @@
  *         This file contains methods that provides the functionality for
  *         the OpenMAX1.1 DOMX Framework RPC.
  *
- *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc 
+ *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\inc
  *
  *  @rev 1.0
  */
@@ -47,8 +47,9 @@
 #define OMX_RPC_UTILSH
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /******************************************************************
  *   INCLUDE FILES
@@ -87,7 +88,7 @@ extern "C" {
 /******************************************************************
  *   MACROS
  ******************************************************************/
-#define RPC_UTIL_GETSTRUCTSIZE(PTR) *((OMX_U32*)PTR) 
+#define RPC_UTIL_GETSTRUCTSIZE(PTR) *((OMX_U32*)PTR)
 
 /******************************************************************
  *   MACROS - COMMON MARSHALLING UTILITIES
@@ -133,12 +134,20 @@ PTR = (TYPE *) (MSGBODY+OFFSET);
 /******************************************************************
  *   FUNCTIONS
  ******************************************************************/
-RPC_OMX_ERRORTYPE RPC_UnMapBuffer(OMX_U32 mappedBuffer );
-RPC_OMX_ERRORTYPE RPC_MapBuffer(OMX_U32 mappedBuffer );
-RPC_OMX_ERRORTYPE RPC_FlushBuffer(OMX_U8 * pBuffer, OMX_U32 size );
-RPC_OMX_ERRORTYPE RPC_InvalidateBuffer(OMX_U8 * pBuffer, OMX_U32 size);
+	RPC_OMX_ERRORTYPE RPC_UnMapBuffer(OMX_U32 mappedBuffer);
+	RPC_OMX_ERRORTYPE RPC_MapBuffer(OMX_U32 mappedBuffer);
+	RPC_OMX_ERRORTYPE RPC_FlushBuffer(OMX_U8 * pBuffer, OMX_U32 size,
+	    OMX_U32 nTargetCoreId);
+	RPC_OMX_ERRORTYPE RPC_InvalidateBuffer(OMX_U8 * pBuffer,
+	    OMX_U32 size, OMX_U32 nTargetCoreId);
 
-RPC_OMX_ERRORTYPE RPC_UTIL_GetTargetServerName(OMX_STRING ComponentName, OMX_STRING * ServerName);
-RPC_OMX_ERRORTYPE RPC_UTIL_GetLocalServerName(OMX_STRING ComponentName, OMX_STRING * ServerName);
+	RPC_OMX_ERRORTYPE RPC_UTIL_GetTargetServerName(OMX_STRING
+	    ComponentName, OMX_STRING ServerName);
+	RPC_OMX_ERRORTYPE RPC_UTIL_GetLocalServerName(OMX_STRING
+	    ComponentName, OMX_STRING * ServerName);
+	RPC_OMX_ERRORTYPE RPC_UTIL_GenerateLocalServerName(OMX_STRING
+	    cServerName);
+	RPC_OMX_ERRORTYPE RPC_UTIL_GetTargetCore(OMX_STRING cComponentName,
+	    OMX_U32 * nCoreId);
 
 #endif

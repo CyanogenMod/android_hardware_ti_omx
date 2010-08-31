@@ -48,37 +48,40 @@
 static int trace_level = -1;
 
 /* strip out leading ../ stuff that happens to __FILE__ for out-of-tree builds */
-static const char * simplify_path(const char *file)
+static const char *simplify_path(const char *file)
 {
-    while (file)
-    {
-        char c = file[0];
-        if ((c != '.') && (c != '/') && (c != '\\'))
-            break;
-        file++;
-    }
-    return file;
+	while (file)
+	{
+		char c = file[0];
+		if ((c != '.') && (c != '/') && (c != '\\'))
+			break;
+		file++;
+	}
+	return file;
 }
 
-void __TIMM_OSAL_TraceFunction(const __TIMM_OSAL_TRACE_LOCATION *loc, const char *fmt, ...)
+void __TIMM_OSAL_TraceFunction(const __TIMM_OSAL_TRACE_LOCATION * loc,
+    const char *fmt, ...)
 {
-    if (trace_level == -1)
-    {
-        char *val = getenv("TIMM_OSAL_DEBUG_TRACE_LEVEL");
-        trace_level = val ? strtol(val, NULL, 0) : DEFAULT_TRACE_LEVEL;
-    }
+	if (trace_level == -1)
+	{
+		char *val = getenv("TIMM_OSAL_DEBUG_TRACE_LEVEL");
+		trace_level =
+		    val ? strtol(val, NULL, 0) : DEFAULT_TRACE_LEVEL;
+	}
 
-    if (trace_level >= loc->level)
-    {
-        va_list ap;
+	if (trace_level >= loc->level)
+	{
+		va_list ap;
 
-        va_start(ap, fmt);  /* make ap point to first arg after 'fmt' */
+		va_start(ap, fmt);	/* make ap point to first arg after 'fmt' */
 
 #if ( TIMM_OSAL_DEBUG_TRACE_DETAIL > 1 )
-        printf("%s:%d\t%s()\t", simplify_path(loc->file), loc->line, loc->function);
+		printf("%s:%d\t%s()\t", simplify_path(loc->file), loc->line,
+		    loc->function);
 #endif
-        vprintf(fmt, ap);
+		vprintf(fmt, ap);
 
-        va_end(ap);
-    }
+		va_end(ap);
+	}
 }

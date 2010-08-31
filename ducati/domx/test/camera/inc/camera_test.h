@@ -104,7 +104,8 @@
     (_s_).nVersion.s.nRevision = 0x0;		\
     (_s_).nVersion.s.nStep = 0x0
 
- struct port_param {
+struct port_param
+{
 	OMX_U32 hostbufaddr[MAX_NO_BUFFERS];
 	OMX_BUFFERHEADERTYPE *bufferheader[MAX_NO_BUFFERS];
 	OMX_U32 nWidth;
@@ -117,7 +118,7 @@
 	OMX_PARAM_VIDEOYUVRANGETYPE tYUVRange;
 	OMX_CONFIG_BOOLEANTYPE tVidStabParam;
 	OMX_CONFIG_FRAMESTABTYPE tVidStabConfig;
-	OMX_MIRRORTYPE  eCaptureMirror;
+	OMX_MIRRORTYPE eCaptureMirror;
 	OMX_S32 nCaptureRot;
 	OMX_U32 nThumbWidth;
 	OMX_U32 nThumbHeight;
@@ -128,9 +129,10 @@
 };
 
 
-typedef struct SampleCompTestCtxt{
+typedef struct SampleCompTestCtxt
+{
 	OMX_HANDLETYPE hComp;
-	OMX_STATETYPE eState ;
+	OMX_STATETYPE eState;
 	OMX_HANDLETYPE hStateSetEvent;
 	OMX_HANDLETYPE hExitSem;
 	OMX_U32 nVideoPortIndex;
@@ -140,10 +142,10 @@ typedef struct SampleCompTestCtxt{
 	OMX_SENSORSELECT eSenSelect;
 	OMX_CAMOPERATINGMODETYPE opMode;
 	OMX_BOOL bEventPortSettingsChanged;
-	void * processFbd;
-	void * dqBuff;
+	void *processFbd;
+	void *dqBuff;
 	OMX_PTR FBD_pipe;
-}SampleCompTestCtxt;
+} SampleCompTestCtxt;
 
 /* Default portstartnumber of Camera component */
 #define OMX_CAMERA_DEFAULT_START_PORT_NUM 0

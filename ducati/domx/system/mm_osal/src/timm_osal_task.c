@@ -27,8 +27,8 @@
 ******************************************************************************/
 
 #include <stdio.h>
-#include <pthread.h>		/*for POSIX calls*/
-#include <sched.h>			/*for sched structure*/
+#include <pthread.h>		/*for POSIX calls */
+#include <sched.h>		/*for sched structure */
 #include <unistd.h>
 
 
@@ -45,23 +45,24 @@
 /**
 * TIMM_OSAL_TASK describe the different task information
 */
-typedef struct TIMM_OSAL_TASK {
-    pthread_t threadID;					/*SHM check*/
-    /* To set the priority and stack size*/
-    pthread_attr_t ThreadAttr;              /*For setting the priority and stack size*/
+typedef struct TIMM_OSAL_TASK
+{
+	pthread_t threadID;	/*SHM check */
+	/* To set the priority and stack size */
+	pthread_attr_t ThreadAttr;	/*For setting the priority and stack size */
     /** Name of the task */
-/*    TIMM_OSAL_S8  name[8];*/ /* eight character plus null char */
+	/*    TIMM_OSAL_S8  name[8];*//* eight character plus null char */
     /** Pointer to the task stack memory */
 /*    TIMM_OSAL_PTR stackPtr;*/
     /** Size of the task stack */
 /*    TIMM_OSAL_S32 stackSize;*/
-	/*parameters to the task*/
+	/*parameters to the task */
 	TIMM_OSAL_U32 uArgc;
-    TIMM_OSAL_PTR pArgv;
+	TIMM_OSAL_PTR pArgv;
     /** task priority */
 /*    TIMM_OSAL_S32 priority;*/
     /** flag to check if task got created */
-    TIMM_OSAL_BOOL isCreated;
+	TIMM_OSAL_BOOL isCreated;
 } TIMM_OSAL_TASK;
 
 
@@ -78,92 +79,106 @@ typedef struct TIMM_OSAL_TASK {
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreateTask (TIMM_OSAL_PTR *pTask,
-                                          TIMM_OSAL_TaskProc pFunc,
-                                          TIMM_OSAL_U32 uArgc,
-                                          TIMM_OSAL_PTR pArgv,
-                                          TIMM_OSAL_U32 uStackSize,
-                                          TIMM_OSAL_U32 uPriority,
-                                          TIMM_OSAL_S8 *pName)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreateTask(TIMM_OSAL_PTR * pTask,
+    TIMM_OSAL_TaskProc pFunc,
+    TIMM_OSAL_U32 uArgc,
+    TIMM_OSAL_PTR pArgv,
+    TIMM_OSAL_U32 uStackSize, TIMM_OSAL_U32 uPriority, TIMM_OSAL_S8 * pName)
 {
 
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_TASK *pHandle = TIMM_OSAL_NULL;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_TASK *pHandle = TIMM_OSAL_NULL;
 	struct sched_param sched;
-    size_t stackSize;
-    *pTask = TIMM_OSAL_NULL;
+	size_t stackSize;
+	*pTask = TIMM_OSAL_NULL;
 
 
-	/*Task structure allocation*/
-    pHandle = (TIMM_OSAL_TASK *) TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_TASK), 0, 0, 0);
-    if(pHandle == TIMM_OSAL_NULL) {
-        bReturnStatus =  TIMM_OSAL_ERR_ALLOC;
-        goto EXIT;
+	/*Task structure allocation */
+	pHandle =
+	    (TIMM_OSAL_TASK *) TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_TASK), 0, 0,
+	    0);
+	if (pHandle == TIMM_OSAL_NULL)
+	{
+		bReturnStatus = TIMM_OSAL_ERR_ALLOC;
+		goto EXIT;
 	}
 
-    /* Initial cleaning of the task structure */
-    TIMM_OSAL_Memset((TIMM_OSAL_PTR)pHandle, 0, sizeof(TIMM_OSAL_TASK));
+	/* Initial cleaning of the task structure */
+	TIMM_OSAL_Memset((TIMM_OSAL_PTR) pHandle, 0, sizeof(TIMM_OSAL_TASK));
 
-	/*Arguments for task*/
+	/*Arguments for task */
 	pHandle->uArgc = uArgc;
 	pHandle->pArgv = pArgv;
 
-    pHandle->isCreated = TIMM_OSAL_FALSE;
+	pHandle->isCreated = TIMM_OSAL_FALSE;
 
 
-	if(SUCCESS != pthread_attr_init(&pHandle->ThreadAttr)){
-		/*TIMM_OSAL_Error("Task Init Attr Init failed!");*/
+	if (SUCCESS != pthread_attr_init(&pHandle->ThreadAttr))
+	{
+		/*TIMM_OSAL_Error("Task Init Attr Init failed!"); */
 		goto EXIT;
 	}
-	/* Updation of the priority and the stack size*/
-	
-    if(SUCCESS != pthread_attr_getschedparam(&pHandle->ThreadAttr, &sched)){
-		/*TIMM_OSAL_Error("Task Init Get Sched Params failed!");*/
-		goto EXIT;
-    }
+	/* Updation of the priority and the stack size */
 
-    sched.sched_priority = uPriority; /* relative to the default priority */
-    if(SUCCESS != pthread_attr_setschedparam(&pHandle->ThreadAttr, &sched)){
-		/*TIMM_OSAL_Error("Task Init Set Sched Paramsfailed!");*/
+	if (SUCCESS != pthread_attr_getschedparam(&pHandle->ThreadAttr,
+		&sched))
+	{
+		/*TIMM_OSAL_Error("Task Init Get Sched Params failed!"); */
 		goto EXIT;
 	}
 
-    /*First get the default stack size*/
-    if(SUCCESS != pthread_attr_getstacksize(&pHandle->ThreadAttr, &stackSize)){        
-		/*TIMM_OSAL_Error("Task Init Set Stack Size failed!");*/
+	sched.sched_priority = uPriority;	/* relative to the default priority */
+	if (SUCCESS != pthread_attr_setschedparam(&pHandle->ThreadAttr,
+		&sched))
+	{
+		/*TIMM_OSAL_Error("Task Init Set Sched Paramsfailed!"); */
 		goto EXIT;
 	}
 
-    /*Check if requested stack size is larger than the current default stack size*/
-    if(uStackSize > stackSize) {
-        stackSize = uStackSize;
-        if(SUCCESS != pthread_attr_setstacksize(&pHandle->ThreadAttr, stackSize)){
-		    /*TIMM_OSAL_Error("Task Init Set Stack Size failed!");*/
-		    goto EXIT;
-	    }
-    }
+	/*First get the default stack size */
+	if (SUCCESS != pthread_attr_getstacksize(&pHandle->ThreadAttr,
+		&stackSize))
+	{
+		/*TIMM_OSAL_Error("Task Init Set Stack Size failed!"); */
+		goto EXIT;
+	}
+
+	/*Check if requested stack size is larger than the current default stack size */
+	if (uStackSize > stackSize)
+	{
+		stackSize = uStackSize;
+		if (SUCCESS != pthread_attr_setstacksize(&pHandle->ThreadAttr,
+			stackSize))
+		{
+			/*TIMM_OSAL_Error("Task Init Set Stack Size failed!"); */
+			goto EXIT;
+		}
+	}
 
 
 
-	if (SUCCESS != pthread_create(&pHandle->threadID, &pHandle->ThreadAttr, pFunc, pArgv)) {
-        /*TIMM_OSAL_Error ("Create_Task failed !");*/
-        goto EXIT;
-    }
+	if (SUCCESS != pthread_create(&pHandle->threadID,
+		&pHandle->ThreadAttr, pFunc, pArgv))
+	{
+		/*TIMM_OSAL_Error ("Create_Task failed !"); */
+		goto EXIT;
+	}
 
 
-    /* Task was successfully created */
-    pHandle->isCreated = TIMM_OSAL_TRUE;
-    *pTask = (TIMM_OSAL_PTR )pHandle;
-    bReturnStatus = TIMM_OSAL_ERR_NONE;
+	/* Task was successfully created */
+	pHandle->isCreated = TIMM_OSAL_TRUE;
+	*pTask = (TIMM_OSAL_PTR) pHandle;
+	bReturnStatus = TIMM_OSAL_ERR_NONE;
     /**pTask = (TIMM_OSAL_PTR *)pHandle;*/
 
-EXIT:
+      EXIT:
 /*    if((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != pHandle)) {
        TIMM_OSAL_Free (pHandle->stackPtr);*/
-	if((TIMM_OSAL_ERR_NONE != bReturnStatus)) {
-        TIMM_OSAL_Free(pHandle);
-    }
-    return bReturnStatus;
+	if ((TIMM_OSAL_ERR_NONE != bReturnStatus))
+	{
+		TIMM_OSAL_Free(pHandle);
+	}
+	return bReturnStatus;
 
 }
 
@@ -175,45 +190,48 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeleteTask (TIMM_OSAL_PTR pTask)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeleteTask(TIMM_OSAL_PTR pTask)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 
-    TIMM_OSAL_TASK *pHandle = (TIMM_OSAL_TASK *)pTask;
-    void *retVal;
+	TIMM_OSAL_TASK *pHandle = (TIMM_OSAL_TASK *) pTask;
+	void *retVal;
 
-    if ((NULL == pHandle) || (TIMM_OSAL_TRUE != pHandle->isCreated)) {
-        /* this task was never created */
+	if ((NULL == pHandle) || (TIMM_OSAL_TRUE != pHandle->isCreated))
+	{
+		/* this task was never created */
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-        goto EXIT;
-    }
-	if(pthread_attr_destroy(&pHandle->ThreadAttr)){
-		/*TIMM_OSAL_Error("Delete_Task failed !");*/
 		goto EXIT;
 	}
-    if (pthread_join(pHandle->threadID, &retVal)) {
-		/*TIMM_OSAL_Error("Delete_Task failed !");*/
+	if (pthread_attr_destroy(&pHandle->ThreadAttr))
+	{
+		/*TIMM_OSAL_Error("Delete_Task failed !"); */
 		goto EXIT;
-/*	bReturnStatus = TIMM_OSAL_ERR_CREATE(TIMM_OSAL_ERR, TIMM_OSAL_COMP_TASK, status);*/ /*shm to be done*/
-    }
+	}
+	if (pthread_join(pHandle->threadID, &retVal))
+	{
+		/*TIMM_OSAL_Error("Delete_Task failed !"); */
+		goto EXIT;
+		/*	bReturnStatus = TIMM_OSAL_ERR_CREATE(TIMM_OSAL_ERR, TIMM_OSAL_COMP_TASK, status);*//*shm to be done */
+	}
 	bReturnStatus = TIMM_OSAL_ERR_NONE;
-    TIMM_OSAL_Free(pHandle);
-EXIT:
-    return bReturnStatus;
+	TIMM_OSAL_Free(pHandle);
+      EXIT:
+	return bReturnStatus;
 }
 
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_SleepTask (TIMM_OSAL_U32 mSec)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_SleepTask(TIMM_OSAL_U32 mSec)
 {
-    TIMM_OSAL_S32 nReturn = 0;
+	TIMM_OSAL_S32 nReturn = 0;
 
 #ifdef _POSIX_VERSION_1_
 	usleep(1000 * mSec);
 #else
-    nReturn = usleep(1000 * mSec);
+	nReturn = usleep(1000 * mSec);
 #endif
-    if(nReturn == 0)
-        return TIMM_OSAL_ERR_NONE;
-    else
-        return TIMM_OSAL_ERR_UNKNOWN;
+	if (nReturn == 0)
+		return TIMM_OSAL_ERR_NONE;
+	else
+		return TIMM_OSAL_ERR_UNKNOWN;
 }

@@ -4,6 +4,7 @@ noinst_LTLIBRARIES      = \
 	libh264e.la \
 	libh264d.la \
 	libmpeg4d.la \
+	libvideodecoder.la \
 	libcamera.la \
 	libjpegd.la \
 	libsample.la \
@@ -35,6 +36,10 @@ libh264d_la_CFLAGS      = $(common_cflags)
 libmpeg4d_la_SOURCES     = omx_proxy_mpeg4dec.c
 libmpeg4d_la_LIBADD      = $(common_libadd)
 libmpeg4d_la_CFLAGS      = $(common_cflags)
+
+libvideodecoder_la_SOURCES     = omx_proxy_videodec.c
+libvideodecoder_la_LIBADD      = $(common_libadd)
+libvideodecoder_la_CFLAGS      = $(common_cflags)
 
 libvp6d_la_SOURCES      = omx_proxy_vp6dec.c
 libvp6d_la_LIBADD       = $(common_libadd)

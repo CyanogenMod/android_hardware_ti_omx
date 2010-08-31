@@ -43,11 +43,11 @@
 typedef struct TIMM_OSAL_PIPE
 {
 	int pfd[2];
-	TIMM_OSAL_U32  pipeSize;
-	TIMM_OSAL_U32  messageSize;
-	TIMM_OSAL_U8   isFixedMessage;
-    int messageCount;
-    int totalBytesInPipe;
+	TIMM_OSAL_U32 pipeSize;
+	TIMM_OSAL_U32 messageSize;
+	TIMM_OSAL_U8 isFixedMessage;
+	int messageCount;
+	int totalBytesInPipe;
 } TIMM_OSAL_PIPE;
 
 
@@ -63,123 +63,133 @@ typedef struct TIMM_OSAL_PIPE
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreatePipe (TIMM_OSAL_PTR *pPipe,
-                                          TIMM_OSAL_U32  pipeSize,
-                                          TIMM_OSAL_U32  messageSize,
-                                          TIMM_OSAL_U8   isFixedMessage)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreatePipe(TIMM_OSAL_PTR * pPipe,
+    TIMM_OSAL_U32 pipeSize,
+    TIMM_OSAL_U32 messageSize, TIMM_OSAL_U8 isFixedMessage)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_PIPE *pHandle = TIMM_OSAL_NULL;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_PIPE *pHandle = TIMM_OSAL_NULL;
 
-    TIMM_OSAL_PIPE *pHandleBackup = TIMM_OSAL_NULL;
+	TIMM_OSAL_PIPE *pHandleBackup = TIMM_OSAL_NULL;
 
-    pHandle = (TIMM_OSAL_PIPE *)TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_PIPE), 0, 0, 0);
+	pHandle =
+	    (TIMM_OSAL_PIPE *) TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_PIPE), 0, 0,
+	    0);
 
-    if (TIMM_OSAL_NULL == pHandle) {
-        bReturnStatus = TIMM_OSAL_ERR_ALLOC;
-        goto EXIT;
-    }
-    TIMM_OSAL_Memset(pHandle, 0x0, sizeof(TIMM_OSAL_PIPE));
+	if (TIMM_OSAL_NULL == pHandle)
+	{
+		bReturnStatus = TIMM_OSAL_ERR_ALLOC;
+		goto EXIT;
+	}
+	TIMM_OSAL_Memset(pHandle, 0x0, sizeof(TIMM_OSAL_PIPE));
 
-	if (SUCCESS != pipe(pHandle->pfd)) {
+	if (SUCCESS != pipe(pHandle->pfd))
+	{
 		TIMM_OSAL_Error("Pipe failed!!!");
 		goto EXIT;
 	}
-/*AD - This ensures that file descriptors for stdin/out/err are not assigned to 
-  component pipes incase those file descriptors are free Normally this if 
+/*AD - This ensures that file descriptors for stdin/out/err are not assigned to
+  component pipes incase those file descriptors are free Normally this if
   condition will not be true and we'll go directly to the else part*/
-    if(pHandle->pfd[0] == 0 || pHandle->pfd[0] == 1 || pHandle->pfd[0] == 2 ||
-       pHandle->pfd[1] == 0 || pHandle->pfd[1] == 1 || pHandle->pfd[1] == 2)
-    {
-        pHandleBackup = (TIMM_OSAL_PIPE *)TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_PIPE), 0, 0, 0);
-        if (TIMM_OSAL_NULL == pHandleBackup) 
-        {
-            bReturnStatus = TIMM_OSAL_ERR_ALLOC;
-            goto EXIT;
-        }
-        TIMM_OSAL_Memset(pHandleBackup, 0x0, sizeof(TIMM_OSAL_PIPE));
+	if (pHandle->pfd[0] == 0 || pHandle->pfd[0] == 1 ||
+	    pHandle->pfd[0] == 2 || pHandle->pfd[1] == 0 ||
+	    pHandle->pfd[1] == 1 || pHandle->pfd[1] == 2)
+	{
+		pHandleBackup =
+		    (TIMM_OSAL_PIPE *)
+		    TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_PIPE), 0, 0, 0);
+		if (TIMM_OSAL_NULL == pHandleBackup)
+		{
+			bReturnStatus = TIMM_OSAL_ERR_ALLOC;
+			goto EXIT;
+		}
+		TIMM_OSAL_Memset(pHandleBackup, 0x0, sizeof(TIMM_OSAL_PIPE));
 /*Allocating the new pipe*/
-        if (SUCCESS != pipe(pHandleBackup->pfd)) 
-        {
-            goto EXIT;
-	    }
+		if (SUCCESS != pipe(pHandleBackup->pfd))
+		{
+			goto EXIT;
+		}
 /*Really crazy case if all 3 reserved file descriptors have been freed up!!
   Should never happen normally*/
-	    if(pHandleBackup->pfd[0] == 2 || pHandleBackup->pfd[1] == 2)
-	    {
-            int pfdDummy[2];
-            
-	        if (SUCCESS != close(pHandleBackup->pfd[0])) 
-            {
-	           goto EXIT;
-	        }
-            if (SUCCESS != close(pHandleBackup->pfd[1])) 
-            {
-	            goto EXIT;
-   	        }
-   	        /*Allocating the reserved file descriptor to dummy*/
-   	        if(SUCCESS != pipe(pfdDummy))
-            {
-                goto EXIT;
-            }
-            /*Now the backup pfd will not get a reserved value*/
-            if (SUCCESS != pipe(pHandleBackup->pfd)) 
-            {
-                goto EXIT;
-	        }
-	        /*Closing the dummy pfd*/
-	        if (SUCCESS != close(pfdDummy[0])) 
-            {
-	           goto EXIT;
-	        }
-            if (SUCCESS != close(pfdDummy[1])) 
-            {
-	            goto EXIT;
-   	        }
-   	        
-        }
-/*Closing the previous pipe*/
-	    if (SUCCESS != close(pHandle->pfd[0])) 
-        {
-	        goto EXIT;
-	    }
-        if (SUCCESS != close(pHandle->pfd[1])) 
-        {
-	        goto EXIT;
-   	    }
-   	    TIMM_OSAL_Free(pHandle);
-   	    
-	    pHandleBackup->pipeSize = pipeSize;
-        pHandleBackup->messageSize = messageSize;
-	    pHandleBackup->isFixedMessage = isFixedMessage;
-        pHandleBackup->messageCount = 0;
-        pHandleBackup->totalBytesInPipe = 0; 
-        
-        *pPipe = (TIMM_OSAL_PTR ) pHandleBackup ;
-    }
-/*This is the normal case when a reserved file descriptor is not assigned to our pipe*/
-    else
-    {     
-        pHandle->pipeSize = pipeSize;
-        pHandle->messageSize = messageSize;
-	    pHandle->isFixedMessage = isFixedMessage;
-        pHandle->messageCount = 0;
-        pHandle->totalBytesInPipe = 0; 
+		if (pHandleBackup->pfd[0] == 2 || pHandleBackup->pfd[1] == 2)
+		{
+			int pfdDummy[2];
 
-        *pPipe = (TIMM_OSAL_PTR ) pHandle ;
-    }
+			if (SUCCESS != close(pHandleBackup->pfd[0]))
+			{
+				goto EXIT;
+			}
+			if (SUCCESS != close(pHandleBackup->pfd[1]))
+			{
+				goto EXIT;
+			}
+			/*Allocating the reserved file descriptor to dummy */
+			if (SUCCESS != pipe(pfdDummy))
+			{
+				goto EXIT;
+			}
+			/*Now the backup pfd will not get a reserved value */
+			if (SUCCESS != pipe(pHandleBackup->pfd))
+			{
+				goto EXIT;
+			}
+			/*Closing the dummy pfd */
+			if (SUCCESS != close(pfdDummy[0]))
+			{
+				goto EXIT;
+			}
+			if (SUCCESS != close(pfdDummy[1]))
+			{
+				goto EXIT;
+			}
+
+		}
+/*Closing the previous pipe*/
+		if (SUCCESS != close(pHandle->pfd[0]))
+		{
+			goto EXIT;
+		}
+		if (SUCCESS != close(pHandle->pfd[1]))
+		{
+			goto EXIT;
+		}
+		TIMM_OSAL_Free(pHandle);
+
+		pHandleBackup->pipeSize = pipeSize;
+		pHandleBackup->messageSize = messageSize;
+		pHandleBackup->isFixedMessage = isFixedMessage;
+		pHandleBackup->messageCount = 0;
+		pHandleBackup->totalBytesInPipe = 0;
+
+		*pPipe = (TIMM_OSAL_PTR) pHandleBackup;
+	}
+/*This is the normal case when a reserved file descriptor is not assigned to our pipe*/
+	else
+	{
+		pHandle->pipeSize = pipeSize;
+		pHandle->messageSize = messageSize;
+		pHandle->isFixedMessage = isFixedMessage;
+		pHandle->messageCount = 0;
+		pHandle->totalBytesInPipe = 0;
+
+		*pPipe = (TIMM_OSAL_PTR) pHandle;
+	}
 
 	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-EXIT:
-    if ((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != pHandle)) {
-       TIMM_OSAL_Free(pHandle);
-    }
-    
-    if ((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != pHandleBackup)) {
-       TIMM_OSAL_Free(pHandleBackup);
-    }
-    return bReturnStatus;
+      EXIT:
+	if ((TIMM_OSAL_ERR_NONE != bReturnStatus) &&
+	    (TIMM_OSAL_NULL != pHandle))
+	{
+		TIMM_OSAL_Free(pHandle);
+	}
+
+	if ((TIMM_OSAL_ERR_NONE != bReturnStatus) &&
+	    (TIMM_OSAL_NULL != pHandleBackup))
+	{
+		TIMM_OSAL_Free(pHandleBackup);
+	}
+	return bReturnStatus;
 }
 
 
@@ -192,29 +202,32 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeletePipe (TIMM_OSAL_PTR pPipe)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeletePipe(TIMM_OSAL_PTR pPipe)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 
-	if(TIMM_OSAL_NULL == pHandle) {
+	if (TIMM_OSAL_NULL == pHandle)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-	if (SUCCESS != close(pHandle->pfd[0])) {
-        TIMM_OSAL_Error ("Delete_Pipe Read fd failed!!!");
-	    bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	if (SUCCESS != close(pHandle->pfd[0]))
+	{
+		TIMM_OSAL_Error("Delete_Pipe Read fd failed!!!");
+		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
-    if (SUCCESS != close(pHandle->pfd[1])) {
-        TIMM_OSAL_Error ("Delete_Pipe Write fd failed!!!");
-	    bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-   	}
+	if (SUCCESS != close(pHandle->pfd[1]))
+	{
+		TIMM_OSAL_Error("Delete_Pipe Write fd failed!!!");
+		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	}
 
-    TIMM_OSAL_Free(pHandle);
-EXIT:
-    return bReturnStatus;
+	TIMM_OSAL_Free(pHandle);
+      EXIT:
+	return bReturnStatus;
 }
 
 
@@ -227,37 +240,37 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_WriteToPipe (TIMM_OSAL_PTR pPipe,
-                                           void *pMessage,
-                                           TIMM_OSAL_U32 size,
-                                           TIMM_OSAL_S32 timeout)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_WriteToPipe(TIMM_OSAL_PTR pPipe,
+    void *pMessage, TIMM_OSAL_U32 size, TIMM_OSAL_S32 timeout)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_U32 lSizeWritten = -1;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_U32 lSizeWritten = -1;
 
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 
-	if(size == 0) {
+	if (size == 0)
+	{
 		TIMM_OSAL_Error("0 size!!!");
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
-    lSizeWritten = write(pHandle->pfd[1], pMessage, size);
+	lSizeWritten = write(pHandle->pfd[1], pMessage, size);
 
-	if(lSizeWritten != size){
+	if (lSizeWritten != size)
+	{
 		TIMM_OSAL_Error("Write of pipe failed!!!");
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-    /*Update message count and size*/
-    pHandle->messageCount++;
-    pHandle->totalBytesInPipe += size;
+	/*Update message count and size */
+	pHandle->messageCount++;
+	pHandle->totalBytesInPipe += size;
 
 	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-EXIT:
-    return bReturnStatus;
+      EXIT:
+	return bReturnStatus;
 }
 
 
@@ -270,65 +283,73 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_WriteToFrontOfPipe (TIMM_OSAL_PTR pPipe,
-                                                  void *pMessage,
-                                                  TIMM_OSAL_U32 size,
-                                                  TIMM_OSAL_S32 timeout)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_WriteToFrontOfPipe(TIMM_OSAL_PTR pPipe,
+    void *pMessage, TIMM_OSAL_U32 size, TIMM_OSAL_S32 timeout)
 {
 
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_U32 lSizeWritten = -1;
-    TIMM_OSAL_U32 lSizeRead = -1;
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
-    TIMM_OSAL_U8 * tempPtr = NULL;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_U32 lSizeWritten = -1;
+	TIMM_OSAL_U32 lSizeRead = -1;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
+	TIMM_OSAL_U8 *tempPtr = NULL;
 
-       
-    /*First write to this pipe*/
-    if(size == 0) {
-		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-		goto EXIT;
-	}
-	
-    lSizeWritten = write(pHandle->pfd[1], pMessage, size);
 
-	if(lSizeWritten != size){
+	/*First write to this pipe */
+	if (size == 0)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-    /*Update number of messages*/
-    pHandle->messageCount++;
+	lSizeWritten = write(pHandle->pfd[1], pMessage, size);
 
-    
-    if(pHandle->messageCount > 1) {
-        /*First allocate memory*/
-        tempPtr = (TIMM_OSAL_U8 *)TIMM_OSAL_Malloc(pHandle->totalBytesInPipe, 0, 0, 0);
-        
-        if(tempPtr == NULL) {
-            bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-		    goto EXIT;
-        }
+	if (lSizeWritten != size)
+	{
+		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+		goto EXIT;
+	}
 
-        /*Read out of pipe*/
-        lSizeRead = read(pHandle->pfd[0], tempPtr, pHandle->totalBytesInPipe);
+	/*Update number of messages */
+	pHandle->messageCount++;
 
-        /*Write back to pipe*/
-        lSizeWritten = write(pHandle->pfd[1], tempPtr, pHandle->totalBytesInPipe);
 
-	    if(lSizeWritten != size){
-		    bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-		    goto EXIT;
-	    }
+	if (pHandle->messageCount > 1)
+	{
+		/*First allocate memory */
+		tempPtr =
+		    (TIMM_OSAL_U8 *) TIMM_OSAL_Malloc(pHandle->
+		    totalBytesInPipe, 0, 0, 0);
 
-        /*Update Total bytes in pipe*/
-        pHandle->totalBytesInPipe += size;
-    }
+		if (tempPtr == NULL)
+		{
+			bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+			goto EXIT;
+		}
 
-     
-EXIT:
-    TIMM_OSAL_Free(tempPtr);
-    
-   	return bReturnStatus;
+		/*Read out of pipe */
+		lSizeRead =
+		    read(pHandle->pfd[0], tempPtr, pHandle->totalBytesInPipe);
+
+		/*Write back to pipe */
+		lSizeWritten =
+		    write(pHandle->pfd[1], tempPtr,
+		    pHandle->totalBytesInPipe);
+
+		if (lSizeWritten != size)
+		{
+			bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+			goto EXIT;
+		}
+
+		/*Update Total bytes in pipe */
+		pHandle->totalBytesInPipe += size;
+	}
+
+
+      EXIT:
+	TIMM_OSAL_Free(tempPtr);
+
+	return bReturnStatus;
 
 }
 
@@ -342,48 +363,49 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_ReadFromPipe (TIMM_OSAL_PTR pPipe,
-                                            void *pMessage,
-                                            TIMM_OSAL_U32 size,
-                                            TIMM_OSAL_U32 *actualSize,
-                                            TIMM_OSAL_S32 timeout)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_ReadFromPipe(TIMM_OSAL_PTR pPipe,
+    void *pMessage,
+    TIMM_OSAL_U32 size, TIMM_OSAL_U32 * actualSize, TIMM_OSAL_S32 timeout)
 {
-		TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-		TIMM_OSAL_U32 lSizeRead = -1;
-		TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_U32 lSizeRead = -1;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 
-		if (size == 0) {
-			TIMM_OSAL_Error("nRead size has error!!!");
-			bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-			goto EXIT;
-		}
-		if ((pHandle->messageCount == 0) &&
-		    (timeout == TIMM_OSAL_NO_SUSPEND)) {
-			/*If timeout is 0 and pipe is empty, return error*/
-			 TIMM_OSAL_Error("Pipe is empty!!!");
-			 bReturnStatus = TIMM_OSAL_ERR_PIPE_EMPTY;
-			 goto EXIT;
-		}
-		if ((timeout != TIMM_OSAL_NO_SUSPEND) &&
-		    (timeout != TIMM_OSAL_SUSPEND)) {
-			TIMM_OSAL_Warning("Only infinite or no timeouts \
+	if (size == 0)
+	{
+		TIMM_OSAL_Error("nRead size has error!!!");
+		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+		goto EXIT;
+	}
+	if ((pHandle->messageCount == 0) && (timeout == TIMM_OSAL_NO_SUSPEND))
+	{
+		/*If timeout is 0 and pipe is empty, return error */
+		TIMM_OSAL_Error("Pipe is empty!!!");
+		bReturnStatus = TIMM_OSAL_ERR_PIPE_EMPTY;
+		goto EXIT;
+	}
+	if ((timeout != TIMM_OSAL_NO_SUSPEND) &&
+	    (timeout != TIMM_OSAL_SUSPEND))
+	{
+		TIMM_OSAL_Warning("Only infinite or no timeouts \
 			supported. Going to read with infinite timeout now");
-		}
-		/*read blocks infinitely until message is available*/
-		*actualSize =  lSizeRead = read(pHandle->pfd[0], pMessage, size);
-		if(0 == lSizeRead){
-			TIMM_OSAL_Error("EOF reached or no data in pipe!!!");
-			bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-			goto EXIT;
-		}
+	}
+	/*read blocks infinitely until message is available */
+	*actualSize = lSizeRead = read(pHandle->pfd[0], pMessage, size);
+	if (0 == lSizeRead)
+	{
+		TIMM_OSAL_Error("EOF reached or no data in pipe!!!");
+		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+		goto EXIT;
+	}
 
-		bReturnStatus = TIMM_OSAL_ERR_NONE;
-        
-        pHandle->messageCount--;
-        pHandle->totalBytesInPipe -= size;
+	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-	EXIT:
-		return bReturnStatus;
+	pHandle->messageCount--;
+	pHandle->totalBytesInPipe -= size;
+
+      EXIT:
+	return bReturnStatus;
 
 }
 
@@ -397,24 +419,27 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_ReadFromPipe (TIMM_OSAL_PTR pPipe,
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_ClearPipe (TIMM_OSAL_PTR pPipe)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_ClearPipe(TIMM_OSAL_PTR pPipe)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR;
 
 #if 0
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    STATUS status = NU_SUCCESS;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	STATUS status = NU_SUCCESS;
 
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 
-    status = NU_Reset_Pipe (&(pHandle->pipe));
+	status = NU_Reset_Pipe(&(pHandle->pipe));
 
-    if (NU_SUCCESS != status) {
-        TIMM_OSAL_Error ("NU_Reset_Pipe failed!!!");
-        bReturnStatus = TIMM_OSAL_ERR_CREATE(TIMM_OSAL_ERR, TIMM_OSAL_COMP_PIPES, status);
-    }
+	if (NU_SUCCESS != status)
+	{
+		TIMM_OSAL_Error("NU_Reset_Pipe failed!!!");
+		bReturnStatus =
+		    TIMM_OSAL_ERR_CREATE(TIMM_OSAL_ERR, TIMM_OSAL_COMP_PIPES,
+		    status);
+	}
 #endif
-    return bReturnStatus;
+	return bReturnStatus;
 }
 
 
@@ -427,27 +452,31 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_ClearPipe (TIMM_OSAL_PTR pPipe)
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_IsPipeReady (TIMM_OSAL_PTR pPipe)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_IsPipeReady(TIMM_OSAL_PTR pPipe)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR;
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 
 #if 0
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
-    PI_PCB *pipe = (PI_PCB *)&(pHandle->pipe);
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
+	PI_PCB *pipe = (PI_PCB *) & (pHandle->pipe);
 
-    if (0 != pipe->pi_messages) {
-        return TIMM_OSAL_ERR_NONE;
-    } else {
-        return TIMM_OSAL_ERR_NOT_READY;
-    }
+	if (0 != pipe->pi_messages)
+	{
+		return TIMM_OSAL_ERR_NONE;
+	} else
+	{
+		return TIMM_OSAL_ERR_NOT_READY;
+	}
 #endif
-    
-    if(pHandle->messageCount <= 0) {
-        bReturnStatus = TIMM_OSAL_ERR_NOT_READY;
-    } else {
-        bReturnStatus = TIMM_OSAL_ERR_NONE;
-    }
+
+	if (pHandle->messageCount <= 0)
+	{
+		bReturnStatus = TIMM_OSAL_ERR_NOT_READY;
+	} else
+	{
+		bReturnStatus = TIMM_OSAL_ERR_NONE;
+	}
 
 	return bReturnStatus;
 
@@ -463,21 +492,21 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_IsPipeReady (TIMM_OSAL_PTR pPipe)
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_GetPipeReadyMessageCount (TIMM_OSAL_PTR pPipe,
-                                                        TIMM_OSAL_U32 *count)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_GetPipeReadyMessageCount(TIMM_OSAL_PTR pPipe,
+    TIMM_OSAL_U32 * count)
 {
-		TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-        TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
 #if 0
 
-    TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *)pPipe;
-    PI_PCB *pipe = (PI_PCB *)&(pHandle->pipe);
+	TIMM_OSAL_PIPE *pHandle = (TIMM_OSAL_PIPE *) pPipe;
+	PI_PCB *pipe = (PI_PCB *) & (pHandle->pipe);
 
-    *count = pipe->pi_messages;
+	*count = pipe->pi_messages;
 
 #endif
 
-    *count = pHandle->messageCount;
-    return bReturnStatus;
+	*count = pHandle->messageCount;
+	return bReturnStatus;
 
 }

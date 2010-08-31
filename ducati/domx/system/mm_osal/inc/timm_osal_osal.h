@@ -7,7 +7,7 @@
  * ==================================================================== */
 /*
 *  @file timm_osal_osal.h
-*  The osal header file defines 
+*  The osal header file defines
 *  @path
 *
 */
@@ -23,8 +23,9 @@
 #define _TIMM_OSAL_OSAL_H_
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /*******************************************************************************
 * Includes
@@ -32,11 +33,11 @@ extern "C" {
 
 #include "timm_osal_types.h"
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Init (void);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Deinit (void);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_Init(void);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_Deinit(void);
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
-#endif /* _TIMM_OSAL_OSAL_H_ */
+#endif				/* _TIMM_OSAL_OSAL_H_ */

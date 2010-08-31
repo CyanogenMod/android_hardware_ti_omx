@@ -56,10 +56,10 @@ static TIMM_OSAL_U32 gMallocCounter = 0;
 * @see
 */
 /* ========================================================================== */
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreateMemoryPool (void)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreateMemoryPool(void)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    return bReturnStatus;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	return bReturnStatus;
 }
 
 
@@ -72,10 +72,10 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_CreateMemoryPool (void)
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeleteMemoryPool (void)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeleteMemoryPool(void)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    return bReturnStatus;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	return bReturnStatus;
 
 }
 
@@ -89,35 +89,40 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_DeleteMemoryPool (void)
 */
 /* ========================================================================== */
 TIMM_OSAL_PTR TIMM_OSAL_Malloc(TIMM_OSAL_U32 size,
-                              TIMM_OSAL_BOOL bBlockContiguous,
-                              TIMM_OSAL_U32 unBlockAlignment,
-                              TIMMOSAL_MEM_SEGMENTID tMemSegId )
+    TIMM_OSAL_BOOL bBlockContiguous,
+    TIMM_OSAL_U32 unBlockAlignment, TIMMOSAL_MEM_SEGMENTID tMemSegId)
 {
 
-    TIMM_OSAL_PTR pData = TIMM_OSAL_NULL;
+	TIMM_OSAL_PTR pData = TIMM_OSAL_NULL;
 
 #ifdef HAVE_MEMALIGN
-	if (0 == unBlockAlignment) {
-		pData = malloc((size_t)size);
-	} else {
-		pData = memalign((size_t)unBlockAlignment, (size_t)size);
+	if (0 == unBlockAlignment)
+	{
+		pData = malloc((size_t) size);
+	} else
+	{
+		pData = memalign((size_t) unBlockAlignment, (size_t) size);
 	}
 #else
-    if(0 != unBlockAlignment) {
-		TIMM_OSAL_Warning("Memory Allocation:Not done for specified nBufferAlignment. Alignment of 0 will be used");
+	if (0 != unBlockAlignment)
+	{
+		TIMM_OSAL_Warning
+		    ("Memory Allocation:Not done for specified nBufferAlignment. Alignment of 0 will be used");
 
-    } 
-  		pData = malloc((size_t)size);	/*size_t is long long*/
+	}
+	pData = malloc((size_t) size);	/*size_t is long long */
 #endif
-		if (TIMM_OSAL_NULL == pData) {
-			TIMM_OSAL_Error("Malloc failed!!!");
-		} else {
-		   /* Memory Allocation was successfull */
-		   gMallocCounter++;
-		}
-	
+	if (TIMM_OSAL_NULL == pData)
+	{
+		TIMM_OSAL_Error("Malloc failed!!!");
+	} else
+	{
+		/* Memory Allocation was successfull */
+		gMallocCounter++;
+	}
 
-    return pData;
+
+	return pData;
 }
 
 /* ========================================================================== */
@@ -128,18 +133,19 @@ TIMM_OSAL_PTR TIMM_OSAL_Malloc(TIMM_OSAL_U32 size,
 */
 /* ========================================================================== */
 
-void TIMM_OSAL_Free (TIMM_OSAL_PTR pData)
+void TIMM_OSAL_Free(TIMM_OSAL_PTR pData)
 {
-    if (TIMM_OSAL_NULL == pData) {
-        /*TIMM_OSAL_Warning("TIMM_OSAL_Free called on NULL pointer");*/
-        goto EXIT;
-    }
+	if (TIMM_OSAL_NULL == pData)
+	{
+		/*TIMM_OSAL_Warning("TIMM_OSAL_Free called on NULL pointer"); */
+		goto EXIT;
+	}
 
-    free(pData);
-    pData = NULL;
-    gMallocCounter--;
-EXIT:
-    return;
+	free(pData);
+	pData = NULL;
+	gMallocCounter--;
+      EXIT:
+	return;
 }
 
 /* ========================================================================== */
@@ -150,14 +156,15 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memset (TIMM_OSAL_PTR pBuffer, TIMM_OSAL_U8 uValue, TIMM_OSAL_U32 uSize)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memset(TIMM_OSAL_PTR pBuffer,
+    TIMM_OSAL_U8 uValue, TIMM_OSAL_U32 uSize)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 
-    memset((void*)pBuffer,(int)uValue,(size_t)uSize);
+	memset((void *)pBuffer, (int)uValue, (size_t) uSize);
 	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-    return bReturnStatus;
+	return bReturnStatus;
 }
 
 /* ========================================================================== */
@@ -168,18 +175,20 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memset (TIMM_OSAL_PTR pBuffer, TIMM_OSAL_U8 uValue
 */
 /* ========================================================================== */
 
-TIMM_OSAL_S32 TIMM_OSAL_Memcmp (TIMM_OSAL_PTR pBuffer1, TIMM_OSAL_PTR pBuffer2, TIMM_OSAL_U32 uSize)
+TIMM_OSAL_S32 TIMM_OSAL_Memcmp(TIMM_OSAL_PTR pBuffer1, TIMM_OSAL_PTR pBuffer2,
+    TIMM_OSAL_U32 uSize)
 {
-    TIMM_OSAL_S32 result = memcmp(pBuffer1, pBuffer2, uSize);
+	TIMM_OSAL_S32 result = memcmp(pBuffer1, pBuffer2, uSize);
 
-    if (result > 0)  {
-       return 1;
-    }
-    else if (result < 0)  {
-        return -1;
-    }
+	if (result > 0)
+	{
+		return 1;
+	} else if (result < 0)
+	{
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 /* ========================================================================== */
@@ -190,15 +199,17 @@ TIMM_OSAL_S32 TIMM_OSAL_Memcmp (TIMM_OSAL_PTR pBuffer1, TIMM_OSAL_PTR pBuffer2, 
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memcpy (TIMM_OSAL_PTR pBufDst, TIMM_OSAL_PTR pBufSrc, TIMM_OSAL_U32 uSize)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memcpy(TIMM_OSAL_PTR pBufDst,
+    TIMM_OSAL_PTR pBufSrc, TIMM_OSAL_U32 uSize)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 
-    memcpy(pBufDst, pBufSrc, uSize);
+	memcpy(pBufDst, pBufSrc, uSize);
 	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-    return bReturnStatus;
+	return bReturnStatus;
 }
+
 /* ========================================================================== */
 /**
 * @fn TIMM_OSAL_GetMemCounter function ....
@@ -207,8 +218,8 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_Memcpy (TIMM_OSAL_PTR pBufDst, TIMM_OSAL_PTR pBufS
 */
 /* ========================================================================== */
 
-TIMM_OSAL_U32 TIMM_OSAL_GetMemCounter(void) {
+TIMM_OSAL_U32 TIMM_OSAL_GetMemCounter(void)
+{
 
-    return gMallocCounter;
+	return gMallocCounter;
 }
-

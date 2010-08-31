@@ -50,10 +50,10 @@
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Init (void)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_Init(void)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    return bReturnStatus;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	return bReturnStatus;
 }
 
 
@@ -67,10 +67,8 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_Init (void)
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_Deinit (void)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_Deinit(void)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    return bReturnStatus;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	return bReturnStatus;
 }
-
-
