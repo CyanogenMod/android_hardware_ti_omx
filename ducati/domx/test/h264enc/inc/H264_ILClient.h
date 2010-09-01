@@ -33,12 +33,12 @@
 #endif
 
 #ifndef H264_LINUX_CLIENT
-	#define H264ENC_TRACE_ENABLE
-	#ifdef H264ENC_TRACE_ENABLE
-	/*overwriting the default trcae flags*/
-	#define TIMM_OSAL_DEBUG_TRACE_DETAIL 0
-	#define TIMM_OSAL_DEBUG_TRACE_LEVEL 5
-	#endif
+#define H264ENC_TRACE_ENABLE
+#ifdef H264ENC_TRACE_ENABLE
+	/*overwriting the default trcae flags */
+#define TIMM_OSAL_DEBUG_TRACE_DETAIL 0
+#define TIMM_OSAL_DEBUG_TRACE_LEVEL 5
+#endif
 #endif
 #ifdef H264_LINUX_CLIENT
 #include <timm_osal_trace.h>
@@ -53,21 +53,21 @@
 #include <OMX_IVCommon.h>
 #include <OMX_TI_Video.h>
 #include <OMX_TI_Index.h>
-#include <OMX_TI_Common.h> 
+#include <OMX_TI_Common.h>
 
 #ifdef H264_LINUX_CLIENT
-	#define H264CLIENT_TRACE_PRINT(ARGS,...)  TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
-	#define H264CLIENT_ENTER_PRINT()	         TIMM_OSAL_Entering("")
-	#define H264CLIENT_EXIT_PRINT(ARG)           TIMM_OSAL_Exiting("")
-	#define H264CLIENT_ERROR_PRINT(ARGS,...)  TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
-	#define H264CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
+#define H264CLIENT_TRACE_PRINT(ARGS,...)  TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
+#define H264CLIENT_ENTER_PRINT()	         TIMM_OSAL_Entering("")
+#define H264CLIENT_EXIT_PRINT(ARG)           TIMM_OSAL_Exiting("")
+#define H264CLIENT_ERROR_PRINT(ARGS,...)  TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
+#define H264CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
 #else
-	static TIMM_OSAL_TRACEGRP TraceGrp;
-	#define H264CLIENT_TRACE_PRINT(ARGS,...)   TIMM_OSAL_DebugExt(TraceGrp,ARGS,##__VA_ARGS__)
-	#define H264CLIENT_ENTER_PRINT()               TIMM_OSAL_EnteringExt(TraceGrp)
-	#define H264CLIENT_EXIT_PRINT(ARG)            TIMM_OSAL_ExitingExt(TraceGrp,ARG)
-	#define H264CLIENT_ERROR_PRINT(ARGS,...)   TIMM_OSAL_ErrorExt(TraceGrp,ARGS,##__VA_ARGS__ )
-	#define H264CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_InfoExt(TraceGrp,ARGS,##__VA_ARGS__ )
+static TIMM_OSAL_TRACEGRP TraceGrp;
+#define H264CLIENT_TRACE_PRINT(ARGS,...)   TIMM_OSAL_DebugExt(TraceGrp,ARGS,##__VA_ARGS__)
+#define H264CLIENT_ENTER_PRINT()               TIMM_OSAL_EnteringExt(TraceGrp)
+#define H264CLIENT_EXIT_PRINT(ARG)            TIMM_OSAL_ExitingExt(TraceGrp,ARG)
+#define H264CLIENT_ERROR_PRINT(ARGS,...)   TIMM_OSAL_ErrorExt(TraceGrp,ARGS,##__VA_ARGS__ )
+#define H264CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_InfoExt(TraceGrp,ARGS,##__VA_ARGS__ )
 #endif
 
 
@@ -90,91 +90,103 @@
     (_s_)->nVersion.s.nStep   = 0x0;
 
 /*Advanced Settings*/
-typedef struct{
-	OMX_U32 	nStartofSequence;	
-	OMX_U32 	nEndofSequence;	
-	OMX_U32 	nIDR;
-	OMX_U32 	nIntraPicture;
-	OMX_U32 	nNonIntraPicture;	
-}NALUSettings;
+typedef struct
+{
+	OMX_U32 nStartofSequence;
+	OMX_U32 nEndofSequence;
+	OMX_U32 nIDR;
+	OMX_U32 nIntraPicture;
+	OMX_U32 nNonIntraPicture;
+} NALUSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_U8 nNumSliceGroups;
-	OMX_U8 nSliceGroupMapType; 
-	OMX_VIDEO_SLICEGRPCHANGEDIRTYPE eSliceGrpChangeDir; 
-	OMX_U32 nSliceGroupChangeRate; 
-	OMX_U32 nSliceGroupChangeCycle; 
-	OMX_U32 nSliceGroupParams[H264ENC_MAXNUMSLCGPS] ;
-}FMOSettings;
+	OMX_U8 nSliceGroupMapType;
+	OMX_VIDEO_SLICEGRPCHANGEDIRTYPE eSliceGrpChangeDir;
+	OMX_U32 nSliceGroupChangeRate;
+	OMX_U32 nSliceGroupChangeCycle;
+	OMX_U32 nSliceGroupParams[H264ENC_MAXNUMSLCGPS];
+} FMOSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_VIDEO_BLOCKSIZETYPE eMinBlockSizeP;
 	OMX_VIDEO_BLOCKSIZETYPE eMinBlockSizeB;
-}MEBlockSize;
+} MEBlockSize;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_VIDEO_INTRAREFRESHTYPE eRefreshMode;
 	OMX_U32 nRate;
-}IntraRefreshSettings;
+} IntraRefreshSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_BOOL bAspectRatioPresent;
 	OMX_VIDEO_ASPECTRATIOTYPE eAspectRatio;
 	OMX_BOOL bFullRange;
-}VUISettings;
+} VUISettings;
 
 
-typedef struct{
-	OMX_U32	 nLumaIntra4x4Enable;	
-	OMX_U32 nLumaIntra8x8Enable;	
-	OMX_U32 nLumaIntra16x16Enable; 
+typedef struct
+{
+	OMX_U32 nLumaIntra4x4Enable;
+	OMX_U32 nLumaIntra8x8Enable;
+	OMX_U32 nLumaIntra16x16Enable;
 	OMX_U32 nChromaIntra8x8Enable;
 	OMX_VIDEO_CHROMACOMPONENTTYPE eChromaComponentEnable;
-}IntrapredictionSettings;
+} IntrapredictionSettings;
 
-typedef struct{	
+typedef struct
+{
 	OMX_VIDEO_DATASYNCMODETYPE inputDataMode;
 	OMX_VIDEO_DATASYNCMODETYPE outputDataMode;
 	OMX_U32 numInputDataUnits;
 	OMX_U32 numOutputDataUnits;
-}H264EDataSyncSettings;
+} H264EDataSyncSettings;
 
 
 
 /*Dynamic Params Settings*/
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
-	OMX_U32 nFramerate[10];	
-}FrameRate;
+	OMX_U32 nFramerate[10];
+} FrameRate;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nBitrate[10];
-}BitRate;
+} BitRate;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nMVAccuracy[10];
-	OMX_U32	 nHorSearchRangeP[10];
-	OMX_U32	 nVerSearchRangeP[10];
-	OMX_U32	 nHorSearchRangeB[10];
-	OMX_U32	 nVerSearchRangeB[10];
-}MESearchRange;
+	OMX_U32 nHorSearchRangeP[10];
+	OMX_U32 nVerSearchRangeP[10];
+	OMX_U32 nHorSearchRangeB[10];
+	OMX_U32 nVerSearchRangeB[10];
+} MESearchRange;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_BOOL ForceIFrame[10];
-}ForceFrame;
+} ForceFrame;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nQpI[10];
 	OMX_U32 nQpMaxI[10];
@@ -184,34 +196,38 @@ typedef struct{
 	OMX_U32 nQpMinP[10];
 	OMX_U32 nQpOffsetB[10];
 	OMX_U32 nQpMaxB[10];
-	OMX_U32	 nQpMinB[10];
-}QpSettings;
+	OMX_U32 nQpMinB[10];
+} QpSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nIntraFrameInterval[10];
-}IntraFrameInterval;
+} IntraFrameInterval;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nNaluSize[10];
-}NALSize;
+} NALSize;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_VIDEO_AVCSLICEMODETYPE eSliceMode[10];
-	OMX_U32	 nSlicesize[10];
-}SliceCodingSettings;
+	OMX_U32 nSlicesize[10];
+} SliceCodingSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 nFrameNumber[10];
 	OMX_U32 nWidth[10];
 	OMX_U32 nHeight[10];
-}PixelInfo;
+} PixelInfo;
 
 
 
@@ -226,7 +242,7 @@ typedef struct H264E_TestCaseParamsAdvanced
 	VUISettings VUI;
 	IntrapredictionSettings IntraPred;
 	H264EDataSyncSettings DataSync;
-}H264E_TestCaseParamsAdvanced;
+} H264E_TestCaseParamsAdvanced;
 
 typedef struct H264E_TestCaseParamsDynamic
 {
@@ -240,18 +256,19 @@ typedef struct H264E_TestCaseParamsDynamic
 	SliceCodingSettings DynSliceSettings;
 	PixelInfo DynPixelInfo;
 
-}H264E_TestCaseParamsDynamic;
+} H264E_TestCaseParamsDynamic;
 
 
-typedef enum H264E_TestType{
-    FULL_RECORD = 0,
-    PARTIAL_RECORD= 1
+typedef enum H264E_TestType
+{
+	FULL_RECORD = 0,
+	PARTIAL_RECORD = 1
 } H264E_TestType;
 
 
 typedef struct H264E_TestCaseParams
 {
-	OMX_U8 TestCaseId; 
+	OMX_U8 TestCaseId;
 	char InFile[100];
 	char OutFile[100];
 	OMX_U32 width;
@@ -260,7 +277,7 @@ typedef struct H264E_TestCaseParams
 	OMX_VIDEO_AVCLEVELTYPE level;
 	OMX_COLOR_FORMATTYPE inputChromaFormat;
 	OMX_VIDEO_FRAMECONTENTTYPE InputContentType;
-	OMX_VIDEO_INTERLACE_CODINGTYPE InterlaceCodingType; 
+	OMX_VIDEO_INTERLACE_CODINGTYPE InterlaceCodingType;
 	OMX_BOOL bLoopFilter;
 	OMX_BOOL bCABAC;
 	OMX_BOOL bFMO;
@@ -273,7 +290,7 @@ typedef struct H264E_TestCaseParams
 	OMX_VIDEO_ENCODING_MODE_PRESETTYPE EncodingPreset;
 	OMX_VIDEO_RATECONTROL_PRESETTYPE RateCntrlPreset;
 	OMX_VIDEO_AVCBITSTREAMFORMATTYPE BitStreamFormat;
-	OMX_U32 maxInterFrameInterval;	
+	OMX_U32 maxInterFrameInterval;
 	OMX_U32 nBitEnableAdvanced;
 	OMX_U32 nBitEnableDynamic;
 	OMX_U32 nNumInputBuf;
@@ -281,28 +298,30 @@ typedef struct H264E_TestCaseParams
 	OMX_BOOL bInAllocatebuffer;
 	OMX_BOOL bOutAllocatebuffer;
 	OMX_U8 TestType;
-	OMX_U8 StopFrameNum;	
-}H264E_TestCaseParams;
+	OMX_U8 StopFrameNum;
+} H264E_TestCaseParams;
 
-typedef struct H264E_ILClient{
+typedef struct H264E_ILClient
+{
 	OMX_HANDLETYPE pHandle;
 	OMX_STATETYPE eState;
 	OMX_ERRORTYPE eAppError;
-	
-	OMX_BUFFERHEADERTYPE	** pInBuff;
-	OMX_BUFFERHEADERTYPE	**pOutBuff;
+
+	OMX_BUFFERHEADERTYPE **pInBuff;
+	OMX_BUFFERHEADERTYPE **pOutBuff;
 
 	OMX_PTR IpBuf_Pipe;
 	OMX_PTR OpBuf_Pipe;
 
-	FILE* fIn;
-	FILE* fOut;
-	H264E_TestCaseParams* H264_TestCaseParams;
+	FILE *fIn;
+	FILE *fOut;
+	H264E_TestCaseParams *H264_TestCaseParams;
 
-}H264E_ILClient;
+} H264E_ILClient;
 
 
-typedef struct OMX_H264E_DynamicConfigs{
+typedef struct OMX_H264E_DynamicConfigs
+{
 	OMX_CONFIG_FRAMERATETYPE tFrameRate;
 	OMX_VIDEO_CONFIG_BITRATETYPE tBitRate;
 	OMX_VIDEO_CONFIG_MESEARCHRANGETYPE tMESearchrange;
@@ -310,15 +329,9 @@ typedef struct OMX_H264E_DynamicConfigs{
 	OMX_VIDEO_CONFIG_QPSETTINGSTYPE tQPSettings;
 	OMX_VIDEO_CONFIG_AVCINTRAPERIOD tAVCIntraPeriod;
 	OMX_VIDEO_CONFIG_NALSIZE tNALUSize;
-	OMX_VIDEO_CONFIG_SLICECODINGTYPE  tSliceSettings;
+	OMX_VIDEO_CONFIG_SLICECODINGTYPE tSliceSettings;
 	OMX_VIDEO_CONFIG_PIXELINFOTYPE tPixelInfo;
-}OMX_H264E_DynamicConfigs;
+} OMX_H264E_DynamicConfigs;
 
 
 #endif /*_H264_ILClient_ */
-
-
-
-
-
-

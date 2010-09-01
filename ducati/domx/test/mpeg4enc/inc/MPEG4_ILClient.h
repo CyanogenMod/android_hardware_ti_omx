@@ -30,12 +30,12 @@
 #endif
 
 #ifndef MPEG4_LINUX_CLIENT
-	#define MPEG4ENC_TRACE_ENABLE
-	#ifdef MPEG4ENC_TRACE_ENABLE
-	/*overwriting the default trcae flags*/
-	#define TIMM_OSAL_DEBUG_TRACE_DETAIL 0
-	#define TIMM_OSAL_DEBUG_TRACE_LEVEL 4 
-	#endif
+#define MPEG4ENC_TRACE_ENABLE
+#ifdef MPEG4ENC_TRACE_ENABLE
+	/*overwriting the default trcae flags */
+#define TIMM_OSAL_DEBUG_TRACE_DETAIL 0
+#define TIMM_OSAL_DEBUG_TRACE_LEVEL 4
+#endif
 #endif
 #ifdef MPEG4_LINUX_CLIENT
 #include <timm_osal_trace.h>
@@ -45,36 +45,36 @@
 
 /**-------program files ----------------------------------------**/
 #ifdef MPEG4_LINUX_CLIENT
-	#include <OMX_Core.h>
-	#include <OMX_Component.h>
-	#include <OMX_Video.h>
-	#include <OMX_IVCommon.h>
-	#include <OMX_TI_Video.h>
-	#include <OMX_TI_Index.h>
-	#include <OMX_TI_Common.h> 
+#include <OMX_Core.h>
+#include <OMX_Component.h>
+#include <OMX_Video.h>
+#include <OMX_IVCommon.h>
+#include <OMX_TI_Video.h>
+#include <OMX_TI_Index.h>
+#include <OMX_TI_Common.h>
 #else
-	#include "omx_core.h"
-	#include "omx_component.h"
-	#include "omx_video.h"      
-	#include "omx_ivcommon.h"
-	#include "omx_ti_video.h"
-	#include "omx_ti_index.h"
-	#include "omx_ti_common.h"
+#include "omx_core.h"
+#include "omx_component.h"
+#include "omx_video.h"
+#include "omx_ivcommon.h"
+#include "omx_ti_video.h"
+#include "omx_ti_index.h"
+#include "omx_ti_common.h"
 #endif
 
 #ifdef MPEG4_LINUX_CLIENT
-	#define MPEG4CLIENT_TRACE_PRINT(ARGS,...)  TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
-	#define MPEG4CLIENT_ENTER_PRINT()	         TIMM_OSAL_Entering("")
-	#define MPEG4CLIENT_EXIT_PRINT(ARG)           TIMM_OSAL_Exiting("")
-	#define MPEG4CLIENT_ERROR_PRINT(ARGS,...)  TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
-	#define MPEG4CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
+#define MPEG4CLIENT_TRACE_PRINT(ARGS,...)  TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
+#define MPEG4CLIENT_ENTER_PRINT()	         TIMM_OSAL_Entering("")
+#define MPEG4CLIENT_EXIT_PRINT(ARG)           TIMM_OSAL_Exiting("")
+#define MPEG4CLIENT_ERROR_PRINT(ARGS,...)  TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
+#define MPEG4CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
 #else
-	static TIMM_OSAL_TRACEGRP TraceGrp;
-	#define MPEG4CLIENT_TRACE_PRINT(ARGS,...)   TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
-	#define MPEG4CLIENT_ENTER_PRINT()               TIMM_OSAL_Entering("")
-	#define MPEG4CLIENT_EXIT_PRINT(ARG)            TIMM_OSAL_ExitingExt("")
-	#define MPEG4CLIENT_ERROR_PRINT(ARGS,...)   TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
-	#define MPEG4CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
+static TIMM_OSAL_TRACEGRP TraceGrp;
+#define MPEG4CLIENT_TRACE_PRINT(ARGS,...)   TIMM_OSAL_Debug(ARGS,##__VA_ARGS__)
+#define MPEG4CLIENT_ENTER_PRINT()               TIMM_OSAL_Entering("")
+#define MPEG4CLIENT_EXIT_PRINT(ARG)            TIMM_OSAL_ExitingExt("")
+#define MPEG4CLIENT_ERROR_PRINT(ARGS,...)   TIMM_OSAL_Error(ARGS,##__VA_ARGS__ )
+#define MPEG4CLIENT_INFO_PRINT(ARGS,...)     TIMM_OSAL_Info(ARGS,##__VA_ARGS__ )
 #endif
 
 
@@ -97,81 +97,92 @@
     (_s_)->nVersion.s.nStep   = 0x0;
 
 /*Advanced Settings*/
-typedef struct{
-	OMX_U32 	nStartofSequence;	
-	OMX_U32 	nEndofSequence;	
-	OMX_U32 	nIDR;
-	OMX_U32 	nIntraPicture;
-	OMX_U32 	nNonIntraPicture;	
-}NALUSettings;
+typedef struct
+{
+	OMX_U32 nStartofSequence;
+	OMX_U32 nEndofSequence;
+	OMX_U32 nIDR;
+	OMX_U32 nIntraPicture;
+	OMX_U32 nNonIntraPicture;
+} NALUSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_VIDEO_BLOCKSIZETYPE eMinBlockSizeP;
 	OMX_VIDEO_BLOCKSIZETYPE eMinBlockSizeB;
-}MEBlockSize;
+} MEBlockSize;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_VIDEO_INTRAREFRESHTYPE eRefreshMode;
 	OMX_U32 nRate;
-}IntraRefreshSettings;
+} IntraRefreshSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_BOOL bAspectRatioPresent;
 	OMX_VIDEO_ASPECTRATIOTYPE eAspectRatio;
 	OMX_BOOL bFullRange;
-}VUISettings;
+} VUISettings;
 
 
-typedef struct{
-	OMX_U32	 nLumaIntra4x4Enable;	
-	OMX_U32 nLumaIntra8x8Enable;	
-	OMX_U32 nLumaIntra16x16Enable; 
+typedef struct
+{
+	OMX_U32 nLumaIntra4x4Enable;
+	OMX_U32 nLumaIntra8x8Enable;
+	OMX_U32 nLumaIntra16x16Enable;
 	OMX_U32 nChromaIntra8x8Enable;
 	OMX_VIDEO_CHROMACOMPONENTTYPE eChromaComponentEnable;
-}IntrapredictionSettings;
+} IntrapredictionSettings;
 
-typedef struct{	
+typedef struct
+{
 	OMX_VIDEO_DATASYNCMODETYPE inputDataMode;
 	OMX_VIDEO_DATASYNCMODETYPE outputDataMode;
 	OMX_U32 numInputDataUnits;
 	OMX_U32 numOutputDataUnits;
-}MPEG4EDataSyncSettings;
+} MPEG4EDataSyncSettings;
 
 
 
 /*Dynamic Params Settings*/
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
-	OMX_U32 *nFramerate;	
-}FrameRate;
+	OMX_U32 *nFramerate;
+} FrameRate;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nBitrate;
-}BitRate;
+} BitRate;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nMVAccuracy;
-	OMX_U32	 *nHorSearchRangeP;
-	OMX_U32	 *nVerSearchRangeP;
-	OMX_U32	 *nHorSearchRangeB;
-	OMX_U32	 *nVerSearchRangeB;
-}MESearchRange;
+	OMX_U32 *nHorSearchRangeP;
+	OMX_U32 *nVerSearchRangeP;
+	OMX_U32 *nHorSearchRangeB;
+	OMX_U32 *nVerSearchRangeB;
+} MESearchRange;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_BOOL *ForceIFrame;
-}ForceFrame;
+} ForceFrame;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nQpI;
 	OMX_U32 *nQpMaxI;
@@ -181,34 +192,38 @@ typedef struct{
 	OMX_U32 *nQpMinP;
 	OMX_U32 *nQpOffsetB;
 	OMX_U32 *nQpMaxB;
-	OMX_U32	 *nQpMinB;
-}QpSettings;
+	OMX_U32 *nQpMinB;
+} QpSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nIntraFrameInterval;
-}IntraFrameInterval;
+} IntraFrameInterval;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nNaluSize;
-}NALSize;
+} NALSize;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_VIDEO_AVCSLICEMODETYPE *eSliceMode;
-	OMX_U32	 *nSlicesize;
-}SliceCodingSettings;
+	OMX_U32 *nSlicesize;
+} SliceCodingSettings;
 
 
-typedef struct{
+typedef struct
+{
 	OMX_S32 *nFrameNumber;
 	OMX_U32 *nWidth;
 	OMX_U32 *nHeight;
-}PixelInfo;
+} PixelInfo;
 
 
 
@@ -222,7 +237,7 @@ typedef struct MPEG4E_TestCaseParamsAdvanced
 	VUISettings VUI;
 	IntrapredictionSettings IntraPred;
 	MPEG4EDataSyncSettings DataSync;
-}MPEG4E_TestCaseParamsAdvanced;
+} MPEG4E_TestCaseParamsAdvanced;
 
 typedef struct MPEG4E_TestCaseParamsDynamic
 {
@@ -236,25 +251,26 @@ typedef struct MPEG4E_TestCaseParamsDynamic
 	SliceCodingSettings DynSliceSettings;
 	PixelInfo DynPixelInfo;
 
-}MPEG4E_TestCaseParamsDynamic;
+} MPEG4E_TestCaseParamsDynamic;
 
 
-typedef enum MPEG4E_TestType{
-    FULL_RECORD = 0,
-    PARTIAL_RECORD= 1
+typedef enum MPEG4E_TestType
+{
+	FULL_RECORD = 0,
+	PARTIAL_RECORD = 1
 } MPEG4E_TestType;
 
 
 typedef struct MPEG4E_TestCaseParams
 {
-	OMX_U8 TestCaseId; 
+	OMX_U8 TestCaseId;
 	OMX_U32 width;
 	OMX_U32 height;
 	OMX_VIDEO_AVCPROFILETYPE profile;
 	OMX_VIDEO_AVCLEVELTYPE level;
 	OMX_COLOR_FORMATTYPE inputChromaFormat;
 	OMX_VIDEO_FRAMECONTENTTYPE InputContentType;
-	OMX_VIDEO_INTERLACE_CODINGTYPE InterlaceCodingType; 
+	OMX_VIDEO_INTERLACE_CODINGTYPE InterlaceCodingType;
 	OMX_BOOL bLoopFilter;
 	OMX_BOOL bCABAC;
 	OMX_BOOL bFMO;
@@ -267,7 +283,7 @@ typedef struct MPEG4E_TestCaseParams
 	OMX_VIDEO_ENCODING_MODE_PRESETTYPE EncodingPreset;
 	OMX_VIDEO_RATECONTROL_PRESETTYPE RateCntrlPreset;
 	OMX_VIDEO_AVCBITSTREAMFORMATTYPE BitStreamFormat;
-	OMX_U32 maxInterFrameInterval;	
+	OMX_U32 maxInterFrameInterval;
 	OMX_U32 nBitEnableAdvanced;
 	OMX_U32 nBitEnableDynamic;
 	OMX_U32 nNumInputBuf;
@@ -275,32 +291,34 @@ typedef struct MPEG4E_TestCaseParams
 	OMX_BOOL bInAllocatebuffer;
 	OMX_BOOL bOutAllocatebuffer;
 	OMX_U8 TestType;
-	OMX_U8 StopFrameNum;	
-}MPEG4E_TestCaseParams;
+	OMX_U8 StopFrameNum;
+} MPEG4E_TestCaseParams;
 
-typedef struct MPEG4E_ILClient{
+typedef struct MPEG4E_ILClient
+{
 	OMX_HANDLETYPE pHandle;
 	OMX_STATETYPE eState;
 	OMX_ERRORTYPE eAppError;
-	
-	OMX_BUFFERHEADERTYPE	** pInBuff;
-	OMX_BUFFERHEADERTYPE	**pOutBuff;
+
+	OMX_BUFFERHEADERTYPE **pInBuff;
+	OMX_BUFFERHEADERTYPE **pOutBuff;
 
 	OMX_PTR IpBuf_Pipe;
 	OMX_PTR OpBuf_Pipe;
 
-	FILE* fIn;
-	FILE* fOut;
-	MPEG4E_TestCaseParams* MPEG4_TestCaseParams;
-	MPEG4E_TestCaseParamsDynamic* MPEG4_TestCaseParamsDynamic;
-	MPEG4E_TestCaseParamsAdvanced* MPEG4_TestCaseParamsAdvanced;
+	FILE *fIn;
+	FILE *fOut;
+	MPEG4E_TestCaseParams *MPEG4_TestCaseParams;
+	MPEG4E_TestCaseParamsDynamic *MPEG4_TestCaseParamsDynamic;
+	MPEG4E_TestCaseParamsAdvanced *MPEG4_TestCaseParamsAdvanced;
 	OMX_S64 TimeStampsArray[20];
 	OMX_U8 nFillBufferDoneCount;
 
-}MPEG4E_ILClient;
+} MPEG4E_ILClient;
 
 
-typedef struct OMX_MPEG4E_DynamicConfigs{
+typedef struct OMX_MPEG4E_DynamicConfigs
+{
 	OMX_CONFIG_FRAMERATETYPE tFrameRate;
 	OMX_VIDEO_CONFIG_BITRATETYPE tBitRate;
 	OMX_VIDEO_CONFIG_MESEARCHRANGETYPE tMESearchrange;
@@ -308,15 +326,9 @@ typedef struct OMX_MPEG4E_DynamicConfigs{
 	OMX_VIDEO_CONFIG_QPSETTINGSTYPE tQPSettings;
 	OMX_VIDEO_CONFIG_AVCINTRAPERIOD tAVCIntraPeriod;
 	OMX_VIDEO_CONFIG_NALSIZE tNALUSize;
-	OMX_VIDEO_CONFIG_SLICECODINGTYPE  tSliceSettings;
+	OMX_VIDEO_CONFIG_SLICECODINGTYPE tSliceSettings;
 	OMX_VIDEO_CONFIG_PIXELINFOTYPE tPixelInfo;
-}OMX_MPEG4E_DynamicConfigs;
+} OMX_MPEG4E_DynamicConfigs;
 
 
 #endif /*_MPEG4_ILClient_ */
-
-
-
-
-
-

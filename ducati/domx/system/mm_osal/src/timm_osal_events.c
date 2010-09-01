@@ -26,7 +26,7 @@
 * Includes
 ******************************************************************************/
 #include <stdio.h>
-#include <pthread.h>			/*for POSIX calls*/
+#include <pthread.h>		/*for POSIX calls */
 #include <sys/time.h>
 #include <errno.h>
 
@@ -37,11 +37,12 @@
 #include "timm_osal_events.h"
 
 
-typedef struct {
-    TIMM_OSAL_BOOL bSignaled;
+typedef struct
+{
+	TIMM_OSAL_BOOL bSignaled;
 	TIMM_OSAL_U32 eFlags;
-    pthread_mutex_t mutex;
-    pthread_cond_t  condition;
+	pthread_mutex_t mutex;
+	pthread_cond_t condition;
 } TIMM_OSAL_THREAD_EVENT;
 
 
@@ -52,37 +53,45 @@ typedef struct {
 *
 */
 /* ========================================================================== */
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventCreate(TIMM_OSAL_PTR *pEvents)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventCreate(TIMM_OSAL_PTR * pEvents)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_THREAD_EVENT *plEvent = NULL;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_THREAD_EVENT *plEvent = NULL;
 
-    plEvent = (TIMM_OSAL_THREAD_EVENT *)TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_THREAD_EVENT),0,0,0);
+	plEvent =
+	    (TIMM_OSAL_THREAD_EVENT *)
+	    TIMM_OSAL_Malloc(sizeof(TIMM_OSAL_THREAD_EVENT), 0, 0, 0);
 
-	if(TIMM_OSAL_NULL == plEvent) {
+	if (TIMM_OSAL_NULL == plEvent)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_ALLOC;
 		goto EXIT;
 	}
-    plEvent->bSignaled = TIMM_OSAL_FALSE;
+	plEvent->bSignaled = TIMM_OSAL_FALSE;
 	plEvent->eFlags = 0;
 
-	if(SUCCESS != pthread_mutex_init(&(plEvent->mutex), NULL)){
+	if (SUCCESS != pthread_mutex_init(&(plEvent->mutex), NULL))
+	{
 		TIMM_OSAL_Error("Event Create:Mutex Init failed !");
-		goto EXIT;  /*bReturnStatus = TIMM_OSAL_ERR_UNKNOWN*/
+		goto EXIT;	/*bReturnStatus = TIMM_OSAL_ERR_UNKNOWN */
 	}
 
-	if(SUCCESS != pthread_cond_init(&(plEvent->condition), NULL)){
-		TIMM_OSAL_Error("Event Create:Conditional Variable  Init failed !");
+	if (SUCCESS != pthread_cond_init(&(plEvent->condition), NULL))
+	{
+		TIMM_OSAL_Error
+		    ("Event Create:Conditional Variable  Init failed !");
 		pthread_mutex_destroy(&(plEvent->mutex));
-		/*TIMM_OSAL_Free(plEvent);*/
+		/*TIMM_OSAL_Free(plEvent); */
+	} else
+	{
+		*pEvents = (TIMM_OSAL_PTR) plEvent;
+		bReturnStatus = TIMM_OSAL_ERR_NONE;
 	}
-	else {
-    	*pEvents = (TIMM_OSAL_PTR)plEvent;
- 		bReturnStatus = TIMM_OSAL_ERR_NONE;
-	}
-EXIT:
-    if ((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != plEvent)) {
-        TIMM_OSAL_Free(plEvent);
+      EXIT:
+	if ((TIMM_OSAL_ERR_NONE != bReturnStatus) &&
+	    (TIMM_OSAL_NULL != plEvent))
+	{
+		TIMM_OSAL_Free(plEvent);
 	}
 	return bReturnStatus;
 }
@@ -96,35 +105,41 @@ EXIT:
 /* ========================================================================== */
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventDelete(TIMM_OSAL_PTR pEvents)
 {
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *)pEvents;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
+	TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *) pEvents;
 
-	if(TIMM_OSAL_NULL == plEvent){
+	if (TIMM_OSAL_NULL == plEvent)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-	if(SUCCESS != pthread_mutex_lock(&(plEvent->mutex))) {
+	if (SUCCESS != pthread_mutex_lock(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Delete: Mutex Lock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
-    if(SUCCESS != pthread_cond_destroy(&(plEvent->condition))){
-		TIMM_OSAL_Error("Event Delete: Conditional Variable Destroy failed !");
+	if (SUCCESS != pthread_cond_destroy(&(plEvent->condition)))
+	{
+		TIMM_OSAL_Error
+		    ("Event Delete: Conditional Variable Destroy failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
 
-	if(SUCCESS != pthread_mutex_unlock(&(plEvent->mutex))) {
+	if (SUCCESS != pthread_mutex_unlock(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Delete: Mutex Unlock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
 
-	if(SUCCESS != pthread_mutex_destroy(&(plEvent->mutex))) {
+	if (SUCCESS != pthread_mutex_destroy(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Delete: Mutex Destory failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
 
-    TIMM_OSAL_Free(plEvent);
-EXIT:
+	TIMM_OSAL_Free(plEvent);
+      EXIT:
 	return bReturnStatus;
 }
 
@@ -137,55 +152,59 @@ EXIT:
 */
 /* ========================================================================== */
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventSet(TIMM_OSAL_PTR pEvents,
-                                       TIMM_OSAL_U32 uEventFlags,
-                                       TIMM_OSAL_EVENT_OPERATION eOperation)
+    TIMM_OSAL_U32 uEventFlags, TIMM_OSAL_EVENT_OPERATION eOperation)
 {
 
-    TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *)pEvents;
+	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
+	TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *) pEvents;
 
-	if(TIMM_OSAL_NULL == plEvent){
+	if (TIMM_OSAL_NULL == plEvent)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-	if(SUCCESS != pthread_mutex_lock(&(plEvent->mutex))) {
+	if (SUCCESS != pthread_mutex_lock(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Set: Mutex Lock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 		goto EXIT;
 	}
 
-    switch (eOperation) {
-    case TIMM_OSAL_EVENT_AND:
-        plEvent->eFlags = plEvent->eFlags & uEventFlags;
+	switch (eOperation)
+	{
+	case TIMM_OSAL_EVENT_AND:
+		plEvent->eFlags = plEvent->eFlags & uEventFlags;
 		break;
-    case TIMM_OSAL_EVENT_OR:
-        plEvent->eFlags = plEvent->eFlags | uEventFlags;
+	case TIMM_OSAL_EVENT_OR:
+		plEvent->eFlags = plEvent->eFlags | uEventFlags;
 		break;
-    default:
-        TIMM_OSAL_Error("Event Set: Bad eOperation !");
-        bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
-        pthread_mutex_unlock(&plEvent->mutex);
-        goto EXIT;
-    }
+	default:
+		TIMM_OSAL_Error("Event Set: Bad eOperation !");
+		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
+		pthread_mutex_unlock(&plEvent->mutex);
+		goto EXIT;
+	}
 
-    plEvent->bSignaled = TIMM_OSAL_TRUE;
+	plEvent->bSignaled = TIMM_OSAL_TRUE;
 
-	if(SUCCESS != pthread_cond_signal(&plEvent->condition)) {
-		TIMM_OSAL_Error("Event Set: Condition Variable Signal failed !");
+	if (SUCCESS != pthread_cond_signal(&plEvent->condition))
+	{
+		TIMM_OSAL_Error
+		    ("Event Set: Condition Variable Signal failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 		pthread_mutex_unlock(&plEvent->mutex);
 		goto EXIT;
 	}
 
-	if(SUCCESS != pthread_mutex_unlock(&plEvent->mutex)){
+	if (SUCCESS != pthread_mutex_unlock(&plEvent->mutex))
+	{
 		TIMM_OSAL_Error("Event Set: Mutex Unlock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-	}
-	else
+	} else
 		bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-EXIT:
+      EXIT:
 	return bReturnStatus;
 
 
@@ -209,20 +228,19 @@ EXIT:
 *3) Call pthread_cond_wait() to perform a blocking wait 	|  variable. If it fulfills the desired
 *  for signal from Thread-B. Note that a call to 			|  condition, signal Thread-A.
 *  pthread_cond_wait() automatically and atomically 		|5)Unlock mutex.
-*  unlocks the associated mutex variable so that it can 	|6)Continue 
+*  unlocks the associated mutex variable so that it can 	|6)Continue
 *  be used by Thread-B.							|
 *4) When signalled, wake up. Mutex is automatically and 	|
 *  atomically locked.								|
 *5) Explicitly unlock mutex							|
-*6) Continue										|	
+*6) Continue										|
 *
 */
 /* ========================================================================== */
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventRetrieve(TIMM_OSAL_PTR pEvents,
-                                            TIMM_OSAL_U32 uRequestedEvents,
-                                            TIMM_OSAL_EVENT_OPERATION eOperation,
-                                            TIMM_OSAL_U32 *pRetrievedEvents,
-                                            TIMM_OSAL_U32 uTimeOutMsec)
+    TIMM_OSAL_U32 uRequestedEvents,
+    TIMM_OSAL_EVENT_OPERATION eOperation,
+    TIMM_OSAL_U32 * pRetrievedEvents, TIMM_OSAL_U32 uTimeOutMsec)
 {
 	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	struct timespec timeout;
@@ -231,101 +249,124 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventRetrieve(TIMM_OSAL_PTR pEvents,
 	TIMM_OSAL_U32 isolatedFlags;
 	int status = -1;
 	int and_operation;
-	TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *)pEvents;
+	TIMM_OSAL_THREAD_EVENT *plEvent = (TIMM_OSAL_THREAD_EVENT *) pEvents;
 
-	if(TIMM_OSAL_NULL == plEvent){
+	if (TIMM_OSAL_NULL == plEvent)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-	/* Lock the mutex for access to the eFlags global variable*/
-	if(SUCCESS != pthread_mutex_lock(&(plEvent->mutex))){
+	/* Lock the mutex for access to the eFlags global variable */
+	if (SUCCESS != pthread_mutex_lock(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Retrieve: Mutex Lock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 		goto EXIT;
 	}
 
-	/*Check the eOperation and put it in a variable*/
-	and_operation = ((TIMM_OSAL_EVENT_AND == eOperation) || (TIMM_OSAL_EVENT_AND_CONSUME ==  eOperation));
+	/*Check the eOperation and put it in a variable */
+	and_operation = ((TIMM_OSAL_EVENT_AND == eOperation) ||
+	    (TIMM_OSAL_EVENT_AND_CONSUME == eOperation));
 
-	/* Isolate the flags. The & operation is suffice for an TIMM_OSAL_EVENT_OR eOperation*/
+	/* Isolate the flags. The & operation is suffice for an TIMM_OSAL_EVENT_OR eOperation */
 	isolatedFlags = plEvent->eFlags & uRequestedEvents;
 
-	/*Check if it is the AND operation. If yes then, all the flags must match*/
-	if(and_operation){
-		isolatedFlags =  (isolatedFlags == uRequestedEvents);
+	/*Check if it is the AND operation. If yes then, all the flags must match */
+	if (and_operation)
+	{
+		isolatedFlags = (isolatedFlags == uRequestedEvents);
 	}
 
 
-	if(isolatedFlags) {
+	if (isolatedFlags)
+	{
 
-		/*We have got required combination of the eFlags bits and will return it back*/
+		/*We have got required combination of the eFlags bits and will return it back */
 		*pRetrievedEvents = plEvent->eFlags;
 		bReturnStatus = TIMM_OSAL_ERR_NONE;
-	}
-	else {
+	} else
+	{
 
-		/*Required combination of bits is not yet available*/
-		if ( TIMM_OSAL_NO_SUSPEND == uTimeOutMsec){
-				*pRetrievedEvents = 0;
-				bReturnStatus = TIMM_OSAL_ERR_NONE;
+		/*Required combination of bits is not yet available */
+		if (TIMM_OSAL_NO_SUSPEND == uTimeOutMsec)
+		{
+			*pRetrievedEvents = 0;
+			bReturnStatus = TIMM_OSAL_ERR_NONE;
 		}
 
-		else if (TIMM_OSAL_SUSPEND == uTimeOutMsec){
+		else if (TIMM_OSAL_SUSPEND == uTimeOutMsec)
+		{
 
 			/*Wait till we get the required combination of bits. We we get the required
-			*bits then we go out of the while loop
-			*/
-			while(!isolatedFlags){
+			 *bits then we go out of the while loop
+			 */
+			while (!isolatedFlags)
+			{
 
-				/*Wait on the conditional variable for another thread to set the eFlags and signal*/
-				pthread_cond_wait(&(plEvent->condition), &(plEvent->mutex));
+				/*Wait on the conditional variable for another thread to set the eFlags and signal */
+				pthread_cond_wait(&(plEvent->condition),
+				    &(plEvent->mutex));
 
 				/* eFlags set by some thread. Now, isolate the flags.
 				 * The & operation is suffice for an TIMM_OSAL_EVENT_OR eOperation
 				 */
-				isolatedFlags = plEvent->eFlags & uRequestedEvents;
+				isolatedFlags =
+				    plEvent->eFlags & uRequestedEvents;
 
-				/*Check if it is the AND operation. If yes then, all the flags must match*/
-				if(and_operation){
-					isolatedFlags =  (isolatedFlags == uRequestedEvents);
+				/*Check if it is the AND operation. If yes then, all the flags must match */
+				if (and_operation)
+				{
+					isolatedFlags =
+					    (isolatedFlags ==
+					    uRequestedEvents);
 				}
 			}
 
-			/* Obtained the requested combination of bits on eFlags*/
+			/* Obtained the requested combination of bits on eFlags */
 			*pRetrievedEvents = plEvent->eFlags;
 			bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-		}
-		else {
+		} else
+		{
 
-			/* Calculate uTimeOutMsec in terms of the absolute time. uTimeOutMsec is in milliseconds*/
+			/* Calculate uTimeOutMsec in terms of the absolute time. uTimeOutMsec is in milliseconds */
 			gettimeofday(&now, NULL);
 			timeout_us = now.tv_usec + 1000 * uTimeOutMsec;
 			timeout.tv_sec = now.tv_sec + timeout_us / 1000000;
 			timeout.tv_nsec = (timeout_us % 1000000) * 1000;
 
-			while(!isolatedFlags){
+			while (!isolatedFlags)
+			{
 
-				/* Wait till uTimeOutMsec for a thread to signal on the conditional variable*/
-				status = pthread_cond_timedwait(&(plEvent->condition), &(plEvent->mutex), &timeout);
+				/* Wait till uTimeOutMsec for a thread to signal on the conditional variable */
+				status =
+				    pthread_cond_timedwait(&(plEvent->
+					condition), &(plEvent->mutex),
+				    &timeout);
 
-				/*Timedout or error and returned without being signalled*/
-				if (SUCCESS != status) {
-					if(ETIMEDOUT == status)
-           	    		bReturnStatus = TIMM_OSAL_ERR_NONE;
-       	    		*pRetrievedEvents = 0;
-            	    break;
-	            }
+				/*Timedout or error and returned without being signalled */
+				if (SUCCESS != status)
+				{
+					if (ETIMEDOUT == status)
+						bReturnStatus =
+						    TIMM_OSAL_ERR_NONE;
+					*pRetrievedEvents = 0;
+					break;
+				}
 
 				/* eFlags set by some thread. Now, isolate the flags.
 				 * The & operation is suffice for an TIMM_OSAL_EVENT_OR eOperation
 				 */
-				isolatedFlags = plEvent->eFlags & uRequestedEvents;
+				isolatedFlags =
+				    plEvent->eFlags & uRequestedEvents;
 
-				/*Check if it is the AND operation. If yes then, all the flags must match*/
-				if(and_operation){
-						isolatedFlags =  (isolatedFlags == uRequestedEvents);
+				/*Check if it is the AND operation. If yes then, all the flags must match */
+				if (and_operation)
+				{
+					isolatedFlags =
+					    (isolatedFlags ==
+					    uRequestedEvents);
 				}
 
 			}
@@ -333,21 +374,22 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_EventRetrieve(TIMM_OSAL_PTR pEvents,
 	}
 
 	/*If we have got the required combination of bits, we will have to reset the eFlags if CONSUME is mentioned
-	*in the eOperations
-	*/
-	if (isolatedFlags && ((eOperation == TIMM_OSAL_EVENT_AND_CONSUME) || (eOperation == TIMM_OSAL_EVENT_OR_CONSUME))){
-			plEvent->eFlags =  0;
+	 *in the eOperations
+	 */
+	if (isolatedFlags && ((eOperation == TIMM_OSAL_EVENT_AND_CONSUME) ||
+		(eOperation == TIMM_OSAL_EVENT_OR_CONSUME)))
+	{
+		plEvent->eFlags = 0;
 	}
 
-	/*Manually unlock the mutex*/
-	if(SUCCESS != pthread_mutex_unlock(&(plEvent->mutex))) {
+	/*Manually unlock the mutex */
+	if (SUCCESS != pthread_mutex_unlock(&(plEvent->mutex)))
+	{
 		TIMM_OSAL_Error("Event Retrieve: Mutex Unlock failed !");
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	}
 
-EXIT:
-    return bReturnStatus;
+      EXIT:
+	return bReturnStatus;
 
 }
-
-

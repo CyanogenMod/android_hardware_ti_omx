@@ -44,88 +44,103 @@
 
 extern OMX_TEST_CASE_ENTRY OMX_JPEGDTestCaseTable[];
 OMX_U32 OMX_Jpegd_MemStatPrint(void);
-OMX_U32 jpegdec_prev=0;
+OMX_U32 jpegdec_prev = 0;
 
 void main()
 {
-    OMX_TEST_CASE_ENTRY *testcaseEntry = NULL;
-    OMX_U32 test_case, test_case_start, test_case_end, TraceGrp;
-    OMX_U32 mem_size_start = 0, mem_size_end = 0;
+	OMX_TEST_CASE_ENTRY *testcaseEntry = NULL;
+	OMX_U32 test_case, test_case_start, test_case_end, TraceGrp;
+	OMX_U32 mem_size_start = 0, mem_size_end = 0;
 
 
 
-        printf("\n Wait until RCM Server is created on other side. Press any key after that\n");
-        getchar();
+	printf
+	    ("\n Wait until RCM Server is created on other side. Press any key after that\n");
+	getchar();
 
 
 	TraceGrp = TIMM_OSAL_TRACEGRP_SYSTEM;
-	TIMM_OSAL_DebugExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,"tracegroup=%x",TraceGrp);
+	TIMM_OSAL_DebugExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC, "tracegroup=%x",
+	    TraceGrp);
 
 
-	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Select test case start ID (1-51):");
+	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+	    " Select test case start ID (1-51):");
 	fflush(stdout);
 	scanf("%d", &test_case_start);
 
 
-    while(test_case_start < 1 || test_case_start > 51)
-    {
-        TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Invalid test ID selection.Select test case start ID (1-51):");
-                fflush(stdout);
-                scanf("%d", &test_case_start);
-    }
+	while (test_case_start < 1 || test_case_start > 51)
+	{
+		TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+		    " Invalid test ID selection.Select test case start ID (1-51):");
+		fflush(stdout);
+		scanf("%d", &test_case_start);
+	}
 
 
-	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Do you want to have preview of Decoded Frames on Display?");
-	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Enter 1 for yes, 2 for no\n");
+	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+	    " Do you want to have preview of Decoded Frames on Display?");
+	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+	    " Enter 1 for yes, 2 for no\n");
 
 	fflush(stdout);
 	scanf("%d", &jpegdec_prev);
 
 
-    while(jpegdec_prev < 1 || jpegdec_prev > 2)
-    {
-        TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Invalid selection. Please select again: [1|2]");
-        fflush(stdout);
-        scanf("%d", &jpegdec_prev);
-    }
+	while (jpegdec_prev < 1 || jpegdec_prev > 2)
+	{
+		TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+		    " Invalid selection. Please select again: [1|2]");
+		fflush(stdout);
+		scanf("%d", &jpegdec_prev);
+	}
 
 
 	if (jpegdec_prev == 1)
-		TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Preview On Display selected.\n");
+		TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+		    " Preview On Display selected.\n");
 
-	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," JPEG Decoder Test case begin");
-	printf("\n----------------JPEG Decoder Test Start-------------------------------");
+	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+	    " JPEG Decoder Test case begin");
+	printf
+	    ("\n----------------JPEG Decoder Test Start-------------------------------");
 
 
-    // Get Memory status before running the test case
-    mem_size_start = OMX_Jpegd_MemStatPrint();
+	// Get Memory status before running the test case
+	mem_size_start = OMX_Jpegd_MemStatPrint();
 
 #ifdef MEMORY_DEBUG
-    TIMM_OSAL_StartMemDebug();
+	TIMM_OSAL_StartMemDebug();
 #endif
 
 
-test_case=(test_case_start-1);
+	test_case = (test_case_start - 1);
 
-        testcaseEntry = &OMX_JPEGDTestCaseTable[test_case];
-        testcaseEntry->pTestProc(1,(TIMM_OSAL_U32*)&OMX_JPEGDTestCaseTable[test_case],NULL);
+	testcaseEntry = &OMX_JPEGDTestCaseTable[test_case];
+	testcaseEntry->pTestProc(1,
+	    (TIMM_OSAL_U32 *) & OMX_JPEGDTestCaseTable[test_case], NULL);
 
 
 #ifdef MEMORY_DEBUG
-    TIMM_OSAL_EndMemDebug();
+	TIMM_OSAL_EndMemDebug();
 #endif
 
-    // Get Memory status after running the test case
+	// Get Memory status after running the test case
 	mem_size_end = OMX_Jpegd_MemStatPrint();
-	if(mem_size_end != mem_size_start)
-		TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," Memory leak detected. Bytes lost = %d", (mem_size_end - mem_size_start));
-    TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC," JPEG Decoder Test End");
+	if (mem_size_end != mem_size_start)
+		TIMM_OSAL_ErrorExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+		    " Memory leak detected. Bytes lost = %d",
+		    (mem_size_end - mem_size_start));
+	TIMM_OSAL_InfoExt(TIMM_OSAL_TRACEGRP_OMXIMGDEC,
+	    " JPEG Decoder Test End");
 
-	printf("\n----------------JPEG Decoder Test End-------------------------------");
+	printf
+	    ("\n----------------JPEG Decoder Test End-------------------------------");
 
 
-EXIT:
-    return 0;
+      EXIT:
+	return 0;
 }
 
 
@@ -149,40 +164,5 @@ Memory_Stats stats;
 
 
     return mem_size;*/
-return 0;
+	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

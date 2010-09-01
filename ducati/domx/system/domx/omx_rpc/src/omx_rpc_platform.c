@@ -30,7 +30,7 @@
  *         This file contains methods that provides the functionality for
  *         the OpenMAX1.1 DOMX Framework RPC.
  *
- *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\src 
+ *  @path \WTSD_DucatiMMSW\framework\domx\omx_rpc\src
  *
  *  @rev 1.0
  */
@@ -45,7 +45,7 @@
   /******************************************************************
  *   INCLUDE FILES
  ******************************************************************/
- /* ----- system and platform files ----------------------------*/ 
+ /* ----- system and platform files ---------------------------- */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -67,8 +67,10 @@
 #include "omx_rpc_utils.h"
 
 /*This list needs to be a comprehensive list of all possible communicating RCM servers avalilable across the whole system (core 0 core 1, tesla, chiron)*/
-char Core_Array[][MAX_CORENAME_LENGTH] = {"TESLA","DUCATI1","DUCATI0","CHIRON"};
+char Core_Array[][MAX_CORENAME_LENGTH] =
+    { "TESLA", "DUCATI1", "DUCATI0", "CHIRON" };
 
-char rcmservertable[][MAX_SERVER_NAME_LENGTH] = {"RSrv_Tesla","RSrv_Ducati1","RSrv_Ducati0","RSrv_Chiron"};
+char rcmservertable[][MAX_SERVER_NAME_LENGTH] =
+    { "RSrv_Tesla", "RSrv_Ducati1", "RSrv_Ducati0", "RSrv_Chiron" };
 
-OMX_U32 heapIdArray[MAX_NUMBER_OF_HEAPS] = {0,1,0,1};
+OMX_U32 heapIdArray[MAX_NUMBER_OF_HEAPS] = { 0, 1, 0, 1 };

@@ -23,8 +23,9 @@
 #define _TIMM_OSAL_TRACES_H_
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /*******************************************************************************
 * Traces
@@ -35,18 +36,18 @@ extern "C" {
 * Debug Trace defines
 ******************************************************************************/
 
-typedef enum TIMM_OSAL_TRACEGRP_TYPE
-{
-  TIMM_OSAL_TRACEGRP_SYSTEM=1,
-  TIMM_OSAL_TRACEGRP_OMXBASE=(1<<1),
-  TIMM_OSAL_TRACEGRP_DOMX=(1<<2),
-  TIMM_OSAL_TRACEGRP_OMXVIDEOENC=(1<<3),
-  TIMM_OSAL_TRACEGRP_OMXVIDEODEC=(1<<4),
-  TIMM_OSAL_TRACEGRP_OMXCAM=(1<<5),
-  TIMM_OSAL_TRACEGRP_OMXIMGDEC=(1<<6),
-  TIMM_OSAL_TRACEGRP_DRIVERS=(1<<7),
-  TIMM_OSAL_TRACEGRP_SIMCOPALGOS=(1<<8)
-} TIMM_OSAL_TRACEGRP;
+	typedef enum TIMM_OSAL_TRACEGRP_TYPE
+	{
+		TIMM_OSAL_TRACEGRP_SYSTEM = 1,
+		TIMM_OSAL_TRACEGRP_OMXBASE = (1 << 1),
+		TIMM_OSAL_TRACEGRP_DOMX = (1 << 2),
+		TIMM_OSAL_TRACEGRP_OMXVIDEOENC = (1 << 3),
+		TIMM_OSAL_TRACEGRP_OMXVIDEODEC = (1 << 4),
+		TIMM_OSAL_TRACEGRP_OMXCAM = (1 << 5),
+		TIMM_OSAL_TRACEGRP_OMXIMGDEC = (1 << 6),
+		TIMM_OSAL_TRACEGRP_DRIVERS = (1 << 7),
+		TIMM_OSAL_TRACEGRP_SIMCOPALGOS = (1 << 8)
+	} TIMM_OSAL_TRACEGRP;
 
 
 /**
@@ -68,21 +69,22 @@ typedef enum TIMM_OSAL_TRACEGRP_TYPE
  * Information about the trace location/type, passed as a single pointer to
  * internal trace function.  Not part of the public API
  */
-typedef struct
-{
-    const char *file;
-    const char *function;
-    const int   line;
-    const short level;
-    const short tracegrp;   /* TIMM_OSAL_TRACEGRP */
-} __TIMM_OSAL_TRACE_LOCATION;
+	typedef struct
+	{
+		const char *file;
+		const char *function;
+		const int line;
+		const short level;
+		const short tracegrp;	/* TIMM_OSAL_TRACEGRP */
+	} __TIMM_OSAL_TRACE_LOCATION;
 
 /**
  * Trace implementation function.  Not part of public API.  Default
  * implementation uses printf(), but you can use LD_PRELOAD to plug in
  * alternative trace system at runtime.
  */
-void __TIMM_OSAL_TraceFunction(const __TIMM_OSAL_TRACE_LOCATION *loc, const char *fmt, ...);
+	void __TIMM_OSAL_TraceFunction(const __TIMM_OSAL_TRACE_LOCATION * loc,
+	    const char *fmt, ...);
 
 /**
  * Internal trace macro.  Not part of public API.
@@ -156,8 +158,6 @@ void __TIMM_OSAL_TraceFunction(const __TIMM_OSAL_TRACE_LOCATION *loc, const char
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
-#endif /* _TIMM_OSAL_TRACES_H_ */
-
-
+#endif				/* _TIMM_OSAL_TRACES_H_ */

@@ -23,11 +23,12 @@
 /**
 * Testcase return values
 */
-typedef enum OMX_Status {
-    OMX_STATUS_OK,
-    OMX_ERROR_ALLOC,
-    OMX_ERROR_INVALID_PARAM,
-    OMX_ERROR_UNKNOWN
+typedef enum OMX_Status
+{
+	OMX_STATUS_OK,
+	OMX_ERROR_ALLOC,
+	OMX_ERROR_INVALID_PARAM,
+	OMX_ERROR_UNKNOWN
 } OMX_Status;
 
 
@@ -37,5 +38,3 @@ typedef enum OMX_Status {
 
 #define MAX_STRING_SIZE        512
 #define OMX_MMC_TEST_PATH     "/MMC/"
-
-

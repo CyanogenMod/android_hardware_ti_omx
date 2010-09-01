@@ -17,17 +17,17 @@
 #ifndef _LIST_UTILS_H_
 #define _LIST_UTILS_H_
 
-/* 
+/*
 
     DLIST macros facilitate double-linked lists in a generic fashion.
- 
+
     - Double-linked lists simplify list manipulations, so they are preferred to
       single-linked lists.
- 
+
     - Having a double-linked list with a separate header allow accessing the
       last element of the list easily, so this is also preferred to a double
       linked list that uses NULL pointers at its ends.
- 
+
     Therefore, the following is required:  a list info structure (separate from
     the element structure, although the info structure can be a member of the
     element structure).  The info structure must contain (at least) the
@@ -52,32 +52,32 @@
    :NOTE: If you use a macro with a field argument, you must not have NULL
    elements because the field of any element must be/point to the list
    info structure
- 
+
     DZLIST macros
- 
+
     Having the list info structure separate from the element structure also
     allows to link elements into many separate lists (with separate info
     structure fields/pointers).  However, for cases where only a single list
     is desired, a set of easy macros are also provided.
- 
+
     These macros combine the element and list structures.  These macros
     require the following 2 members in each element structure:
- 
+
     *next, *last: as pointers to the element structure.  These are the next and
                   previous elements in the list.
- 
+
     :NOTE: In case of the DZLIST-s, the head of the list must be an element
     structure, where only the next and last members are used. */
- 
+
 /*
   Usage:
- 
+
   DLIST macros are designed for preallocating the list info structures, e.g. in
   an array.  This is why most macros take a list info structure, and not a
   pointer to a list info structure.
- 
+
   Basic linked list consists of element structure and list info structure
- 
+
     struct elem {
         int data;
     } *elA, *elB;
@@ -85,16 +85,16 @@
         struct elem *me;
         struct list *last, *next;
     } head, *inA, *inB, *in;
-    
+
     DLIST_INIT(head);              // initialization -> ()
     DLIST_IS_EMPTY(head) == TRUE;  // emptiness check
- 
+
     // add element at beginning of list -> (1)
     elA = NEW(struct elem);
     elA->data = 1;
     inA = NEW(struct list);
     DLIST_ADD_AFTER(head, elA, *inA);
-    
+
     // add before an element -> (2, 1)
     elB = NEW(struct elem);
     elB->data = 2;
@@ -103,24 +103,24 @@
 
     // move an element to another position or another list -> (1, 2)
     DLIST_MOVE_BEFORE(head, *inB);
- 
+
     // works even if the position is the same -> (1, 2)
     DLIST_MOVE_BEFORE(head, *inB);
 
     // get first and last elements
     DLIST_FIRST(head) == elA;
     DLIST_LAST(head) == elB;
- 
+
     // loop through elements
     DLIST_LOOP(head, in) {
         P("%d", in->me->data);
     }
- 
+
     // remove element -> (2)
     DLIST_REMOVE(*inA);
     FREE(elA);
     FREE(inA);
- 
+
     // delete list
     DLIST_SAFE_LOOP(head, in, inA) {
         DLIST_REMOVE(*in);
@@ -131,20 +131,20 @@
   You can combine the element and list info structures to create an easy list,
   but you still need to specify both element and info structure while adding
   elements.
- 
+
     struct elem {
         int data;
         struct elem *me, *last, *next;
     } head, *el, *elA, *elB;
- 
+
     DLIST_INIT(head);              // initialization -> ()
     DLIST_IS_EMPTY(head) == TRUE;  // emptiness check
- 
+
     // add element at beginning of list -> (1)
     elA = NEW(struct elem);
     elA->data = 1;
     DLIST_ADD_AFTER(head, elA, *elA);
-    
+
     // add before an element -> (2, 1)
     elB = NEW(struct elem);
     elB->data = 2;
@@ -152,23 +152,23 @@
 
     // move an element to another position or another list -> (1, 2)
     DLIST_MOVE_BEFORE(head, *elB);
- 
+
     // works even if the position is the same -> (1, 2)
     DLIST_MOVE_BEFORE(head, *elB);
 
     // get first and last elements
     DLIST_FIRST(head) == elA;
     DLIST_LAST(head) == elB;
- 
+
     // loop through elements
     DLIST_LOOP(head, el) {
         P("%d", el->data);
     }
- 
+
     // remove element -> (2)
     DLIST_REMOVE(*elA);
     FREE(elA);
- 
+
     // delete list
     DLIST_SAFE_LOOP(head, el, elA) {
         DLIST_REMOVE(*el);
@@ -176,20 +176,20 @@
     }
 
   Or, you can use a DZLIST.
- 
+
     struct elem {
         int data;
         struct elem *last, *next;
     } head, *el, *elA, *elB;
- 
+
     DZLIST_INIT(head);              // initialization -> ()
     DZLIST_IS_EMPTY(head) == TRUE;  // emptiness check
- 
+
     // add element at beginning of list -> (1)
     elA = NEW(struct elem);
     elA->data = 1;
     DZLIST_ADD_AFTER(head, *elA);
-    
+
     // add before an element -> (2, 1)
     elB = NEW(struct elem);
     elB->data = 2;
@@ -197,23 +197,23 @@
 
     // move an element to another position or another list -> (1, 2)
     DZLIST_MOVE_BEFORE(head, *elB);
- 
+
     // works even if the position is the same -> (1, 2)
     DZLIST_MOVE_BEFORE(head, *elB);
 
     // get first and last elements
     DZLIST_FIRST(head) == elA;
     DZLIST_LAST(head) == elB;
- 
+
     // loop through elements
     DZLIST_LOOP(head, el) {
         P("%d", el->data);
     }
- 
+
     // remove element -> (2)
     DZLIST_REMOVE(*elA);
     FREE(elA);
- 
+
     // delete list
     DZLIST_SAFE_LOOP(head, el, elA) {
         DZLIST_REMOVE(*el);
@@ -223,7 +223,7 @@
   A better way to get to the list structure from the element structure is to
   enclose a pointer the list structure in the element structure.  This allows
   getting to the next/previous element from the element itself.
- 
+
     struct elem;
     struct list {
         struct elem *me;
@@ -233,9 +233,9 @@
         int data;
         struct list *list_data;
     } *elA, *elB, *el;
- 
+
     // or
- 
+
     struct elem {
         int data;
         struct list {
@@ -244,16 +244,16 @@
         } *list_data;
     } *elA, *elB, *el;
     struct list head, *inA, *inB, *in;
- 
+
     DLIST_INIT(head);              // initialization -> ()
     DLIST_IS_EMPTY(head) == TRUE;  // emptiness check
- 
+
     // add element at beginning of list -> (1)
     elA = NEW(struct elem);
     elA->data = 1;
     inA = NEW(struct list);
     DLIST_PADD_AFTER(head, elA, inA, list_data);
-    
+
     // add before an element -> (2, 1)
     elB = NEW(struct elem);
     elB->data = 2;
@@ -262,14 +262,14 @@
 
     // move an element to another position or another list -> (1, 2)
     DLIST_MOVE_BEFORE(head, *inB);
- 
+
     // works even if the position is the same -> (1, 2)
     DLIST_MOVE_BEFORE(head, *inB);
 
     // get first and last elements
     DLIST_FIRST(head) == elA;
     DLIST_LAST(head) == elB;
- 
+
     // loop through elements
     DLIST_LOOP(head, in) {
         P("%d", in->me->data);
@@ -277,7 +277,7 @@
     DLIST_PLOOP(head, el, list_data) {
         P("%d", el->data);
     }
- 
+
     // remove element
     DLIST_REMOVE(*inA);
     FREE(inA);
@@ -291,7 +291,7 @@
     }
 
   Lastly, you can include the list data in the element structure itself.
- 
+
     struct elem {
         int data;
         struct list {
@@ -300,15 +300,15 @@
         } list_data;
     } *elA, *elB, *el;
     struct list head, *in;
-    
+
     DLIST_INIT(head);              // initialization -> ()
     DLIST_IS_EMPTY(head) == TRUE;  // emptiness check
- 
+
     // add element at beginning of list -> (1)
     elA = NEW(struct elem);
     elA->data = 1;
     DLIST_MADD_AFTER(head, elA, list_data);
-    
+
     // add before an element -> (2, 1)
     elB = NEW(struct elem);
     elB->data = 2;
@@ -316,14 +316,14 @@
 
     // move an element to another position or another list -> (1, 2)
     DLIST_MOVE_BEFORE(head, elB->list_data);
- 
+
     // works even if the position is the same -> (1, 2)
     DLIST_MOVE_BEFORE(head, elB->list_data);
 
     // get first and last elements
     DLIST_FIRST(head) == elA;
     DLIST_LAST(head) == elB;
- 
+
     // loop through elements
     DLIST_LOOP(head, in) {
         P("%d", in->me->data);
@@ -331,7 +331,7 @@
     DLIST_MLOOP(head, el, list_data) {
         P("%d", el->data);
     }
-  
+
     // remove element
     DLIST_REMOVE(elA->list_data);
     FREE(elA);
@@ -418,12 +418,12 @@
 
 /* Loops behave syntactically as a for() statement.  They traverse the loop
    variable from the 1st to the last element (or in the opposite direction in
-   case of RLOOP). There are 3 flavors of loops depending on the type of the 
+   case of RLOOP). There are 3 flavors of loops depending on the type of the
    loop variable.
 
    DLIST_LOOP's loop variable is a pointer to the list info structure.  You can
    get to the element by using the 'me' member.  Nonetheless, this loop
-   construct allows having NULL elements in the list. 
+   construct allows having NULL elements in the list.
 
    DLIST_MLOOP's loop variable is a pointer to a list element.  mField is the
    field of the element containing the list info structure.  Naturally, this
@@ -433,7 +433,7 @@
    construct if the element contains a pointer to the list info structure
    instead of embedding it directly into the element structure.
 
-*/ 
+*/
 #define DLIST_LOOP(head, pInfo)           DLIST_loop__(head, pInfo, next)
 #define DLIST_RLOOP(head, pInfo)          DLIST_loop__(head, pInfo, last)
 #define DLIST_MLOOP(head, pElem, mField) \
@@ -447,7 +447,7 @@
 
 /* Safe loops are like ordinary loops, but they allow removal of the current
    element from the list. They require an extra loop variable that holds the
-   value of the next element in case the current element is moved/removed. */ 
+   value of the next element in case the current element is moved/removed. */
 #define DLIST_SAFE_LOOP(head, pInfo, pInfo_safe) \
     DLIST_safe_loop__(head, pInfo, pInfo_safe, next)
 #define DLIST_SAFE_RLOOP(head, pInfo, pInfo_safe) \
@@ -489,4 +489,3 @@
                                        DLIST_SAFE_RLOOP(head, pElem, pElem_safe)
 
 #endif
-

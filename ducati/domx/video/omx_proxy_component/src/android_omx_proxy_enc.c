@@ -69,89 +69,100 @@
 #define DOMX_DEBUG LOGE
 #endif
 #ifdef __H264_ENC__
-#define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.H264E" // needs to be specific for every configuration wrapper
+#define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.H264E"	// needs to be specific for every configuration wrapper
 #elif __MPEG4_ENC__
-#define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.MPEG4E" // needs to be specific for every configuration wrapper
+#define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.MPEG4E"	// needs to be specific for every configuration wrapper
 #endif
 #ifdef _OPENCORE
-static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(
-        OMX_IN  OMX_HANDLETYPE hComponent,
-        OMX_IN  OMX_INDEXTYPE nParamIndex,
-        OMX_INOUT OMX_PTR pComponentParameterStructure)
+static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
+    hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
+    OMX_INOUT OMX_PTR pComponentParameterStructure)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    if ( nParamIndex == PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX){
-    DOMX_DEBUG("PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n");
-    PV_OMXComponentCapabilityFlagsType* pPVCapaFlags =
-    (PV_OMXComponentCapabilityFlagsType*)pComponentParameterStructure;
-    /*Set PV (opencore) capability flags*/
-    pPVCapaFlags->iIsOMXComponentMultiThreaded = OMX_TRUE;
-    pPVCapaFlags->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_FALSE;
-    pPVCapaFlags->iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
-    pPVCapaFlags->iOMXComponentSupportsMovableInputBuffers = OMX_TRUE;
-    pPVCapaFlags->iOMXComponentSupportsPartialFrames = OMX_FALSE;
-    pPVCapaFlags->iOMXComponentCanHandleIncompleteFrames = OMX_FALSE;
+	if (nParamIndex == PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX)
+	{
+		DOMX_DEBUG("PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n");
+		PV_OMXComponentCapabilityFlagsType *pPVCapaFlags =
+		    (PV_OMXComponentCapabilityFlagsType *)
+		    pComponentParameterStructure;
+		/*Set PV (opencore) capability flags */
+		pPVCapaFlags->iIsOMXComponentMultiThreaded = OMX_TRUE;
+		pPVCapaFlags->iOMXComponentSupportsExternalOutputBufferAlloc =
+		    OMX_FALSE;
+		pPVCapaFlags->iOMXComponentSupportsExternalInputBufferAlloc =
+		    OMX_TRUE;
+		pPVCapaFlags->iOMXComponentSupportsMovableInputBuffers =
+		    OMX_TRUE;
+		pPVCapaFlags->iOMXComponentSupportsPartialFrames = OMX_FALSE;
+		pPVCapaFlags->iOMXComponentCanHandleIncompleteFrames =
+		    OMX_FALSE;
 #ifdef __H264_ENC__
-    pPVCapaFlags->iOMXComponentUsesNALStartCodes = OMX_TRUE;
+		pPVCapaFlags->iOMXComponentUsesNALStartCodes = OMX_TRUE;
 #else
-    pPVCapaFlags->iOMXComponentUsesNALStartCodes = OMX_FALSE;
+		pPVCapaFlags->iOMXComponentUsesNALStartCodes = OMX_FALSE;
 #endif
-    pPVCapaFlags->iOMXComponentUsesFullAVCFrames = OMX_TRUE;
-    return OMX_ErrorNone;
-    }
-return  PROXY_GetParameter(hComponent,nParamIndex,pComponentParameterStructure);
+		pPVCapaFlags->iOMXComponentUsesFullAVCFrames = OMX_TRUE;
+		return OMX_ErrorNone;
+	}
+	return PROXY_GetParameter(hComponent, nParamIndex,
+	    pComponentParameterStructure);
 }
 #endif
 
-OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
+OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_COMPONENTTYPE *pHandle = NULL;
-    PROXY_COMPONENT_PRIVATE *pComponentPrivate;
-    pHandle = (OMX_COMPONENTTYPE *)hComponent;
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
+	OMX_COMPONENTTYPE *pHandle = NULL;
+	PROXY_COMPONENT_PRIVATE *pComponentPrivate;
+	pHandle = (OMX_COMPONENTTYPE *) hComponent;
 
-    DOMX_DEBUG("\n_____________________INSISDE VIDEO ENCODER PROXY WRAPPER__________________________\n");
+	DOMX_DEBUG
+	    ("\n_____________________INSISDE VIDEO ENCODER PROXY WRAPPER__________________________\n");
 
-    pHandle->pComponentPrivate = \
-            (PROXY_COMPONENT_PRIVATE *)TIMM_OSAL_Malloc( \
-                                sizeof(PROXY_COMPONENT_PRIVATE), \
-                                TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
+	pHandle->pComponentPrivate =
+	    (PROXY_COMPONENT_PRIVATE *)
+	    TIMM_OSAL_Malloc(sizeof(PROXY_COMPONENT_PRIVATE), TIMM_OSAL_TRUE,
+	    0, TIMMOSAL_MEM_SEGMENT_INT);
 
-    pComponentPrivate = (PROXY_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
-    if (pHandle->pComponentPrivate == NULL) {
-        DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    pComponentPrivate->cCompName = (OMX_U8 *)TIMM_OSAL_Malloc( \
-                            MAX_COMPONENT_NAME_LENGTH*sizeof(OMX_U8), \
-                            TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
-    if (pComponentPrivate->cCompName == NULL) {
-        DOMX_DEBUG("\n ERROR IN ALLOCATING PROXY COMPONENT NAME STRUCTURE");
-        TIMM_OSAL_Free(pComponentPrivate);
-        eError = OMX_ErrorInsufficientResources;
-        goto EXIT;
-    }
-    // Copying component Name - this will be picked up in the proxy common
-    assert(strlen(COMPONENT_NAME)+1 < MAX_COMPONENT_NAME_LENGTH);
-    TIMM_OSAL_Memcpy(pComponentPrivate->cCompName,COMPONENT_NAME, \
-                            strlen(COMPONENT_NAME)+1);
-    eError = OMX_ProxyCommonInit(hComponent);// Calling Proxy Common Init()
+	pComponentPrivate =
+	    (PROXY_COMPONENT_PRIVATE *) pHandle->pComponentPrivate;
+	if (pHandle->pComponentPrivate == NULL)
+	{
+		DOMX_DEBUG
+		    ("\n ERROR IN ALLOCATING PROXY COMPONENT PRIVATE STRUCTURE");
+		eError = OMX_ErrorInsufficientResources;
+		goto EXIT;
+	}
+	pComponentPrivate->cCompName =
+	    (OMX_U8 *) TIMM_OSAL_Malloc(MAX_COMPONENT_NAME_LENGTH *
+	    sizeof(OMX_U8), TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
+	if (pComponentPrivate->cCompName == NULL)
+	{
+		DOMX_DEBUG
+		    ("\n ERROR IN ALLOCATING PROXY COMPONENT NAME STRUCTURE");
+		TIMM_OSAL_Free(pComponentPrivate);
+		eError = OMX_ErrorInsufficientResources;
+		goto EXIT;
+	}
+	// Copying component Name - this will be picked up in the proxy common
+	assert(strlen(COMPONENT_NAME) + 1 < MAX_COMPONENT_NAME_LENGTH);
+	TIMM_OSAL_Memcpy(pComponentPrivate->cCompName, COMPONENT_NAME,
+	    strlen(COMPONENT_NAME) + 1);
+	eError = OMX_ProxyCommonInit(hComponent);	// Calling Proxy Common Init()
 
-    if(eError != OMX_ErrorNone){
-        DOMX_DEBUG("\nError in Initializing Proxy");
-        TIMM_OSAL_Free(pComponentPrivate->cCompName);
-        TIMM_OSAL_Free(pComponentPrivate);
-        }
-
+	if (eError != OMX_ErrorNone)
+	{
+		DOMX_DEBUG("\nError in Initializing Proxy");
+		TIMM_OSAL_Free(pComponentPrivate->cCompName);
+		TIMM_OSAL_Free(pComponentPrivate);
+	}
 #ifdef _OPENCORE
-    // Make sure private function to component is always assigned
-    // after component init.
-    pHandle->GetParameter = ComponentPrivateGetParameters;
+	// Make sure private function to component is always assigned
+	// after component init.
+	pHandle->GetParameter = ComponentPrivateGetParameters;
 #endif
 
-    EXIT:
-        return eError;
+      EXIT:
+	return eError;
 }
-

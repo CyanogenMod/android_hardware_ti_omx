@@ -40,13 +40,14 @@
 *! =======================================================================
 *!  Initial Version
 * ========================================================================*/
-struct dss_buffers {
+struct dss_buffers
+{
 	void *start;
 	size_t length;
-} ;
+};
 
 int open_video1();
 int SendbufferToDss(int index, int vid1_fd);
 int SetFormatforDSSvid(unsigned int width, unsigned int height,
-				const char *image_fmt, int vid1_fd);
+    const char *image_fmt, int vid1_fd);
 uint getDSSBuffers(uint count, struct dss_buffers *buffers, int vid1_fd);

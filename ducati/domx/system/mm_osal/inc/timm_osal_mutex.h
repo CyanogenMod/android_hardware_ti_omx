@@ -7,7 +7,7 @@
  * ==================================================================== */
 /*
 *  @file timm_osal_defines.h
-*  The osal header file defines 
+*  The osal header file defines
 *  @path
 *
 */
@@ -23,8 +23,9 @@
 #define _TIMM_OSAL_MUTEX_H_
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /*******************************************************************************
 * Includes
@@ -32,13 +33,14 @@ extern "C" {
 
 #include "timm_osal_types.h"
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexCreate(TIMM_OSAL_PTR *pMutex);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexDelete(TIMM_OSAL_PTR pMutex);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexObtain(TIMM_OSAL_PTR pMutex, TIMM_OSAL_U32 uTimeOut);
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexRelease(TIMM_OSAL_PTR pMutex);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexCreate(TIMM_OSAL_PTR * pMutex);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexDelete(TIMM_OSAL_PTR pMutex);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexObtain(TIMM_OSAL_PTR pMutex,
+	    TIMM_OSAL_U32 uTimeOut);
+	TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexRelease(TIMM_OSAL_PTR pMutex);
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
-#endif /* _TIMM_OSAL_MUTEX_H_ */
+#endif				/* _TIMM_OSAL_MUTEX_H_ */

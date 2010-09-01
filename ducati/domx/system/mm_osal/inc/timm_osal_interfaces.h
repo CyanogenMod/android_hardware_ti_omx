@@ -7,7 +7,7 @@
  * ==================================================================== */
 /*
 *  @file timm_osal_memory.h
-*  The osal header file defines 
+*  The osal header file defines
 *  @path
 *
 */
@@ -23,8 +23,9 @@
 #define _TIMM_OSAL_INTERFACES_H_
 
 #ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+extern "C"
+{
+#endif				/* __cplusplus */
 
 /*******************************************************************************
 * External interface
@@ -41,6 +42,6 @@ extern "C" {
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
-#endif /* _TIMM_OSAL_INTERFACES_H_ */
+#endif				/* _TIMM_OSAL_INTERFACES_H_ */

@@ -45,34 +45,40 @@
 *
 */
 /* ========================================================================== */
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexCreate(TIMM_OSAL_PTR *pMutex)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexCreate(TIMM_OSAL_PTR * pMutex)
 {
 	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	pthread_mutex_t *plMutex = TIMM_OSAL_NULL;
 
-	plMutex = (pthread_mutex_t *)TIMM_OSAL_Malloc(sizeof(pthread_mutex_t), 0 , 0 , 0);
-	if (TIMM_OSAL_NULL == plMutex) {
+	plMutex =
+	    (pthread_mutex_t *) TIMM_OSAL_Malloc(sizeof(pthread_mutex_t), 0,
+	    0, 0);
+	if (TIMM_OSAL_NULL == plMutex)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_ALLOC;
 		goto EXIT;
 	}
 
-	/*if (SUCCESS != pthread_mutex_init(plMutex, pAttr))*/
-    if (SUCCESS != pthread_mutex_init(plMutex, TIMM_OSAL_NULL)) {
-        /*TIMM_OSAL_Error ("Mutex Create failed !");*/
-		/*goto EXIT;*/
-    }
-    else {
+	/*if (SUCCESS != pthread_mutex_init(plMutex, pAttr)) */
+	if (SUCCESS != pthread_mutex_init(plMutex, TIMM_OSAL_NULL))
+	{
+		/*TIMM_OSAL_Error ("Mutex Create failed !"); */
+		/*goto EXIT; */
+	} else
+	{
 	/**pMutex = (TIMM_OSAL_PTR *)plMutex;*/
-		*pMutex = (TIMM_OSAL_PTR )plMutex;
+		*pMutex = (TIMM_OSAL_PTR) plMutex;
 		bReturnStatus = TIMM_OSAL_ERR_NONE;
 	}
-EXIT:
+      EXIT:
 	/*if((TIMM_OSAL_ERR_NONE != bReturnStatus)) {
+	   TIMM_OSAL_Free(plMutex);
+	   } */
+	if ((TIMM_OSAL_ERR_NONE != bReturnStatus) &&
+	    (TIMM_OSAL_NULL != plMutex))
+	{
 		TIMM_OSAL_Free(plMutex);
-	}*/
-    if ((TIMM_OSAL_ERR_NONE != bReturnStatus) && (TIMM_OSAL_NULL != plMutex)) {
-       TIMM_OSAL_Free(plMutex);
-    }
+	}
 	return bReturnStatus;
 
 /**********************************************************/
@@ -90,26 +96,29 @@ EXIT:
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexDelete(TIMM_OSAL_PTR pMutex)
 {
 	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_NONE;
-    pthread_mutex_t *plMutex = (pthread_mutex_t *)pMutex;
+	pthread_mutex_t *plMutex = (pthread_mutex_t *) pMutex;
 
-    if (plMutex == TIMM_OSAL_NULL ){
+	if (plMutex == TIMM_OSAL_NULL)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
-    }
-	/*can we do away with if or with switch case*/
-	if(SUCCESS != pthread_mutex_destroy(plMutex)) {
-		/*TIMM_OSAL_Error("Delete Mutex failed !");*/
+	}
+	/*can we do away with if or with switch case */
+	if (SUCCESS != pthread_mutex_destroy(plMutex))
+	{
+		/*TIMM_OSAL_Error("Delete Mutex failed !"); */
 		bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;;
-    }
+	}
 
-    TIMM_OSAL_Free(plMutex);
-EXIT:
-    return bReturnStatus;
+	TIMM_OSAL_Free(plMutex);
+      EXIT:
+	return bReturnStatus;
 /**********************************************************/
 /*return TIMM_OSAL_SemaphoreDelete(pMutex);*/
 /**********************************************************/
 
 }
+
 /* ========================================================================== */
 /**
 * @fn TIMM_OSAL_MutexObtain function
@@ -118,50 +127,57 @@ EXIT:
 */
 /* ========================================================================== */
 
-TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexObtain(TIMM_OSAL_PTR pMutex, TIMM_OSAL_U32 uTimeOut)
+TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexObtain(TIMM_OSAL_PTR pMutex,
+    TIMM_OSAL_U32 uTimeOut)
 {
 	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
 	struct timespec abs_timeout;
-    struct timeval ltime_now;
+	struct timeval ltime_now;
 	TIMM_OSAL_U32 ltimenow_us;
-	pthread_mutex_t *plMutex = (pthread_mutex_t *)pMutex;
+	pthread_mutex_t *plMutex = (pthread_mutex_t *) pMutex;
 
-	if (plMutex == TIMM_OSAL_NULL){
+	if (plMutex == TIMM_OSAL_NULL)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-    if (TIMM_OSAL_SUSPEND == uTimeOut) {
-		if(SUCCESS != pthread_mutex_lock(plMutex)){
-			/*TIMM_OSAL_Error("Lock Mutex failed !");*/
+	if (TIMM_OSAL_SUSPEND == uTimeOut)
+	{
+		if (SUCCESS != pthread_mutex_lock(plMutex))
+		{
+			/*TIMM_OSAL_Error("Lock Mutex failed !"); */
 			goto EXIT;
 		}
-    }
-    else if (TIMM_OSAL_NO_SUSPEND == uTimeOut) {
-		if(SUCCESS != pthread_mutex_trylock(plMutex)){
-			/*TIMM_OSAL_Error("Lock Mutex failed !");*/
+	} else if (TIMM_OSAL_NO_SUSPEND == uTimeOut)
+	{
+		if (SUCCESS != pthread_mutex_trylock(plMutex))
+		{
+			/*TIMM_OSAL_Error("Lock Mutex failed !"); */
+			goto EXIT;
+		}
+	} else
+	{
+		gettimeofday(&ltime_now, NULL);
+		/*uTimeOut is assumed to be in milliseconds */
+		ltimenow_us = ltime_now.tv_usec + 1000 * uTimeOut;
+		abs_timeout.tv_sec = ltime_now.tv_sec + uTimeOut / 1000;
+		abs_timeout.tv_nsec = (ltimenow_us % 1000000) * 1000;
+
+#ifdef _POSIX_VERSION_1_
+		if (SUCCESS != pthread_mutex_lock(plMutex))
+		{		//Some Posix versions dont support timeout
+#else
+		if (SUCCESS != pthread_mutex_timedlock(plMutex, &abs_timeout))
+		{
+#endif
+			/*TIMM_OSAL_Error("Lock Mutex failed !"); */
 			goto EXIT;
 		}
 	}
-	else {
-		gettimeofday(&ltime_now, NULL);
-	   	/*uTimeOut is assumed to be in milliseconds*/
-	   	ltimenow_us = ltime_now.tv_usec + 1000 * uTimeOut;
-	   	abs_timeout.tv_sec = ltime_now.tv_sec + uTimeOut / 1000;
-	   	abs_timeout.tv_nsec = (ltimenow_us % 1000000) * 1000;
+	bReturnStatus = TIMM_OSAL_ERR_NONE;
 
-#ifdef _POSIX_VERSION_1_
-		if(SUCCESS != pthread_mutex_lock(plMutex)){ //Some Posix versions dont support timeout
-#else
-		if(SUCCESS != pthread_mutex_timedlock(plMutex, &abs_timeout)){
-#endif
-			/*TIMM_OSAL_Error("Lock Mutex failed !");*/
-			goto EXIT;
-		}
-    }
-    bReturnStatus = TIMM_OSAL_ERR_NONE;
-
-EXIT:
+      EXIT:
 	return bReturnStatus;
 /**********************************************************/
 /*return TIMM_OSAL_SemaphoreObtain(pMutex, uTimeOut);*/
@@ -180,20 +196,22 @@ EXIT:
 TIMM_OSAL_ERRORTYPE TIMM_OSAL_MutexRelease(TIMM_OSAL_PTR pMutex)
 {
 	TIMM_OSAL_ERRORTYPE bReturnStatus = TIMM_OSAL_ERR_UNKNOWN;
-    pthread_mutex_t *plMutex = (pthread_mutex_t *)pMutex;
+	pthread_mutex_t *plMutex = (pthread_mutex_t *) pMutex;
 
-	if (TIMM_OSAL_NULL == plMutex){
+	if (TIMM_OSAL_NULL == plMutex)
+	{
 		bReturnStatus = TIMM_OSAL_ERR_PARAMETER;
 		goto EXIT;
 	}
 
-	if(SUCCESS != pthread_mutex_unlock(plMutex)){
-		/*TIMM_OSAL_Error("Unlock Mutex failed !");*/
-	}
-	else {
+	if (SUCCESS != pthread_mutex_unlock(plMutex))
+	{
+		/*TIMM_OSAL_Error("Unlock Mutex failed !"); */
+	} else
+	{
 		bReturnStatus = TIMM_OSAL_ERR_NONE;
 	}
-EXIT:
+      EXIT:
 	return bReturnStatus;
 /**********************************************************/
 /*return TIMM_OSAL_SemaphoreRelease(pMutex);*/

@@ -55,21 +55,21 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexParamDecodeSubregion,           /**< reference: OMX_IMAGE_PARAM_DECODE_SUBREGION */
 
     /* H264 Encoder Indices*/
-	OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure 	
+	OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure
 	OMX_TI_IndexParamVideoBitStreamFormatSelect,	//!< use OMX_VIDEO_PARAM_AVCBITSTREAMFORMATTYPE to specify the stream format type
-	OMX_TI_IndexParamVideoNALUsettings,	//!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types	
+	OMX_TI_IndexParamVideoNALUsettings,	//!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types
 	OMX_TI_IndexParamVideoMEBlockSize,	//!< use OMX_VIDEO_PARAM_MEBLOCKSIZETYPE to specify the minimum block size used for motion estimation
 	OMX_TI_IndexParamVideoIntraPredictionSettings,	//!< use OMX_VIDEO_PARAM_INTRAPREDTYPE to configure the intra prediction modes used for different block sizes
 	OMX_TI_IndexParamVideoEncoderPreset,	//!< use OMX_VIDEO_PARAM_ENCODER_PRESETTYPE to select the encoding mode & rate control preset
 	OMX_TI_IndexParamVideoFrameDataContentSettings,	//!< use OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE to configure the data content tpye
-	OMX_TI_IndexParamVideoTransformBlockSize,	//!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation	
+	OMX_TI_IndexParamVideoTransformBlockSize,	//!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation
 	OMX_TI_IndexParamVideoVUIsettings, //!use OMX_VIDEO_PARAM_VUIINFOTYPE
 	OMX_TI_IndexParamVideoAdvancedFMO,
 	OMX_TI_IndexConfigVideoPixelInfo,	//!<  Use OMX_VIDEO_CONFIG_PIXELINFOTYPE structure to know the pixel aspectratio & pixel range
 	OMX_TI_IndexConfigVideoMESearchRange,	//!< use OMX_VIDEO_CONFIG_MESEARCHRANGETYPE to specify the ME Search settings
 	OMX_TI_IndexConfigVideoQPSettings,	//!< use OMX_TI_VIDEO_CONFIG_QPSETTINGS to specify the ME Search settings
 	OMX_TI_IndexConfigSliceSettings,		//!<use OMX_VIDEO_CONFIG_SLICECODINGTYPE to specify the ME Search settings
-    
+
 
     /* Camera Indices */
     OMX_IndexParamSensorSelect,                 /**< reference: OMX_CONFIG_SENSORSELECTTYPE */
@@ -104,7 +104,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigSlowSync,                    /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
-	OMX_IndexConfigExtFocusRegion, /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */ 
+	OMX_IndexConfigExtFocusRegion, /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */
     OMX_IndexConfigFocusAssist,                 /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
     OMX_IndexConfigImageFocusLock,              /**< reference: OMX_IMAGE_CONFIG_LOCKTYPE */
@@ -157,37 +157,13 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexParamProcessingOrder,              /**< reference: OMX_CONFIGPROCESSINGORDERTYPE */
     OMX_IndexParamFrameStabilisation,           /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamVideoNoiseFilter,              /**< reference: OMX_PARAM_VIDEONOISEFILTERTYPE */
-    
+
     OMX_IndexConfigOtherExtraDataControl,        /**< reference:  OMX_CONFIG_EXTRADATATYPE */
     OMX_TI_IndexParamBufferPreAnnouncement,             /**< reference: OMX_TI_PARAM_BUFFERPREANNOUNCE */
     OMX_TI_IndexConfigBufferRefCountNotification,       /**< reference: OMX_TI_CONFIG_BUFFERREFCOUNTNOTIFYTYPE */
     OMX_TI_IndexParam2DBufferAllocDimension             /**< reference: OMX_CONFIG_RECTTYPE */
 } OMX_TI_INDEXTYPE;
 
-
-
-typedef enum OMX_TI_ERRORTYPE
-{
-    /* Vendor specific area for storing indices */
-    
-    /*Control attribute is pending - Dio_Dequeue will not work until attribute 
-    is retreived*/
-    OMX_TI_WarningAttributePending = (OMX_S32)((OMX_ERRORTYPE)OMX_ErrorVendorStartUnused + 1),
-    /*Attribute buffer size is insufficient - reallocate the attribute buffer*/
-    OMX_TI_WarningInsufficientAttributeSize,
-    /*EOS buffer has been received*/
-    OMX_TI_WarningEosReceived
-}OMX_TI_ERRORTYPE;
-
-
-
-typedef enum OMX_TI_EVENTTYPE
-{
-    /* Vendor specific area for storing custom extended events */
-    /*Reference count for the buffer has changed. In the callback, nData1 will
-      be pBufferHeader, nData2 will be present count*/
-    OMX_TI_EventBufferRefCount = (OMX_S32)((OMX_EVENTTYPE)OMX_EventVendorStartUnused + 1)
-}OMX_TI_EVENTTYPE;
 
 
 /*******************************************************************

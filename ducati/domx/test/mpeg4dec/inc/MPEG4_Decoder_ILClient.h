@@ -50,14 +50,14 @@
 
 * ============================================================================ */
 
-/*!  
+/*!
  *****************************************************************************
  * \file
- *   MPEG4_Decoder_ILClient.h                                                      
+ *   MPEG4_Decoder_ILClient.h
  *
- * \brief  
+ * \brief
  *  This file contains IL Client implementation specific to OMX MPEG4 Decoder
- *    
+ *
  * \version 1.0
  *
  *****************************************************************************
@@ -116,40 +116,49 @@ OMX_U32 Width;
 
 OMX_U32 Test_case_number;
 
-typedef struct MPEG4_Client{
-    OMX_HANDLETYPE pHandle;
-    OMX_COMPONENTTYPE* pComponent;
-    OMX_CALLBACKTYPE* pCb;
-    OMX_STATETYPE eState;
-    OMX_PARAM_PORTDEFINITIONTYPE* pInPortDef;
-    OMX_PARAM_PORTDEFINITIONTYPE* pOutPortDef;
-    OMX_U8 eCompressionFormat;
+typedef struct MPEG4_Client
+{
+	OMX_HANDLETYPE pHandle;
+	OMX_COMPONENTTYPE *pComponent;
+	OMX_CALLBACKTYPE *pCb;
+	OMX_STATETYPE eState;
+	OMX_PARAM_PORTDEFINITIONTYPE *pInPortDef;
+	OMX_PARAM_PORTDEFINITIONTYPE *pOutPortDef;
+	OMX_U8 eCompressionFormat;
 
-    OMX_BUFFERHEADERTYPE* pInBuff[NUM_OF_IN_BUFFERS];
-    OMX_BUFFERHEADERTYPE* pOutBuff[NUM_OF_OUT_BUFFERS];
-    OMX_PTR IpBuf_Pipe;
-    OMX_PTR OpBuf_Pipe;
+	OMX_BUFFERHEADERTYPE *pInBuff[NUM_OF_IN_BUFFERS];
+	OMX_BUFFERHEADERTYPE *pOutBuff[NUM_OF_OUT_BUFFERS];
+	OMX_PTR IpBuf_Pipe;
+	OMX_PTR OpBuf_Pipe;
 
-    FILE* fIn;
-    FILE* fInFrmSz;
-    FILE* fOut;
-    OMX_COLOR_FORMATTYPE ColorFormat;
-    OMX_U32 nWidth;
-    OMX_U32 nHeight;
-    OMX_U32 nEncodedFrms;
+	FILE *fIn;
+	FILE *fInFrmSz;
+	FILE *fOut;
+	OMX_COLOR_FORMATTYPE ColorFormat;
+	OMX_U32 nWidth;
+	OMX_U32 nHeight;
+	OMX_U32 nEncodedFrms;
 	OMX_PTR pBuffer1D;
 
-}MPEG4_Client;
+} MPEG4_Client;
 
 OMX_VERSIONTYPE nComponentVersion;
 OMX_U8 Eos_sent = 0;
 
-static OMX_ERRORTYPE MPEG4DEC_EventHandler(OMX_HANDLETYPE hComponent,OMX_PTR ptrAppData,OMX_EVENTTYPE eEvent, OMX_U32 nData1, OMX_U32 nData2, OMX_PTR pEventData);
-static OMX_ERRORTYPE MPEG4DEC_EmptyBufferDone(OMX_HANDLETYPE hComponent, OMX_PTR ptrAppData, OMX_BUFFERHEADERTYPE* pBuffer);
-static OMX_ERRORTYPE MPEG4DEC_FillBufferDone (OMX_HANDLETYPE hComponent, OMX_PTR ptrAppData, OMX_BUFFERHEADERTYPE* pBuffer);
-static OMX_ERRORTYPE MPEG4DEC_WaitForState(OMX_HANDLETYPE* pHandle, OMX_STATETYPE DesiredState);
-static OMX_U32 MPEG4DEC_FillData (MPEG4_Client* pAppData, OMX_BUFFERHEADERTYPE* pBuf);
-static void MPEG4DEC_FreeResources(MPEG4_Client* pAppData);
-static OMX_ERRORTYPE MPEG4DEC_AllocateResources(MPEG4_Client* pAppData);
-static OMX_ERRORTYPE MPEG4DEC_SetParamPortDefinition(MPEG4_Client* pAppData);
-static OMX_ERRORTYPE OMXMPEG4_Util_Memcpy_2Dto1D(OMX_PTR pDst1D, OMX_PTR pSrc2D, OMX_U32 nSize1D, OMX_U32 nHeight2D, OMX_U32 nWidth2D, OMX_U32 nStride2D);
+static OMX_ERRORTYPE MPEG4DEC_EventHandler(OMX_HANDLETYPE hComponent,
+    OMX_PTR ptrAppData, OMX_EVENTTYPE eEvent, OMX_U32 nData1, OMX_U32 nData2,
+    OMX_PTR pEventData);
+static OMX_ERRORTYPE MPEG4DEC_EmptyBufferDone(OMX_HANDLETYPE hComponent,
+    OMX_PTR ptrAppData, OMX_BUFFERHEADERTYPE * pBuffer);
+static OMX_ERRORTYPE MPEG4DEC_FillBufferDone(OMX_HANDLETYPE hComponent,
+    OMX_PTR ptrAppData, OMX_BUFFERHEADERTYPE * pBuffer);
+static OMX_ERRORTYPE MPEG4DEC_WaitForState(OMX_HANDLETYPE * pHandle,
+    OMX_STATETYPE DesiredState);
+static OMX_U32 MPEG4DEC_FillData(MPEG4_Client * pAppData,
+    OMX_BUFFERHEADERTYPE * pBuf);
+static void MPEG4DEC_FreeResources(MPEG4_Client * pAppData);
+static OMX_ERRORTYPE MPEG4DEC_AllocateResources(MPEG4_Client * pAppData);
+static OMX_ERRORTYPE MPEG4DEC_SetParamPortDefinition(MPEG4_Client * pAppData);
+static OMX_ERRORTYPE OMXMPEG4_Util_Memcpy_2Dto1D(OMX_PTR pDst1D,
+    OMX_PTR pSrc2D, OMX_U32 nSize1D, OMX_U32 nHeight2D, OMX_U32 nWidth2D,
+    OMX_U32 nStride2D);

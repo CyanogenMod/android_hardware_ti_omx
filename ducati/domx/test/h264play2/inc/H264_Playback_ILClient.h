@@ -2,18 +2,18 @@
 *             Texas Instruments OMAP(TM) Platform Software
 *  (c) Copyright 2009 Texas Instruments Incorporated.  All Rights Reserved.
 *
-*  Use of this software is controlled by the terms and conditions found 
+*  Use of this software is controlled by the terms and conditions found
 *  in the license agreement under which this software has been supplied.
 * =========================================================================== */
-/*!  
+/*!
  *****************************************************************************
  * \file
- *	H264_ILClient.h														 
+ *	H264_ILClient.h
  *
- * \brief  
- *  This file contains methods that provides the functionality for the H264 
+ * \brief
+ *  This file contains methods that provides the functionality for the H264
  *  Video Decoder Test Application
- *	
+ *
  * \version 1.0
  *
  *****************************************************************************
@@ -53,7 +53,7 @@
 /* ========================================================================== */
 /** H264_Client is the structure definition for the H264 Decoder IL Client
 *
-* @param pHandle               OMX Handle  
+* @param pHandle               OMX Handle
 * @param pComponent            Component Data structure
 * @param pCb                   Callback function pointer
 * @param eState                Current OMX state
@@ -74,36 +74,37 @@
 * @param nEncodedFrm           Total number of encoded frames
 */
 /* ========================================================================== */
-typedef struct H264_Client{
-    OMX_HANDLETYPE pHandle;
-    OMX_COMPONENTTYPE* pComponent;
-    OMX_CALLBACKTYPE* pCb;
-    OMX_STATETYPE eState;
-    OMX_PARAM_PORTDEFINITIONTYPE* pInPortDef;
-    OMX_PARAM_PORTDEFINITIONTYPE* pOutPortDef;
-    OMX_U8 eCompressionFormat;
-    OMX_VIDEO_PARAM_AVCTYPE* pH264;
+typedef struct H264_Client
+{
+	OMX_HANDLETYPE pHandle;
+	OMX_COMPONENTTYPE *pComponent;
+	OMX_CALLBACKTYPE *pCb;
+	OMX_STATETYPE eState;
+	OMX_PARAM_PORTDEFINITIONTYPE *pInPortDef;
+	OMX_PARAM_PORTDEFINITIONTYPE *pOutPortDef;
+	OMX_U8 eCompressionFormat;
+	OMX_VIDEO_PARAM_AVCTYPE *pH264;
 
-    OMX_BUFFERHEADERTYPE* pInBuff[NUM_OF_IN_BUFFERS];
-    OMX_BUFFERHEADERTYPE* pOutBuff[NUM_OF_OUT_BUFFERS];
-    OMX_PTR IpBuf_Pipe;
-    OMX_PTR OpBuf_Pipe;
+	OMX_BUFFERHEADERTYPE *pInBuff[NUM_OF_IN_BUFFERS];
+	OMX_BUFFERHEADERTYPE *pOutBuff[NUM_OF_OUT_BUFFERS];
+	OMX_PTR IpBuf_Pipe;
+	OMX_PTR OpBuf_Pipe;
 //#ifdef __TASK_INPUT__
 #if 1
-    OMX_PTR IpFileBuf_Pipe;
-    OMX_PTR OpFileBuf_Pipe;
-    void * pThreadFileIn;
+	OMX_PTR IpFileBuf_Pipe;
+	OMX_PTR OpFileBuf_Pipe;
+	void *pThreadFileIn;
 #endif
-    
-    FILE* fIn;
-    FILE* fInFrmSz;
-    FILE* fOut;
-    OMX_COLOR_FORMATTYPE ColorFormat;
-    OMX_U32 nWidth;
-    OMX_U32 nHeight;
-    OMX_U32 nEncodedFrms;
 
-}H264_Client;
+	FILE *fIn;
+	FILE *fInFrmSz;
+	FILE *fOut;
+	OMX_COLOR_FORMATTYPE ColorFormat;
+	OMX_U32 nWidth;
+	OMX_U32 nHeight;
+	OMX_U32 nEncodedFrms;
+
+} H264_Client;
 
 /* ========================================================================== */
 /** H264_TestCaseParamsType is the structure definition to define the input
@@ -120,13 +121,13 @@ typedef struct H264_Client{
 /* ========================================================================== */
 typedef struct H264_Decoder_TestCaseParamsType
 {
-    char SR_Id[10];
-    char InFile[100];
-    char OutFile[100];
-    OMX_U32 width;
-    OMX_U32 height;
-    OMX_COLOR_FORMATTYPE ColorFormat; 
+	char SR_Id[10];
+	char InFile[100];
+	char OutFile[100];
+	OMX_U32 width;
+	OMX_U32 height;
+	OMX_COLOR_FORMATTYPE ColorFormat;
 
-}H264_Decoder_TestCaseParamsType;
+} H264_Decoder_TestCaseParamsType;
 
 #endif //_H264_ILClient_

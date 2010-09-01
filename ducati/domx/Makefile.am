@@ -1,8 +1,8 @@
 # Process this file with automake to produce Makefile.in
 
 SUBDIRS = \
-	system/omx_core \
 	system/mm_osal \
+	system/omx_core \
 	system/domx \
 	video/omx_proxy_component/src
 
@@ -11,6 +11,7 @@ lib_LTLIBRARIES = \
 	libOMX.TI.DUCATI1.VIDEO.H264E.la \
 	libOMX.TI.DUCATI1.VIDEO.H264D.la \
 	libOMX.TI.DUCATI1.VIDEO.MPEG4D.la \
+	libOMX.TI.DUCATI1.VIDEO.DECODER.la \
 	libOMX.TI.DUCATI1.VIDEO.CAMERA.la \
 	libOMX.TI.DUCATI1.IMAGE.JPEGD.la \
 	libOMX.TI.DUCATI1.MISC.SAMPLE.la \
@@ -35,6 +36,10 @@ libOMX_TI_DUCATI1_VIDEO_H264D_la_LIBADD   = video/omx_proxy_component/src/libh26
 libOMX_TI_DUCATI1_VIDEO_MPEG4D_la_SOURCES  =
 libOMX_TI_DUCATI1_VIDEO_MPEG4D_la_LDFLAGS  = -no-undefined
 libOMX_TI_DUCATI1_VIDEO_MPEG4D_la_LIBADD   = video/omx_proxy_component/src/libmpeg4d.la libdomx.la
+
+libOMX_TI_DUCATI1_VIDEO_DECODER_la_SOURCES  =
+libOMX_TI_DUCATI1_VIDEO_DECODER_la_LDFLAGS  = -no-undefined
+libOMX_TI_DUCATI1_VIDEO_DECODER_la_LIBADD   = video/omx_proxy_component/src/libvideodecoder.la libdomx.la
 
 libOMX_TI_DUCATI1_VIDEO_CAMERA_la_SOURCES =
 libOMX_TI_DUCATI1_VIDEO_CAMERA_la_LDFLAGS = -no-undefined
