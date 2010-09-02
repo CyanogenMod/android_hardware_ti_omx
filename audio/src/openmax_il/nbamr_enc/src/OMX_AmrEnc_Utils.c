@@ -1314,6 +1314,9 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
             }
             else {
                 OMX_PRSTATE2(pComponentPrivate->dbg, "%d: HandleCommand: Cmd OMX_StateInvalid:\n",__LINE__);
+
+                NBAMRENC_CleanupInitParams(pHandle);
+
                 if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                     pComponentPrivate->curState != OMX_StateInvalid && 
                     pComponentPrivate->curState != OMX_StateLoaded) {
@@ -1330,7 +1333,7 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                                                     "Incorrect State Transition");
 
                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Comp: OMX_ErrorInvalidState Given by Comp\n",__LINE__);
-                NBAMRENC_CleanupInitParams(pHandle);
+
             }
             break;
 
@@ -3257,6 +3260,9 @@ void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+
+    NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
+
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
         pComponentPrivate->curState != OMX_StateLoaded) {
         eError = LCML_ControlCodec(((
@@ -3276,8 +3282,6 @@ void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
         OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
     }
 #endif
-
-    NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
 
     pComponentPrivate->curState = OMX_StateInvalid;
     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
