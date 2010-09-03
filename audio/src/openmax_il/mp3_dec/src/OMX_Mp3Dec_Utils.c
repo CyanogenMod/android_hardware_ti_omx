@@ -1005,7 +1005,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                                pComponentPrivate->pInputBufHdrPending[i]->pBuffer, OMX_DirInput, &pLcmlHdr);
                             MP3DEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
                             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                      EMMCodecInputBuffer,
+                                                      EMMCodecInputBufferMapReuse,
                                                       pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
                                                       pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
                                                       pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
@@ -1028,7 +1028,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                               OMX_DirOutput,
                                               __LINE__);
                             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                      EMMCodecOuputBuffer,
+                                                      EMMCodecOutputBufferMapReuse,
                                                       pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
                                                       pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
                                                       0,
@@ -1432,7 +1432,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         MP3DEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
                         OMX_PRBUFFER2(pComponentPrivate->dbg, "QueueBuffer pending port config line %d\n", __LINE__);
                         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
+                                                  EMMCodecInputBufferMapReuse,
                                                   pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
@@ -1486,7 +1486,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                           __LINE__);
                         OMX_PRCOMM2(pComponentPrivate->dbg, "QueueBuffer pending port config line %d\n", __LINE__);
                         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  EMMCodecOuputBuffer,
+                                                  EMMCodecOutputBufferMapReuse,
                                                   pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
                                                   pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
                                                   0,
@@ -1507,7 +1507,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         MP3DEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
                         OMX_PRCOMM2(pComponentPrivate->dbg, "QueueBuffer pending port config line %d\n", __LINE__);
                         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
+                                                  EMMCodecInputBufferMapReuse,
                                                   pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
@@ -1563,7 +1563,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                           OMX_DirOutput,
                                           __LINE__);
                         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  EMMCodecOuputBuffer,
+                                                  EMMCodecOutputBufferMapReuse,
                                                   pComponentPrivate->pOutputBufHdrPending[i]->pBuffer,
                                                   pComponentPrivate->pOutputBufHdrPending[i]->nAllocLen,
                                                   0,
@@ -1582,7 +1582,7 @@ OMX_U32 MP3DEC_HandleCommand (MP3DEC_COMPONENT_PRIVATE *pComponentPrivate)
                         MP3DEC_SetPending(pComponentPrivate,pComponentPrivate->pInputBufHdrPending[i],OMX_DirInput,__LINE__);
                         OMX_PRCOMM2(pComponentPrivate->dbg, "QueueBuffer pending port config line %d\n", __LINE__);
                         eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
+                                                  EMMCodecInputBufferMapReuse,
                                                   pComponentPrivate->pInputBufHdrPending[i]->pBuffer,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nAllocLen,
                                                   pComponentPrivate->pInputBufHdrPending[i]->nFilledLen,
@@ -1988,7 +1988,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if(!(pComponentPrivate->reconfigInputPort || pComponentPrivate->reconfigOutputPort)){
                             MP3DEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirInput,__LINE__);
                             eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecInputBuffer,
+                                                  EMMCodecInputBufferMapReuse,
                                                   pBufHeader->pBuffer,
                                                   pBufHeader->nAllocLen,
                                                   pBufHeader->nFilledLen,
@@ -2104,7 +2104,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                         if(!pComponentPrivate->bDspStoppedWhileExecuting){  
                             MP3DEC_SetPending(pComponentPrivate,pBufHeader,OMX_DirOutput,__LINE__);
                             eError = LCML_QueueBuffer(pLcmlHandle->pCodecinterfacehandle,
-                                                  EMMCodecOuputBuffer,
+                                                  EMMCodecOutputBufferMapReuse,
                                                   pBufHeader->pBuffer,
                                                   pBufHeader->nAllocLen,
                                                   0,
