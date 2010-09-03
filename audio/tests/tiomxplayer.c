@@ -488,7 +488,7 @@ appPrivateSt* app_core_new(void){
   me->fileformat = OMX_AUDIO_AACStreamFormatMP4ADTS;
   me->frameFormat= OMX_AUDIO_AMRFrameFormatFSF;
   me->bandMode = OMX_AUDIO_AMRBandModeNB0;
-  me->dtxMode = OMX_AUDIO_AMRDTXModeOnVAD1;
+  me->dtxMode = OMX_AUDIO_AMRDTXModeOnAuto;
   me->nIpBuf = 1;
   me->IpBufSize = IN_BUFFER_SIZE;
   me->nOpBuf = 1;

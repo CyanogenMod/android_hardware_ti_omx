@@ -221,8 +221,8 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
     if(FILE_MODE== appPrvt->mode||
        (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
         bytes_wrote += fwrite(pBuffer->pBuffer,
-                              sizeof(OMX_U32),
-                              pBuffer->nFilledLen/sizeof(OMX_U32),
+                              sizeof(OMX_U8),
+                              pBuffer->nFilledLen/sizeof(OMX_U8),
                               outfile);
                               //pnothing);
     }
@@ -247,8 +247,8 @@ OMX_ERRORTYPE FillBufferDone (OMX_HANDLETYPE hComponent,
       else if(FILE_MODE== appPrvt->mode||
          (ALSA_MODE == appPrvt->mode && RECORD == appPrvt->appType)){
           bytes_wrote += fwrite(pBuffer->pBuffer,
-                                sizeof(OMX_U32),
-                                pBuffer->nFilledLen/sizeof(OMX_U32),
+                                sizeof(OMX_U8),
+                                pBuffer->nFilledLen/sizeof(OMX_U8),
                                 outfile);
           APP_DPRINT(" %ld Bytes wrote\n",sizeof(OMX_U32)*(bytes_wrote - 1));
       }
@@ -460,11 +460,17 @@ int send_enc_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
             switch(appPrvt->out_port->format.audio.eEncoding){
             case OMX_AUDIO_CodingAMR:
                 if(first_time){
-                    nread = fread(buffer->pBuffer,
+                    if(appPrvt->amr_mode == OMX_FALSE){
+                        nread = fread(buffer->pBuffer,
                                   1,
                                   NBAMRENC_BUFFER_SIZE,
                                   infile);
-                    first_time = OMX_FALSE;
+                        if(appPrvt->frameFormat== OMX_AUDIO_AMRFrameFormatFSF){        //MIME header
+                            char MimeHeader[] = {0x23, 0x21, 0x41, 0x4d, 0x52, 0x0a};
+                            fwrite(MimeHeader, 1, 6, outfile);
+                        }
+                    }
+                first_time = OMX_FALSE;
                 }else{
                     memcpy(buffer->pBuffer, NextBuffer,nread);
                 }
