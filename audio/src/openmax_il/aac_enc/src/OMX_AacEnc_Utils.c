@@ -1064,22 +1064,14 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                       MMCodecControlStop,(void *)pArgs);
-
+                        if (OMX_ErrorNone != eError) {
+                            AACENC_FatalErrorRecover(pComponentPrivate);
+                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                            return eError;
+                        }
                         omx_mutex_wait(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
                                        &pComponentPrivate->codecStop_waitingsignal);
 
-                        if(eError != OMX_ErrorNone) 
-                        {
-                            OMX_ERROR4(pComponentPrivate->dbg, "%d: Error Occurred in Codec Stop..\n",__LINE__);
-                            pComponentPrivate->cbInfo.EventHandler (pHandle, 
-                                                pHandle->pApplicationPrivate,
-                                                OMX_EventError, 
-                                                eError,
-                                                OMX_TI_ErrorSevere,
-                                                NULL);
-                            return eError;
-                        }
-                        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After MMCodecControlStop\n", __LINE__);
                         pComponentPrivate->nNumOutputBufPending=0;
 
 #ifdef HASHINGENABLE
@@ -1509,6 +1501,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             
                 case OMX_StateInvalid:
                          OMX_PRSTATE2(pComponentPrivate->dbg, "%d: HandleCommand: Cmd OMX_StateInvalid:\n",__LINE__);
+                         AACENC_CleanupInitParams(pHandle);
                          if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                              pComponentPrivate->curState != OMX_StateInvalid && 
                              pComponentPrivate->curState != OMX_StateLoaded) 
@@ -1525,7 +1518,6 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                                                                  OMX_TI_ErrorSevere,
                                                                  NULL);
 
-                         AACENC_CleanupInitParams(pHandle);
                          break;
 
                 case OMX_StateMax:
@@ -1569,6 +1561,11 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                   MMCodecControlStop,(void *)pArgs);
 
+                    if (OMX_ErrorNone != eError) {
+                        AACENC_FatalErrorRecover(pComponentPrivate);
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                        return eError;
+                    }
                     omx_mutex_wait(&pComponentPrivate->codecStop_mutex,&pComponentPrivate->codecStop_threshold,
                                    &pComponentPrivate->codecStop_waitingsignal);
                 }
@@ -2782,15 +2779,7 @@ pHandle = pComponentPrivate_CC->pHandle;
             case USN_ERR_STRMCTRL:
             case USN_ERR_UNKNOWN_MSG:
                 {
-                    pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
-                    pComponentPrivate_CC->curState = OMX_StateInvalid;
-                    pHandle = pComponentPrivate_CC->pHandle;
-                    pComponentPrivate_CC->cbInfo.EventHandler(pHandle,
-                            pHandle->pApplicationPrivate,
-                            OMX_EventError,
-                            OMX_ErrorInvalidState,
-                            OMX_TI_ErrorSevere,
-                            NULL);
+                    AACENC_FatalErrorRecover(pComponentPrivate_CC);
                 }
                 break;
 #endif
@@ -2821,17 +2810,7 @@ pHandle = pComponentPrivate_CC->pHandle;
         if((args[4] == (void*)USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) 
         {
             OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
-            pComponentPrivate_CC->bIsInvalidState=OMX_TRUE;
-            OMX_PRINT2(pComponentPrivate_CC->dbg, "State changed to OMX_StateInvalid Line %d\n",__LINE__);
-            
-            pComponentPrivate_CC->curState = OMX_StateInvalid;
-            pHandle = pComponentPrivate_CC->pHandle;
-            pComponentPrivate_CC->cbInfo.EventHandler(pHandle, 
-                                                       pHandle->pApplicationPrivate,
-                                                       OMX_EventError,
-                                                       OMX_ErrorStreamCorrupt, 
-                                                       OMX_TI_ErrorSevere,
-                                                       NULL);
+            AACENC_FatalErrorRecover(pComponentPrivate_CC);
         }   
     }
 
@@ -3467,15 +3446,7 @@ void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32
                 /* all of these are fatal messages, Algo can not recover
                  * hence return an error */
                 OMX_ERROR4(pComponentPrivate->dbg,  "Algorithm Error, cannot recover" );
-                pComponentPrivate->bIsInvalidState=OMX_TRUE;
-                pComponentPrivate->curState = OMX_StateInvalid;
-                pHandle = pComponentPrivate->pHandle;
-                pComponentPrivate->cbInfo.EventHandler(pHandle,
-                        pHandle->pApplicationPrivate,
-                        OMX_EventError,
-                        OMX_ErrorInvalidState,
-                        OMX_TI_ErrorSevere,
-                        NULL);
+                AACENC_FatalErrorRecover(pComponentPrivate);
             }
             break;
 #endif
@@ -3521,6 +3492,7 @@ void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+    AACENC_CleanupInitParams(pComponentPrivate->pHandle);
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
         pComponentPrivate->curState != OMX_StateLoaded) {
         eError = LCML_ControlCodec(((
@@ -3548,7 +3520,6 @@ void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    AACENC_CleanupInitParams(pComponentPrivate->pHandle);
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
