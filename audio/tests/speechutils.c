@@ -1,6 +1,7 @@
 #include "tiomxplayer.h"
 
 extern FILE* infile;
+extern FILE* outfile;
 
 /** Configure nbamr input params
  *
@@ -483,6 +484,82 @@ int process_wbamr(appPrivateSt* appPrvt, OMX_U8* pBuf){
  EXIT:
     return nBytesRead;
 
+}
+/** Process nb amr enc buffers
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+OMX_BOOL process_nbamr_enc(appPrivateSt* appPrvt, OMX_BUFFERHEADERTYPE *buffer){
+    static OMX_BOOL eos_flag = OMX_FALSE;
+    static int nread;
+    static OMX_BOOL first_time = OMX_TRUE;
+    static OMX_U8 NextBuffer[NBAMRENC_BUFFER_SIZE*3] = {0};
+
+    if(first_time){
+        nread = fread(buffer->pBuffer,
+                  1,
+                  NBAMRENC_BUFFER_SIZE,
+                  infile);
+        if(appPrvt->frameFormat== OMX_AUDIO_AMRFrameFormatFSF){        //MIME header
+            char MimeHeader[] = {0x23, 0x21, 0x41, 0x4d, 0x52, 0x0a};
+            fwrite(MimeHeader, 1, NBAMRENC_MIME_HEADER_LEN, outfile);
+        }
+
+        first_time = OMX_FALSE;
+    }else{
+        memcpy(buffer->pBuffer, NextBuffer,nread);
+    }
+
+    buffer->nFlags |= 0;
+    buffer->nFilledLen = nread;
+
+    nread = fread(NextBuffer, 1, NBAMRENC_BUFFER_SIZE, infile);
+    if(nread < NBAMRENC_BUFFER_SIZE) {
+        /*set the buffer flag*/
+        buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+        eos_flag = OMX_TRUE;
+        APP_DPRINT("EOS marked!\n");
+    }
+    return eos_flag;
+}
+/** Process wb amr enc buffers
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+OMX_BOOL process_wbamr_enc(appPrivateSt* appPrvt, OMX_BUFFERHEADERTYPE *buffer){
+    static OMX_BOOL eos_flag = OMX_FALSE;
+    static int nread;
+    static OMX_BOOL first_time = OMX_TRUE;
+    static OMX_U8 NextBufferWB[WBAMRENC_BUFFER_SIZE*3] = {0};
+
+    if(first_time){
+        nread = fread(buffer->pBuffer,
+                  1,
+                  WBAMRENC_BUFFER_SIZE,
+                  infile);
+        if(appPrvt->frameFormat== OMX_AUDIO_AMRFrameFormatFSF){        //MIME header
+            char MimeHeader[] = {0x23, 0x21, 0x41, 0x4d, 0x52, 0x2d, 0x57, 0x42, 0x0a};
+            fwrite(MimeHeader, 1, WBAMRENC_MIME_HEADER_LEN, outfile);
+        }
+
+        first_time = OMX_FALSE;
+    }else{
+        memcpy(buffer->pBuffer, NextBufferWB,nread);
+    }
+
+    buffer->nFlags |= 0;
+    buffer->nFilledLen = nread;
+
+    nread = fread(NextBufferWB, 1, WBAMRENC_BUFFER_SIZE, infile);
+    if(nread < WBAMRENC_BUFFER_SIZE) {
+        /*set the buffer flag*/
+        buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+        eos_flag = OMX_TRUE;
+        APP_DPRINT("EOS marked!\n");
+    }
+    return eos_flag;
 }
 /** Process g729dec buffers
  *

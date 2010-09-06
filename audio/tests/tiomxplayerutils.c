@@ -452,38 +452,16 @@ int send_enc_input_buffer(appPrivateSt* appPrvt,OMX_BUFFERHEADERTYPE *buffer){
     static int buffer_count = 0;
     static int nread;
     static int drop_count = 0;
-    static OMX_BOOL first_time = OMX_TRUE;
-    static OMX_U8 NextBuffer[NBAMRENC_BUFFER_SIZE*3] = {0};
 
     if(!eos_flag){
+
 	if(appPrvt->mode==FILE_MODE){
             switch(appPrvt->out_port->format.audio.eEncoding){
             case OMX_AUDIO_CodingAMR:
-                if(first_time){
-                    if(appPrvt->amr_mode == OMX_FALSE){
-                        nread = fread(buffer->pBuffer,
-                                  1,
-                                  NBAMRENC_BUFFER_SIZE,
-                                  infile);
-                        if(appPrvt->frameFormat== OMX_AUDIO_AMRFrameFormatFSF){        //MIME header
-                            char MimeHeader[] = {0x23, 0x21, 0x41, 0x4d, 0x52, 0x0a};
-                            fwrite(MimeHeader, 1, 6, outfile);
-                        }
-                    }
-                first_time = OMX_FALSE;
-                }else{
-                    memcpy(buffer->pBuffer, NextBuffer,nread);
-                }
-                buffer->nFlags |= 0;
-                buffer->nFilledLen = nread;
-
-                nread = fread(NextBuffer, 1, NBAMRENC_BUFFER_SIZE, infile);
-                if(nread < NBAMRENC_BUFFER_SIZE) {
-                    /*set the buffer flag*/
-                    buffer->nFlags |= OMX_BUFFERFLAG_EOS;
-                    eos_flag = OMX_TRUE;
-                    APP_DPRINT("EOS marked!\n");
-                }
+                if(appPrvt->amr_mode == OMX_FALSE)
+                    eos_flag = process_nbamr_enc(appPrvt, buffer);
+                else
+                    eos_flag = process_wbamr_enc(appPrvt, buffer);
                 break;
             default:
                 nread = fread(buffer->pBuffer,
