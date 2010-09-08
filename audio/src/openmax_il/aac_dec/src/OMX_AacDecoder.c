@@ -1071,6 +1071,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     TI_OMX_DATAPATH dataPath;
     OMX_AUDIO_PARAM_AACPROFILETYPE *aac_params = NULL;
     OMX_U32 pValues[4];
+    OMX_U16* pFrameMode = NULL;
     
     AACDEC_OMX_CONF_CHECK_CMD(pHandle,1,1)
         pComponentPrivate = (AACDEC_COMPONENT_PRIVATE *)pHandle->pComponentPrivate;
@@ -1183,6 +1184,16 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
     case OMX_IndexCustomDebug: 
 	OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
 	break;
+
+    case OMX_IndexCustomAacDecFrameModeConfig:
+        pFrameMode = (OMX_U16*)ComponentConfigStructure;
+        if (pFrameMode == NULL) {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from SetConfig() - OMX_ErrorBadParameter\n", __LINE__);
+            return OMX_ErrorBadParameter;
+        }
+        pComponentPrivate->framemode = *pFrameMode;
+        OMXDBG_PRINT(stderr, PRINT, 2, 0, "pComponentPrivate->framemode = %d\n", (int)pComponentPrivate->framemode);
+        break;
 
     default:
         eError = OMX_ErrorUnsupportedIndex;
@@ -2209,6 +2220,10 @@ static OMX_ERRORTYPE GetExtensionIndex(
     }
     else if(!(strcmp(cParameterName,"OMX.TI.AAC.Decode.Debug"))) {
 	*pIndexType = OMX_IndexCustomDebug;
+    }
+    else if(!(strcmp(cParameterName,"OMX.TI.index.config.AacDecFrameModeInfo"))){
+        *pIndexType = OMX_IndexCustomAacDecFrameModeConfig;
+        OMXDBG_PRINT(stderr, DSP, 2, 0, "OMX_IndexCustomAacDecFrameModeConfig\n");
     }
     else {
         eError = OMX_ErrorBadParameter;
