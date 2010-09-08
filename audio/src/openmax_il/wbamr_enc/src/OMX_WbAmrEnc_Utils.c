@@ -925,6 +925,11 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                                                    MMCodecControlStop,
                                                    (void *)pArgs);
 
+                        if (OMX_ErrorNone != eError) {
+                            WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                            return eError;
+                        }
                         OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParam, WBAMRENC_TALGCtrl);
                         OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pAlgParamDTX, WBAMRENC_TALGCtrlDTX);
 
@@ -935,19 +940,6 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                         pComponentPrivate->nHoldLength = 0;
                         pComponentPrivate->InBuf_Eos_alreadysent = 0;
                         OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, WBAMRENC_AudioCodecParams);
-
-                        if (eError != OMX_ErrorNone) {
-                            OMX_ERROR4(pComponentPrivate->dbg,
-                                       "Error from LCML_ControlCodec MMCodecControlStop..\n");
-                            pComponentPrivate->curState = OMX_StateInvalid;
-                            pComponentPrivate->cbInfo.EventHandler( pHandle,
-                                                                    pHandle->pApplicationPrivate,
-                                                                    OMX_EventError,
-                                                                    eError,
-                                                                    OMX_TI_ErrorSevere,
-                                                                    NULL);
-                            goto EXIT;
-                        }
 
                     } else if (pComponentPrivate->curState == OMX_StatePause) {
                         OMX_PRSTATE2(pComponentPrivate->dbg,
@@ -1387,6 +1379,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                 case OMX_StateInvalid:
                     OMX_PRSTATE2(pComponentPrivate->dbg, "To OMX_StateInvalid\n");
+                    WBAMRENC_CleanupInitParams(pHandle);
 
                     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
                             pComponentPrivate->curState != OMX_StateInvalid &&
@@ -1407,7 +1400,6 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                     OMX_ERROR4(pComponentPrivate->dbg,
                                "OMX_ErrorInvalidState Given by Comp\n");
-                    WBAMRENC_CleanupInitParams(pHandle);
                     break;
 
                 case OMX_StateMax:
@@ -1435,6 +1427,11 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop, (void *)pArgs);
+                    if (OMX_ErrorNone != eError) {
+                        WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                        return eError;
+                    }
                 }
             }
         }
@@ -3437,6 +3434,7 @@ void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
+    WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
         pComponentPrivate->curState != OMX_StateLoaded) {
         eError = LCML_ControlCodec(((
@@ -3456,8 +3454,6 @@ void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
         OMX_ERROR4(pComponentPrivate->dbg, "::From RMProxy_Deinitalize\n");
     }
 #endif
-
-    WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
 
     pComponentPrivate->curState = OMX_StateInvalid;
     pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
