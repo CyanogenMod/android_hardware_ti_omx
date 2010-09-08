@@ -3242,7 +3242,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
 
             OMX_PRDSP1(pComponentPrivate->dbg, "LCML_QueueBuffer(OUTPUT)\n");
             eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                      EMMCodecOuputBuffer,
+                                      ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecOuputBuffer :EMMCodecOutputBufferMapReuse ),
                                       pBuffHead->pBuffer,
                                       pBuffHead->nAllocLen,
                                       pBuffHead->nFilledLen,
@@ -5739,7 +5739,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
                 eError = LCML_QueueBuffer(((LCML_DSP_INTERFACE*)
                                             pLcmlHandle)->pCodecinterfacehandle,
-                                            ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBuffer),
+                                            ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingWMV) ? EMMCodecInputBufferMapBufLen : EMMCodecInputBufferMapReuse),
                                             &pBuffHead->pBuffer[pBuffHead->nOffset],/*WMV_VC1_CHANGES*/
                                             pBuffHead->nAllocLen,
                                             pBuffHead->nFilledLen,
