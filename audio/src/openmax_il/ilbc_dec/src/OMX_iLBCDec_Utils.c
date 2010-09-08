@@ -2603,7 +2603,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
                      void* pArmPtr,
                      DMM_BUFFER_OBJ* pDmmBuf)
 {
-    DSP_STATUS status = DSP_SOK;
+    DSP_STATUS status = 0;
     int nSizeReserved = 0;
 
     if(pDmmBuf == NULL){
@@ -2743,7 +2743,7 @@ OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle,
                            void* pMapPtr, 
                            void* pResPtr)
 {
-    DSP_STATUS status = DSP_SOK;
+    DSP_STATUS status = 0;
     iLBCDEC_DPRINT("\nOMX UnReserve DSP: %p\n",pResPtr);
 
     if(pMapPtr == NULL){
