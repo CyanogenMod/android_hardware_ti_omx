@@ -895,6 +895,14 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                                     MMCodecControlStop,(void *)pArgs);
 
+                if (OMX_ErrorNone != eError) {
+                    if (pComponentPrivate->codecStop_waitingsignal == 0)
+                       pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                    NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                    return eError;
+                }
+
                 if (pComponentPrivate->codecStop_waitingsignal == 0){
                     pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
                     pComponentPrivate->codecStop_waitingsignal = 0;
@@ -908,11 +916,6 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                                 pComponentPrivate->nOutStandingEmptyDones = 0; 
 
                 OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, NBAMRENC_AudioCodecParams);
-
-                if(eError != OMX_ErrorNone) {
-                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec MMCodecControlStop..\n",__LINE__);
-                    goto EXIT;
-                }
             }
             else if(pComponentPrivate->curState == OMX_StatePause) {
 
@@ -1370,6 +1373,14 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
                     eError = LCML_ControlCodec(
                                   ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                   MMCodecControlStop,(void *)pArgs);
+
+                    if (OMX_ErrorNone != eError) {
+                        if (pComponentPrivate->codecStop_waitingsignal == 0)
+                             pthread_mutex_unlock(&pComponentPrivate->codecStop_mutex);
+                        NBAMRENC_FatalErrorRecover(pComponentPrivate);
+                        OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                        return eError;
+                    }
                     if (pComponentPrivate->codecStop_waitingsignal == 0){
                         pthread_cond_wait(&pComponentPrivate->codecStop_threshold, &pComponentPrivate->codecStop_mutex);
                         pComponentPrivate->codecStop_waitingsignal = 0;
