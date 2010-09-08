@@ -954,7 +954,6 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     phandle->commStruct->iParamSize = auxInfoLen;
     /*USN updation */
     phandle->commStruct->iBufSizeUsed =  bufferSizeUsed ;
-    phandle->commStruct->iArmArg = (OMX_U32) buffer;
     phandle->commStruct->iArmParamArg = (OMX_U32) auxInfo;
 
     /* if the bUsnEos flag is set interpret the usrArg as a buffer header */
@@ -1182,9 +1181,6 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     {
         goto MUTEX_UNLOCK;
     }
-
-    /* storing mapped address of struct */
-    phandle->commStruct->iArmArg = (OMX_U32)pDmmBuf->pMapped;
 
     OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hComponent)->dbg, "sending SETBUFF \n");
     msg.dwCmd = commandId;
@@ -1877,7 +1873,7 @@ void* MessagingThread(void* arg)
                             i = hDSPInterface->iBufinputcount;
                             while(j++ < QUEUE_SIZE)
                             {
-                                if (hDSPInterface->Arminputstorage[i] != NULL && hDSPInterface ->Arminputstorage[i]->iArmArg == msg.dwArg1)
+                                if (hDSPInterface->Arminputstorage[i] != NULL && hDSPInterface ->dspCodec->InDmmBuffer[i].pMapped== msg.dwArg1)
                                 {
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "InputBuffer loop");
                                     tmpDspStructAddress = ((LCML_DSP_INTERFACE *)arg)->Arminputstorage[i] ;
@@ -1905,7 +1901,7 @@ void* MessagingThread(void* arg)
                             while(j++ < QUEUE_SIZE)
                             {
                                 if( hDSPInterface ->Armoutputstorage[i] != NULL
-                                        && hDSPInterface ->Armoutputstorage[i]->iArmArg == msg.dwArg1)
+                                        && hDSPInterface ->dspCodec->OutDmmBuffer[i].pMapped == msg.dwArg1)
                                 {
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "output buffer loop");
                                     tmpDspStructAddress = hDSPInterface->Armoutputstorage[i] ;
@@ -1954,7 +1950,7 @@ void* MessagingThread(void* arg)
                             args[2] = (void *) tmpDspStructAddress->iBufferSize;
                             args[3] = (void *) tmpDspStructAddress->iArmParamArg; /* arm address for param */
                             args[4] = (void *) tmpDspStructAddress->iParamSize;
-                            args[5] = (void *) tmpDspStructAddress->iArmArg;
+                            args[5] = (void *) pDmmBuf->pMapped;
                             args[6] = (void *) arg;  /* handle */
                             args[7] = (void *) tmpDspStructAddress->iUsrArg;  /* user arguments */
 
@@ -1996,6 +1992,7 @@ void* MessagingThread(void* arg)
                             OMX_PRINT2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, 
                                     "GOT MESSAGE EMMCodecBufferProcessed  and now unmapping  structure =0x%p\n",tmpDspStructAddress );
                             DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                            pDmmBuf->pMapped = 0;
                             tmp2 = (char *)tmpDspStructAddress;
                             LCML_MEMFREE(tmp2, NULL);
 
@@ -2048,7 +2045,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg; /* arm address for param */
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;  /* handle */
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;  /* user arguments */
                                     /* USN updates*/
@@ -2076,6 +2073,7 @@ void* MessagingThread(void* arg)
                                                  pDmmBuf->paramReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     if (NULL != tmpDspStructAddress)
                                     {
@@ -2111,7 +2109,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg; /* arm address for param */
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;  /* handle */
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;  /* user arguments */
                                     /* USN updates*/
@@ -2142,6 +2140,7 @@ void* MessagingThread(void* arg)
                                                  pDmmBuf->paramReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     tmp2 = (char *) tmpDspStructAddress;
 
@@ -2252,7 +2251,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg;
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;
 
@@ -2285,6 +2284,7 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, 
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     if (NULL != tmpDspStructAddress)
                                     {
@@ -2347,7 +2347,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg;
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;
 
@@ -2382,6 +2382,7 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved, 
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     tmp2 = (char *) tmpDspStructAddress;
                                     tmpDspStructAddress->iBufSizeUsed = 0;
@@ -2446,7 +2447,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg;
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;
 
@@ -2476,6 +2477,7 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved,
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     tmp2 = (char*)tmpDspStructAddress;
                                     hDSPInterface->Arminputstorage[i] = NULL;
@@ -2519,7 +2521,7 @@ void* MessagingThread(void* arg)
                                     args[2] = (void *) tmpDspStructAddress->iBufferSize;
                                     args[3] = (void *) tmpDspStructAddress->iArmParamArg;
                                     args[4] = (void *) tmpDspStructAddress->iParamSize;
-                                    args[5] = (void *) tmpDspStructAddress->iArmArg;
+                                    args[5] = (void *) pDmmBuf->pMapped;
                                     args[6] = (void *) arg;
                                     args[7] = (void *) tmpDspStructAddress->iUsrArg;
 
@@ -2554,6 +2556,7 @@ void* MessagingThread(void* arg)
                                     }
                                     DmmUnMap(hDSPInterface->dspCodec->hProc, pDmmBuf->pMapped, pDmmBuf->pReserved,
                                             ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    pDmmBuf->pMapped = 0;
 
                                     tmp2 = (char *)tmpDspStructAddress;
                                     tmpDspStructAddress->iBufSizeUsed = 0;

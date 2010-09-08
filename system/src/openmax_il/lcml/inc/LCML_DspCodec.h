@@ -147,7 +147,6 @@ typedef struct
     OMX_U32 bDoNotFlushBuf;
     OMX_U32 bDoNotInvalidateBuf;
     OMX_U32 ulReserved;
-    OMX_U32 iArmArg;/* storing dsp mapped address of structure*/
     OMX_U32 iArmbufferArg;/* ARM side buffer pointer*/
     OMX_U32 iArmParamArg;/*ARM side Param pointer*/
     OMX_U32 Bufoutindex;/* buffer index*/
