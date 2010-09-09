@@ -453,6 +453,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleError(VIDENC_COMPONENT_PRIVATE* pComponentPrivate
                                          NULL);
             }
             break;
+        case OMX_ErrorHardware:
         case OMX_ErrorInvalidState:
             {
                 OMX_ERROR3(pComponentPrivate->dbg, "OMX VE Error Invalid state!\n");
