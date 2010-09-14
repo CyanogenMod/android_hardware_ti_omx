@@ -2409,7 +2409,7 @@ int LoadBaseImage() {
     
     struct DSP_PROCESSORINFO dspInfo;
     DSP_HPROCESSOR hProc;
-    DSP_STATUS status = 0;
+    int status = 0;
     unsigned int numProcs;
     char* argv[2];
    
