@@ -237,7 +237,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
     {
         LCML_DSP_INTERFACE * phandle;
         LCML_CREATEPHASEARGS crData;
-        DSP_STATUS status;
+        int status;
         int i = 0, k = 0;
         struct DSP_NODEATTRIN NodeAttrIn;
         struct DSP_CBDATA     *pArgs;
@@ -555,7 +555,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     }
 #endif
     LCML_CREATEPHASEARGS crData;
-    DSP_STATUS status;
+    int status;
     int i = 0, k =0;
     struct DSP_NODEATTRIN NodeAttrIn;
     int tmperr;
@@ -877,7 +877,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 {
     LCML_DSP_INTERFACE * phandle;
     OMX_U32 streamId = 0;
-    DSP_STATUS status;
+    int status;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     char * tmp2=NULL;
     DMM_BUFFER_OBJ* pDmmBuf=NULL;
@@ -1005,7 +1005,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
     if ((buffer != NULL) && (bufferLen != 0))
     {
         OMX_U32 i;
-        DSP_STATUS status;
+        int status;
 
         if (phandle->ReUseMap)
         {
@@ -1177,7 +1177,7 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                                   void * args[10])
 {
     LCML_DSP_INTERFACE * phandle;
-    DSP_STATUS status;
+    int status;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     if (hComponent == NULL )
@@ -1483,7 +1483,7 @@ OMX_ERRORTYPE DmmMap(DSP_HPROCESSOR ProcHandle,
                      struct OMX_TI_Debug dbg, OMX_BOOL check)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status;
+    int status;
     int nSizeReserved = 0;
 
     if(pDmmBuf == NULL)
@@ -1552,7 +1552,7 @@ EXIT:
 ** ==========================================================================*/
 OMX_ERRORTYPE DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg )
 {
-    DSP_STATUS status = 0;
+    int status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     if(pMapPtr == NULL)
@@ -1650,8 +1650,8 @@ OMX_ERRORTYPE FreeResources (LCML_DSP_INTERFACE *hInterface)
 OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    DSP_STATUS status;
-    DSP_STATUS nExit;
+    int status;
+    int nExit;
     struct DSP_NODEATTR nodeAttr;
     OMX_U32 dllinfo;
     LCML_DSP_INTERFACE *codec;
@@ -1725,7 +1725,7 @@ EXIT:
 void* MessagingThread(void* arg)
 {
     /* OMX_ERRORTYPE eError = OMX_ErrorUndefined; */
-    DSP_STATUS status = 0;
+    int status = 0;
     struct DSP_MSG msg = {0,0,0};
     unsigned int index=0;
     LCML_MESSAGINGTHREAD_STATE threadState = EMessagingThreadCodecStopped;
