@@ -70,21 +70,23 @@ char compName[60][200];
 
 
 char *tComponentName[MAXCOMP][MAX_ROLES] = {
-	/*video and image components */
-	{"OMX.TI.DUCATI1.VIDEO.DECODER", "video_decoder.mpeg4",
-		    "video_decoder.avc",
-		    "video_decoder.wmv",
-		    "video_decoder.vp6",
-		    "video_decoder.vp7", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.H264D", "video_decoder.avc", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.H264E", "video_encoder.avc", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.MPEG4D", "video_decoder.mpeg4", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.MPEG4E", "video_encoder.mpeg4", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.VP6D", "video_decoder.vp6", NULL},
-	{"OMX.TI.DUCATI1.VIDEO.VP7D", "video_decoder.vp7", NULL},
-	{"OMX.TI.DUCATI1.IMAGE.JPEGD", "jpeg_decoder.jpeg", NULL},
-	/* terminate the table */
-	{NULL, NULL},
+        /*video and image components */
+        {"OMX.TI.DUCATI1.VIDEO.DECODER", "video_decoder.mpeg4",
+                    "video_decoder.avc",
+                    "video_decoder.wmv",
+                    "video_decoder.vp6",
+                    "video_decoder.vp7",
+                    "video_decoder.h263", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.H264D", "video_decoder.avc", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.H264E", "video_encoder.avc", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.MPEG4D", "video_decoder.mpeg4",
+                    "video_decoder.h263", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.MPEG4E", "video_encoder.mpeg4", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.VP6D", "video_decoder.vp6", NULL},
+        {"OMX.TI.DUCATI1.VIDEO.VP7D", "video_decoder.vp7", NULL},
+        {"OMX.TI.DUCATI1.IMAGE.JPEGD", "jpeg_decoder.jpeg", NULL},
+        /* terminate the table */
+        {NULL, NULL},
 };
 
 
