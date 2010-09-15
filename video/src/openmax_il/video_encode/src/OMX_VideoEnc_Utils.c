@@ -2725,17 +2725,19 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     pUalgInpParams->ulQPIntra = pComponentPrivate->nQPI;
 
     /* Updated: enable UMV for H263 and Mpeg4 */
-    pUalgInpParams->uluseUMV              =1;
+    /* pUalgInpParams->uluseUMV              =1; */
 
     /*Set segment mode params*/
     if (pComponentPrivate->bMVDataEnable)
     {
         pUalgInpParams->ul4MV                 =1;
+        pUalgInpParams->uluseUMV              =1;
         pUalgInpParams->ulMVDataEnable        =1;
     }
     else
     {
         pUalgInpParams->ul4MV                 =0;
+        pUalgInpParams->uluseUMV              =0;
         pUalgInpParams->ulMVDataEnable        =0;
     }
     if (pComponentPrivate->bResyncDataEnable)
