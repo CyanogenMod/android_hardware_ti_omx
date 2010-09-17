@@ -600,8 +600,8 @@ typedef struct
     OMX_U32 ulOutReserved2;
     OMX_U32 lastMCU;            /* 1-Decoded all MCU�s0 - Decoding not completed*/
     OMX_U32 stride[3];          /*Stride values for Y, U, and V components*/
-    OMX_U32 ulOutputHeight;     /* Output Height */
     OMX_U32 ulOutputWidth;      /* Output Width*/
+    OMX_U32 ulOutputHeight;     /* Output Height */
     OMX_U32 ultotalAU;          /* Total number of Access unit(MCU)*/
     OMX_U32 ulbytesConsumed;    /* Total number of bytes consumed*/
     OMX_U32 ulcurrentAU;        /* current access unit number */
