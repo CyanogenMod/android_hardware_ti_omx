@@ -25,7 +25,9 @@
 #define STD_NBAMRDEC_BUF_SIZE 118
 #define STD_WBAMRDEC_BUF_SIZE 116
 #define NBAMRENC_MIME_HEADER_LEN 6
+#define WBAMRENC_MIME_HEADER_LEN 9
 #define NBAMRENC_BUFFER_SIZE 320
+#define WBAMRENC_BUFFER_SIZE 640
 
 /* G729 frame size */
 #define SPEECH_FRAME_SIZE 80
@@ -397,6 +399,18 @@ int process_nbamr(appPrivateSt* appPrvt, OMX_U8* buffer);
  *
  */
 int process_wbamr(appPrivateSt* appPrvt, OMX_U8* buffer);
+/** Process nb amr enc buffers
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+OMX_BOOL process_nbamr_enc(appPrivateSt* appPrvt, OMX_BUFFERHEADERTYPE *buffer);
+/** Process wb amr enc buffers
+ *
+ * @param appPrvt Aplication private variables
+ *
+ */
+OMX_BOOL process_wbamr_enc(appPrivateSt* appPrvt, OMX_BUFFERHEADERTYPE *buffer);
 /** Process g729dec buffers
  *
  * @param appPrvt Aplication private variables
