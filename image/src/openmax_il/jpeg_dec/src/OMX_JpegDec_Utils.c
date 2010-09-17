@@ -650,6 +650,10 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
     nFrameHeight = pPortDefIn->format.image.nFrameHeight * nScaleFactor / 100;    
     
     if (pComponentPrivate->nProgressive == 1) {
+        /*DSP SN expects the width and height to be multiple of 16 */
+        if ((nFrameHeight%16) != 0) nFrameHeight = (( nFrameHeight/16 ) + 1 ) * 16;
+        if ((nFrameWidth%16) != 0) nFrameWidth = (( nFrameWidth/16 ) + 1 ) * 16;
+
         if ( (nFrameHeight * nFrameWidth) <= (144 * 176) ) {
             lcml_dsp->ProfileID = 0;
         }
@@ -700,12 +704,8 @@ OMX_ERRORTYPE Fill_LCMLInitParamsJpegDec(LCML_DSP *lcml_dsp,
 
     if (pComponentPrivate->nProgressive == 1) {
         OMX_PRINT2(pComponentPrivate->dbg, "JPEGdec:: nProgressive IMAGE");
-        /*DSP SN expects the width and height to be multiple of 16 */
         arr[7] = nFrameHeight;
-        if ((arr[7]%16) != 0) arr[7] = (( nFrameHeight/16 ) + 1 ) * 16;
         arr[8] = nFrameWidth;
-        if ((arr[8]%16) != 0) arr[8] = (( nFrameWidth/16 ) + 1 ) * 16;
-        
         arr[9] = JPGDEC_SNTEST_PROG_FLAG;
     }
     else {
