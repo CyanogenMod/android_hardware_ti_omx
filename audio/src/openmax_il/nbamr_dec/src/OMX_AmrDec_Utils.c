@@ -1720,7 +1720,7 @@ OMX_ERRORTYPE NBAMRDECHandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     OMX_U8 TOCentry, hh=0, *TOCframetype=0;
     OMX_U16 offset = 0;
 
-    DSP_STATUS status =0;
+    int status =0;
     OMX_BOOL isFrameParamChanged=OMX_FALSE;
 
     if (OMX_AUDIO_AMRDTXasEFR == pComponentPrivate->iAmrMode){
@@ -2803,7 +2803,7 @@ OMX_ERRORTYPE NBAMRDECLCML_Callback (TUsnCodecEvent event,void * args [10])
     OMX_COMPONENTTYPE *pHandle = NULL;
     OMX_U8 i;
     NBAMRDEC_BUFDATA *OutputFrames;
-    DSP_STATUS status=0;
+    int status=0;
     LCML_DSP_INTERFACE *dspphandle = (LCML_DSP_INTERFACE *)args[6];
     
     AMRDEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
@@ -3590,7 +3590,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
                      DMM_BUFFER_OBJ* pDmmBuf, struct OMX_TI_Debug dbg)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status =0;
+    int status =0;
     int nSizeReserved = 0;
 
     if(pDmmBuf == NULL)
@@ -3664,7 +3664,7 @@ EXIT:
 ** ==========================================================================*/
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg)
 {
-    DSP_STATUS status = 0;
+    int status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PRDSP2 (dbg, "\nOMX UnReserve DSP: %p\n",pResPtr);
 

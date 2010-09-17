@@ -82,7 +82,7 @@
 #define DSP_ERROR_EXIT(err, msg, label, pHandle)                \
     if (DSP_FAILED (err)) {                        \
         OMX_ERROR4 (((LCML_CODEC_INTERFACE *)pHandle)->dbg, "\n****************LCML ERROR : DSP ************************\n");\
-        OMX_ERROR4 (((LCML_CODEC_INTERFACE *)pHandle)->dbg, "Error: %s : Err Num = %lx", msg, err);  \
+        OMX_ERROR4 (((LCML_CODEC_INTERFACE *)pHandle)->dbg, "Error: %s : Err Num = %d", msg, err);  \
         eError = OMX_ErrorHardware;                \
         OMX_ERROR4 (((LCML_CODEC_INTERFACE *)pHandle)->dbg, "\n****************LCML ERROR : DSP ************************\n");\
         goto label;                               \

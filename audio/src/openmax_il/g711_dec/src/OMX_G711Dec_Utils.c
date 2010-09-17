@@ -2728,7 +2728,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
                          DMM_BUFFER_OBJ* pDmmBuf)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status = 0;
+    int status = 0;
     int nSizeReserved = 0;
 
     G711DEC_PRINT("OMX_DmmMap %d\n",__LINE__);
@@ -2804,7 +2804,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr)
 {
     G711DEC_PRINT("OMX_DmmUnMap %d\n",__LINE__);
-    DSP_STATUS status = 0;
+    int status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     G711DEC_DPRINT("\nOMX UnReserve DSP: %p\n",pResPtr);
 
