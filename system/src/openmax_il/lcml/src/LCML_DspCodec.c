@@ -1029,6 +1029,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                                     (bufferSizeUsed > INVALIDATE_TRESHOLD) ? DSPMSG_WRBK_INV_ALL : DSPMSG_WRBK_INVALIDATE_MEM);
                             if(DSP_FAILED(status))
                             {
+                                eError = OMX_ErrorHardware;
                                 goto MUTEX_UNLOCK;
                             }
                         }
@@ -1042,6 +1043,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                             status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen, DSPMSG_WRBK_INV_ALL);
                             if(DSP_FAILED(status))
                             {
+                                eError = OMX_ErrorHardware;
                                 goto MUTEX_UNLOCK;
                             }
                         }
@@ -1054,6 +1056,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                             status = DSPProcessor_InvalidateMemory(phandle->dspCodec->hProc, pDmmBuf->pAllocated, bufferLen);
                             if(DSP_FAILED(status))
                             {
+                                eError = OMX_ErrorHardware;
                                 goto MUTEX_UNLOCK;
                             }
                         }
@@ -1075,6 +1078,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                 }
                 if (eError != OMX_ErrorNone)
                 {
+                    eError = OMX_ErrorHardware;
                     goto MUTEX_UNLOCK;
                 }
 
