@@ -137,7 +137,7 @@ int main()
     char rmsideNamedPipeName[120];
     char rmsideHandleString[100];
     OMX_S16 fdmax;
-    DSP_STATUS status = DSP_SOK;
+    int status = 0;
     fd_set watchset;
     OMX_BOOL Exitflag = OMX_FALSE;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -392,7 +392,7 @@ OMX_ERRORTYPE InitializeQos()
 {
     OMX_ERRORTYPE eError= OMX_ErrorNone;
 #ifndef __ENABLE_RMPM_STUB__
-    DSP_STATUS status = DSP_SOK;
+    int status = 0;
     unsigned int uProcId = 0;	/* default proc ID is 0. */
     unsigned int index = 0;
     unsigned int numProcs;
@@ -418,7 +418,7 @@ OMX_ERRORTYPE InitializeQos()
         if ((dspInfo.uProcessorType == DSPTYPE_55) || 
             (dspInfo.uProcessorType == DSPTYPE_64)) {
             uProcId = index;
-            status = DSP_SOK;
+            status = 0;
             break;
         }
         index++;
@@ -994,7 +994,7 @@ int LoadBaseimage()
     unsigned int index = 0;
     struct DSP_PROCESSORINFO dspInfo;
     DSP_HPROCESSOR hProc;
-    DSP_STATUS status = DSP_SOK;
+    int status = 0;
     unsigned int numProcs;
     char* argv[2];
 
@@ -1009,7 +1009,7 @@ int LoadBaseimage()
         if ((dspInfo.uProcessorType == DSPTYPE_55) || 
             (dspInfo.uProcessorType == DSPTYPE_64)) {
             uProcId = index;
-            status = DSP_SOK;
+            status = 0;
             break;
         }
         index++;
@@ -1089,7 +1089,7 @@ int RM_GetQos()
     unsigned long NumFound;
     int i=0;
     int sum=0;
-    DSP_STATUS status = DSP_SOK;
+    int status = 0;
     int currentOverallUtilization=0;
     unsigned int dsp_currload=0, dsp_predload=0, dsp_currfreq=0, dsp_predfreq=0;
     int maxMhz=0;
@@ -1263,7 +1263,7 @@ int RM_GetQos()
 void *RM_FatalErrorWatchThread()
 {
 
-    DSP_STATUS status = DSP_SOK;
+    int status = 0;
     unsigned int index=0;
     struct DSP_NOTIFICATION * notificationObjects[2];
     DSP_HPROCESSOR hProc;
@@ -1299,7 +1299,7 @@ void *RM_FatalErrorWatchThread()
             if ((dspInfo.uProcessorType == DSPTYPE_55) ||
                 (dspInfo.uProcessorType == DSPTYPE_64)) {
                 uProcId = index;
-                status = DSP_SOK;
+                status = 0;
                 break;
             }
             index++;

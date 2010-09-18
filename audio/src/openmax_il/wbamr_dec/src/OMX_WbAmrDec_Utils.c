@@ -1718,7 +1718,7 @@ OMX_ERRORTYPE WBAMR_DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 
     WBAMR_DEC_AudioCodecParams *pParams;
     OMX_STRING p = "";
-    DSP_STATUS status =0;
+    int status =0;
     OMX_BOOL isFrameParamChanged=OMX_FALSE;
 
     LCML_DSP_INTERFACE * phandle;
@@ -2537,7 +2537,7 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     LCML_DSP_INTERFACE *phandle = (LCML_DSP_INTERFACE *)args[6];
 #endif
     OMX_COMPONENTTYPE *pHandle = NULL;
-    DSP_STATUS status =0;
+    int status =0;
     LCML_DSP_INTERFACE *dspphandle = (LCML_DSP_INTERFACE *)args[6];
 
     WBAMR_DEC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
@@ -3374,7 +3374,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
                          DMM_BUFFER_OBJ* pDmmBuf, struct OMX_TI_Debug dbg)
 {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status =0;
+    int status =0;
     int nSizeReserved = 0;
 
     if(pDmmBuf == NULL)
@@ -3449,7 +3449,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
 ** ==========================================================================*/
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg)
 {
-    DSP_STATUS status = 0;
+    int status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PRINT1 (dbg, "OMX UnReserve DSP: %p\n",pResPtr);
 

@@ -3232,7 +3232,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
                          void* pArmPtr,
                          DMM_BUFFER_OBJ* pDmmBuf, struct OMX_TI_Debug dbg) {
     OMX_ERRORTYPE eError = OMX_ErrorUndefined;
-    DSP_STATUS status =0;
+    int status =0;
     int nSizeReserved = 0;
 
     if (pDmmBuf == NULL) {
@@ -3307,7 +3307,7 @@ EXIT:
  *          OMX_ErrorHardware  -  Hardware Error
  ** ==========================================================================*/
 OMX_ERRORTYPE OMX_DmmUnMap(DSP_HPROCESSOR ProcHandle, void* pMapPtr, void* pResPtr, struct OMX_TI_Debug dbg) {
-    DSP_STATUS status = 0;
+    int status = 0;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     /*    printf("OMX UnReserve DSP: %p\n",pResPtr);*/
 
