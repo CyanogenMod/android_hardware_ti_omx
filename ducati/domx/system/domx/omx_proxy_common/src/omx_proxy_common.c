@@ -50,8 +50,8 @@
  *   INCLUDE FILES
  ******************************************************************/
 /* ----- system and platform files ----------------------------*/
-//#include <stdio.h>
-//#include <stdlib.h>
+#include <string.h>
+
 #include "timm_osal_memory.h"
 #include "OMX_TI_Common.h"
 #include "OMX_TI_Index.h"
@@ -89,11 +89,16 @@ static OMX_ERRORTYPE RPC_MapBuffer_Ducati(OMX_U8 * pBuf, OMX_U32 nBufLineSize,
 static OMX_ERRORTYPE RPC_MapMetaData_Host(OMX_BUFFERHEADERTYPE * pBufHdr);
 static OMX_ERRORTYPE RPC_UnMapMetaData_Host(OMX_BUFFERHEADERTYPE * pBufHdr);
 
+static OMX_ERRORTYPE _RPC_IsProxyComponent(OMX_HANDLETYPE hComponent,
+    OMX_BOOL * bIsProxy);
+
 #endif
 
 #define LINUX_PAGE_SIZE (4 * 1024)
+#define MAXNAMESIZE 128
 
 extern COREID TARGET_CORE_ID;
+extern char Core_Array[MAX_PROC][MAX_CORENAME_LENGTH];
 
 /* ===========================================================================*/
 /**
@@ -383,6 +388,7 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 	PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
 	OMX_PTR pMarkData = NULL;
 	OMX_BOOL bFreeMarkIfError = OMX_FALSE;
+	OMX_BOOL bIsProxy = OMX_FALSE;
 
 	PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
 	PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter,
@@ -463,9 +469,9 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 	{
 		pMarkComp =
 		    (OMX_COMPONENTTYPE *) (pBufferHdr->hMarkTargetComponent);
-		pMarkCompPrv = pMarkComp->pComponentPrivate;
-		PROXY_assert(pMarkCompPrv != NULL, OMX_ErrorBadParameter,
-		    NULL);
+		/* Check is mark comp is proxy */
+		eError = _RPC_IsProxyComponent(pMarkComp, &bIsProxy);
+		PROXY_assert(eError == OMX_ErrorNone, eError, "");
 
 		/*Replacing original mark data with proxy specific structure */
 		pMarkData = pBufferHdr->pMarkData;
@@ -479,10 +485,20 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 		    hComponentActual = pMarkComp;
 		((PROXY_MARK_DATA *) (pBufferHdr->pMarkData))->
 		    pMarkDataActual = pMarkData;
-		/*Replacing with remote component handle */
-		pBufferHdr->hMarkTargetComponent =
-		    ((RPC_OMX_CONTEXT *) pMarkCompPrv->
-		    hRemoteComp)->remoteHandle;
+
+		/* If proxy comp then replace hMarkTargetComponent with remote
+		   handle */
+		if (bIsProxy)
+		{
+			pMarkCompPrv = pMarkComp->pComponentPrivate;
+			PROXY_assert(pMarkCompPrv != NULL,
+			    OMX_ErrorBadParameter, NULL);
+
+			/* Replacing with remote component handle */
+			pBufferHdr->hMarkTargetComponent =
+			    ((RPC_OMX_CONTEXT *) pMarkCompPrv->
+			    hRemoteComp)->hActualRemoteCompHandle;
+		}
 	}
 
 	eRPCError =
@@ -506,10 +522,19 @@ static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 
       EXIT:
 	/*If ETB is about to return an error then this means that buffer has not
-	   been accepted by the component. Thus the allocated mark data will be lost
-	   so free it here */
+	   been accepted by the component. Thus the allocated mark data will be
+	   lost so free it here. Also replace original mark data in the header */
 	if ((eError != OMX_ErrorNone) && bFreeMarkIfError)
+	{
+		pBufferHdr->hMarkTargetComponent =
+		    ((PROXY_MARK_DATA *) (pBufferHdr->pMarkData))->
+		    hComponentActual;
+		pMarkData =
+		    ((PROXY_MARK_DATA *) (pBufferHdr->pMarkData))->
+		    pMarkDataActual;
 		TIMM_OSAL_Free(pBufferHdr->pMarkData);
+		pBufferHdr->pMarkData = pMarkData;
+	}
 
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
@@ -1396,6 +1421,7 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
 	PROXY_COMPONENT_PRIVATE *pMarkCompPrv = NULL;
 	OMX_PTR pMarkData = NULL, pMarkToBeFreedIfError = NULL;
 	OMX_U32 i;
+	OMX_BOOL bIsProxy = OMX_FALSE;
 
 	PROXY_assert((hComp->pComponentPrivate != NULL),
 	    OMX_ErrorBadParameter, NULL);
@@ -1412,9 +1438,10 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
 		pMarkComp = (OMX_COMPONENTTYPE *)
 		    (((OMX_MARKTYPE *) pCmdData)->hMarkTargetComponent);
 		PROXY_assert(pMarkComp != NULL, OMX_ErrorBadParameter, NULL);
-		pMarkCompPrv = pMarkComp->pComponentPrivate;
-		PROXY_assert(pMarkCompPrv != NULL, OMX_ErrorBadParameter,
-		    NULL);
+
+		/* To check if mark comp is a proxy or a real component */
+		eError = _RPC_IsProxyComponent(pMarkComp, &bIsProxy);
+		PROXY_assert(eError == OMX_ErrorNone, eError, "");
 
 		/*Replacing original mark data with proxy specific structure */
 		pMarkData = ((OMX_MARKTYPE *) pCmdData)->pMarkData;
@@ -1425,17 +1452,24 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
 		    OMX_ErrorInsufficientResources, "Malloc failed");
 		pMarkToBeFreedIfError =
 		    ((OMX_MARKTYPE *) pCmdData)->pMarkData;
-		((PROXY_MARK_DATA *) (((OMX_MARKTYPE *)
-			    pCmdData)->pMarkData))->hComponentActual =
-		    pMarkComp;
-		((PROXY_MARK_DATA *) (((OMX_MARKTYPE *)
-			    pCmdData)->pMarkData))->pMarkDataActual =
-		    pMarkData;
+		((PROXY_MARK_DATA *) (((OMX_MARKTYPE *) pCmdData)->
+			pMarkData))->hComponentActual = pMarkComp;
+		((PROXY_MARK_DATA *) (((OMX_MARKTYPE *) pCmdData)->
+			pMarkData))->pMarkDataActual = pMarkData;
 
-		/*Replacing with remote component handle */
-		((OMX_MARKTYPE *) pCmdData)->hMarkTargetComponent =
-		    ((RPC_OMX_CONTEXT *) pMarkCompPrv->
-		    hRemoteComp)->remoteHandle;
+		/* If it is proxy component then replace hMarkTargetComponent
+		   with remote handle */
+		if (bIsProxy)
+		{
+			pMarkCompPrv = pMarkComp->pComponentPrivate;
+			PROXY_assert(pMarkCompPrv != NULL,
+			    OMX_ErrorBadParameter, NULL);
+
+			/* Replacing with remote component handle */
+			((OMX_MARKTYPE *) pCmdData)->hMarkTargetComponent =
+			    ((RPC_OMX_CONTEXT *) pMarkCompPrv->
+			    hRemoteComp)->hActualRemoteCompHandle;
+		}
 	} else if ((eCmd == OMX_CommandStateSet) &&
 	    (nParam == (OMX_STATETYPE) OMX_StateLoaded))
 	{
@@ -1461,7 +1495,7 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
 	    RPC_SendCommand(pCompPrv->hRemoteComp, eCmd, nParam, pCmdData,
 	    &eCompReturn);
 
-	if (eCmd == OMX_CommandMarkBuffer)
+	if (eCmd == OMX_CommandMarkBuffer && bIsProxy)
 	{
 		/*Resetting to original values */
 		((OMX_MARKTYPE *) pCmdData)->hMarkTargetComponent = pMarkComp;
@@ -1964,8 +1998,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE * pCompPrv,
 		eError =
 		    RPC_MapBuffer_Ducati(pBuffer, nSizeBytes, nNumOfLines,
 		    &(pChironBuf->pBuffer), pBufToBeMapped);
-		PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorUndefined,
-		    "Map failed");
+		PROXY_assert(eError == OMX_ErrorNone, eError, "Map failed");
 	} else
 	{
 		if (!(pCompPrv->nNumOfLines[nPortIndex]))
@@ -1973,8 +2006,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE * pCompPrv,
 			eError =
 			    RPC_UTIL_GetNumLines(hRemoteComp, nPortIndex,
 			    &nNumOfLines);
-			PROXY_assert((eError == OMX_ErrorNone),
-			    OMX_ErrorUndefined,
+			PROXY_assert((eError == OMX_ErrorNone), eError,
 			    "ERROR WHILE GETTING FRAME HEIGHT");
 
 			pCompPrv->nNumOfLines[nPortIndex] = nNumOfLines;
@@ -1990,8 +2022,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE * pCompPrv,
 		eError =
 		    RPC_MapBuffer_Ducati(pBuffer, LINUX_PAGE_SIZE,
 		    nNumOfLines, &(pChironBuf->pBuffer), pBufToBeMapped);
-		PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorUndefined,
-		    "Map failed");
+		PROXY_assert(eError == OMX_ErrorNone, eError, "Map failed");
 		eError =
 		    RPC_MapBuffer_Ducati((OMX_U8 *) ((OMX_U32) pBuffer +
 			nNumOfLines * LINUX_PAGE_SIZE), LINUX_PAGE_SIZE,
@@ -1999,8 +2030,7 @@ OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE * pCompPrv,
 		    (OMX_U8 **) (&((OMX_TI_PLATFORMPRIVATE
 				*) (pChironBuf->pPlatformPrivate))->pAuxBuf1),
 		    pBufToBeMapped);
-		PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorUndefined,
-		    "Map failed");
+		PROXY_assert(eError == OMX_ErrorNone, eError, "Map failed");
 		*(OMX_U32 *) pBufToBeMapped = (OMX_U32) pBuffer;
 	}
 
@@ -2334,5 +2364,61 @@ OMX_ERRORTYPE RPC_UnMapMetaData_Host(OMX_BUFFERHEADERTYPE * pBufHdr)
 	}
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
+	return eError;
+}
+
+
+
+/* ===========================================================================*/
+/**
+ * @name _RPC_IsProxyComponent()
+ * @brief This function calls GetComponentVersion API on the component and
+ *        based on the component name decidec whether the component is a proxy
+ *        or real component. The naming component convention assumed is
+ *        <OMX>.<Company Name>.<Core Name>.<Domain>.<Component Details> with
+ *        all characters in upper case for e.g. OMX.TI.DUCATI1.VIDEO.H264E
+ * @param hComponent [IN] : The component handle
+ *        bIsProxy [OUT]  : Set to true is handle is for a proxy component
+ * @return OMX_ErrorNone = Successful
+ *
+ **/
+/* ===========================================================================*/
+OMX_ERRORTYPE _RPC_IsProxyComponent(OMX_HANDLETYPE hComponent,
+    OMX_BOOL * bIsProxy)
+{
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
+	OMX_S8 cComponentName[MAXNAMESIZE] = { 0 }
+	, cCoreName[MAX_SERVER_NAME_LENGTH] =
+	{
+	0};
+	OMX_VERSIONTYPE sCompVer, sSpecVer;
+	OMX_UUIDTYPE sCompUUID;
+	OMX_U32 i = 0, ret = 0;
+
+	eError =
+	    OMX_GetComponentVersion(hComponent, (OMX_STRING) cComponentName,
+	    &sCompVer, &sSpecVer, &sCompUUID);
+	PROXY_assert(eError == OMX_ErrorNone, eError, "");
+	ret =
+	    sscanf((char *)cComponentName, "%*[^'.'].%*[^'.'].%[^'.'].%*s",
+	    cCoreName);
+	PROXY_assert(ret == 1, OMX_ErrorBadParameter,
+	    "Incorrect component name");
+	for (i = 0; i < CORE_MAX; i++)
+	{
+		if (strcmp((char *)cCoreName, Core_Array[i]) == 0)
+			break;
+	}
+	PROXY_assert(i < CORE_MAX, OMX_ErrorBadParameter,
+	    "Unknown core name");
+
+	/* If component name indicates remote core, it means proxy
+	   component */
+	if ((i == CORE_SYSM3) || (i == CORE_APPM3) || (i == CORE_TESLA))
+		*bIsProxy = OMX_TRUE;
+	else
+		*bIsProxy = OMX_FALSE;
+
+      EXIT:
 	return eError;
 }

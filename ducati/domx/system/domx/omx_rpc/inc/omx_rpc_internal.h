@@ -230,6 +230,7 @@ This is used to define the length of maximum string length the symbol can be*/
 		CacheType CacheMode;	//DMA, same processor etc
 		OMX_CALLBACKTYPE *CbInfo;	// should contain the updated pointers
 		OMX_PTR pAppData;
+		OMX_HANDLETYPE hActualRemoteCompHandle;
 	} RPC_OMX_CONTEXT;
 
 	typedef struct RPC_OMX_SKEL_CONTEXT

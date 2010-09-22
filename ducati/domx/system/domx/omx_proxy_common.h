@@ -85,6 +85,7 @@ extern "C"
     if (!(C)) { eError = V;\
     DOMX_ERROR("failed check: " #C);\
     DOMX_ERROR(" - returning error: " #V);\
+    DOMX_ERROR("Error code: 0x%x", V);\
     if(S) DOMX_ERROR(" - %s", S);\
     goto EXIT; }\
     } while(0)

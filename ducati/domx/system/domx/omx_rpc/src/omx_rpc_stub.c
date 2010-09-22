@@ -133,6 +133,7 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	OMX_U32 nPos = 0;
 	RPC_OMX_CONTEXT *hCtx = hRPCCtx;
 	RPC_OMX_HANDLE hComp = NULL;
+	OMX_HANDLETYPE hActualComp = NULL;
 
 	OMX_S16 status;
 	RPC_INDEX fxnIdx;
@@ -187,6 +188,16 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 		RPC_GETFIELDVALUE(pMsgBody, offset, hComp, RPC_OMX_HANDLE);
 		DOMX_DEBUG("Received Remote Handle 0x%x", hComp);
 		hCtx->remoteHandle = hComp;
+		/* The handle received above is used for all communications
+		   with the remote component but is not the actual component
+		   handle (it is actually the rpc context handle which
+		   contains lot of other info). The handle recd. below is the
+		   actual remote component handle. This is used at present for
+		   mark buffer implementation since in that case it is not
+		   feasible to send the context handle */
+		RPC_GETFIELDVALUE(pMsgBody, offset, hActualComp,
+		    OMX_HANDLETYPE);
+		hCtx->hActualRemoteCompHandle = hActualComp;
 	}
 
 	RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
@@ -1057,6 +1068,7 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->hMarkTargetComponent,
 	    OMX_HANDLETYPE);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->pMarkData, OMX_PTR);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nAllocLen, OMX_U32);
 
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
@@ -1131,6 +1143,7 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nFilledLen, OMX_U32);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nOffset, OMX_U32);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nFlags, OMX_U32);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nAllocLen, OMX_U32);
 
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);

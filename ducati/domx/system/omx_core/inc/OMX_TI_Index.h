@@ -161,7 +161,10 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexConfigOtherExtraDataControl,        /**< reference:  OMX_CONFIG_EXTRADATATYPE */
     OMX_TI_IndexParamBufferPreAnnouncement,             /**< reference: OMX_TI_PARAM_BUFFERPREANNOUNCE */
     OMX_TI_IndexConfigBufferRefCountNotification,       /**< reference: OMX_TI_CONFIG_BUFFERREFCOUNTNOTIFYTYPE */
-    OMX_TI_IndexParam2DBufferAllocDimension             /**< reference: OMX_CONFIG_RECTTYPE */
+    OMX_TI_IndexParam2DBufferAllocDimension,            /**< reference: OMX_CONFIG_RECTTYPE */
+    OMX_TI_IndexConfigWhiteBalanceManualColorTemp,      /**< reference: OMX_TI_CONFIG_WHITEBALANCECOLORTEMPTPYPE */
+    OMX_TI_IndexConfigFocusSpotWeighting,               /**< reference: OMX_TI_CONFIG_FOCUSSPOTWEIGHTINGTYPE */
+    OMX_TI_IndexParamSensorOverClockMode                /**< reference : OMX_CONFIG_BOOLEANTYPE */
 } OMX_TI_INDEXTYPE;
 
 
