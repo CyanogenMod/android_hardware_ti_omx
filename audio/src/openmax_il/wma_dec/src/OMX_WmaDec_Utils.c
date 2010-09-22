@@ -3216,12 +3216,7 @@ OMX_ERRORTYPE WMADEC_CommandToExecuting(WMADEC_COMPONENT_PRIVATE *pComponentPriv
         if (eError != OMX_ErrorNone)
         {
             OMX_ERROR4(pComponentPrivate->dbg, "Error While Resuming the codec");
-            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorSevere,
-                                               NULL);
+            WMADEC_FatalErrorRecover(pComponentPrivate);
             return eError;
         }
         if (pComponentPrivate->nNumInputBufPending < 
