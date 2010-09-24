@@ -72,7 +72,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
 
     /* Camera Indices */
-    OMX_IndexParamSensorSelect,                 /**< reference: OMX_CONFIG_SENSORSELECTTYPE */
+    OMX_TI_IndexConfigSensorSelect,             /**< reference: OMX_CONFIG_SENSORSELECTTYPE */
     OMX_IndexConfigFlickerCancel,               /**< reference: OMX_CONFIG_FLICKERCANCELTYPE */
     OMX_IndexConfigSensorCal,                   /**< reference: OMX_CONFIG_SENSORCALTYPE */
 	OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
@@ -164,7 +164,9 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexParam2DBufferAllocDimension,            /**< reference: OMX_CONFIG_RECTTYPE */
     OMX_TI_IndexConfigWhiteBalanceManualColorTemp,      /**< reference: OMX_TI_CONFIG_WHITEBALANCECOLORTEMPTPYPE */
     OMX_TI_IndexConfigFocusSpotWeighting,               /**< reference: OMX_TI_CONFIG_FOCUSSPOTWEIGHTINGTYPE */
-    OMX_TI_IndexParamSensorOverClockMode                /**< reference : OMX_CONFIG_BOOLEANTYPE */
+    OMX_TI_IndexParamSensorOverClockMode,               /**< reference : OMX_CONFIG_BOOLEANTYPE */
+    OMX_TI_IndexParamDccUriInfo,                        /**< reference: OMX_TI_PARAM_DCCURIINFO */
+    OMX_TI_IndexParamDccUriBuffer                       /**< reference: OMX_TI_PARAM_DCCURIBUFFER */
 } OMX_TI_INDEXTYPE;
 
 
