@@ -2724,20 +2724,20 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_Mpeg4_Buffer(VIDENC_COMPONENT_PRIVATE* pComponent
     /*Set nQPI Value*/
     pUalgInpParams->ulQPIntra = pComponentPrivate->nQPI;
 
-    /* Updated: enable UMV for H263 and Mpeg4 */
-    /* pUalgInpParams->uluseUMV              =1; */
+    if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
+        pUalgInpParams->uluseUMV         = 0; /* Annex D is not currently supported by decoder */
+    else
+        pUalgInpParams->uluseUMV         = 1;
 
     /*Set segment mode params*/
     if (pComponentPrivate->bMVDataEnable)
     {
         pUalgInpParams->ul4MV                 =1;
-        pUalgInpParams->uluseUMV              =1;
         pUalgInpParams->ulMVDataEnable        =1;
     }
     else
     {
         pUalgInpParams->ul4MV                 =0;
-        pUalgInpParams->uluseUMV              =0;
         pUalgInpParams->ulMVDataEnable        =0;
     }
     if (pComponentPrivate->bResyncDataEnable)
@@ -3574,7 +3574,11 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
                   pMemoryListHead,
                   pComponentPrivate->dbg);
 
-    pCreatePhaseArgs->ucUnrestrictedMV        = pComponentPrivate->ucUnrestrictedMV;
+    if (pPortDefOut->format.video.eCompressionFormat == OMX_VIDEO_CodingH263)
+        pCreatePhaseArgs->ucUnrestrictedMV    = 0;
+    else
+        pCreatePhaseArgs->ucUnrestrictedMV    = pComponentPrivate->ucUnrestrictedMV;
+
     pCreatePhaseArgs->ucProfile               = 1;
 
     pCreatePhaseArgs->usNumStreams            = 2;
