@@ -1690,7 +1690,7 @@ static OMX_ERRORTYPE GetConfig_JPEGDec(OMX_HANDLETYPE hComp,
             break;
 
         case (3):
-            pScaleFactor->xWidth = 12;
+            pScaleFactor->xWidth = 13;
             break;
 
         case (4):
@@ -1805,6 +1805,7 @@ static OMX_ERRORTYPE SetConfig_JPEGDec(OMX_HANDLETYPE hComp,
             break;
 
         case (12):
+        case (13):
             pScaleFactor->xWidth = 3;
             break;
 
