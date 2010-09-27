@@ -78,7 +78,7 @@
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
-#define DOMX_VERSION 3
+#define DOMX_VERSION 6
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -116,9 +116,9 @@ static Int32 fxnExit(UInt32 size, UInt32 * data);
 RPC_OMX_ERRORTYPE fxn_exit_caller(void);
 
 static Int32 getFxnIndexFromRemote_skel(UInt32 size, UInt32 * data);
-#if 0				/* unused */
-static void getFxnIndexFromRemote_stub(void);
-#endif
+
+RPC_OMX_ERRORTYPE _RPC_GetRemoteIndices(RPC_OMX_HANDLE hRcmHandle,
+    OMX_U32 nFxnIdx);
 
 RPC_OMX_ERRORTYPE _RPC_IpcSetup();
 RPC_OMX_ERRORTYPE _RPC_IpcDestroy();
@@ -413,8 +413,8 @@ RPC_OMX_ERRORTYPE RPC_ModInit(void)
 	    getFxnIndexFromRemote_skel,
 	    (UInt32 *) & getFxnIndexFromRemote_skelIdx);
 	RPC_assert((status >= 0 &&
-		fxIndx != 0xFFFFFFFF), RPC_OMX_RCM_ServerFail,
-	    "Server_addSymbol failed");
+		getFxnIndexFromRemote_skelIdx != 0xFFFFFFFF),
+	    RPC_OMX_RCM_ServerFail, "Server_addSymbol failed");
 
 	for (i = 0; i < MAX_FUNCTION_LIST; i++)
 	{
@@ -519,91 +519,103 @@ RPC_OMX_ERRORTYPE fxn_exit_caller(void)
 
 }
 
-#if 0				/* unused */
+
+
 /* ===========================================================================*/
 /**
- * @name getFxnIndexFromRemote_stub()
- * @brief
- * @param void
+ * @name : _RPC_GetRemoteIndices()
+ * @brief : Calls getFxnIndexFromRemote_skel on the remote core to get all
+ *          remote indices in one go.
+ * @param hRcmHandle  : The RCM client handle.
+ * @param nFxnIdx     : Function index of the remote function that will give
+ *                      the indices.
  * @return RPC_OMX_ErrorNone = Successful
- * @sa TBD
  *
  */
 /* ===========================================================================*/
-static void getFxnIndexFromRemote_stub(void)
+RPC_OMX_ERRORTYPE _RPC_GetRemoteIndices(RPC_OMX_HANDLE hRcmHandle,
+    OMX_U32 nFxnIdx)
 {
-	//RPC_INDEX FxnIdxArr[MAX_FUNCTION_LIST];
-	OMX_U32 packetSize = 0x100;
-	RPC_INDEX *FxnIdxArr;
-	RcmClient_Message *rcmMsg;
-	RcmClient_Message *rcmRetMsg = NULL;
-	OMX_S16 status;
-	OMX_U8 i;
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	RcmClient_Message *pPacket = NULL;
+	RcmClient_Message *pRetPacket = NULL;
+	RcmClient_Handle hRcmClient = (RcmClient_Handle) hRcmHandle;
+	RPC_OMX_MESSAGE *pRPCMsg = NULL;
+	RPC_OMX_BYTE *pMsgBody = NULL;
+	OMX_U32 nPos = 0, i = 0, nPacketSize = PACKET_SIZE;
+	OMX_S32 status = 0;
 
 	DOMX_ENTER("");
-
-	status = RcmClient_alloc(rcmHndl, packetSize, &rcmMsg);
-
+	status = RcmClient_alloc(hRcmClient, nPacketSize, &pPacket);
+	RPC_assert(status >= 0, RPC_OMX_ErrorInsufficientResources,
+	    "Error allocating RCM message frame");
+	pRPCMsg = (RPC_OMX_MESSAGE *) (&pPacket->data);
+	pMsgBody = &pRPCMsg->msgBody[0];
+	pPacket->fxnIdx = nFxnIdx;
+	status = RcmClient_exec(hRcmClient, pPacket, &pRetPacket);
 	if (status < 0)
 	{
-		DOMX_DEBUG("Error in Allocting rcm message");
-		goto EXIT;
+		RcmClient_free(hRcmClient, pPacket);
+		pPacket = NULL;
+		RPC_assert(0, RPC_OMX_RCM_ErrorExecFail,
+		    "RcmClient_exec failed");
 	}
-
-	rcmMsg->fxnIdx = getFxnIndexFromRemote_skelIdx;
-	FxnIdxArr = (RPC_INDEX *) (&rcmMsg->data);
-	TIMM_OSAL_Memcpy(FxnIdxArr, 0, sizeof(RPC_INDEX) * MAX_FUNCTION_LIST);
-
-	status = RcmClient_exec(rcmHndl, rcmMsg, &rcmRetMsg);
-	FxnIdxArr = (RPC_INDEX *) (&rcmRetMsg->data);
-
-	if (status < 0)
-	{
-		DOMX_DEBUG(" Error RcmClient_exec failed ");
-		goto EXIT;
-	}
+	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
+	pMsgBody = &pRPCMsg->msgBody[0];
 
 	for (i = 0; i < MAX_FUNCTION_LIST; i++)
 	{
+		RPC_GETFIELDVALUE(pMsgBody, nPos,
+		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].rpcFxnIdx, RPC_INDEX);
 
-		DOMX_DEBUG(" function index from remote side %x",
-		    (OMX_U32) (*(FxnIdxArr + i)));
-		//rpcHndl[TARGET_CORE_ID].rpcFxns[i].rpcFxnIdx =  (RPC_INDEX *)(FxnIdxArr+i);
-
+		DOMX_DEBUG("%d. Function index obtained: %d for %s", i + 1,
+		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].rpcFxnIdx,
+		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].FxnName);
 	}
+	RcmClient_free(rcmHndl, pRetPacket);
+
       EXIT:
-	return;
+	DOMX_EXIT("eRPCError : %d", eRPCError);
+	return eRPCError;
 }
-#endif
+
+
 
 /* ===========================================================================*/
 /**
- * @name getFxnIndexFromRemote_skel()
- * @brief
- * @param void
+ * @name : getFxnIndexFromRemote_skel()
+ * @brief : Puts all the OMX function indices in the message body in one shot.
+ *          The remote core can then retrieve all the indices with one call
+ *          rather than calling get function index for all functions.
+ * @param size   : Size of the incoming RCM message (parameter used in the RCM
+ *                 alloc call)
+ * @param *data  : Pointer to the RCM message/buffer received
  * @return RPC_OMX_ErrorNone = Successful
- * @sa TBD
  *
  */
 /* ===========================================================================*/
-
-static Int32 getFxnIndexFromRemote_skel(UInt32 size, UInt32 * data)
+Int32 getFxnIndexFromRemote_skel(UInt32 size, UInt32 * data)
 {
-	Int status = 0;		/* success */
-	RPC_INDEX *FxnIdxArr;
-	OMX_U32 i;
-
-	FxnIdxArr = (RPC_INDEX *) (data);
+	OMX_U32 i = 0, nPos = 0;
+	RPC_OMX_MESSAGE *pRPCMsg = NULL;
+	RPC_OMX_BYTE *pMsgBody = NULL;
 
 	DOMX_ENTER("");
 
-	for (i = 0; i < MAX_FUNCTION_LIST; i++)
-		//TIMM_OSAL_Memcpy(FxnIdxArr+i,rpcHndl[LOCAL_CORE_ID].rpcFxns[i].rpcFxnIdx,sizeof(RPC_INDEX));
-		TIMM_OSAL_Memcpy((TIMM_OSAL_PTR) (FxnIdxArr + i),
-		    (TIMM_OSAL_PTR) i, sizeof(RPC_INDEX));
-	//    (RPC_INDEX )(*(FxnIdxArr+i)) = rpcHndl[LOCAL_CORE_ID].rpcFxns[i].rpcFxnIdx;
+	pRPCMsg = (RPC_OMX_MESSAGE *) (data);
+	pMsgBody = &pRPCMsg->msgBody[0];
 
-	return status;
+	for (i = 0; i < MAX_FUNCTION_LIST; i++)
+	{
+		RPC_SETFIELDVALUE(pMsgBody, nPos,
+		    rpcHndl[LOCAL_CORE_ID].rpcFxns[i].rpcFxnIdx, RPC_INDEX);
+		DOMX_DEBUG("Function index added for %d %s : %d", i + 1,
+		    rpcHndl[LOCAL_CORE_ID].rpcFxns[i].FxnName,
+		    rpcHndl[LOCAL_CORE_ID].rpcFxns[i].rpcFxnIdx);
+	}
+
+	DOMX_EXIT("");
+	return 0;
 }
 
 
@@ -675,10 +687,9 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName)
 	RcmClient_Params rcmParams;
 	OMX_S8 cRcmServerNameTarget[MAX_SERVER_NAME_LENGTH];;
 	OMX_S32 status = 0;
-	OMX_U32 i = 0;
 	OMX_BOOL bCallDestroyIfErr = OMX_FALSE;
 	OMX_U32 nVer = 0;
-	OMX_U32 nGetDOMXVersionIdx = 0;
+	OMX_U32 nGetDOMXVersionIdx = 0, nGetFxnFromRemoteIdx = 0;
 
 	eRPCError = RPC_UTIL_GetTargetServerName(cComponentName,
 	    (OMX_STRING) cRcmServerNameTarget);
@@ -727,20 +738,16 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName)
 	RPC_assert(nVer == DOMX_VERSION, RPC_OMX_ErrorUndefined,
 	    "Version mismatch detected - A9 and Ducati DOMX versions not in sync");
 
+	/* Getting remote function indices */
 	DOMX_DEBUG("Getting Symbols");
-	for (i = 0; i < MAX_FUNCTION_LIST; i++)
-	{
-		status = RcmClient_getSymbolIndex(rcmHndl,
-		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].FxnName,
-		    (UInt32 *) & rpcHndl[TARGET_CORE_ID].rpcFxns[i].
-		    rpcFxnIdx);
-		RPC_assert(status >= 0, RPC_OMX_RCM_ClientFail,
-		    "GetSymbolIndex failed");
-
-		DOMX_DEBUG("%d. Function Index Obtained: %d for %s", i + 1,
-		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].rpcFxnIdx,
-		    rpcHndl[TARGET_CORE_ID].rpcFxns[i].FxnName);
-	}
+	status =
+	    RcmClient_getSymbolIndex(rcmHndl, "getFxnIndexFromRemote_skel",
+	    (UInt32 *) (&nGetFxnFromRemoteIdx));
+	RPC_assert(status >= 0, RPC_OMX_RCM_ClientFail,
+	    "GetSymbolIndex failed");
+	eRPCError = _RPC_GetRemoteIndices(rcmHndl, nGetFxnFromRemoteIdx);
+	RPC_assert(eRPCError == RPC_OMX_ErrorNone, eRPCError,
+	    "Failed to get remote function indices");
 
 	DOMX_DEBUG("Calling RCM_getSymbolIndex(fxnExit)");
 	status = RcmClient_getSymbolIndex(rcmHndl, "fxnExit",

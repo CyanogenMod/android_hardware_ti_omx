@@ -1550,6 +1550,52 @@ typedef struct OMX_PARAM_ISONOISEFILTERTYPE {
     OMX_ISONOISEFILTERMODETYPE eMode;
 } OMX_PARAM_ISONOISEFILTERTYPE;
 
+
+/**
+ * Manual White Balance color temperature
+ * STRUCT MEMBERS:
+ *  nSize        : Size of the structure in bytes
+ *  nVersion     : OMX specification version information
+ *  nPortIndex   : Port that this structure applies to
+ *  nColorTemperature : Color Temperature in K
+ */
+typedef struct OMX_TI_CONFIG_WHITEBALANCECOLORTEMPTYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_U32 nColorTemperature;
+} OMX_TI_CONFIG_WHITEBALANCECOLORTEMPTYPE;
+
+/**
+ * Focus spot weighting range enum
+ */
+typedef enum OMX_TI_CONFIG_FOCUSSPOTMODETYPE {
+    OMX_FocusSpotDefault = 0,                           /** Makes CommonFocusRegion to be used. */
+    OMX_FocusSpotSinglecenter,
+    OMX_FocusSpotMultiNormal,
+    OMX_FocusSpotMultiAverage,
+    OMX_FocusSpotMultiCenter,
+    OMX_FocusSpotExtensions = 0x6F000000,               /** Reserved region for introducing Khronos Standard Extensions */
+    OMX_FocusSpotModeStartUnused = 0x7F000000,          /** Reserved region for introducing Vendor Extensions */
+    OMX_FocusSpotModeMax = 0x7FFFFFFF
+} OMX_TI_CONFIG_FOCUSSPOTMODETYPE;
+
+/**
+ * Focus Spot Weighting configuration.
+ *
+ * STRUCT MEMBERS:
+ *  nSize       : Size of the structure in bytes
+ *  nVersion    : OMX specification version information
+ *  nPortIndex  : Port that this structure applies to
+ *  eMode       : Spot Weighting mode
+ */
+typedef struct OMX_TI_CONFIG_FOCUSSPOTWEIGHTINGTYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_TI_CONFIG_FOCUSSPOTMODETYPE eMode;
+} OMX_TI_CONFIG_FOCUSSPOTWEIGHTINGTYPE;
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
