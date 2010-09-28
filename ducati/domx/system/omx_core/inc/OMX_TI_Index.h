@@ -17,6 +17,9 @@
 /*==============================================================
  *! Revision History
  *! ============================
+ *! 19-Jul-2010 admonga@ti.com: Moving OMX_TI_ERRORTYPE and OMX_TI_EVENTTYPE to
+ *!                             different file
+ *! 25-Mar-2010 admonga@ti.com: Added NPA and ref count notification support
  *! 20-Dec-2008 x0052661@ti.com, initial version
  *================================================================*/
 
@@ -48,6 +51,8 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexConfigAutoPauseAfterCapture = OMX_IndexAutoPauseAfterCapture,
 
     /* Vendor specific area for storing indices */
+
+    /*Common Indices*/
     OMX_TI_IndexConfigChannelName = ((OMX_INDEXTYPE)OMX_IndexVendorStartUnused + 1), /**< reference: OMX_CONFIG_CHANNELNAME */
 
     OMX_TI_IndexParamJPEGUncompressedMode,      /**< reference: OMX_JPEG_PARAM_UNCOMPRESSEDMODETYPE */
@@ -55,27 +60,27 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexParamDecodeSubregion,           /**< reference: OMX_IMAGE_PARAM_DECODE_SUBREGION */
 
     /* H264 Encoder Indices*/
-	OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure
-	OMX_TI_IndexParamVideoBitStreamFormatSelect,	//!< use OMX_VIDEO_PARAM_AVCBITSTREAMFORMATTYPE to specify the stream format type
-	OMX_TI_IndexParamVideoNALUsettings,	//!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types
-	OMX_TI_IndexParamVideoMEBlockSize,	//!< use OMX_VIDEO_PARAM_MEBLOCKSIZETYPE to specify the minimum block size used for motion estimation
-	OMX_TI_IndexParamVideoIntraPredictionSettings,	//!< use OMX_VIDEO_PARAM_INTRAPREDTYPE to configure the intra prediction modes used for different block sizes
-	OMX_TI_IndexParamVideoEncoderPreset,	//!< use OMX_VIDEO_PARAM_ENCODER_PRESETTYPE to select the encoding mode & rate control preset
-	OMX_TI_IndexParamVideoFrameDataContentSettings,	//!< use OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE to configure the data content tpye
-	OMX_TI_IndexParamVideoTransformBlockSize,	//!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation
-	OMX_TI_IndexParamVideoVUIsettings, //!use OMX_VIDEO_PARAM_VUIINFOTYPE
-	OMX_TI_IndexParamVideoAdvancedFMO,
-	OMX_TI_IndexConfigVideoPixelInfo,	//!<  Use OMX_VIDEO_CONFIG_PIXELINFOTYPE structure to know the pixel aspectratio & pixel range
-	OMX_TI_IndexConfigVideoMESearchRange,	//!< use OMX_VIDEO_CONFIG_MESEARCHRANGETYPE to specify the ME Search settings
-	OMX_TI_IndexConfigVideoQPSettings,	//!< use OMX_TI_VIDEO_CONFIG_QPSETTINGS to specify the ME Search settings
-	OMX_TI_IndexConfigSliceSettings,		//!<use OMX_VIDEO_CONFIG_SLICECODINGTYPE to specify the ME Search settings
+    OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure
+    OMX_TI_IndexParamVideoBitStreamFormatSelect,	//!< use OMX_VIDEO_PARAM_AVCBITSTREAMFORMATTYPE to specify the stream format type
+    OMX_TI_IndexParamVideoNALUsettings,	//!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types
+    OMX_TI_IndexParamVideoMEBlockSize,	//!< use OMX_VIDEO_PARAM_MEBLOCKSIZETYPE to specify the minimum block size used for motion estimation
+    OMX_TI_IndexParamVideoIntraPredictionSettings,	//!< use OMX_VIDEO_PARAM_INTRAPREDTYPE to configure the intra prediction modes used for different block sizes
+    OMX_TI_IndexParamVideoEncoderPreset,	//!< use OMX_VIDEO_PARAM_ENCODER_PRESETTYPE to select the encoding mode & rate control preset
+    OMX_TI_IndexParamVideoFrameDataContentSettings,	//!< use OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE to configure the data content tpye
+    OMX_TI_IndexParamVideoTransformBlockSize,	//!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation
+    OMX_TI_IndexParamVideoVUIsettings,                  //!< use OMX_VIDEO_PARAM_VUIINFOTYPE
+    OMX_TI_IndexParamVideoAdvancedFMO,                  /**< reference: TODO: */
+    OMX_TI_IndexConfigVideoPixelInfo,	//!<  Use OMX_VIDEO_CONFIG_PIXELINFOTYPE structure to know the pixel aspectratio & pixel range
+    OMX_TI_IndexConfigVideoMESearchRange,	//!< use OMX_VIDEO_CONFIG_MESEARCHRANGETYPE to specify the ME Search settings
+    OMX_TI_IndexConfigVideoQPSettings,	//!< use OMX_TI_VIDEO_CONFIG_QPSETTINGS to specify the ME Search settings
+    OMX_TI_IndexConfigSliceSettings,		//!<use OMX_VIDEO_CONFIG_SLICECODINGTYPE to specify the ME Search settings
 
 
     /* Camera Indices */
     OMX_TI_IndexConfigSensorSelect,             /**< reference: OMX_CONFIG_SENSORSELECTTYPE */
     OMX_IndexConfigFlickerCancel,               /**< reference: OMX_CONFIG_FLICKERCANCELTYPE */
     OMX_IndexConfigSensorCal,                   /**< reference: OMX_CONFIG_SENSORCALTYPE */
-	OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
+    OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
     OMX_IndexParamSceneMode,                    /**< reference: OMX_CONFIG_SCENEMODETYPE */
 
     OMX_IndexConfigDigitalZoomSpeed,            /**< reference: OMX_CONFIG_DIGITALZOOMSPEEDTYPE */
@@ -93,10 +98,11 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexConfigBlemish,                     /**< reference: OMX_CONFIG_BLEMISHTYPE */
 
     OMX_IndexConfigExtCaptureMode,              /**< reference: OMX_CONFIG_EXTCAPTUREMODETYPE */
-	OMX_IndexConfigExtPrepareCapturing, /**< reference : OMX_CONFIG_BOOLEANTYPE */
-	OMX_IndexConfigExtCapturing, /**< reference : OMX_CONFIG_EXTCAPTURING */
+    OMX_IndexConfigExtPrepareCapturing, /**< reference : OMX_CONFIG_BOOLEANTYPE */
+    OMX_IndexConfigExtCapturing, /**< reference : OMX_CONFIG_EXTCAPTURING */
 
-	OMX_IndexCameraOperatingMode, /**<  OMX_CONFIG_CAMOPERATINGMODETYPE */
+    OMX_IndexCameraOperatingMode,                       /**< reference: OMX_CONFIG_CAMOPERATINGMODETYPE */
+    OMX_IndexParamCameraOperatingMode = OMX_IndexCameraOperatingMode, /**< reference: OMX_CONFIG_CAMOPERATINGMODETYPE */
     OMX_IndexConfigDigitalFlash,                /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexConfigPrivacyIndicator,            /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
@@ -104,7 +110,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigSlowSync,                    /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
-	OMX_IndexConfigExtFocusRegion, /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */
+    OMX_IndexConfigExtFocusRegion,              /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */
     OMX_IndexConfigFocusAssist,                 /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
     OMX_IndexConfigImageFocusLock,              /**< reference: OMX_IMAGE_CONFIG_LOCKTYPE */
@@ -122,34 +128,34 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigCommonRGB2RGB,               /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE_II */
     OMX_IndexConfigCommonRGB2YUV,               /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE_II */
-	OMX_IndexConfigCommonYUV2RGB, /**< reference : OMX_CONFIG_EXT_COLORCONVERSIONTYPE */
+    OMX_IndexConfigCommonYUV2RGB,               /**< reference : OMX_CONFIG_EXT_COLORCONVERSIONTYPE */
 
     OMX_IndexConfigCommonGammaTable,            /**< reference: OMX_CONFIG_GAMMATABLETYPE */
 
     OMX_IndexConfigImageFaceDetection,          /**< reference: OMX_CONFIG_OBJDETECTIONTYPE */
-    OMX_IndexConfigImageBarcodeDetection,       /**< reference: OMX_CONFIG_EXTRADATATYPE */
+    OMX_IndexConfigImageBarcodeDetection,               /**< reference: OMX_CONFIG_OBJDETECTIONTYPE */
     OMX_IndexConfigImageSmileDetection,         /**< reference: OMX_CONFIG_OBJDETECTIONTYPE */
     OMX_IndexConfigImageBlinkDetection,         /**< reference: OMX_CONFIG_OBJDETECTIONTYPE */
-    OMX_IndexConfigImageFrontObjectDetection,   /**< reference: OMX_CONFIG_EXTRADATATYPE */
+    OMX_IndexConfigImageFrontObjectDetection,           /**< reference: OMX_CONFIG_OBJDETECTIONTYPE */
     OMX_IndexConfigHistogramMeasurement,        /**< reference: OMX_CONFIG_HISTOGRAMTYPE */
-    OMX_IndexConfigDistanceMeasurement,         /**< reference: OMX_CONFIG_EXTRADATATYPE */
+    OMX_IndexConfigDistanceMeasurement,                 /**< reference: OMX_CONFIG_DISTANCETYPE */
 
     OMX_IndexConfigSnapshotToPreview,           /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
-	OMX_IndexConfigJpegHeaderType , /**< reference : OMX_CONFIG_JPEGHEEADERTYPE */
+    OMX_IndexConfigJpegHeaderType ,             /**< reference : OMX_CONFIG_JPEGHEEADERTYPE */
     OMX_IndexParamJpegMaxSize,                  /**< reference: OMX_IMAGE_JPEGMAXSIZE */
 
-    OMX_IndexConfigRestartMarker,               /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_IndexConfigRestartMarker,                       /**< reference: OMX_CONFIG_RSTMARKER */
 
     OMX_IndexParamImageStampOverlay,            /**< reference: OMX_PARAM_IMAGESTAMPOVERLAYTYPE */
     OMX_IndexParamThumbnail,                    /**< reference: OMX_PARAM_THUMBNAILTYPE */
     OMX_IndexConfigImageStabilization,          /**< reference: OMX_CONFIG_BOOLEANTYPE */
-	OMX_IndexConfigMotionTriggeredImageStabilisation, /**< reference : OMX_CONFIG_BOOLEANTYPE */
+    OMX_IndexConfigMotionTriggeredImageStabilisation, /**< reference : OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexConfigRedEyeRemoval,               /**< reference: OMX_CONFIG_REDEYEREMOVALTYPE */
-    OMX_IndexParamHighISONoiseFiler,            /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_IndexParamHighISONoiseFiler,                    /**< reference: OMX_PARAM_ISONOISEFILTERTYPE */
     OMX_IndexParamLensDistortionCorrection,     /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamLocalBrightnessAndContrast,   /**< reference: OMX_CONFIG_BOOLEANTYPE */
-	OMX_IndexConfigChromaticAberrationCorrection, /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_IndexConfigChromaticAberrationCorrection, /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamVideoCaptureYUVRange,         /**< reference: OMX_PARAM_VIDEOYUVRANGETYPE */
 
     OMX_IndexConfigFocusRegion,                 /**< reference: OMX_CONFIG_EXTFOCUSREGIONTYPE */
@@ -167,6 +173,7 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexParamSensorOverClockMode,               /**< reference : OMX_CONFIG_BOOLEANTYPE */
     OMX_TI_IndexParamDccUriInfo,                        /**< reference: OMX_TI_PARAM_DCCURIINFO */
     OMX_TI_IndexParamDccUriBuffer                       /**< reference: OMX_TI_PARAM_DCCURIBUFFER */
+
 } OMX_TI_INDEXTYPE;
 
 
