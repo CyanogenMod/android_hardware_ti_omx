@@ -949,7 +949,8 @@ typedef enum OMX_CAMERAVIEWTYPE
 {
     OMX_2D,     /**< Camera view in 2D sensor configuration */
     OMX_Left,   /**< Left camera view in stereo sensor configuration */
-    OMX_Right   /**< Right camera view in stereo sensor configuration */
+    OMX_Right,   /**< Right camera view in stereo sensor configuration */
+    OMX_CAMERAVIEWTYPE_32BIT_PATCH = 0x7FFFFFFF
 } OMX_CAMERAVIEWTYPE;
 
 /**
