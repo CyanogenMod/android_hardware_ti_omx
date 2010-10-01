@@ -39,7 +39,7 @@ typedef struct _tiVideoConfigParserOutputs
     uint32 height;
     uint32 profile;
     uint32 level;
-    uint32 entropy;
+    uint32 interlaced; //OMX_BOOL type - a 32-bit quantity
 } tiVideoConfigParserOutputs;
 
 OSCL_IMPORT_REF int16 ti_video_config_parser(
