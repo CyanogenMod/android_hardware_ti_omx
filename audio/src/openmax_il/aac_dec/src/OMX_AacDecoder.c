@@ -307,7 +307,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->reconfigInputPort = 0;
     pComponentPrivate->reconfigOutputPort = 0;
     pComponentPrivate->framemode = 0;
-
+    pComponentPrivate->multiframeMode = 0;
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
@@ -1192,6 +1192,7 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComp,
             return OMX_ErrorBadParameter;
         }
         pComponentPrivate->framemode = *pFrameMode;
+        pComponentPrivate->multiframeMode = 1;
         OMXDBG_PRINT(stderr, PRINT, 2, 0, "pComponentPrivate->framemode = %d\n", (int)pComponentPrivate->framemode);
         break;
 

@@ -2184,7 +2184,7 @@ OMX_ERRORTYPE AACDEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
             pComponentPrivate->IpBufindex++;
             pComponentPrivate->IpBufindex %= pComponentPrivate->pPortDef[INPUT_PORT_AACDEC]->nBufferCountActual;
 
-            if(!pComponentPrivate->framemode){
+            if(!pComponentPrivate->framemode || pComponentPrivate->multiframeMode){
 	        if(pComponentPrivate->first_buff == 0){
 		    pComponentPrivate->first_TS = pBufHeader->nTimeStamp;
                     OMX_PRBUFFER2(pComponentPrivate->dbg, "in ts-%lld\n",pBufHeader->nTimeStamp);
@@ -2635,7 +2635,7 @@ OMX_ERRORTYPE AACDEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
 
 			OMX_PRBUFFER2(pComponentPrivate->dbg, "pLcmlHdr->pBufHdr = 0x%p\n",pLcmlHdr->pBufHdr);
 
-			if(pComponentPrivate->framemode){
+			if(pComponentPrivate->framemode && !pComponentPrivate->multiframeMode){
 				/* Copying time stamp information to output buffer */
 				pLcmlHdr->pBufHdr->nTimeStamp = (OMX_TICKS)pComponentPrivate->arrBufIndex[pComponentPrivate->OpBufindex];
 			}else{

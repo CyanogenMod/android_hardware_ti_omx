@@ -833,7 +833,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
     OMX_U8 OutPendingPR;
-
+    OMX_U8 multiframeMode;
     struct OMX_TI_Debug dbg;
 
       /** Indicate when first output buffer received from DSP **/
