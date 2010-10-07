@@ -2046,7 +2046,7 @@ OMX_ERRORTYPE MP3DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
 #endif
             pComponentPrivate->cbInfo.EmptyBufferDone (pComponentPrivate->pHandle,
                                                        pComponentPrivate->pHandle->pApplicationPrivate,
-                                                       pComponentPrivate->pInputBufferList->pBufHdr[0]);
+                                                       pBufHeader);
             MP3DEC_SignalIfAllBuffersAreReturned(pComponentPrivate, OMX_DirInput);
         }
         if(pBufHeader->pMarkData){
