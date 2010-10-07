@@ -1744,7 +1744,7 @@ static OMX_ERRORTYPE PROXY_UseEGLImage(OMX_HANDLETYPE hComponent,
  *
  */
 /* ===========================================================================*/
-static OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
+OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn;
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
