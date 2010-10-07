@@ -2435,7 +2435,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
                isFrameParamChanged = OMX_FALSE;
                //Issue an initial memory flush to ensure cache coherency */
                OMX_PRINT1(pComponentPrivate->dbg, "OMX_AmrDec_Utils.c : flushing pFrameParam\n");
-               status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam,  nFrames*sizeof(NBAMRDEC_FrameStruct), 0);
+               status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam,  nFrames*sizeof(NBAMRDEC_FrameStruct), DSPMSG_WRBK_MEM);
                if(DSP_FAILED(status))
                {
                  OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
@@ -2659,7 +2659,7 @@ taBuf_FromApp - reading NBAMRDEC_MIMEMODE\n",__LINE__);
     
         //Issue an initial memory flush to ensure cache coherency */
         OMX_PRINT1(pComponentPrivate->dbg, "OMX_AmrDec_Utils.c : flushing pFrameParam\n");
-        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam,  nFrames*sizeof(NBAMRDEC_FrameStruct), 0);
+        status = DSPProcessor_FlushMemory(phandle->dspCodec->hProc, pLcmlHdr->pFrameParam,  nFrames*sizeof(NBAMRDEC_FrameStruct), DSPMSG_WRBK_MEM);
         if(DSP_FAILED(status))
         {
            OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
@@ -2939,14 +2939,16 @@ pLcmlHdr->buffer->nFilledLen = %ld\n",__LINE__,pLcmlHdr->buffer->nFilledLen);
             NBAMRDEC_ClearPending(pComponentPrivate,pLcmlHdr->buffer,OMX_DirOutput);
             pComponentPrivate->nOutStandingFillDones++;
 
+            /* Invalidate the Cache content before reading */
+            DSPProcessor_InvalidateMemory(dspphandle->dspCodec->hProc, pLcmlHdr->pFrameParam, pLcmlHdr->pBufferParam->usNbFrames*sizeof(NBAMRDEC_FrameStruct));
+
             for(i=0;i<pLcmlHdr->pBufferParam->usNbFrames;i++){
                  if ( (pLcmlHdr->pFrameParam+i)->usLastFrame & OMX_BUFFERFLAG_EOS){ 
-                    (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
                     (pLcmlHdr->pFrameParam+i)->usLastFrame = 0;
                     pLcmlHdr->buffer->nFlags |= OMX_BUFFERFLAG_EOS;
                     OMX_PRCOMM1(pComponentPrivate->dbg, "%d :: On Component receiving OMX_BUFFERFLAG_EOS on output\n", __LINE__);
                     OMX_PRINT1(pComponentPrivate->dbg, "OMX_AmrDec_Utils.c : flushing pFrameParam2\n");
-                    status = DSPProcessor_FlushMemory(dspphandle->dspCodec->hProc, pLcmlHdr->pFrameParam, pLcmlHdr->pBufferParam->usNbFrames*sizeof(NBAMRDEC_FrameStruct), 0);
+                    status = DSPProcessor_FlushMemory(dspphandle->dspCodec->hProc, pLcmlHdr->pFrameParam, pLcmlHdr->pBufferParam->usNbFrames*sizeof(NBAMRDEC_FrameStruct), DSPMSG_WRBK_MEM);
                     if(DSP_FAILED(status))
                     {
                       OMXDBG_PRINT(stderr, ERROR, 4, 0, "Unable to flush mapped buffer: error 0x%x",(int)status);
@@ -3640,7 +3642,7 @@ OMX_ERRORTYPE OMX_DmmMap(DSP_HPROCESSOR ProcHandle,
     OMX_PRBUFFER2 (dbg, "DMM Mapped: %p, size 0x%x (%d)\n",pDmmBuf->pMapped, size,size);
 
     /* Issue an initial memory flush to ensure cache coherency */
-    status = DSPProcessor_FlushMemory(ProcHandle, pDmmBuf->pAllocated, size, 0);
+    status = DSPProcessor_FlushMemory(ProcHandle, pDmmBuf->pAllocated, size, DSPMSG_WRBK_MEM);
     if(DSP_FAILED(status))
     {
         OMX_ERROR4 (dbg, "Unable to flush mapped buffer: error 0x%x",(int)status);
