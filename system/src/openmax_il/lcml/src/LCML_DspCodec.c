@@ -1923,6 +1923,18 @@ void* MessagingThread(void* arg)
                                         OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
                                                 "Invalidation Fail for output buffer %p \n", tmpDspStructAddress);
                                     }
+                                    /* It is noticed that previous instance of Param buffer is coming back to cache,
+                                        when DSP is updating Param buffer, even though it was invalidated before giving to DSP.
+                                        As a Fix/Workaround invalidating Param buffer before reading the new values updated by DSP. */
+                                    if((tmpDspStructAddress->iArmParamArg!=NULL) && (tmpDspStructAddress->iParamSize >0))
+                                    {
+                                        status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc, tmpDspStructAddress->iArmParamArg, tmpDspStructAddress->iParamSize);
+                                        if(DSP_FAILED(status))
+                                        {
+                                            OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                    "Invalidation Fail for iArmParamArg buffer %p \n", tmpDspStructAddress->iArmParamArg);
+                                        }
+                                    }
                                     break;
                                 }
                                 i++;
