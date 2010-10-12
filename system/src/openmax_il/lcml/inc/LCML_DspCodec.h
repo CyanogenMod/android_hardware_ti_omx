@@ -329,6 +329,8 @@ typedef struct LCML_DSP_INTERFACE
     OMX_U32 mapped_buffer_count;
     OMX_BOOL ReUseMap;
     pthread_mutex_t m_isStopped_mutex;
+    OMX_BOOL buf_invalidate_flag;
+    OMX_BOOL buf_flush_flag;
 
 }LCML_DSP_INTERFACE;
 
