@@ -1461,20 +1461,23 @@ static OMX_ERRORTYPE ControlCodec(OMX_HANDLETYPE hComponent,
                             goto EXIT;
                         }
                         phandle->strmcntlmapped[i] = 1;
-                        if(phandle->dspCodec->DeviceInfo.TypeofRender == 0)
-                        {
-                            /* playback mode */
-                            msg.dwCmd = USN_GPPMSG_STRMCTRL | 0x01;
-                            msg.dwArg1 = (int)args[0];
-                            msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
+
+                        /* check values for TypeofRender are OK */
+                        if (!((phandle->dspCodec->DeviceInfo.TypeofRender == 1) ||
+                                 (phandle->dspCodec->DeviceInfo.TypeofRender == 0))) {
+                            eError = OMX_ErrorUndefined;
+                            goto EXIT;
                         }
-                        else if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
+                        /* initialize to playback mode by default */
+                        msg.dwCmd = USN_GPPMSG_STRMCTRL | 0x01;
+                        msg.dwArg1 = (int)args[0];
+                        msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
+                        if(phandle->dspCodec->DeviceInfo.TypeofRender == 1)
                         {
                             /* record mode */
                             msg.dwCmd = USN_GPPMSG_STRMCTRL;
-                            msg.dwArg1 = (int)args[0];
-                            msg.dwArg2 = (int)phandle->pStrmcntlDmmBuf[i]->pMapped;
                         }
+
 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingCommand(phandle->pPERF,
                                             msg.dwCmd,
