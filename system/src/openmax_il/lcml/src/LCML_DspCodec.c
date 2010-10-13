@@ -287,6 +287,8 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR, hInt);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
         phandle->iDspOpenCount++;
+        phandle->buf_invalidate_flag = OMX_TRUE;
+        phandle->buf_flush_flag = OMX_TRUE;
 
         /* Attach and get handle to processor */
         status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
@@ -297,6 +299,24 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         for (dllinfo=0; dllinfo < phandle->dspCodec->NodeInfo.nNumOfDLLs; dllinfo++)
         {
             OMX_PRINT2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
+
+            /* the following is based on the assumption that camera source and video sink are configured to use non-cacheble mem, thus
+              flush/invalidate operation are not necessary and caused a performance hit, it makes more
+              sense to detect the mem configuration at kernel level automatically.
+            */
+            if((0 == strcmp("720p_h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+               (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+               (0 == strcmp("mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+               (0 == strcmp("h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+            {
+                phandle->buf_invalidate_flag = OMX_FALSE;
+            }
+
+            if((0 == strcmp("m4venc_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+               (0 == strcmp("h264venc_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+            {
+                phandle->buf_flush_flag = OMX_FALSE;
+            }
 
             k = append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName, abs_dsp_path);
             if (k < 0)
@@ -602,6 +622,8 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
     /* DSPManager_Open is successful, increment counter so that we can keep open/close to a 1:1 ratio. */
     phandle->iDspOpenCount++;
+    phandle->buf_invalidate_flag = OMX_TRUE;
+    phandle->buf_flush_flag = OMX_TRUE;
 
     /* Attach and get handle to processor */
     status = DSPProcessor_Attach(TI_PROCESSOR_DSP, NULL, &(phandle->dspCodec->hProc));
@@ -612,6 +634,20 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     for(dllinfo=0; dllinfo < phandle->dspCodec->NodeInfo.nNumOfDLLs; dllinfo++)
     {
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
+
+        if((0 == strcmp("720p_h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+           (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+           (0 == strcmp("mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+           (0 == strcmp("h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+        {
+            phandle->buf_invalidate_flag = OMX_FALSE;
+        }
+
+        if((0 == strcmp("m4venc_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
+           (0 == strcmp("h264venc_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+        {
+            phandle->buf_flush_flag = OMX_FALSE;
+        }
 
         k = append_dsp_path((char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName, abs_dsp_path);
         if (k < 0)
@@ -1020,7 +1056,8 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
 
                     if(bufType == EMMCodecInputBuffer)
                     {
-                        if(bufferSizeUsed) {
+                        if(bufferSizeUsed && (OMX_TRUE == phandle->buf_flush_flag))
+                        {
                             /* Issue a memory flush for input buffer to ensure cache coherency
                              *  INVALIDATE_TRESHOLD is set to invalidate and write back only the bufferSizeUsed (DSPMSG_WRBK_INVALIDATE_MEM)
                              *  or the entire cache (DSPMSG_WRBK_INV_ALL). DSP will read the data in this buffer   */
@@ -1033,9 +1070,10 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
                                 goto MUTEX_UNLOCK;
                             }
                         }
+
                     }
 
-                    else if(bufType == EMMCodecOuputBuffer)
+                    else if ((bufType == EMMCodecOuputBuffer) && (OMX_TRUE == phandle->buf_invalidate_flag))
                     {
                         /* Issue an memory invalidate for output buffer */
                         if (bufferLen > INVALIDATE_TRESHOLD)
