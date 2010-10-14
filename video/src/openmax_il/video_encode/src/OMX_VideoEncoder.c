@@ -378,7 +378,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->nIntraFrameInterval  = 15;
     pComponentPrivate->nQPI                 = 12;
     pComponentPrivate->nAIRRate             = 0;
-    pComponentPrivate->ucUnrestrictedMV     = 0;
+    pComponentPrivate->ucUnrestrictedMV     = 1;
     pComponentPrivate->nQpMax               = 31;
     pComponentPrivate->nQpMin               = 2;
     pComponentPrivate->bInInvalidState      = 0;
