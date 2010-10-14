@@ -90,10 +90,10 @@ typedef enum MP3D_COMP_PORT_TYPE {
 
 
 typedef enum OMX_INDEXAUDIOTYPE {
-	MP3D_OMX_IndexCustomMode16_24bit = 0xFF000001,
-	MP3D_OMX_IndexCustomModeDasfConfig,
+    MP3D_OMX_IndexCustomMode16_24bit = 0xFF000001,
+    MP3D_OMX_IndexCustomModeDasfConfig,
     OMX_IndexCustomMp3DecHeaderInfoConfig,
-	OMX_IndexCustomMp3DecStreamInfoConfig,
+    OMX_IndexCustomMp3DecStreamInfoConfig,
     OMX_IndexCustomMp3DecDataPath,
     OMX_IndexCustomDebug
 }OMX_INDEXAUDIOTYPE;

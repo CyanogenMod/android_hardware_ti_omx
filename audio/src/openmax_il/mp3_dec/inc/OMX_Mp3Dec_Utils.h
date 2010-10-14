@@ -240,7 +240,7 @@ typedef enum OMX_INDEXAUDIOTYPE {
 */
 /* ==================================================================== */
 typedef struct MP3DEC_BUFDATA {
-   OMX_U8 nFrames;     
+   OMX_U8 nFrames;
 }MP3DEC_BUFDATA;
 
 /* ======================================================================= */
@@ -600,7 +600,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     pthread_mutex_t InLoaded_mutex;
     pthread_cond_t InLoaded_threshold;
     OMX_U8 InLoaded_readytoidle;
-    
+
     pthread_mutex_t InIdle_mutex;
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
@@ -613,9 +613,9 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     
     /** Keep buffer timestamps **/
     OMX_S64 arrBufIndex[MP3D_MAX_NUM_OF_BUFS];
-	/**Keep buffer tickcounts*/
+    /**Keep buffer tickcounts*/
     OMX_U32 arrBufIndexTick[MP3D_MAX_NUM_OF_BUFS];
-	
+
     /** Index to arrBufIndex[] and arrBufIndexTick[], used for input buffer timestamps */
     OMX_U8 IpBufindex;
     /** Index to arrBufIndex[] and arrBufIndexTick[], used for output buffer timestamps */
@@ -907,7 +907,7 @@ void MP3DEC_CleanupInitParamsEx(OMX_HANDLETYPE pComponent,OMX_S32 indexport);
 /**
 *  MP3_ResourceManagerCallback() Callback from Resource Manager
 *
-*  @param cbData	RM Proxy command data
+*  @param cbData    RM Proxy command data
 *
 *  @return None
 */
