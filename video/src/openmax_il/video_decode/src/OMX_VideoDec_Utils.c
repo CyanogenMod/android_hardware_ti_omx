@@ -3463,7 +3463,6 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BU
     OMX_U8* pHeaderStream = (OMX_U8*)pBuffHead->pBuffer;
 
     VIDDEC_MPEG4_ParserParam MPEG4_Param;
-    VIDDEC_MPEG4UncompressedVideoFormat iOutputFormat;
     VIDDEC_MPEG4_ParserParam* sMPEG4_Param = &MPEG4_Param;
     VIDDEC_VideoPictureHeader sPictHeaderDummy;
     VIDDEC_MPEG4VisualVOLHeader sVolHeaderDummy;
@@ -3724,15 +3723,6 @@ OMX_ERRORTYPE VIDDEC_ParseVideo_MPEG4( OMX_U32* nWidth, OMX_U32* nHeight, OMX_BU
             }
             OMX_PARSER_CHECKLIMIT(nTotalInBytes, nBitPosition, 1);
             sMPEG4_Param->nScalability = VIDDEC_GetBits(&nBitPosition, 1, pHeaderStream, OMX_TRUE);                    /*1 bit*/
-            if (iOutputFormat.iYuvFormat.iPattern == 0x00000001)
-                pPictHeaderPtr->nPostDecoderBufferSize    = (*nHeight) * (*nWidth) * 3 / 2;    /*YUV 420 Planar*/
-            else if (iOutputFormat.iYuvFormat.iPattern == 0x00000008)
-                pPictHeaderPtr->nPostDecoderBufferSize    = (*nHeight) * (*nWidth) * 2;    /*YUV 422 Interleaved*/
-            pPictHeaderPtr->nOptions |= 0x00000008;
-            if(bFillHeaderInfo)
-            {
-                ;
-            }
             bHeaderParseCompleted = OMX_TRUE;
             eError = OMX_ErrorNone;
         }
