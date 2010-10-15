@@ -445,7 +445,6 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
                 pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
                 pthread_mutex_unlock(&WaitForState_mutex);
             }
-
             break;
 
         case OMX_EventError:
@@ -468,7 +467,6 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
             } else if (nData1 == OMX_ErrorInsufficientResources) {
                 printf("Insufficient Resources\n\n");
             }
-
             break;
 
         case OMX_EventMax:
@@ -879,7 +877,6 @@ int main(int argc, char* argv[]) {
     }
 
     printf("nIpBuffs = %d \n", nIpBuffs);
-
     printf("nIpBufSize = %d \n", nIpBufSize);
     printf("nOpBuffs = %d \n", nOpBuffs);
     printf("nOpBufSize = %d \n", nOpBufSize);
@@ -925,49 +922,33 @@ int main(int argc, char* argv[]) {
                 testcnt = 100;
             else
                 testcnt = 20;
-
             break;
 
         case 6:
             printf ("------------------------------------------------\n");
-
             printf ("Testing Repeated PLAY with Deleting Component\n");
-
             printf ("------------------------------------------------\n");
-
             strcat(fname, "_tc6.pcm");
-
             if (stress)
                 testcnt1 = 100;
             else
                 testcnt1 = 20;
-
             break;
 
         case 12:
             printf ("------------------------------------------------\n");
-
             printf ("Testing List play\n");
-
             printf ("------------------------------------------------\n");
-
             strcat(fname, "_tc12.pcm");
-
             testcnt2 = 8;
-
             break;
 
         case 13:
             printf ("------------------------------------------------\n");
-
             printf ("Testing PALM requirement play\n");
-
             printf ("------------------------------------------------\n");
-
             strcat(fname, "_tc13.pcm");
-
             testcnt = 10;
-
             break;
     }
 
@@ -991,7 +972,6 @@ int main(int argc, char* argv[]) {
                     printf("Error:  failed to create the output file \n");
                     goto EXIT;
                 }
-
                 printf("%d :: Op File has created\n", __LINE__);
             }
 
@@ -1933,7 +1913,6 @@ int main(int argc, char* argv[]) {
 
                             frmCnt++;
                         }
-
                         break;
 
                     case 3:
@@ -2005,7 +1984,6 @@ int main(int argc, char* argv[]) {
 
                             frmCnt++;
                         }
-
                         break;
 
                     case 7:
@@ -2036,7 +2014,6 @@ int main(int argc, char* argv[]) {
                             }
                         }
 
-
                         if (frmCnt == 3) {
                             printf("************Unmute the playback stream*****************\n");
                             pCompPrivateStructMute->bMute = OMX_FALSE;
@@ -2047,7 +2024,6 @@ int main(int argc, char* argv[]) {
                                 goto EXIT;
                             }
                         }
-
                         break;
 
                     case 8:
@@ -2089,7 +2065,6 @@ int main(int argc, char* argv[]) {
                                 goto EXIT;
                             }
                         }
-
                         break;
 
                     case 11:
@@ -2113,10 +2088,8 @@ int main(int argc, char* argv[]) {
                                     goto EXIT;
                                 }
                             }
-
                             frmCnt++;
                         }
-
                         break;
 
                     default:
