@@ -604,6 +604,9 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
 
         pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
+
+        pthread_mutex_destroy(&pComponentPrivate->codecStop_mutex);
+        pthread_cond_destroy(&pComponentPrivate->codecStop_threshold);
     }
     if (pComponentPrivate->pLcmlHandle != NULL) {
         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
@@ -821,9 +824,17 @@ OMX_U32 G722ENC_HandleCommand (G722ENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 if (pComponentPrivate->curState == OMX_StateExecuting) {
                     pComponentPrivate->bNoIdleOnStop = OMX_TRUE;
+                    pComponentPrivate->bIsStopping = 1;
                     eError = LCML_ControlCodec(
                                                ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                MMCodecControlStop,(void *)pArgs);
+                    if (OMX_ErrorNone != eError) {
+                        G722ENC_FatalErrorRecover(pComponentPrivate);
+                        G722ENC_DPRINT("%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+                        return eError;
+                    }
+                    omx_mutex_wait(&pComponentPrivate->codecStop_mutex, &pComponentPrivate->codecStop_threshold,
+                                   &pComponentPrivate->codecStop_waitingsignal);
                 }
 
 
@@ -1435,6 +1446,10 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
         }
     }
     else if(event == EMMCodecProcessingStoped) {
+
+        omx_mutex_signal(&pComponentPrivate_CC->codecStop_mutex,&pComponentPrivate_CC->codecStop_threshold,
+                         &pComponentPrivate_CC->codecStop_waitingsignal);
+
         if (!pComponentPrivate_CC->bNoIdleOnStop) {
             pComponentPrivate_CC->bIdleCommandPending = OMX_TRUE;
             pComponentPrivate_CC->curState = OMX_StateIdle;
@@ -1853,14 +1868,22 @@ OMX_ERRORTYPE G722ENC_CommandToIdle(G722ENC_COMPONENT_PRIVATE *pComponentPrivate
         G722ENC_DPRINT("%d :: In G722ENC_HandleCommand: Stopping the codec\n",__LINE__);
         G722ENC_DPRINT("%d: G722ENCUTILS::About to call LCML_ControlCodec\n",__LINE__);
         G722ENC_DPRINT("%d: Calling Codec Stop..\n");
+        pComponentPrivate->bIsStopping = 1;
+
         eError = LCML_ControlCodec(
                                    ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                    MMCodecControlStop,(void *)pArgs);
         G722ENC_DPRINT("Called Codec Stop..\n");
-        if(eError != OMX_ErrorNone) {
-            G722ENC_DPRINT("%d: Error Occurred in Codec Stop..\n",__LINE__);
-            goto EXIT;
+        if (OMX_ErrorNone != eError) {
+            G722ENC_FatalErrorRecover(pComponentPrivate);
+            G722ENC_DPRINT("%d :: Error from LCML_ControlCodec EMMCodecControlStop = %x\n",__LINE__,eError);
+            return eError;
         }
+
+        omx_mutex_wait(&pComponentPrivate->codecStop_mutex, &pComponentPrivate->codecStop_threshold,
+                       &pComponentPrivate->codecStop_waitingsignal);
+
+        OMX_MEMFREE_STRUCT_DSPALIGN(pComponentPrivate->pParams, G722ENC_AudioCodecParams);
 
         G722ENC_DPRINT ("%d :: The component is stopped\n",__LINE__);
         /*      pComponentPrivate->bIdleCommandPending = 1;*/

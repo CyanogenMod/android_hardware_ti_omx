@@ -328,6 +328,10 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
         pthread_cond_init (&pComponentPrivate->InIdle_threshold, NULL);
         pComponentPrivate->InIdle_goingtoloaded = 0;
 
+        pthread_mutex_init(&pComponentPrivate->codecStop_mutex, NULL);
+        pthread_cond_init (&pComponentPrivate->codecStop_threshold, NULL);
+        pComponentPrivate->codecStop_waitingsignal = 0;
+
         pComponentPrivate->bMutexInitDone = OMX_TRUE;
     }
 
