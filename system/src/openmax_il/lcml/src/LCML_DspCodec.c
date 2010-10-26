@@ -2636,54 +2636,21 @@ void* MessagingThread(void* arg)
             }/* end of internal while loop*/
 #ifdef __ERROR_PROPAGATION__
             }/*end of if(index == 0)*/
-            if (index == 1){
+            if (index == 1 || index == 2){
 
-                struct DSP_PROCESSORSTATE  procState;
-                DSPProcessor_GetState(((LCML_DSP_INTERFACE *)arg)->dspCodec->hProc, &procState, sizeof(procState));
-
-                /*
-                fprintf(stdout, " dwErrMask = %0x \n",procState.errInfo.dwErrMask);
-                fprintf(stdout, " dwVal1 = %0x \n",procState.errInfo.dwVal1);
-                fprintf(stdout, " dwVal2 = %0x \n",procState.errInfo.dwVal2);
-                fprintf(stdout, " dwVal3 = %0x \n",procState.errInfo.dwVal3);
-                fprintf(stdout, "MMU Fault Error.\n");
-                */
-
-                TUsnCodecEvent  event = EMMCodecDspError;
-                void * args[10];
-                LCML_DSP_INTERFACE *hDSPInterface = ((LCML_DSP_INTERFACE *)arg) ;
-                args[0] = NULL;
-                args[4] = NULL;
-                args[5] = NULL;
-                args[6] = (void *) arg;  /* handle */
-                hDSPInterface->dspCodec->Callbacks.LCML_Callback(event,args);
+            LCML_ReportDspError (arg);
 
             }
-            if (index == 2){
-
-                struct DSP_PROCESSORSTATE  procState;
-                DSPProcessor_GetState(((LCML_DSP_INTERFACE *)arg)->dspCodec->hProc, &procState, sizeof(procState));
-
-                /*
-                fprintf(stdout, " dwErrMask = %0x \n",procState.errInfo.dwErrMask);
-                fprintf(stdout, " dwVal1 = %0x \n",procState.errInfo.dwVal1);
-                fprintf(stdout, " dwVal2 = %0x \n",procState.errInfo.dwVal2);
-                fprintf(stdout, " dwVal3 = %0x \n",procState.errInfo.dwVal3);
-                fprintf(stdout, "SYS_ERROR Error.\n");
-                */
-
-                TUsnCodecEvent  event = EMMCodecDspError;
-                void * args[10];
-                LCML_DSP_INTERFACE *hDSPInterface = ((LCML_DSP_INTERFACE *)arg) ;
-                args[0] = NULL;
-                args[4] = NULL;
-                args[5] = NULL;
-                args[6] = (void *) arg;  /* handle */
-                hDSPInterface->dspCodec->Callbacks.LCML_Callback(event,args);
-
-            }
-#endif
         } /* end of external if(DSP_SUCCEEDED(status)) */
+        else if (status == -EIO)
+        {
+
+            /*Parsing this error to catch a MMU fault that happened within
+             *the processing of messages.  All OMX components should catch this
+             *error and close to let the DSP Recovery method to work properly */
+            LCML_ReportDspError (arg);
+        }
+#endif
         else
         {
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "%d :: DSPManager_WaitForEvents() failed: 0x%lx",__LINE__, status);
@@ -2703,6 +2670,21 @@ void* MessagingThread(void* arg)
     return (void*)OMX_ErrorNone;
 }
 
+void LCML_ReportDspError (void * arg)
+{
+    struct DSP_PROCESSORSTATE  procState;
+    LCML_DSP_INTERFACE *hDSPInterface = ((LCML_DSP_INTERFACE *)arg) ;
+    DSPProcessor_GetState(hDSPInterface->dspCodec->hProc, &procState, sizeof(procState));
+
+
+    TUsnCodecEvent  event = EMMCodecDspError;
+    void * args[10];
+    args[0] = NULL;
+    args[4] = NULL;
+    args[5] = NULL;
+    args[6] = (void *) arg;  /* handle */
+    hDSPInterface->dspCodec->Callbacks.LCML_Callback(event,args);
+}
 
 static int append_dsp_path(char * dll64p_name, char *absDLLname)
 {

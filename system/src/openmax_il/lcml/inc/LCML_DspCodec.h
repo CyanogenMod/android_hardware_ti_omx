@@ -288,6 +288,7 @@ typedef struct
 */
 OMX_ERRORTYPE GetHandle (OMX_HANDLETYPE* hInterface );
 
+void LCML_ReportDspError (void * arg);
 /**
 * Struct derives codec interface which have interface to implement for using
 * generic codec and also have pointer to DSP specific data and have queues for
