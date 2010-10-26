@@ -2179,7 +2179,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
                     VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
                 }
-                VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
                 VIDDEC_HandleCommandFlush(pComponentPrivate, OMX_ALL, OMX_FALSE);
 
 #ifdef RESOURCE_MANAGER_ENABLED
