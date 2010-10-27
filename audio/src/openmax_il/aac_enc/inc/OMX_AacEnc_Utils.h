@@ -531,6 +531,7 @@ typedef struct AACENC_COMPONENT_PRIVATE
 
     OMX_BOOL bCodecDestroyed;
     OMX_BOOL bGotLCML;
+    OMX_BOOL MMUFault;
     
     OMX_STRING* sDeviceString;
     OMX_BOOL bFirstOutputBuffer;

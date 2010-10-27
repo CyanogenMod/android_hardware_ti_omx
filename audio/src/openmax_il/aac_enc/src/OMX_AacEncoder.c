@@ -343,7 +343,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->ptrLibLCML                   = NULL;
     pComponentPrivate->bGotLCML                     = OMX_FALSE;
     pComponentPrivate->bCodecDestroyed              = OMX_FALSE;
-    
+    pComponentPrivate->MMUFault                     = OMX_FALSE;
 
     /* initialize role name */
     strcpy((char *)pComponentPrivate->componentRole.cRole, "audio_encoder.aac");
