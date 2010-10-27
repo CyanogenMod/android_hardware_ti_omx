@@ -578,6 +578,7 @@ MultiFrame modes to 0");
 
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
+    pComponentPrivate->MMUFault = OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->nOutStandingEmptyDones = 0;
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
