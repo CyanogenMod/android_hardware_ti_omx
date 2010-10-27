@@ -503,6 +503,31 @@ OMX_ERRORTYPE NBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
         pthread_mutex_destroy(&pComponentPrivate->ToLoaded_mutex);
     }
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                                     EMMCodecControlDestroy, NULL);
+        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: NBAMRENC: After CodecControlDestroy \n",__LINE__);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+            pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                    pHandle->pApplicationPrivate,
+                                    OMX_EventError,
+                                    eError,
+                                    OMX_TI_ErrorSevere,
+                                    NULL);
+            return eError;
+        }
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+    /* CLose LCML .  */
+    if (pComponentPrivate->ptrLibLCML != NULL)
+    {
+        OMX_PRDSP2(pComponentPrivate->dbg, "NBAMRENC: About to Close LCML %p \n",pComponentPrivate->ptrLibLCML);
+        dlclose( pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        OMX_PRDSP2(pComponentPrivate->dbg, "NBAMRENC: Closed LCML \n");
+    }
 
     // Close dbg
     OMX_DBG_CLOSE(pComponentPrivate->dbg);
@@ -1205,11 +1230,25 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
             /* Now Deinitialize the component No error should be returned from
             * this function. It should clean the system as much as possible */
             NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                        EMMCodecControlDestroy, (void *)p);
-            if (eError != OMX_ErrorNone) {
-                OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
-                goto EXIT;
+            if (pLcmlHandle != NULL) {
+                OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: NBAMRENC: Before CodecControlDestroy \n",__LINE__);
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                         EMMCodecControlDestroy, (void *)p);
+                OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: NBAMRENC: After CodecControlDestroy \n",__LINE__);
+                if (eError != OMX_ErrorNone)
+                {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                    pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                    pHandle->pApplicationPrivate,
+                                    OMX_EventError,
+                                    eError,
+                                    OMX_TI_ErrorSevere,
+                                    NULL);
+                    return eError;
+                }
+                OMX_PRDSP1(pComponentPrivate->dbg, "%d :: NBAMRENCHandleCommand: Cmd Loaded\n",__LINE__);
+                pComponentPrivate->pLcmlHandle = NULL;
+                pLcmlHandle = NULL;
             }
 
     /*Closing LCML Lib*/
@@ -1322,11 +1361,17 @@ OMX_U32 NBAMRENC_HandleCommand (AMRENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                     pComponentPrivate->curState != OMX_StateInvalid && 
-                    pComponentPrivate->curState != OMX_StateLoaded) {
-
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                    pComponentPrivate->curState != OMX_StateLoaded &&
+                    pLcmlHandle != NULL) {
+                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                 EMMCodecControlDestroy, (void *)pArgs);
-                }
+                        if (eError != OMX_ErrorNone)
+                           OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                        else{
+                           pComponentPrivate->pLcmlHandle = NULL;
+                           pLcmlHandle = NULL;
+                        }
+               }
                 pComponentPrivate->curState = OMX_StateInvalid;
                 pComponentPrivate->cbInfo.EventHandler( pHandle, 
                                                     pHandle->pApplicationPrivate,
@@ -2637,7 +2682,7 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                 case USN_ERR_STRMCTRL:
                 case USN_ERR_UNKNOWN_MSG: 
                 {
-                    OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: USN ERROR %d \n",__LINE__, args[4]);
+                    OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: USN ERROR %ld \n",__LINE__, (OMX_U32)args[4]);
                     NBAMRENC_FatalErrorRecover(pComponentPrivate_CC);
                 }
                     break;
@@ -2646,6 +2691,14 @@ OMX_ERRORTYPE NBAMRENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                 case USN_ERR_WARNING:
                 case USN_ERR_PROCESS:
                     NBAMRENC_HandleUSNError (pComponentPrivate_CC, (OMX_U32)args[5]);
+                    break;
+                case USN_ERR_NONE:
+                    if((args[5] == (void*)NULL) && (pComponentPrivate_CC->MMUFault==OMX_FALSE))
+                    {
+                        OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                        pComponentPrivate_CC->MMUFault = OMX_TRUE;
+                        NBAMRENC_FatalErrorRecover(pComponentPrivate_CC);
+                    }
                     break;
                 default:
                     break;
@@ -3256,7 +3309,7 @@ void NBAMRENC_HandleUSNError (AMRENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U
         {
         /* all of these are fatal messages, Algo can not recover
                  * hence return an error */
-                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: USN ERROR %d \n",__LINE__, arg);
+                OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: USN ERROR %ld \n",__LINE__, arg);
                 NBAMRENC_FatalErrorRecover(pComponentPrivate);
         }
             break;
@@ -3275,12 +3328,17 @@ void NBAMRENC_FatalErrorRecover(AMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     NBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
 
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
+        pComponentPrivate->curState != OMX_StateLoaded &&
+        pComponentPrivate->MMUFault == OMX_FALSE &&     //Comp-Thread still running, can't destroy codec yet
+        pComponentPrivate->pLcmlHandle != NULL) {
         eError = LCML_ControlCodec(((
                  LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
                  EMMCodecControlDestroy, (void *)pArgs);
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        if (eError != OMX_ErrorNone)
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+        else{
+            pComponentPrivate->pLcmlHandle = NULL;
+        }
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED

@@ -828,6 +828,7 @@ typedef struct AMRENC_COMPONENT_PRIVATE
     OMX_BUFFERHEADERTYPE *LastOutbuf;
     OMX_BOOL bIsInvalidState;
     
+    OMX_BOOL MMUFault;
     OMX_STRING* sDeviceString;
     
     void* ptrLibLCML;
