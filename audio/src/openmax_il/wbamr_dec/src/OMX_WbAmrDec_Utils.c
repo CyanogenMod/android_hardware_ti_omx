@@ -2876,6 +2876,14 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
             case USN_ERR_PROCESS:
                 WBAMRDEC_HandleUSNError (pComponentPrivate, (OMX_U32)args[5]);
                 break;
+            case USN_ERR_NONE:
+            {
+                if( (args[5] == (void*)NULL)) {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                    WBAMRDEC_FatalErrorRecover(pComponentPrivate);
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -2907,15 +2915,8 @@ OMX_ERRORTYPE WBAMR_DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
     else if (event ==EMMCodecInternalError){
         /* Cheking for MMU_fault */
         if(((int)args[4] == USN_ERR_UNKNOWN_MSG) && (args[5] == (void*)NULL)) {
-            pComponentPrivate->bIsInvalidState=OMX_TRUE;
-            pComponentPrivate->curState = OMX_StateInvalid;
-            pHandle = pComponentPrivate->pHandle;
-            pComponentPrivate->cbInfo.EventHandler(pHandle,
-                                                   pHandle->pApplicationPrivate,
-                                                   OMX_EventError,
-                                                   OMX_ErrorInvalidState,
-                                                   OMX_TI_ErrorSevere,
-                                                   NULL);
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
+            WBAMRDEC_FatalErrorRecover(pComponentPrivate);
         }
 
     }
@@ -3632,18 +3633,6 @@ void WBAMRDEC_FatalErrorRecover(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate){
     char *pArgs = "";
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded)
-    {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "%d Fatal Error Recover::EMMCodecControlDestroy: error = %d\n",
-                   __LINE__,
-                   eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
@@ -3663,6 +3652,12 @@ void WBAMRDEC_FatalErrorRecover(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_TI_ErrorSevere,
                                        NULL);
     WBAMR_DEC_CleanupInitParams(pComponentPrivate->pHandle);
+
+    if(NULL != pComponentPrivate->pLcmlHandle){
+        dlclose(pComponentPrivate->pLcmlHandle);
+        pComponentPrivate->pLcmlHandle=NULL;
+    }
+
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
