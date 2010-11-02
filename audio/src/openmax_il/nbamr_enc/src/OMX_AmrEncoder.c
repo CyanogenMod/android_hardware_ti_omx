@@ -583,6 +583,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
 
     pComponentPrivate->bDspStoppedWhileExecuting    = OMX_FALSE;
+    pComponentPrivate->MMUFault                     = OMX_FALSE;
 
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->nRuntimeInputBuffers=0;
