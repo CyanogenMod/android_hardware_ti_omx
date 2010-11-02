@@ -505,6 +505,31 @@ OMX_ERRORTYPE WBAMRENC_FreeCompResources(OMX_HANDLETYPE pComponent) {
         pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
     }
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                                     EMMCodecControlDestroy, NULL);
+        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: WBAMRENC: After CodecControlDestroy \n",__LINE__);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+            pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                    pHandle->pApplicationPrivate,
+                                    OMX_EventError,
+                                    eError,
+                                    OMX_TI_ErrorSevere,
+                                    NULL);
+            return eError;
+        }
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+    /* CLose LCML .  */
+    if (pComponentPrivate->ptrLibLCML != NULL)
+    {
+        OMX_PRDSP2(pComponentPrivate->dbg, "WBAMRENC: About to Close LCML %p \n",pComponentPrivate->ptrLibLCML);
+        dlclose( pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        OMX_PRDSP2(pComponentPrivate->dbg, "WBAMRENC: Closed LCML \n");
+    }
 
     // Close dbg
     OMX_DBG_CLOSE(pComponentPrivate->dbg);
@@ -1279,14 +1304,25 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                     /* Now Deinitialize the component No error should be returned from
                      * this function. It should clean the system as much as possible */
                     WBAMRENC_CleanupInitParams(pHandle);
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                               EMMCodecControlDestroy,
-                                               (void *)pArgs);
-
-                    if (eError != OMX_ErrorNone) {
-                        OMX_ERROR4(pComponentPrivate->dbg,
-                                   "Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n", eError);
-                        goto EXIT;
+                    if (pLcmlHandle != NULL) {
+                        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: WBAMRENC: Before CodecControlDestroy \n",__LINE__);
+                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                         EMMCodecControlDestroy, (void *)pArgs);
+                        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: WBAMRENC: After CodecControlDestroy \n",__LINE__);
+                        if (eError != OMX_ErrorNone)
+                        {
+                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                            pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                    pHandle->pApplicationPrivate,
+                                    OMX_EventError,
+                                    eError,
+                                    OMX_TI_ErrorSevere,
+                                    NULL);
+                            return eError;
+                        }
+                        OMX_PRDSP1(pComponentPrivate->dbg, "%d :: WBAMRENCHandleCommand: Cmd Loaded\n",__LINE__);
+                        pComponentPrivate->pLcmlHandle = NULL;
+                        pLcmlHandle = NULL;
                     }
 
                     /*Closing LCML Lib*/
@@ -1383,11 +1419,18 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
                             pComponentPrivate->curState != OMX_StateInvalid &&
-                            pComponentPrivate->curState != OMX_StateLoaded) {
+                            pComponentPrivate->curState != OMX_StateLoaded &&
+                            pLcmlHandle != NULL) {
 
                         eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                    EMMCodecControlDestroy,
                                                    (void *)pArgs);
+                        if (eError != OMX_ErrorNone)
+                           OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                        else{
+                           pComponentPrivate->pLcmlHandle = NULL;
+                           pLcmlHandle = NULL;
+                        }
                     }
 
                     pComponentPrivate->curState = OMX_StateInvalid;
@@ -1404,6 +1447,10 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
 
                 case OMX_StateMax:
                     OMX_PRINT2(pComponentPrivate->dbg, "To Cmd OMX_StateMax\n");
+                    break;
+                default:
+                    OMX_PRSTATE2(pComponentPrivate->dbg, ": HandleCommand: commandedState: \
+                                                            nothing to do for this case::\n");
                     break;
             } /* End of Switch */
         }
@@ -2822,6 +2869,14 @@ OMX_ERRORTYPE WBAMRENC_LCMLCallback (TUsnCodecEvent event, void * args[10]) {
             case USN_ERR_PROCESS:
                 WBAMRENC_HandleUSNError (pComponentPrivate, (OMX_U32)args[5]);
                 break;
+            case USN_ERR_NONE:
+                if((args[5] == (void*)NULL) && (pComponentPrivate->MMUFault==OMX_FALSE))
+                {
+                    OMX_ERROR4(pComponentPrivate->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                    pComponentPrivate->MMUFault = OMX_TRUE;
+                    WBAMRENC_FatalErrorRecover(pComponentPrivate);
+                }
+                break;
             default:
                 break;
         }
@@ -2954,13 +3009,14 @@ void WBAMRENC_SetPending(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
         for (i = 0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pInputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pInputBufferList->bBufferPending[i] = 1;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "****INPUT BUFFER %d IS PENDING Line %ld******\n",i,lineNumber);
             }
         }
     } else {
         for (i = 0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pOutputBufferList->pBufHdr[i]) {
-
                 pComponentPrivate->pOutputBufferList->bBufferPending[i] = 1;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "****OUTPUT BUFFER %d IS PENDING Line %ld*****\n",i,lineNumber);
             }
         }
     }
@@ -2987,12 +3043,14 @@ void WBAMRENC_ClearPending(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
         for (i = 0; i < pComponentPrivate->pInputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pInputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pInputBufferList->bBufferPending[i] = 0;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "****INPUT BUFFER %d IS RECLAIMED Line %ld*****\n",i,lineNumber);
             }
         }
     } else {
         for (i = 0; i < pComponentPrivate->pOutputBufferList->numBuffers; i++) {
             if (pBufHdr == pComponentPrivate->pOutputBufferList->pBufHdr[i]) {
                 pComponentPrivate->pOutputBufferList->bBufferPending[i] = 0;
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "****OUTPUT BUFFER %d IS RECLAIMED Line %ld*****\n",i,lineNumber);
             }
         }
     }
@@ -3436,12 +3494,17 @@ void WBAMRENC_FatalErrorRecover(WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
     WBAMRENC_CleanupInitParams(pComponentPrivate->pHandle);
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
+        pComponentPrivate->curState != OMX_StateLoaded &&
+        pComponentPrivate->MMUFault == OMX_FALSE &&     //Comp-Thread still running, can't destroy codec yet
+        pComponentPrivate->pLcmlHandle != NULL) {
         eError = LCML_ControlCodec(((
                  LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
                  EMMCodecControlDestroy, (void *)pArgs);
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        if (eError != OMX_ErrorNone)
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+        else{
+            pComponentPrivate->pLcmlHandle = NULL;
+        }
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
