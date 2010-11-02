@@ -658,6 +658,25 @@ OMX_ERRORTYPE AACENC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
 
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                                     EMMCodecControlDestroy, NULL);
+        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After CodecControlDestroy \n",__LINE__);
+        if (eError != OMX_ErrorNone)
+        {
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+            pComponentPrivate->cbInfo.EventHandler (pHandle,
+                                    pHandle->pApplicationPrivate,
+                                    OMX_EventError,
+                                    eError,
+                                    OMX_TI_ErrorSevere,
+                                    NULL);
+            return eError;
+        }
+        pComponentPrivate->bCodecDestroyed = OMX_TRUE;
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     /* CLose LCML .      - Note:  Need to handle better - */
     if ((pComponentPrivate->ptrLibLCML != NULL && pComponentPrivate->bGotLCML) &&
         (pComponentPrivate->bCodecDestroyed))
@@ -1389,29 +1408,33 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                         }
 
                         /* Now Deinitialize the component No error should be returned from this function. It should clean the system as much as possible */
-                        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: Before CodecControlDestroy \n",__LINE__);
-                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, 
+                        if (pLcmlHandle != NULL) {
+                            OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: Before CodecControlDestroy \n",__LINE__);
+                            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                      EMMCodecControlDestroy, (void *)pArgs);
 #ifdef __PERF_INSTRUMENTATION__
                         PERF_SendingCommand(pComponentPrivate->pPERF, -1, 0, PERF_ModuleComponent);
 #endif                                
                         
-                        OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After CodecControlDestroy \n",__LINE__);
-                        if (eError != OMX_ErrorNone) 
-                        {
-                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
-                            pComponentPrivate->cbInfo.EventHandler (pHandle,
+                            OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After CodecControlDestroy \n",__LINE__);
+                            if (eError != OMX_ErrorNone)
+                            {
+                                OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                                pComponentPrivate->cbInfo.EventHandler (pHandle,
                                     pHandle->pApplicationPrivate,
                                     OMX_EventError,
                                     eError,
                                     OMX_TI_ErrorSevere,
                                     NULL);
-                            return eError;
+                                return eError;
+                            }
+                            OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENCHandleCommand: Cmd Loaded\n",__LINE__);
+                            pComponentPrivate->pLcmlHandle = NULL;
+                            pLcmlHandle = NULL;
+                            /*Closing LCML Lib*/
+                            /* This flag is used in Deinit()  function to close LCML. */
+                            pComponentPrivate->bCodecDestroyed = OMX_TRUE;
                         }
-                        OMX_PRDSP1(pComponentPrivate->dbg, "%d :: AACENCHandleCommand: Cmd Loaded\n",__LINE__);
-                        /*Closing LCML Lib*/
-                        /* This flag is used in Deinit()  function to close LCML. */
-                        pComponentPrivate->bCodecDestroyed = OMX_TRUE;  
                         if (pComponentPrivate->ptrLibLCML != NULL)
                         {
                             OMX_PRDSP1(pComponentPrivate->dbg, "AAC: About to Close LCML %p \n",pComponentPrivate->ptrLibLCML);
@@ -1422,17 +1445,6 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                             
                         }
                         OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENC: After CodecControlDestroy \n",__LINE__);
-                        if (eError != OMX_ErrorNone) 
-                        {
-                            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
-                            pComponentPrivate->cbInfo.EventHandler (pHandle,
-                                    pHandle->pApplicationPrivate,
-                                    OMX_EventError,
-                                    eError,
-                                    OMX_TI_ErrorSevere,
-                                    NULL);
-                            return eError;
-                        }
                         OMX_PRSTATE2(pComponentPrivate->dbg, "%d :: AACENCHandleCommand: Cmd Loaded\n",__LINE__);
                         eError = EXIT_COMPONENT_THRD;
                         /* Send StateChangeNotification to application */
@@ -1504,10 +1516,18 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
                          AACENC_CleanupInitParams(pHandle);
                          if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                              pComponentPrivate->curState != OMX_StateInvalid && 
-                             pComponentPrivate->curState != OMX_StateLoaded) 
+                             pComponentPrivate->curState != OMX_StateLoaded &&
+                             pLcmlHandle != NULL)
                          {
                              eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                          EMMCodecControlDestroy, (void *)pArgs);
+                             if (eError != OMX_ErrorNone)
+                                 OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+                             else{
+                                 pComponentPrivate->bCodecDestroyed = OMX_TRUE;
+                                 pComponentPrivate->pLcmlHandle = NULL;
+                                 pLcmlHandle = NULL;
+                             }
                          }
                          
                          pComponentPrivate->curState = OMX_StateInvalid;
@@ -1755,7 +1775,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
             OMX_PRDSP2(pComponentPrivate->dbg, "%d :: AACENC: Inside OMX_CommandFlush Command \n",__LINE__);
             if(commandData == 0x0 || commandData == -1) 
             {
-                OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+                OMX_ERROR2(pComponentPrivate->dbg, "Flushing input port:: unhandled ETB's = %lud, handled ETB's = %d\n",
                            pComponentPrivate->EmptythisbufferCount, pComponentPrivate->nHandledEmptyThisBuffers);
                 if (pComponentPrivate->EmptythisbufferCount == pComponentPrivate->nHandledEmptyThisBuffers) {
                     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
@@ -1813,7 +1833,7 @@ pComponentPrivate->curState = OMX_StateExecuting; /* --- Transition to Executing
         {
             if(commandData == 0x1 || commandData == -1)
             {
-                OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+                OMX_ERROR2(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %lud, handled FTB's = %d\n",
                            pComponentPrivate->FillthisbufferCount, pComponentPrivate->nHandledFillThisBuffers);
                 if (pComponentPrivate->FillthisbufferCount == pComponentPrivate->nHandledFillThisBuffers) {
                     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
@@ -2688,7 +2708,7 @@ pHandle = pComponentPrivate_CC->pHandle;
     
     else if(event == EMMCodecProcessingStoped) 
     {
-        OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder received stop ack, waiting for all outstanding buffers to be returned",__LINE__);
+        OMX_PRINT2(pComponentPrivate_CC->dbg, "AAC encoder received stop ack, waiting for all outstanding buffers to be returned");
 
         AACENC_waitForAllBuffersToReturn(pComponentPrivate_CC);
 
@@ -2787,6 +2807,14 @@ pHandle = pComponentPrivate_CC->pHandle;
             case USN_ERR_WARNING:
             case USN_ERR_PROCESS:
                 AACENC_HandleUSNError (pComponentPrivate_CC, (OMX_U32)args[5]);
+                break;
+            case USN_ERR_NONE:
+                if((args[5] == (void*)NULL) && (pComponentPrivate_CC->MMUFault==OMX_FALSE))
+                {
+                    OMX_ERROR4(pComponentPrivate_CC->dbg, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                    pComponentPrivate_CC->MMUFault = OMX_TRUE;
+                    AACENC_FatalErrorRecover(pComponentPrivate_CC);
+                }
                 break;
             default:
                 break;
@@ -2942,7 +2970,7 @@ OMX_HANDLETYPE AACENCGetLCMLHandle(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_HANDLETYPE pHandle = NULL;
     void *handle;
-    char *error;
+    const char *error;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
     OMX_PRINT1(pComponentPrivate->dbg, "%d :: Entering AACENCGetLCMLHandle..\n",__LINE__);
     dlerror();
@@ -3407,7 +3435,6 @@ int AACEnc_GetSampleRateIndexL( const int aRate)
 /*  =========================================================================*/
 void AACENC_HandleUSNError (AACENC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
 {
-    OMX_COMPONENTTYPE *pHandle = NULL;
     switch (arg)
     {
 
@@ -3494,12 +3521,18 @@ void AACENC_FatalErrorRecover(AACENC_COMPONENT_PRIVATE *pComponentPrivate){
     OMX_ERROR4(pComponentPrivate->dbg, "Begin FatalErrorRecover\n");
     AACENC_CleanupInitParams(pComponentPrivate->pHandle);
     if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
+        pComponentPrivate->curState != OMX_StateLoaded &&
+        pComponentPrivate->MMUFault == OMX_FALSE &&     //Comp-Thread still running, can't destroy codec yet
+        pComponentPrivate->pLcmlHandle != NULL) {
         eError = LCML_ControlCodec(((
                  LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
                  EMMCodecControlDestroy, (void *)pArgs);
-        OMX_ERROR4(pComponentPrivate->dbg,
-                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        if (eError != OMX_ErrorNone)
+            OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error: LCML_ControlCodec EMMCodecControlDestroy: no.  %x\n",__LINE__, eError);
+        else{
+            pComponentPrivate->bCodecDestroyed = OMX_TRUE;
+            pComponentPrivate->pLcmlHandle = NULL;
+        }
     }
 
 #ifdef RESOURCE_MANAGER_ENABLED
@@ -3547,7 +3580,7 @@ void AACENC_SignalIfAllBuffersAreReturned(AACENC_COMPONENT_PRIVATE *pComponentPr
     if ((pComponentPrivate->EmptythisbufferCount == pComponentPrivate->EmptybufferdoneCount) &&
         (pComponentPrivate->FillthisbufferCount ==   pComponentPrivate->FillbufferdoneCount)) {
         pthread_cond_broadcast(&pComponentPrivate->bufferReturned_condition);
-        OMX_PRINT2(pComponentPrivate->dbg, "Sending pthread signal that OMX has returned all buffers to app",__LINE__);
+        OMX_PRINT2(pComponentPrivate->dbg, "Sending pthread signal that OMX has returned all buffers to app");
     }
     pthread_mutex_unlock(&pComponentPrivate->bufferReturned_mutex);
 }
