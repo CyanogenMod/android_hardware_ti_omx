@@ -1,29 +1,34 @@
 /*
- * Copyright (C) Texas Instruments - http://www.ti.com/
+ * Copyright (c) 2010, Texas Instruments Incorporated
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/*=========================================================================
- *             Texas Instruments OMAP(TM) Platform Software
- *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
- *
- *  Use of this software is controlled by the terms and conditions found
- *  in the license agreement under which this software has been supplied.
- * ==========================================================================*/
 
 /**
  *  @file  omx_rpc_stub.c
@@ -67,6 +72,14 @@ extern COREID TARGET_CORE_ID;
 /******************************************************************
  *   MACROS - LOCAL
  ******************************************************************/
+
+/* When this is defined ETB/FTB calls are made in sync mode. Undefining will
+ * result in these calls being sent via async mode. Sync mode leads to correct
+ * functionality as per OMX spec but has a slight performance penalty. Async
+ * mode sacrifices strict adherence to spec for some gain in performance. */
+#define RPC_SYNC_MODE
+
+
 #define RPC_getPacket(HRCM, nPacketSize, pPacket) do { \
     status = RcmClient_alloc(HRCM, nPacketSize, &pPacket); \
     RPC_assert(status >= 0, RPC_OMX_ErrorInsufficientResources, \
@@ -139,6 +152,8 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	RPC_INDEX fxnIdx;
 	OMX_STRING CallingCorercmServerName;
 
+	OMX_S32 pid = 0;	//For TILER memory allocation changes
+
 	DOMX_ENTER("");
 	DOMX_DEBUG("RPC_GetHandle: Recieved GetHandle request from %s",
 	    cComponentName);
@@ -158,11 +173,13 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pPacket->data);
 	pMsgBody = &pRPCMsg->msgBody[0];
 
-	//Marshalled:[>offset(cParameterName)|>pAppData|>offset(CallingCorercmServerName)|
+	//Marshalled:[>offset(cParameterName)|>pAppData|>offset(CallingCorercmServerName)|>pid|
 	//>--cComponentName--|>--CallingCorercmServerName--|
 	//<hComp]
 
-	dataOffset = sizeof(OMX_U32) + sizeof(OMX_PTR) + sizeof(OMX_U32);
+	dataOffset =
+	    sizeof(OMX_U32) + sizeof(OMX_PTR) + sizeof(OMX_U32) +
+	    sizeof(OMX_S32);
 	RPC_SETFIELDOFFSET(pMsgBody, nPos, dataOffset, OMX_U32);
 	//To update with RPC macros
 	strcpy((char *)(pMsgBody + dataOffset), cComponentName);
@@ -173,6 +190,10 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDOFFSET(pMsgBody, nPos, dataOffset2, OMX_U32);
 	//To update with RPC macros
 	strcpy((char *)(pMsgBody + dataOffset2), CallingCorercmServerName);
+
+	//Towards TILER memory allocation changes
+	pid = getpid();
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pid, OMX_S32);
 
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
@@ -1030,8 +1051,10 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	OMX_S16 status;
 	RPC_OMX_CONTEXT *hCtx = hRPCCtx;
 	RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
-
 	OMX_U8 *pAuxBuf1 = NULL;
+#ifdef RPC_SYNC_MODE
+	RcmClient_Message *pRetPacket = NULL;
+#endif
 
 	DOMX_ENTER("");
 
@@ -1073,10 +1096,21 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
 
+#ifdef RPC_SYNC_MODE
+	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
+	    fxnIdx, pRetPacket);
+	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
+	pMsgBody = &pRPCMsg->msgBody[0];
+
+	*eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
+
+	RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
+#else
 	RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx);
 
-	*eCompReturn = OMX_ErrorNone;	//pRPCMsg->msgHeader.nOMXReturn;
+	*eCompReturn = OMX_ErrorNone;
+#endif
 
       EXIT:
 	DOMX_EXIT("");
@@ -1109,8 +1143,10 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	OMX_S16 status;
 	RPC_OMX_CONTEXT *hCtx = hRPCCtx;
 	RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
-
 	OMX_U8 *pAuxBuf1 = NULL;
+#ifdef RPC_SYNC_MODE
+	RcmClient_Message *pRetPacket = NULL;
+#endif
 
 	DOMX_ENTER("");
 
@@ -1148,10 +1184,21 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
 
+#ifdef RPC_SYNC_MODE
+	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
+	    fxnIdx, pRetPacket);
+	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
+	pMsgBody = &pRPCMsg->msgBody[0];
+
+	*eCompReturn = pRPCMsg->msgHeader.nOMXReturn;
+
+	RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
+#else
 	RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx);
 
-	*eCompReturn = OMX_ErrorNone;	//pRPCMsg->msgHeader.nOMXReturn;
+	*eCompReturn = OMX_ErrorNone;
+#endif
 
       EXIT:
 	DOMX_EXIT("");
