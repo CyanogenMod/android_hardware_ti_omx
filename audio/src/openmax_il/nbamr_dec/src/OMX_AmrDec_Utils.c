@@ -546,6 +546,16 @@ OMX_ERRORTYPE NBAMRDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         /* Removing sleep() calls. */
     }
 
+    if (NULL != pComponentPrivate->ptrLibLCML && pComponentPrivate->DSPMMUFault){
+        eError = LCML_ControlCodec(((
+                                     LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                   EMMCodecControlDestroy, NULL);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML=NULL;
+    }
+
     // Close dbg file
     if (pComponentPrivate->bDebugInitialized == 1) {
         pComponentPrivate->bDebugInitialized = 0;
@@ -3810,10 +3820,7 @@ void NBAMRDEC_FatalErrorRecover(AMRDEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        NULL);
     NBAMRDEC_CleanupInitParams(pComponentPrivate->pHandle);
 
-    if(NULL != pComponentPrivate->pLcmlHandle){
-        dlclose(pComponentPrivate->pLcmlHandle);
-        pComponentPrivate->pLcmlHandle=NULL;
-    }
+    pComponentPrivate->DSPMMUFault = OMX_TRUE;
 
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");

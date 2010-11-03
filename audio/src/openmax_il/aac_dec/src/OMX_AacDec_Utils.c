@@ -510,6 +510,16 @@ OMX_ERRORTYPE AACDEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     pthread_mutex_destroy(&pComponentPrivate->bufferReturned_mutex);
     pthread_cond_destroy(&pComponentPrivate->bufferReturned_condition);
 
+    if (NULL != pComponentPrivate->ptrLibLCML && pComponentPrivate->DSPMMUFault){
+        eError = LCML_ControlCodec(((
+                                     LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                   EMMCodecControlDestroy, NULL);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML=NULL;
+    }
+
     return eError;
 }
 
@@ -1207,6 +1217,13 @@ OMX_U32 AACDEC_HandleCommand (AACDEC_COMPONENT_PRIVATE *pComponentPrivate)
 #endif
 
                 eError = EXIT_COMPONENT_THRD;
+                /*Closing LCML Lib*/
+                if (pComponentPrivate->ptrLibLCML != NULL)
+                {
+                    OMX_PRDSP2(pComponentPrivate->dbg, "Closing LCML library\n");
+                    dlclose( pComponentPrivate->ptrLibLCML  );
+                    pComponentPrivate->ptrLibLCML = NULL;
+                }
                 pComponentPrivate->bInitParamsInitialized = 0;
                 break;
 
@@ -3067,6 +3084,10 @@ OMX_HANDLETYPE AACDEC_GetLCMLHandle(AACDEC_COMPONENT_PRIVATE* pComponentPrivate)
         pHandle = NULL;
         return pHandle;
     }
+
+    /* saving LCML lib pointer  */
+    pComponentPrivate->ptrLibLCML=handle;
+
     if (NULL != pHandle) {
         ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
     }
@@ -3874,12 +3895,7 @@ void AACDEC_FatalErrorRecover(AACDEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_TI_ErrorSevere,
                                        NULL);
     AACDEC_CleanupInitParams(pComponentPrivate->pHandle);
-
-    if(NULL != pComponentPrivate->pLcmlHandle){
-        dlclose(pComponentPrivate->pLcmlHandle);
-        pComponentPrivate->pLcmlHandle=NULL;
-    }
-
+    pComponentPrivate->DSPMMUFault = OMX_TRUE;
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }

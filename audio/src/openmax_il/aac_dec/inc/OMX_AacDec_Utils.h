@@ -663,7 +663,8 @@ typedef struct AACDEC_COMPONENT_PRIVATE
 
     /** This is LCML handle  */
     OMX_HANDLETYPE pLcmlHandle;
-
+    /** Needed to free LCML lib dll **/
+    void* ptrLibLCML;
     /** ID stream ID**/
     OMX_U32 streamID;
     /** Contains pointers to LCML Buffer Headers */
@@ -839,6 +840,7 @@ typedef struct AACDEC_COMPONENT_PRIVATE
       /** Indicate when first output buffer received from DSP **/
     OMX_U32 first_output_buf_rcv;
     OMX_BOOL bFlushing;
+    OMX_BOOL DSPMMUFault;
 
 } AACDEC_COMPONENT_PRIVATE;
 

@@ -342,7 +342,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->sOutPortFormat.eEncoding = OMX_AUDIO_CodingPCM;
-
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
     /* initialize role name */
     strcpy((char*)pComponentPrivate->componentRole.cRole, MP3_DEC_ROLE);
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);

@@ -549,6 +549,16 @@ OMX_ERRORTYPE WBAMR_DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
         pthread_cond_destroy (&pComponentPrivate->codecFlush_threshold);
     }
 
+    if (NULL != pComponentPrivate->ptrLibLCML && pComponentPrivate->DSPMMUFault){
+        eError = LCML_ControlCodec(((
+                                     LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                                   EMMCodecControlDestroy, NULL);
+        OMX_ERROR4(pComponentPrivate->dbg,
+                   "%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+    }
+
     // Close dbg
     OMX_DBG_CLOSE(pComponentPrivate->dbg);
 
@@ -3653,10 +3663,7 @@ void WBAMRDEC_FatalErrorRecover(WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        NULL);
     WBAMR_DEC_CleanupInitParams(pComponentPrivate->pHandle);
 
-    if(NULL != pComponentPrivate->pLcmlHandle){
-        dlclose(pComponentPrivate->pLcmlHandle);
-        pComponentPrivate->pLcmlHandle=NULL;
-    }
+    pComponentPrivate->DSPMMUFault= OMX_TRUE;
 
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");

@@ -406,6 +406,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->sOutPortFormat.eEncoding          = OMX_AUDIO_CodingPCM;
 
     pComponentPrivate->bPreempted = OMX_FALSE;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     amr_ip->nPortIndex = OMX_DirInput;
     amr_ip->nChannels = 1;
