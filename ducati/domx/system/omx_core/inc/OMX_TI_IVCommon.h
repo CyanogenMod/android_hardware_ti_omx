@@ -177,11 +177,13 @@ OMX_SENSORSELECT eSensor; /**< sensor select */
  * Flicker cancellation types
  */
 typedef enum OMX_COMMONFLICKERCANCELTYPE{
-        OMX_FlickerCancelOff = 0,
-        OMX_FlickerCancelAuto,
-        OMX_FlickerCancel50,
-        OMX_FlickerCancel60,
-        OMX_FlickerCancelMax = 0x7fffffff
+    OMX_FlickerCancelOff = 0,
+    OMX_FlickerCancelAuto,
+    OMX_FlickerCancel50,
+    OMX_FlickerCancel60,
+    OMX_FlickerCancel100,
+    OMX_FlickerCancel120,
+    OMX_FlickerCancelMax = 0x7fffffff
 }OMX_COMMONFLICKERCANCELTYPE;
 
 typedef struct OMX_CONFIG_FLICKERCANCELTYPE {
@@ -511,6 +513,7 @@ typedef enum OMX_CAMOPERATINGMODETYPE {
         OMX_CaptureHighSpeedVideo,
         OMX_CaptureVideoMemoryInput,
         OMX_TI_CaptureDummy,
+        OMX_TI_CaptureGestureRecognition,
         OMX_CamOperatingModeMax = 0x7fffffff
 } OMX_CAMOPERATINGMODETYPE;
 /**
@@ -1460,23 +1463,24 @@ typedef struct OMX_TI_MTISTYPE {
  */
 typedef enum OMX_EXT_EXTRADATATYPE
 {
-   OMX_ExifAttributes = 0x7F000001,    /**< 0x7F000001 Reserved region for introducing Vendor Extensions */
-   OMX_AncillaryData,                /**< 0x7F000002 ancillary data */
-   OMX_WhiteBalance,                /**< 0x7F000003 white balance resultant data */
-   OMX_UnsaturatedRegions,            /**< 0x7F000004 unsaturated regions data */
-   OMX_FaceDetection,                /**< 0x7F000005 face detect data */
-   OMX_BarcodeDetection,            /**< 0x7F000006 bar-code detct data */
-   OMX_FrontObjectDetection,        /**< 0x7F000007 Front object detection data */
-   OMX_MotionEstimation,            /**< 0x7F000008 motion Estimation data */
-   OMX_TI_MTISType,                    /**< 0x7F000009 MTIS motion Estimation data */
-   OMX_DistanceEstimation,            /**< 0x7F00000A disctancedistance estimation */
-   OMX_Histogram,                    /**< 0x7F00000B histogram */
-   OMX_FocusRegion,                    /**< 0x7F00000C focus region data */
-   OMX_ExtraDataPanAndScan,            /**< 0x7F00000D pan and scan data */
-   OMX_RawFormat,                    /**< 0x7F00000E custom RAW data format */
-   OMX_SensorType,                    /**< 0x7F00000F vendor & model of the sensor being used */
-   OMX_SensorCustomDataLength,        /**< 0x7F000010 vendor specific custom data length */
-   OMX_SensorCustomData            /**< 0x7F000011 vendor specific data */
+    OMX_ExifAttributes = 0x7F000001,    /**< 0x7F000001 Reserved region for introducing Vendor Extensions */
+    OMX_AncillaryData,                  /**< 0x7F000002 ancillary data */
+    OMX_WhiteBalance,                   /**< 0x7F000003 white balance resultant data */
+    OMX_UnsaturatedRegions,             /**< 0x7F000004 unsaturated regions data */
+    OMX_FaceDetection,                  /**< 0x7F000005 face detect data */
+    OMX_BarcodeDetection,               /**< 0x7F000006 bar-code detct data */
+    OMX_FrontObjectDetection,           /**< 0x7F000007 Front object detection data */
+    OMX_MotionEstimation,               /**< 0x7F000008 motion Estimation data */
+    OMX_TI_MTISType,                       /**< 0x7F000009 MTIS motion Estimation data */
+    OMX_DistanceEstimation,             /**< 0x7F00000A disctancedistance estimation */
+    OMX_Histogram,                      /**< 0x7F00000B histogram */
+    OMX_FocusRegion,                    /**< 0x7F00000C focus region data */
+    OMX_ExtraDataPanAndScan,            /**< 0x7F00000D pan and scan data */
+    OMX_RawFormat,                      /**< 0x7F00000E custom RAW data format */
+    OMX_SensorType,                     /**< 0x7F00000F vendor & model of the sensor being used */
+    OMX_SensorCustomDataLength,         /**< 0x7F000010 vendor specific custom data length */
+    OMX_SensorCustomData,               /**< 0x7F000011 vendor specific data */
+    OMX_TI_FrameLayout,                 /**< 0x7F000012 vendor specific data */
 } OMX_EXT_EXTRADATATYPE;
 
 
@@ -1577,7 +1581,6 @@ typedef enum OMX_IMAGESTAMPOPERATION{
     OMX_NewImageStamp = 0,
     OMX_Continuation
 }OMX_IMAGESTAMPOPERATION;
-
 
 /**
  * Enable Extra-data on a specific port.
@@ -1848,6 +1851,123 @@ typedef enum OMX_TI_EXTEXPOSURECONTROLTYPE {
     OMX_TI_ExposureControlVeryLong = OMX_ExposureControlVendorStartUnused + 1
 } OMX_TI_EXTEXPOSURECONTROLTYPE;
 
+/**
+ * Variable frame rate configuration.
+ *
+ * STRUCT MEMBERS:
+ *  nSize         : Size of the structure in bytes
+ *  nVersion      : OMX specification version information
+ *  nPortIndex    : Port that this structure applies to
+ *  xMinFramerate : Minimum variable frame rate value
+ */
+typedef struct OMX_TI_PARAM_VARFRAMERATETYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_U32 xMinFramerate;
+} OMX_TI_PARAM_VARFRAMERATETYPE;
+
+/**
+ * Exposure config for right frame
+ */
+typedef struct OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_U32 nApertureFNumber;  /**< e.g. nApertureFNumber = 2 implies "f/2" - Q16 format */
+    OMX_U32 nShutterSpeedMsec; /**< Shutterspeed in milliseconds */
+    OMX_U32 nSensitivity;      /**< e.g. nSensitivity = 100 implies "ISO 100" */
+} OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE;
+
+/**
+ * Auto Convergence mode enum
+ */
+typedef enum OMX_TI_AUTOCONVERGENCEMODETYPE {
+    OMX_TI_AutoConvergenceModeDisable,
+    OMX_TI_AutoConvergenceModeFrame,
+    OMX_TI_AutoConvergenceModeCenter,
+    OMX_TI_AutoConvergenceModeFocusFaceTouch,
+    OMX_TI_AutoConvergenceModeManual,
+    OMX_TI_AutoConvergenceExtensions = 0x6F000000,    /** Reserved region for introducing Khronos Standard Extensions */
+    OMX_TI_AutoConvergenceStartUnused = 0x7F000000,   /** Reserved region for introducing Vendor Extensions */
+    OMX_TI_AutoConvergenceModeMax = 0x7FFFFFFF
+} OMX_TI_AUTOCONVERGENCEMODETYPE;
+
+/**
+ * Variable farame rate configuration.
+ *
+ * STRUCT MEMBERS:
+ *  nSize             : Size of the structure in bytes
+ *  nVersion          : OMX specification version information
+ *  nPortIndex        : Port that this structure applies to
+ *  eACMode           : Auto convergence mode
+ *  nManualConverence : Manual Converence value
+ *  nACProcWinStartX  : Start X AC Window
+ *  nACProcWinStartY  : Start Y AC Window
+ *  nACProcWinWidth   : Width of AC Window
+ *  nACProcWinHeight  : Height of AC Window
+ *  bACStatus         : output status from AL alg
+ */
+typedef struct OMX_TI_CONFIG_CONVERGENCETYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_TI_AUTOCONVERGENCEMODETYPE eACMode;
+    OMX_S32 nManualConverence;
+    OMX_U32 nACProcWinStartX;
+    OMX_U32 nACProcWinStartY;
+    OMX_U32 nACProcWinWidth;
+    OMX_U32 nACProcWinHeight;
+    OMX_BOOL bACStatus;
+} OMX_TI_CONFIG_CONVERGENCETYPE;
+
+/**
+ * Camera specific version.
+ *
+ * STRUCT MEMBERS:
+ *  nBranch        : Branch
+ *  nCommitID      : Commit ID
+ *  nBuildDateTime : Build date and time
+ *  nExtraInfo     : rederved for future use
+ */
+typedef struct OMX_TI_CAMERASPECVERSIONTYPE {
+    OMX_U8 nBranch[64];
+    OMX_U8 nCommitID[64];
+    OMX_U8 nBuildDateTime[64];
+    OMX_U8 nExtraInfo[64];
+} OMX_TI_CAMERASPECVERSIONTYPE;
+
+/**
+ * Stereo frame layout enum
+ */
+typedef enum OMX_TI_STEREOFRAMELAYOUTTYPE {
+    OMX_TI_StereoFrameLayout2D,
+    OMX_TI_StereoFrameLayoutTopBottom,
+    OMX_TI_StereoFrameLayoutLeftRight,
+    OMX_TI_StereoFrameLayoutMax = 0x7FFFFFFF
+} OMX_TI_STEREOFRAMELAYOUTTYPE;
+
+/**
+ * Camera frame layout type.
+ *
+ * STRUCT MEMBERS:
+ *  eFrameLayout    : frame layout
+ *  nSubsapmleRatio : subsapmle ratio
+ */
+typedef struct OMX_TI_FRAMELAYOUTTYPE {
+    OMX_TI_STEREOFRAMELAYOUTTYPE eFrameLayout;
+    OMX_U32  nSubsapmleRatio; /**  Subsampling ratio, Q15.7 */
+} OMX_TI_FRAMELAYOUTTYPE;
+
+/**
+ * The OMX_TI_COLOR_FORMATTYPE enumeration is used to define the
+ * extended color format types.
+ */
+typedef enum OMX_TI_COLOR_FORMATTYPE {
+	OMX_TI_COLOR_FormatYUV420PackedSemiPlanarInterlaced =
+        (OMX_COLOR_FORMATTYPE) OMX_COLOR_FormatVendorStartUnused + 1,
+    OMX_TI_COLOR_FormatRawBayer10bitStereo = OMX_COLOR_FormatVendorStartUnused + 2 /**< 10 bit raw for stereo */
+} OMX_TI_COLOR_FORMATTYPE;
 
 #ifdef __cplusplus
 }

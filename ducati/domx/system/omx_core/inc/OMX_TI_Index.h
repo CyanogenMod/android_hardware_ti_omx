@@ -199,7 +199,10 @@ typedef enum OMX_TI_INDEXTYPE {
     /* MPEG4 and H264 encoder specific Indices */
     OMX_TI_IndexParamVideoIntraRefresh,         /**< reference: OMX_TI_VIDEO_PARAM_INTRAREFRESHTYPE */
 
-    OMX_TI_IndexConfigShutterCallback           /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_TI_IndexConfigShutterCallback,           /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_TI_IndexParamVarFrameRate,                      /**< reference: OMX_PARAM_VARFARAMERATETYPE */
+    OMX_TI_IndexConfigAutoConvergence,                  /**< reference: OMX_TI_CONFIG_CONVERGENCETYPE */
+    OMX_TI_IndexConfigRightExposureValue                /**< reference: OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE */
 } OMX_TI_INDEXTYPE;
 
 
