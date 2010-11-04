@@ -29,43 +29,36 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef MEMMGR_RPCH
+#define MEMMGR_RPCH
 
-/**
- *  @file  PVHeader.h
- *         This file contains methods that provides the functionality for
- *         the PV core specific headers
- *
- *  @path
- *
- *  @rev 1.0
- */
+/* Standard headers */
+#include <Std.h>
 
-/*==============================================================
- *! Revision History
- *! ============================
- *! 11-April-2010 Saket dsaket@ti.com: Initial Version
- *================================================================*/
+/* OSAL & Utils headers */
+#include <OsalPrint.h>
+#include <String.h>
+#include <Trace.h>
 
-/******************************************************************
- *   INCLUDE FILES
- ******************************************************************/
 
-#ifndef __PVHEADER__
-#define __PVHEADER__
+/* RCM headers */
+#include <RcmServer.h>
 
-#define PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX 0xFF7A347
-/** Opencore specific, refer to OpenMax Call Sequences document section 3.2 **/
-typedef struct PV_OMXComponentCapabilityFlagsType
+#include <tilermgr.h>
+#include <memmgr.h>
+
+UInt getStride(Ptr bufPtr);
+Int32 fxnMemMgr_Debug(UInt32 dataSize, UInt32 * data);
+Int32 fxnMemMgr_Alloc(UInt32 dataSize, UInt32 * data);
+Int32 fxnMemMgr_Free(UInt32 dataSize, UInt32 * data);
+Int32 fxnTilerMem_ConvertToTilerSpace(UInt32 dataSize, UInt32 * data);
+Int32 fxnTilerMem_ConvertPageModeToTilerSpace(UInt32 dataSize, UInt32 * data);
+
+struct MemMgr_func_info
 {
-	////////////////// OMX COMPONENT CAPABILITY RELATED MEMBERS
-	OMX_BOOL iIsOMXComponentMultiThreaded;
-	OMX_BOOL iOMXComponentSupportsExternalOutputBufferAlloc;
-	OMX_BOOL iOMXComponentSupportsExternalInputBufferAlloc;
-	OMX_BOOL iOMXComponentSupportsMovableInputBuffers;
-	OMX_BOOL iOMXComponentSupportsPartialFrames;
-	OMX_BOOL iOMXComponentUsesNALStartCodes;
-	OMX_BOOL iOMXComponentCanHandleIncompleteFrames;
-	OMX_BOOL iOMXComponentUsesFullAVCFrames;
-} PV_OMXComponentCapabilityFlagsType;
+	RcmServer_MsgFxn func_ptr;
+	String name;
+};
 
-#endif //__PVHEADER__
+extern struct MemMgr_func_info MemMgrFxns[5];
+#endif

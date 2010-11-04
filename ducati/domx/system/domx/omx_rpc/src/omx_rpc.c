@@ -1,29 +1,34 @@
 /*
- * Copyright (C) Texas Instruments - http://www.ti.com/
+ * Copyright (c) 2010, Texas Instruments Incorporated
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/*=========================================================================
- *             Texas Instruments OMAP(TM) Platform Software
- *  (c) Copyright Texas Instruments, Incorporated.  All Rights Reserved.
- *
- *  Use of this software is controlled by the terms and conditions found
- *  in the license agreement under which this software has been supplied.
- * ==========================================================================*/
 
 /**
  *  @file  omx_rpc.c
@@ -69,6 +74,10 @@
 #include "omx_rpc_internal.h"
 #include "omx_rpc_utils.h"
 
+/*-------tiler include ----------------------------------------*/
+#include <memmgr.h>
+#include <tilermgr.h>
+
 /* **************************** MACROS DEFINES *************************** */
 
 /*For ipc setup*/
@@ -78,7 +87,7 @@
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
-#define DOMX_VERSION 6
+#define DOMX_VERSION 7
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -145,9 +154,10 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
     RPC_OMX_HANDLE * phRPCCtx)
 {
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	RPC_OMX_ERRORTYPE eTmpError = RPC_OMX_ErrorNone;
 	RPC_OMX_CONTEXT *pRPCCtx = NULL;
 	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
-	OMX_BOOL bMutex = OMX_FALSE;
+	OMX_BOOL bMutex = OMX_FALSE, bModInit = OMX_FALSE, bIpcSet = OMX_FALSE;
 
 	pRPCCtx =
 	    (RPC_OMX_CONTEXT *) TIMM_OSAL_Malloc(sizeof(RPC_OMX_CONTEXT),
@@ -169,6 +179,7 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
 		eRPCError = _RPC_IpcSetup();
 		RPC_assert(eRPCError == RPC_OMX_ErrorNone, eRPCError,
 		    "Basic ipc setup failed");
+		bIpcSet = OMX_TRUE;
 
 		LOCAL_CORE_ID = MultiProc_getId(NULL);
 		/*Extract target core id from component name */
@@ -180,6 +191,7 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
 		eRPCError = RPC_ModInit();
 		RPC_assert(eRPCError == RPC_OMX_ErrorNone, eRPCError,
 		    "ModInit failed");
+		bModInit = OMX_TRUE;
 
 		/*This will fill in the global rcmHndl */
 		eRPCError = _RPC_ClientCreate(cComponentName);
@@ -193,6 +205,22 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
       EXIT:
 	if (eRPCError != RPC_OMX_ErrorNone)
 	{
+		if (bModInit)
+		{
+			eTmpError = RPC_ModDeInit();
+			if (eTmpError != RPC_OMX_ErrorNone)
+			{
+				DOMX_ERROR("RPC ModDeInit failed");
+			}
+		}
+		if (bIpcSet)
+		{
+			eTmpError = _RPC_IpcDestroy();
+			if (eTmpError != RPC_OMX_ErrorNone)
+			{
+				DOMX_ERROR("RPC Ipc Destroy failed");
+			}
+		}
 		if (bMutex)
 		{
 			nInstanceCount--;
@@ -333,6 +361,14 @@ RPC_OMX_ERRORTYPE RPC_ModDeInit(void)
 			eRPCError = RPC_OMX_RCM_ServerFail;
 		}
 		rcmSrvHndl = NULL;
+
+		status = TilerMgr_Close();
+		if (status < 0)
+		{
+			DOMX_ERROR
+			    ("Error in TilerMgr_Close, status = %d", status);
+			eRPCError = RPC_OMX_ErrorUnknown;
+		}
 	}
 
 	RcmServer_exit();
@@ -433,6 +469,9 @@ RPC_OMX_ERRORTYPE RPC_ModInit(void)
 	RcmServer_start(rcmSrvHndl);
 	DOMX_DEBUG("Running RcmServer");
 
+	status = TilerMgr_Open();
+	RPC_assert((status >= 0), RPC_OMX_ErrorUnknown,
+	    "Error in TilerMgr_Close");
       EXIT:
 	DOMX_EXIT("");
 	if (eRPCError != RPC_OMX_ErrorNone && bCallDestroyIfErr)

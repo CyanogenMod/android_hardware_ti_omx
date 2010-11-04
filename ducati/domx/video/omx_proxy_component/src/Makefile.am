@@ -23,7 +23,8 @@ common_cflags = \
 	-I$(top_srcdir)/system/domx/omx_rpc/inc \
 	$(MMOSAL_CFLAGS) \
 	$(OMXCORE_CFLAGS) \
-	$(SYSLINK_CFLAGS)
+	$(SYSLINK_CFLAGS) \
+	$(MEMMGR_CFLAGS)
 
 libh264e_la_SOURCES     = omx_proxy_h264enc.c
 libh264e_la_LIBADD      = $(common_libadd)

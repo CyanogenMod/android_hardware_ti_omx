@@ -98,6 +98,7 @@ system/mm_osal/Makefile
 system/mm_osal/src/Makefile
 system/mm_osal/libmmosal.pc
 system/domx/Makefile
+system/domx/memmgr_rpc/src/Makefile
 system/domx/omx_proxy_common/src/Makefile
 system/domx/omx_rpc/src/Makefile
 video/omx_proxy_component/src/Makefile

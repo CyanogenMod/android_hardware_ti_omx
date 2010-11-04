@@ -1,30 +1,35 @@
-
 /*
- * Copyright (C) Texas Instruments - http://www.ti.com/
+ * Copyright (c) 2010, Texas Instruments Incorporated
+ * All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/* ====================================================================
-*             Texas Instruments OMAP(TM) Platform Software
-* (c) Copyright Texas Instruments, Incorporated. All Rights Reserved.
-*
-* Use of this software is controlled by the terms and conditions found
-* in the license agreement under which this software has been supplied.
-* ==================================================================== */
+
 #ifndef OMX_DEBUG_H
 #define OMX_DEBUG_H
 
@@ -37,7 +42,7 @@
 #define OMX_MASK_ERROR     0x40000000
 #define OMX_MASK_WARN      0x20000000
 #define OMX_MASK_INFO      0x10000000
-#define OMX_MASK_DEBUG     0x08000000  
+#define OMX_MASK_DEBUG     0x08000000
 #define OMX_MASK_TRACE     0x04000000
 #define OMX_MASK_RESERVE1  0x02000000
 #define OMX_MASK_RESERVE2  0x01000000
@@ -72,7 +77,7 @@
     #define OMX_DPRINT(HANDLE, STR, ARG...) OMX_LOG_PRINT(OMX_MASK_DEBUG | HANDLE, STR, ##ARG)
     #define OMX_TPRINT(HANDLE, STR, ARG...) OMX_LOG_PRINT(OMX_MASK_TRACE | HANDLE, STR, ##ARG)
 #else
-    #define OMX_DPRINT(HANDLE, STR, ARG...)  
+    #define OMX_DPRINT(HANDLE, STR, ARG...)
     #define OMX_TPRINT(HANDLE, STR, ARG...)
 #endif
 
@@ -114,7 +119,7 @@ unsigned int   OMX_Log_SetMask(OMX_DBG_HANDLE hDebug, unsigned int uiNewMask);
 unsigned int   OMX_Log_GetOptions(OMX_DBG_HANDLE hDebug);
 unsigned int   OMX_Log_SetOptions(OMX_DBG_HANDLE hDebug, unsigned int uiNewOptions);
 
-void OMX_Log(unsigned int mask, const char *szFileName, int iLineNum, 
+void OMX_Log(unsigned int mask, const char *szFileName, int iLineNum,
              const char *szFunctionName, const char *strFormat, ...);
 
 const char *OMX_GetErrorString(OMX_ERRORTYPE error);
@@ -126,7 +131,7 @@ OMX_ERRORTYPE OMX_Log_LoadConfigFile(char* szConfigFile);
  * The following macros are intended to make accessing a debug handle easier.
  *
  * For example, for the Util library, you would create a header file called
- *   OMX_Util_Private.h.  This file will be included in all source files 
+ *   OMX_Util_Private.h.  This file will be included in all source files
  *   compiled into the Util library.  The header file uses the 'define' macro
  *   to generate a prototype for the getDebugHandle() function:
  *
@@ -138,7 +143,7 @@ OMX_ERRORTYPE OMX_Log_LoadConfigFile(char* szConfigFile);
  *   #define UTIL_WARNPRINT(str,args...) OMX_WARNPRINT(ACCESS_DEBUG_HANDLE(UTIL),str,##args)
  *   #define UTIL_ERRPRINT(str,args...) OMX_ERRPRINT(ACCESS_DEBUG_HANDLE(UTIL),str,##args)
  *
- * Finally, in a source file which will be compiled into the lib, for example 
+ * Finally, in a source file which will be compiled into the lib, for example
  *   OMX_Util_Private.c, you implement the function with the 'implement' macro:
  *
  *   IMPLEMENT_DEBUG_HANDLE_FN(UTIL)

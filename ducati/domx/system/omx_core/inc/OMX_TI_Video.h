@@ -1,10 +1,34 @@
-/* ====================================================================
- *             Texas Instruments OMAP(TM) Platform Software
- * (c) Copyright Texas Instruments, Incorporated. All Rights Reserved.
+/*
+ * Copyright (c) 2010, Texas Instruments Incorporated
+ * All rights reserved.
  *
- * Use of this software is controlled by the terms and conditions found
- * in the license agreement under which this software has been supplied.
- * ==================================================================== */
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /* -------------------------------------------------------------------------- */
 /*
@@ -14,7 +38,7 @@
  * @path:
  * \WTSD_DucatiMMSW\ omx\omx_il_1_x\omx_core\
 
-/* -------------------------------------------------------------------------- */
+ * -------------------------------------------------------------------------- */
 
 /* =========================================================================
  *!
@@ -119,29 +143,6 @@ typedef struct OMX_VIDEO_CONFIG_PIXELINFOTYPE  {
 	OMX_U32 nWidth;
 	OMX_U32 nHeight;
 } OMX_VIDEO_CONFIG_PIXELINFOTYPE;
-
-/**
- *	@brief	bit stream format type selection for the encoded bit stream
- */
-typedef enum OMX_VIDEO_AVCBITSTREAMFORMATTYPE{
-	OMX_Video_BitStreamFormatByte=0,	//!<  BYTE stream Format
-	OMX_Video_BitStreamFormatNAL=1,	//!<  NAL Unit Format
-    OMX_Video_BitStreamFormatNAL_MAX =  0X7FFFFFFF
-}OMX_VIDEO_AVCBITSTREAMFORMATTYPE;
-
-/* ========================================================================== */
-/*!
- @brief OMX_VIDEO_PARAM_BITSTREAMFORMATTYPE  :to select the bit stream format for the encoded data
- @param  eStreamFormat 	 to specify bit stream format type
- 							@sa  OMX_VIDEO_AVCBITSTREAMFORMATTYPE
-*/
-/* ==========================================================================*/
-typedef struct OMX_VIDEO_PARAM_AVCBITSTREAMFORMATTYPE {
-	OMX_U32	 nSize;
-	OMX_VERSIONTYPE nVersion;
-	OMX_U32	 nPortIndex;
-	OMX_VIDEO_AVCBITSTREAMFORMATTYPE	eStreamFormat;
-}OMX_VIDEO_PARAM_AVCBITSTREAMFORMATTYPE;
 
 /* ========================================================================== */
 /*!
@@ -301,43 +302,101 @@ typedef struct OMX_VIDEO_PARAM_ENCODER_PRESETTYPE{
 /**
  *	@brief	 input content type
  */
-typedef enum OMX_VIDEO_FRAMECONTENTTYPE {
-	OMX_Video_Progressive=0,//!<Progressive frame
-	OMX_Video_Interlaced=1,//!<Interlaced frame
-	OMX_Video_Interlaced_Topfield=2,//!<Interlaced picture, top field
-	OMX_Video_Interlaced_Bottomfield=3,	//!<Interlaced picture, bottom field
-    OMX_Video_FrameContentType_MAX =  0X7FFFFFFF
-}OMX_VIDEO_FRAMECONTENTTYPE;
+typedef enum OMX_TI_VIDEO_FRAMECONTENTTYPE {
+	OMX_TI_Video_Progressive=0,//!<Progressive frame
+	OMX_TI_Video_Interlace_BothFieldsTogether=1,//!<Interlaced frame
+	OMX_TI_Video_Interlace_OneField=2,
+	OMX_TI_Video_AVC_2004_StereoInfoType=3,
+	OMX_TI_Video_AVC_2010_StereoFramePackingType=4,
+    OMX_TI_Video_FrameContentType_MAX =  0X7FFFFFFF
+}OMX_TI_VIDEO_FRAMECONTENTTYPE;
 
 /**
  *	@brief	 Specifies the type of interlace content
  */
-typedef enum OMX_VIDEO_INTERLACE_CODINGTYPE {
-	OMX_Video_Interlace_PICAFF	= 0 ,   //!< PicAFF type of interlace coding
-	OMX_Video_Interlace_MBAFF,			//!< MBAFF type of interlace coding
-	OMX_Video_Interlace_Fieldonly,   //!< Field only coding
-	OMX_Video_Interlace_Fieldonly_MRF=OMX_Video_Interlace_Fieldonly,
-	OMX_Video_Interlace_Fieldonly_ARF,
-	OMX_Video_Interlace_Fieldonly_SPF, 	 //!< Field only coding where codec decides the partiy of the field to be used based upon content
+typedef enum OMX_TI_VIDEO_AVC_INTERLACE_CODINGTYPE {
+	OMX_TI_Video_Interlace_PICAFF	= 0 ,   //!< PicAFF type of interlace coding
+	OMX_TI_Video_Interlace_MBAFF,		//!< MBAFF type of interlace coding
+	OMX_TI_Video_Interlace_Fieldonly,   //!< Field only coding
+	OMX_TI_Video_Interlace_Fieldonly_MRF=OMX_TI_Video_Interlace_Fieldonly,
+	OMX_TI_Video_Interlace_Fieldonly_ARF,
+	OMX_TI_Video_Interlace_Fieldonly_SPF, 	 //!< Field only coding where codec decides the partiy of the field to be used based upon content
     OMX_Video_Interlace_MAX =  0X7FFFFFFF
-}OMX_VIDEO_INTERLACE_CODINGTYPE;
+}OMX_TI_VIDEO_AVC_INTERLACE_CODINGTYPE;
 
 /* ========================================================================== */
 /*!
- @brief OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE : to configure the data content
+ @brief OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE : to configure the data content
  @param  eContentType		to specify Content type
- 							@sa OMX_VIDEO_FRAMECONTENTTYPE
- @param  eInterlaceCodingType	to specify the settings of interlace content
- 							@sa OMX_VIDEO_INTERLACE_CODINGTYPE
+						@sa OMX_VIDEO_FRAMECONTENTTYPE
 */
 /* ==========================================================================*/
-typedef struct OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE{
+typedef struct OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE{
 	OMX_U32	 nSize;
 	OMX_VERSIONTYPE nVersion;
 	OMX_U32	 nPortIndex;
-	OMX_VIDEO_FRAMECONTENTTYPE eContentType;
-	OMX_VIDEO_INTERLACE_CODINGTYPE eInterlaceCodingType;
-}OMX_VIDEO_PARAM_FRAMEDATACONTENTTYPE;
+	OMX_TI_VIDEO_FRAMECONTENTTYPE eContentType;
+}OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE;
+
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_PARAM_AVCINTERLACECODING : to configure the interlace encoding related settings
+ @param  eInterlaceCodingType	to specify the settings of interlace content
+ 							@sa OMX_VIDEO_INTERLACE_CODINGTYPE
+ @param  bTopFieldFirst				to speicfy the first field sent is top or bottom
+ @param  bBottomFieldIntra		to specify codec that encode bottomfield also as intra or not
+*/
+/* ==========================================================================*/
+typedef struct OMX_TI_VIDEO_PARAM_AVCINTERLACECODING{
+	OMX_U32	 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32	 nPortIndex;
+	OMX_TI_VIDEO_AVC_INTERLACE_CODINGTYPE eInterlaceCodingType;
+	OMX_BOOL bTopFieldFirst;
+	OMX_BOOL bBottomFieldIntra;
+}OMX_TI_VIDEO_PARAM_AVCINTERLACECODING;
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_PARAM_AVCENC_STEREOINFO2004  : to configure the 2004 related stereo information type
+*/
+/* ==========================================================================*/
+
+typedef struct OMX_TI_VIDEO_PARAM_AVCENC_STEREOINFO2004
+{
+	OMX_U32          nSize;
+	OMX_VERSIONTYPE  nVersion;
+	OMX_U32          nPortIndex;
+	OMX_BOOL         btopFieldIsLeftViewFlag ;
+	OMX_BOOL         bViewSelfContainedFlag ;
+} OMX_TI_VIDEO_AVCENC_STEREOINFO2004;
+
+typedef enum OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE{
+	OMX_TI_Video_FRAMEPACK_CHECKERBOARD        = 0,
+	OMX_TI_Video_FRAMEPACK_COLUMN_INTERLEAVING = 1,
+	OMX_TI_Video_FRAMEPACK_ROW_INTERLEAVING    = 2,
+	OMX_TI_Video_FRAMEPACK_SIDE_BY_SIDE        = 3,
+	OMX_TI_Video_FRAMEPACK_TOP_BOTTOM          = 4,
+	OMX_TI_Video_FRAMEPACK_TYPE_DEFAULT        = OMX_TI_Video_FRAMEPACK_SIDE_BY_SIDE,
+	OMX_TI_Video_FRAMEPACK_TYPE_MAX = 0X7FFFFFFF
+} OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE;
+
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_PARAM_AVCENC_FRAMEPACKINGINFO2010 : to configure the 2010 related stereo information type
+*/
+/* ==========================================================================*/
+
+typedef struct OMX_TI_VIDEO_PARAM_AVCENC_FRAMEPACKINGINFO2010
+{
+	OMX_U32          nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32          nPortIndex;
+	OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE eFramePackingType ;
+	OMX_U8         nFrame0PositionX ;
+	OMX_U8         nFrame0PositionY ;
+	OMX_U8         nFrame1PositionX ;
+	OMX_U8         nFrame1PositionY ;
+}OMX_TI_VIDEO_PARAM_AVCENC_FRAMEPACKINGINFO2010;
 
 /**
  *	@brief	 Specifies Transform Block Size
@@ -447,10 +506,53 @@ typedef struct OMX_VIDEO_CONFIG_QPSETTINGSTYPE{
 typedef enum OMX_TI_VIDEO_CODINGTYPE {
 	OMX_VIDEO_CodingVP6 =
 		(OMX_VIDEO_CODINGTYPE) OMX_VIDEO_CodingVendorStartUnused +1,  /* VP6 */
-	OMX_VIDEO_CodingVP7 /* VP7 */
+	OMX_VIDEO_CodingVP7, /* VP7 */
+	OMX_TI_VIDEO_CodingSORENSONSPK   /* Sorenson Spark */
 }OMX_TI_VIDEO_CODINGTYPE;
 
 
+/* ========================================================================= */
+/*!
+ @brief OMX_TI_VIDEO_MPEG4LEVELTYPE:
+        Extension to MPEG-4 level to cater to level 6
+ @param
+*/
+/* ==========================================================================*/
+typedef enum OMX_TI_VIDEO_MPEG4LEVELTYPE {
+        OMX_TI_VIDEO_MPEG4Level6  =
+            (OMX_VIDEO_MPEG4LEVELTYPE) OMX_VIDEO_MPEG4LevelVendorStartUnused + 1
+} OMX_TI_VIDEO_MPEG4LEVELTYPE;
+
+
+
+/**
+ *	@brief	 Specifies various intra refresh methods
+ */
+typedef enum OMX_TI_VIDEO_INTRAREFRESHTYPE {
+    OMX_TI_VIDEO_IntraRefreshNone = 0,
+    OMX_TI_VIDEO_IntraRefreshCyclicMbs,
+    OMX_TI_VIDEO_IntraRefreshCyclicRows,
+    OMX_TI_VIDEO_IntraRefreshMandatory,
+    OMX_TI_VIDEO_IntraRefreshMax = 0x7FFFFFFF
+} OMX_TI_VIDEO_INTRAREFRESHTYPE;
+
+
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_PARAM_INTRAREFRESHTYPE  : Configuration parameters for
+                                               intra refresh settings
+ @param  eRefreshMode		Various refresh modes supported
+ @param  nIntraRefreshRate 	Intra refresh rate
+*/
+/* ==========================================================================*/
+
+typedef struct OMX_TI_VIDEO_PARAM_INTRAREFRESHTYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_TI_VIDEO_INTRAREFRESHTYPE eRefreshMode;
+    OMX_U32 nIntraRefreshRate;
+} OMX_TI_VIDEO_PARAM_INTRAREFRESHTYPE;
 
 #endif /* OMX_TI_VIDEO_H */
 
