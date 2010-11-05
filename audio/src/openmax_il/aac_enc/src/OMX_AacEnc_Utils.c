@@ -1001,6 +1001,7 @@ OMX_U32 AACENCHandleCommand(AACENC_COMPONENT_PRIVATE *pComponentPrivate)
                         {
                             OMX_ERROR4(pComponentPrivate->dbg, "%d :: Error returned from LCML_Init()\n",__LINE__);
                             /* send an event to client */
+                            eError = OMX_ErrorInvalidState;
                             /* client should unload the component if the codec is not able to load */
                             pComponentPrivate->cbInfo.EventHandler (pHandle, 
                                                 pHandle->pApplicationPrivate,
