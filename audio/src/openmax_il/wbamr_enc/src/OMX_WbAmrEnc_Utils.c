@@ -846,6 +846,7 @@ OMX_U32 WBAMRENC_HandleCommand (WBAMRENC_COMPONENT_PRIVATE *pComponentPrivate,
                             OMX_ERROR4(pComponentPrivate->dbg,
                                        "Error returned from LCML_InitMMCodecEx\n");
                             /* send an event to client */
+                            eError = OMX_ErrorInvalidState;
                             /* client should unload the component if the codec is not able to load */
                             pComponentPrivate->cbInfo.EventHandler (pHandle,
                                                                     pHandle->pApplicationPrivate,
