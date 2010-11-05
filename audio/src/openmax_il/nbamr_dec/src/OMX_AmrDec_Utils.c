@@ -834,6 +834,7 @@ OMX_U32 NBAMRDECHandleCommand (AMRDEC_COMPONENT_PRIVATE *pComponentPrivate)
                     OMX_ERROR4(pComponentPrivate->dbg, "%d :: OMX_AmrDec_Utils.c :: Error returned from\
                         LCML_Init()\n",__LINE__);
                     /* send an event to client */
+                    eError = OMX_ErrorInvalidState;
                     /* client should unload the component if the codec is not able to load */
                     pComponentPrivate->cbInfo.EventHandler (pHandle, 
                                                 pHandle->pApplicationPrivate,
