@@ -863,6 +863,7 @@ OMX_U32 WBAMR_DEC_HandleCommand (WBAMR_DEC_COMPONENT_PRIVATE *pComponentPrivate)
                               (OMX_STRING)pComponentPrivate->sDeviceString);
 
                 if(eError != OMX_ErrorNone) {
+                    eError = OMX_ErrorInvalidState;
                     OMX_ERROR4(pComponentPrivate->dbg, "Error returned from\
                         LCML_Init()\n");
                     WBAMRDEC_FatalErrorRecover(pComponentPrivate);
