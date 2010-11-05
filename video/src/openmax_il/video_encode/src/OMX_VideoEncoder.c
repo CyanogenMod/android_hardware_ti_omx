@@ -3085,6 +3085,7 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     OMX_ERRORTYPE eErr  = OMX_ErrorNone;
     OMX_S32 nRet        = -1;
     OMX_S32 nStop       = -1;
+    LCML_DSP_INTERFACE* pLcmlHandle = NULL;
     struct OMX_TI_Debug dbg;
 
     OMX_CONF_CHECK_CMD(hComponent, ((OMX_COMPONENTTYPE *) hComponent)->pComponentPrivate, 1);
@@ -3129,16 +3130,32 @@ static OMX_ERRORTYPE ComponentDeInit(OMX_IN OMX_HANDLETYPE hComponent)
         OMX_TRACE4(dbg, "Error pthread_join (%d).\n", eErr);
     }
 
-    /*Unload LCML */
-    if(pComponentPrivate->pModLcml != NULL)
+    if (pComponentPrivate->bCodecStarted == OMX_TRUE ||
+        pComponentPrivate->bCodecLoaded == OMX_TRUE)
     {
-#ifndef UNDER_CE
-        dlclose(pComponentPrivate->pModLcml);
-#else
-        FreeLibrary(pComponentPrivate->pModLcml);
-#endif
-       pComponentPrivate->pModLcml = NULL;
-       pComponentPrivate->pLCML = NULL;
+        pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+        if (pLcmlHandle != NULL)
+        {
+             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                        EMMCodecControlDestroy,
+                                        NULL);
+             OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
+                                   "Failed to destroy socket node (%x).\n", eError);
+             pLcmlHandle = NULL;
+             pComponentPrivate->pLCML = NULL;
+             pComponentPrivate->bCodecLoaded = OMX_FALSE;
+        }
+        /*Unload LCML */
+        if(pComponentPrivate->pModLcml != NULL)
+        {
+    #ifndef UNDER_CE
+            dlclose(pComponentPrivate->pModLcml);
+    #else
+            FreeLibrary(pComponentPrivate->pModLcml);
+    #endif
+           pComponentPrivate->pModLcml = NULL;
+           pComponentPrivate->pLCML = NULL;
+        }
     }
     pComponentPrivate->bCodecStarted = OMX_FALSE;
 
