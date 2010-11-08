@@ -1338,13 +1338,16 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
             {
             OMX_PRDSP2(pComponentPrivate->dbg, "Attempting to destroy the node...\n");
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                           EMMCodecControlDestroy,
-                                           NULL);
-            OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
-                                  "Failed to destroy socket node (%x).\n", eError);
-
-
+                if (pLcmlHandle != NULL)
+                {
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                               EMMCodecControlDestroy,
+                                               NULL);
+                    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
+                                          "Failed to destroy socket node (%x).\n", eError);
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLCML = NULL;
+                }
                 /*Unload LCML */
                 if(pComponentPrivate->pModLcml != NULL)
                 {
@@ -2165,10 +2168,16 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetLoaded (VIDENC_COMPONENT_PRIVATE* 
              if (pComponentPrivate->bCodecStarted == OMX_TRUE || pComponentPrivate->bCodecLoaded == OMX_TRUE)
              {
                  OMX_TRACE2(pComponentPrivate->dbg, "LCML_ControlCodec EMMCodecControlDestroy\n");
-                 eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                             EMMCodecControlDestroy,
-                                             NULL);
-                 OMX_CONF_BAIL_IF_ERROR(eError);
+                 if (pLcmlHandle != NULL)
+                 {
+                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                                EMMCodecControlDestroy,
+                                                NULL);
+                     OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRDSP3,
+                                           "Failed to destroy socket node (%x).\n", eError);
+                     pLcmlHandle = NULL;
+                     pComponentPrivate->pLCML = NULL;
+                 }
                  OMX_TRACE2(pComponentPrivate->dbg,"Atempting to Unload LCML");
                  /*Unload LCML */
                  if(pComponentPrivate->pModLcml != NULL)
@@ -3452,12 +3461,12 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_H264Enc(VIDENC_COMPONENT_PRIVATE* pComponentPri
         OMX_PRDSP4(pComponentPrivate->dbg, "LCML_InitMMCodec Failed!...\n");
         /*TODO: Validate eError from LCML_InitMMCodec for ResourceExhaustionTest */
         pComponentPrivate->bErrorLcmlHandle = OMX_TRUE;
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
+        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState);
     }
     pComponentPrivate->bCodecLoaded = OMX_TRUE;
+OMX_CONF_CMD_BAIL:
     VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead,
                 pComponentPrivate->dbg);
-OMX_CONF_CMD_BAIL:
     return eError;
 }
 
@@ -3821,13 +3830,13 @@ OMX_ERRORTYPE OMX_VIDENC_InitDSP_Mpeg4Enc(VIDENC_COMPONENT_PRIVATE* pComponentPr
         OMX_PRDSP4(pComponentPrivate->dbg, "LCML_InitMMCodec Failed!...\n");
         /*TODO: Validate eError from LCML_InitMMCodec for ResourceExhaustionTest */
         pComponentPrivate->bErrorLcmlHandle = OMX_TRUE;
-        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInsufficientResources);
+        OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorInvalidState);
     }
     pComponentPrivate->bCodecLoaded = OMX_TRUE;
+OMX_CONF_CMD_BAIL:
     VIDENC_FREE(pCreatePhaseArgs, pMemoryListHead,
                 pComponentPrivate->dbg);
 
-OMX_CONF_CMD_BAIL:
     return eError;
 }
 /*----------------------------------------------------------------------------*/
@@ -4216,11 +4225,13 @@ void OMX_VIDENC_FatalErrorRecover(VIDENC_COMPONENT_PRIVATE* pComponentPrivate)
         /* Make sure the DSP node has been deleted */
         if (pLcmlHandle != NULL)
         {
-            OMX_ERROR4(pComponentPrivate->dbg, "component=%p EMMCodecControlDestroy for hNode=%p\n",
-                       pComponentPrivate->pHandle, pLcmlHandle->dspCodec->hNode);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
-                                         EMMCodecControlDestroy,
-                                         NULL);
+             OMX_ERROR4(pComponentPrivate->dbg, "component=%p EMMCodecControlDestroy for hNode=%p\n",
+                        pComponentPrivate->pHandle, pLcmlHandle->dspCodec->hNode);
+             eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                                        EMMCodecControlDestroy,
+                                        NULL);
+             pLcmlHandle = NULL;
+             pComponentPrivate->pLCML = NULL;
         }
         /*intentionally skip error checking here */
          OMX_TRACE2(pComponentPrivate->dbg,"Atempting to Unload LCML");

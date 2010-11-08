@@ -1741,6 +1741,8 @@ EXIT:
 
     if(hInterface->iDspOpenCount > 0)
     {
+        OMX_PRDSP4 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg,
+            "%d :: DeInit: Calling DspManager_Close, iDspOpenCount %d!!\n",__LINE__ ,hInterface->iDspOpenCount);
         status = DspManager_Close(0, NULL);
         if (DSP_FAILED(status))
         {
