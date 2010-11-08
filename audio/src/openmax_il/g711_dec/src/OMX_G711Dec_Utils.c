@@ -528,7 +528,20 @@ OMX_ERRORTYPE G711DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_DestroyEvent(&(pComponentPrivate->InIdle_event));
     OMX_DestroyEvent(&(pComponentPrivate->AlloBuf_event));
 #endif 
-    
+
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G711DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        G711DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     return eError;
 }
 /*==========================================================================================================*/
@@ -757,7 +770,7 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 G711DEC_DPRINT ("%d :: Inside G711DECHandleCommand\n",__LINE__);
                 cb.LCML_Callback = (void *) G711DECLCML_Callback;
-                pLcmlHandle = (OMX_HANDLETYPE) G711DECGetLCMLHandle();
+                pLcmlHandle = (OMX_HANDLETYPE) G711DECGetLCMLHandle(pComponentPrivate);
                 G711DEC_DPRINT ("%d :: Inside G711DECHandleCommand\n",__LINE__);
 
                 if (pLcmlHandle == NULL) {
@@ -1103,15 +1116,21 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
             /* Now Deinitialize the component No error should be returned from
              * this function. It should clean the system as much as possible */
             G711DEC_DPRINT("%d :: In side OMX_StateLoaded State: \n",__LINE__);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+            if (pLcmlHandle != NULL) {
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                        EMMCodecControlDestroy, (void *)p);
                                         
-            G711DEC_DPRINT("%d :: In side OMX_StateLoaded State: \n",__LINE__);
-            if (eError != OMX_ErrorNone) {
-                G711DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
-                goto EXIT;
+                G711DEC_DPRINT("%d :: In side OMX_StateLoaded State: \n",__LINE__);
+                if (eError != OMX_ErrorNone) {
+                    G711DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+                    goto EXIT;
+                }
+                dlclose(pComponentPrivate->ptrLibLCML);
+                pComponentPrivate->ptrLibLCML = NULL;
+                G711DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                pComponentPrivate->pLcmlHandle = NULL;
+                pLcmlHandle = NULL;
             }
-            
             G711DEC_DPRINT("%d: G711DECHandleCommand: Cmd Loaded\n",__LINE__);
             eError = EXIT_COMPONENT_THRD;
             pComponentPrivate->bInitParamsInitialized = 0;
@@ -1198,9 +1217,15 @@ OMX_U32 G711DECHandleCommand (G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
             else{
                 G711DEC_DPRINT("%d :: Comp: OMX_G711DecUtils.c\n",__LINE__);
                 if (pComponentPrivate->curState != OMX_StateWaitForResources && 
-                    pComponentPrivate->curState != OMX_StateLoaded) {
+                    pComponentPrivate->curState != OMX_StateLoaded &&
+                    pLcmlHandle != NULL){
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlDestroy, (void *)p);
+                    dlclose(pComponentPrivate->ptrLibLCML);
+                    pComponentPrivate->ptrLibLCML = NULL;
+                    G711DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    pComponentPrivate->pLcmlHandle = NULL;
+                    pLcmlHandle = NULL;
                 }
 
                 pComponentPrivate->curState = OMX_StateInvalid;
@@ -2257,6 +2282,51 @@ OMX_ERRORTYPE G711DECLCML_Callback (TUsnCodecEvent event,void * args [10])
         }
         
     }
+    else if (event == EMMCodecDspError)
+    {
+        G711DEC_DPRINT("%d :: commandedState  = %d\n",__LINE__,(int)args[0]);
+        G711DEC_DPRINT("%d :: arg4 = %d\n",__LINE__,(int)args[4]);
+        G711DEC_DPRINT("%d :: arg5 = %d\n",__LINE__,(int)args[5]);
+        G711DEC_DPRINT("%d ::UTIL: EMMCodecDspError Here\n",__LINE__);
+        switch ( (OMX_U32) args [4])
+        {
+            /* USN_ERR_NONE,: Indicates that no error encountered during execution of the command and the command execution completed succesfully.
+             * USN_ERR_WARNING,: Indicates that process function returned a warning. The exact warning is returned in Arg2 of this message.
+             * USN_ERR_PROCESS,: Indicates that process function returned a error type. The exact error type is returnd in Arg2 of this message.
+             * USN_ERR_PAUSE,: Indicates that execution of pause resulted in error.
+             * USN_ERR_STOP,: Indicates that execution of stop resulted in error.
+             * USN_ERR_ALGCTRL,: Indicates that execution of alg control resulted in error.
+             * USN_ERR_STRMCTRL,: Indiactes the execution of STRM control command, resulted in error.
+             * USN_ERR_UNKNOWN_MSG,: Indicates that USN received an unknown command. */
+
+#ifdef _ERROR_PROPAGATION__
+            case USN_ERR_PAUSE:
+            case USN_ERR_STOP:
+            case USN_ERR_ALGCTRL:
+            case USN_ERR_STRMCTRL:
+            case USN_ERR_UNKNOWN_MSG:
+                {
+                    G711DEC_FatalErrorRecover(pComponentPrivate_CC);
+                }
+                break;
+#endif
+
+            case USN_ERR_WARNING:
+            case USN_ERR_PROCESS:
+                G711DEC_HandleUSNError (pComponentPrivate_CC, (OMX_U32)args[5]);
+                break;
+            case USN_ERR_NONE:
+                if((args[5] == (void*)NULL))
+                {
+                    OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                    G711DEC_FatalErrorRecover(pComponentPrivate_CC);
+                }
+                break;
+            default:
+                break;
+        }
+
+    }
     else if (event == EMMCodecProcessingPaused) {
         pComponentPrivate_CC->curState = OMX_StatePause;
         pComponentPrivate_CC->cbInfo.EventHandler( pComponentPrivate_CC->pHandle,
@@ -2372,7 +2442,7 @@ OMX_ERRORTYPE G711DECGetCorresponding_LCMLHeader(OMX_U8 *pBuffer,
 
 #ifndef UNDER_CE
 
-OMX_HANDLETYPE G711DECGetLCMLHandle()
+OMX_HANDLETYPE G711DECGetLCMLHandle(G711DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
     void *handle = NULL;
     OMX_ERRORTYPE (*fpGetHandle)(OMX_HANDLETYPE);
@@ -2411,6 +2481,8 @@ OMX_HANDLETYPE G711DECGetLCMLHandle()
         }
 
     }
+    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate= pComponentPrivate;
+    pComponentPrivate->ptrLibLCML = handle; /* saving LCML  backup lib pointer  */
 
     pComponentPrivate_CC->bLcmlHandleOpened = 1;
 
@@ -2871,18 +2943,9 @@ void G711DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 #endif
 
 void G711DEC_FatalErrorRecover(G711DEC_COMPONENT_PRIVATE *pComponentPrivate){
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        G711DEC_PRINT("::EMMCodecControlDestroy: error = %d\n", eError);
-    }
 
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_AAC_Decoder_COMPONENT, 0, 3456, NULL);
@@ -2903,5 +2966,60 @@ void G711DEC_FatalErrorRecover(G711DEC_COMPONENT_PRIVATE *pComponentPrivate){
     G711DEC_CleanupInitParams(pComponentPrivate->pHandle);
     G711DEC_PRINT("Completed FatalErrorRecover \
                \nEntering Invalid State\n");
+}
+
+void G711DEC_HandleUSNError (G711DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg)
+{
+    OMX_COMPONENTTYPE *pHandle = NULL;
+
+    switch (arg)
+    {
+        case IUALG_WARN_CONCEALED:
+        case IUALG_WARN_UNDERFLOW:
+        case IUALG_WARN_OVERFLOW:
+        case IUALG_WARN_ENDOFDATA:
+            /* all of these are informative messages, Algo can recover, no need to notify the
+             * IL Client at this stage of the implementation */
+            break;
+
+        case IUALG_WARN_PLAYCOMPLETED:
+        {
+            pHandle = pComponentPrivate->pHandle;
+            G711DEC_DPRINT("%d :: GOT MESSAGE IUALG_WARN_PLAYCOMPLETED\n",__LINE__);
+            pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                   pComponentPrivate->pHandle->pApplicationPrivate,
+                                                   OMX_EventBufferFlag,
+                                                   OMX_DirOutput,
+                                                   OMX_BUFFERFLAG_EOS,
+                                                   NULL);
+            if(pComponentPrivate->dasfmode){
+                pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
+                                                       pComponentPrivate->pHandle->pApplicationPrivate,
+                                                       OMX_EventBufferFlag,
+                                                       (OMX_U32)NULL,
+                                                       OMX_BUFFERFLAG_EOS,
+                                                       NULL);
+            }
+        }
+            break;
+
+#ifdef _ERROR_PROPAGATION__
+        case IUALG_ERR_BAD_HANDLE:
+        case IUALG_ERR_DATA_CORRUPT:
+        case IUALG_ERR_NOT_SUPPORTED:
+        case IUALG_ERR_ARGUMENT:
+        case IUALG_ERR_NOT_READY:
+        case IUALG_ERR_GENERAL:
+        {
+        /* all of these are fatal messages, Algo can not recover
+                 * hence return an error */
+                G711DEC_DPRINT("Algorithm Error, cannot recover" );
+                G711DEC_FatalErrorRecover(pComponentPrivate);
+            }
+            break;
+#endif
+        default:
+            break;
+    }
 }
 

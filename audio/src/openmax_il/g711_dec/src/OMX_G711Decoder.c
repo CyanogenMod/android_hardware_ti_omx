@@ -303,6 +303,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     /* Initialize device string to the default value */
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
     
+    /* Initialize LMCL back up pointer*/
+    pComponentPrivate->ptrLibLCML = NULL;
+
     /* Removing sleep() calls. Initialization.*/
     pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
     pthread_cond_init (&pComponentPrivate->AlloBuf_threshold, NULL);
