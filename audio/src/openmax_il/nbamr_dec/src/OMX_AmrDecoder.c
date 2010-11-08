@@ -232,6 +232,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->pHoldBuffer = NULL;
     pComponentPrivate->bMutexInitialized = OMX_FALSE;
     pComponentPrivate->bDebugInitialized = 0;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     OMX_DBG_INIT(pComponentPrivate->dbg, "OMX_DBG_NBAMRDEC");
     pComponentPrivate->bDebugInitialized = 1;

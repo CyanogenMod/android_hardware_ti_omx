@@ -611,6 +611,9 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     /** LCML Handle */
     OMX_HANDLETYPE pLcmlHandle;
 
+    /** Needed to free LCML lib dll **/
+    void* ptrLibLCML;
+
     /** LCML Buffer Header */
     LCML_WMADEC_BUFHEADERTYPE *pLcmlBufHeader[2];
 
@@ -746,6 +749,8 @@ typedef struct WMADEC_COMPONENT_PRIVATE
     OMX_U8 SendAfterEOS;		
  
     OMX_BOOL bPreempted;
+
+    OMX_BOOL DSPMMUFault;
 
 #ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE rmproxyCallback;

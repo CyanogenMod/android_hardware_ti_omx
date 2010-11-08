@@ -308,6 +308,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->reconfigOutputPort = 0;
     pComponentPrivate->framemode = 0;
     pComponentPrivate->multiframeMode = 0;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     for (i=0; i < MAX_NUM_OF_BUFS_AACDEC; i++) {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;

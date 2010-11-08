@@ -769,6 +769,8 @@ typedef struct AMRDEC_COMPONENT_PRIVATE
     OMX_BOOL bPreempted;
     OMX_BOOL bFrameLost;
 
+    OMX_BOOL DSPMMUFault;
+
     /** Flag to mark RTSP**/
     OMX_U8 using_rtsp;  
 

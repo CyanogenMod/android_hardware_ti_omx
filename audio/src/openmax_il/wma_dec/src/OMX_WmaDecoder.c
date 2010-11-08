@@ -355,7 +355,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
-    
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     
     for (i=0; i < MAX_NUM_OF_BUFS; i++) {

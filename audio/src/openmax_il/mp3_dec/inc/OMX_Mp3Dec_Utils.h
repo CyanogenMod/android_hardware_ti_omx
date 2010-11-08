@@ -637,6 +637,7 @@ typedef struct MP3DEC_COMPONENT_PRIVATE
     OMX_BOOL reconfigInputPort;
     OMX_BOOL reconfigOutputPort;
     OMX_BOOL bConfigData;
+    OMX_BOOL DSPMMUFault;
 
     StreamData pStreamData;
 
