@@ -73,7 +73,6 @@ extern "C"
 
 /*-------program files ----------------------------------------*/
 #include "omx_rpc.h"
-#include "omx_rpc_utils.h"
 
 /******************************************************************
  *   DEFINES - CONSTANTS
@@ -116,6 +115,24 @@ This is used to define the length of maximum string length the symbol can be*/
 #define SYSM3_PROC 2
 #define TESLA_PROC 0
 #define CHIRON_PROC 3
+
+
+/* Name used for the general default pool created by our server */
+#define RPC_NAME_FOR_GENERAL_POOL "General Pool"
+/* No. of worker pools used by the RCM server on each process */
+#define RPC_NUM_RCM_WORKER_POOLS 1
+/* No. of threads in the default general pool created */
+#define RPC_NUM_THREADS_FOR_GENERAL_POOL 2
+/* OS independent priority of threads in general pool */
+#define RPC_THREAD_PRIORITY_FOR_GENERAL_POOL RCMSERVER_REGULAR_PRIORITY
+/* OS specific priority of threads in general pool. A non-zero value indicates
+   that this value takes precedence over the OS independent thread priority
+   parameter above */
+#define RPC_OS_THREAD_PRIORITY_FOR_GENERAL_POOL 0
+/* Value of 0 indicates default size */
+#define RPC_THREAD_STACKSIZE_FOR_GENERAL_POOL 0
+/* Value of NULL indicates default */
+#define RPC_THREAD_STACKSEG_FOR_GENERAL_POOL NULL
 
 /*******************************************************************************
 * Enumerated Types
@@ -236,6 +253,10 @@ This is used to define the length of maximum string length the symbol can be*/
 		OMX_CALLBACKTYPE *CbInfo;	// should contain the updated pointers
 		OMX_PTR pAppData;
 		OMX_HANDLETYPE hActualRemoteCompHandle;
+		/* Job ID for this component - U16 bec of Syslink */
+		OMX_U16 nJobId;
+		/* Pool ID for this component - U16 bec of Syslink */
+		OMX_U16 nPoolId;
 	} RPC_OMX_CONTEXT;
 
 	typedef struct RPC_OMX_SKEL_CONTEXT

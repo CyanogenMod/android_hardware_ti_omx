@@ -60,6 +60,7 @@ extern "C"
  *   INCLUDE FILES
  ******************************************************************/
 #include "omx_rpc.h"
+#include "omx_rpc_internal.h"
 
 #include <timm_osal_trace.h>
 
@@ -155,5 +156,11 @@ PTR = (TYPE *) (MSGBODY+OFFSET);
 	    cServerName);
 	RPC_OMX_ERRORTYPE RPC_UTIL_GetTargetCore(OMX_STRING cComponentName,
 	    OMX_U32 * nCoreId);
+	RPC_OMX_ERRORTYPE RPC_Util_AcquireJobId(RPC_OMX_CONTEXT * hRPCCtx,
+	    OMX_U16 * nJobId);
+	RPC_OMX_ERRORTYPE RPC_Util_GetPoolId(RPC_OMX_CONTEXT * hRPCCtx,
+	    OMX_U16 * nPoolId);
+	RPC_OMX_ERRORTYPE RPC_Util_ReleaseJobId(RPC_OMX_CONTEXT * hRPCCtx,
+	    OMX_U16 nJobId);
 
 #endif

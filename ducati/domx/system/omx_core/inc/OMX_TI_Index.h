@@ -80,29 +80,29 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexParamDecodeSubregion,           /**< reference: OMX_IMAGE_PARAM_DECODE_SUBREGION */
 
     /* H264 Encoder Indices*/
-    OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure
-    OMX_TI_IndexParamVideoNALUsettings,    //!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types
-    OMX_TI_IndexParamVideoMEBlockSize,    //!< use OMX_VIDEO_PARAM_MEBLOCKSIZETYPE to specify the minimum block size used for motion estimation
-    OMX_TI_IndexParamVideoIntraPredictionSettings,    //!< use OMX_VIDEO_PARAM_INTRAPREDTYPE to configure the intra prediction modes used for different block sizes
-    OMX_TI_IndexParamVideoEncoderPreset,    //!< use OMX_VIDEO_PARAM_ENCODER_PRESETTYPE to select the encoding mode & rate control preset
-    OMX_TI_IndexParamVideoFrameDataContentSettings,    //!< use OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE to configure the data content tpye
-    OMX_TI_IndexParamVideoTransformBlockSize,    //!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation
-    OMX_TI_IndexParamVideoVUIsettings, //!use OMX_VIDEO_PARAM_VUIINFOTYPE
-    OMX_TI_IndexParamVideoAdvancedFMO,
-    OMX_TI_IndexConfigVideoPixelInfo,    //!<  Use OMX_VIDEO_CONFIG_PIXELINFOTYPE structure to know the pixel aspectratio & pixel range
-    OMX_TI_IndexConfigVideoMESearchRange,    //!< use OMX_VIDEO_CONFIG_MESEARCHRANGETYPE to specify the ME Search settings
-    OMX_TI_IndexConfigVideoQPSettings,    //!< use OMX_TI_VIDEO_CONFIG_QPSETTINGS to specify the ME Search settings
-    OMX_TI_IndexConfigSliceSettings,        //!<use OMX_VIDEO_CONFIG_SLICECODINGTYPE to specify the ME Search settings
-    OMX_TI_IndexConfigAVCInterlaceSettings,            //!< use OMX_TI_VIDEO_PARAM_AVCINTERLACECODING to specify the ME Search settings
-    OMX_TI_IndexConfigStereoInfo2004Settings,          //!< use OMX_TI_VIDEO_AVCENC_STEREOINFO2004 to specify the 2004 SEI for AVC Encoder
-        OMX_TI_IndexConfigStereoFramePacking2010Settings,  //!< use OMX_TI_VIDEO_AVCENC_FRAMEPACKINGINFO2010 to specify 2010 SEI for AVC Encoder
+	OMX_TI_IndexParamVideoDataSyncMode, //!< Refer to OMX_VIDEO_PARAM_DATASYNCMODETYPE structure
+	OMX_TI_IndexParamVideoNALUsettings,	//!< use OMX_VIDEO_PARAM_AVCNALUCONTROLTYPE to configure the type os NALU to send along with the Different Frame Types
+	OMX_TI_IndexParamVideoMEBlockSize,	//!< use OMX_VIDEO_PARAM_MEBLOCKSIZETYPE to specify the minimum block size used for motion estimation
+	OMX_TI_IndexParamVideoIntraPredictionSettings,	//!< use OMX_VIDEO_PARAM_INTRAPREDTYPE to configure the intra prediction modes used for different block sizes
+	OMX_TI_IndexParamVideoEncoderPreset,	//!< use OMX_VIDEO_PARAM_ENCODER_PRESETTYPE to select the encoding mode & rate control preset
+	OMX_TI_IndexParamVideoFrameDataContentSettings,	//!< use OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE to configure the data content tpye
+	OMX_TI_IndexParamVideoTransformBlockSize,	//!< use OMX_VIDEO_PARAM_TRANSFORM_BLOCKSIZETYPE to specify the block size used for ttransformation
+	OMX_TI_IndexParamVideoVUIsettings, //!use OMX_VIDEO_PARAM_VUIINFOTYPE
+	OMX_TI_IndexParamVideoAdvancedFMO,
+	OMX_TI_IndexConfigVideoPixelInfo,	//!<  Use OMX_VIDEO_CONFIG_PIXELINFOTYPE structure to know the pixel aspectratio & pixel range
+	OMX_TI_IndexConfigVideoMESearchRange,	//!< use OMX_VIDEO_CONFIG_MESEARCHRANGETYPE to specify the ME Search settings
+	OMX_TI_IndexConfigVideoQPSettings,	//!< use OMX_TI_VIDEO_CONFIG_QPSETTINGS to specify the ME Search settings
+	OMX_TI_IndexConfigSliceSettings,		//!<use OMX_VIDEO_CONFIG_SLICECODINGTYPE to specify the ME Search settings
+	OMX_TI_IndexParamAVCInterlaceSettings,            //!< use OMX_TI_VIDEO_PARAM_AVCINTERLACECODING to specify the ME Search settings
+	OMX_TI_IndexParamStereoInfo2004Settings,          //!< use OMX_TI_VIDEO_AVCENC_STEREOINFO2004 to specify the 2004 SEI for AVC Encoder
+	OMX_TI_IndexParamStereoFramePacking2010Settings,  //!< use OMX_TI_VIDEO_AVCENC_FRAMEPACKINGINFO2010 to specify 2010 SEI for AVC Encoder
 
 
     /* Camera Indices */
     OMX_TI_IndexConfigSensorSelect,             /**< reference: OMX_CONFIG_SENSORSELECTTYPE */
     OMX_IndexConfigFlickerCancel,               /**< reference: OMX_CONFIG_FLICKERCANCELTYPE */
     OMX_IndexConfigSensorCal,                   /**< reference: OMX_CONFIG_SENSORCALTYPE */
-    OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
+	OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
     OMX_IndexParamSceneMode,                    /**< reference: OMX_CONFIG_SCENEMODETYPE */
 
     OMX_IndexConfigDigitalZoomSpeed,            /**< reference: OMX_CONFIG_DIGITALZOOMSPEEDTYPE */
@@ -120,11 +120,10 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexConfigBlemish,                     /**< reference: OMX_CONFIG_BLEMISHTYPE */
 
     OMX_IndexConfigExtCaptureMode,              /**< reference: OMX_CONFIG_EXTCAPTUREMODETYPE */
-    OMX_IndexConfigExtPrepareCapturing, /**< reference : OMX_CONFIG_BOOLEANTYPE */
-    OMX_IndexConfigExtCapturing, /**< reference : OMX_CONFIG_EXTCAPTURING */
+	OMX_IndexConfigExtPrepareCapturing, /**< reference : OMX_CONFIG_BOOLEANTYPE */
+	OMX_IndexConfigExtCapturing, /**< reference : OMX_CONFIG_EXTCAPTURING */
 
-    OMX_IndexCameraOperatingMode,                       /**< reference: OMX_CONFIG_CAMOPERATINGMODETYPE */
-    OMX_TI_IndexParamCameraOperatingMode = OMX_IndexCameraOperatingMode, /**< reference: OMX_CONFIG_CAMOPERATINGMODETYPE */
+	OMX_IndexCameraOperatingMode, /**<  OMX_CONFIG_CAMOPERATINGMODETYPE */
     OMX_IndexConfigDigitalFlash,                /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexConfigPrivacyIndicator,            /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
@@ -132,7 +131,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigSlowSync,                    /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
-    OMX_IndexConfigExtFocusRegion, /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */
+	OMX_IndexConfigExtFocusRegion, /**< reference : OMX_CONFIG_EXTFOCUSREGIONTYPE */
     OMX_IndexConfigFocusAssist,                 /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
     OMX_IndexConfigImageFocusLock,              /**< reference: OMX_IMAGE_CONFIG_LOCKTYPE */
@@ -150,7 +149,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigCommonRGB2RGB,               /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE_II */
     OMX_IndexConfigCommonRGB2YUV,               /**< reference: OMX_CONFIG_COLORCONVERSIONTYPE_II */
-    OMX_IndexConfigCommonYUV2RGB, /**< reference : OMX_CONFIG_EXT_COLORCONVERSIONTYPE */
+	OMX_IndexConfigCommonYUV2RGB, /**< reference : OMX_CONFIG_EXT_COLORCONVERSIONTYPE */
 
     OMX_IndexConfigCommonGammaTable,            /**< reference: OMX_CONFIG_GAMMATABLETYPE */
 
@@ -164,7 +163,7 @@ typedef enum OMX_TI_INDEXTYPE {
 
     OMX_IndexConfigSnapshotToPreview,           /**< reference: OMX_CONFIG_BOOLEANTYPE */
 
-    OMX_IndexConfigJpegHeaderType , /**< reference : OMX_CONFIG_JPEGHEEADERTYPE */
+	OMX_IndexConfigJpegHeaderType , /**< reference : OMX_CONFIG_JPEGHEEADERTYPE */
     OMX_IndexParamJpegMaxSize,                  /**< reference: OMX_IMAGE_JPEGMAXSIZE */
 
     OMX_IndexConfigRestartMarker,               /**< reference: OMX_CONFIG_BOOLEANTYPE */
@@ -172,12 +171,12 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexParamImageStampOverlay,            /**< reference: OMX_PARAM_IMAGESTAMPOVERLAYTYPE */
     OMX_IndexParamThumbnail,                    /**< reference: OMX_PARAM_THUMBNAILTYPE */
     OMX_IndexConfigImageStabilization,          /**< reference: OMX_CONFIG_BOOLEANTYPE */
-    OMX_IndexConfigMotionTriggeredImageStabilisation, /**< reference : OMX_CONFIG_BOOLEANTYPE */
+	OMX_IndexConfigMotionTriggeredImageStabilisation, /**< reference : OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexConfigRedEyeRemoval,               /**< reference: OMX_CONFIG_REDEYEREMOVALTYPE */
     OMX_IndexParamHighISONoiseFiler,            /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamLensDistortionCorrection,     /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamLocalBrightnessAndContrast,   /**< reference: OMX_CONFIG_BOOLEANTYPE */
-    OMX_IndexConfigChromaticAberrationCorrection, /**< reference: OMX_CONFIG_BOOLEANTYPE */
+	OMX_IndexConfigChromaticAberrationCorrection, /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_IndexParamVideoCaptureYUVRange,         /**< reference: OMX_PARAM_VIDEOYUVRANGETYPE */
 
     OMX_IndexConfigFocusRegion,                 /**< reference: OMX_CONFIG_EXTFOCUSREGIONTYPE */
@@ -199,10 +198,10 @@ typedef enum OMX_TI_INDEXTYPE {
     /* MPEG4 and H264 encoder specific Indices */
     OMX_TI_IndexParamVideoIntraRefresh,         /**< reference: OMX_TI_VIDEO_PARAM_INTRAREFRESHTYPE */
 
-    OMX_TI_IndexConfigShutterCallback,           /**< reference: OMX_CONFIG_BOOLEANTYPE */
-    OMX_TI_IndexParamVarFrameRate,                      /**< reference: OMX_PARAM_VARFARAMERATETYPE */
-    OMX_TI_IndexConfigAutoConvergence,                  /**< reference: OMX_TI_CONFIG_CONVERGENCETYPE */
-    OMX_TI_IndexConfigRightExposureValue                /**< reference: OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE */
+    OMX_TI_IndexConfigShutterCallback,          /**< reference: OMX_CONFIG_BOOLEANTYPE */
+    OMX_TI_IndexParamVarFrameRate,              /**< reference: OMX_PARAM_VARFARAMERATETYPE */
+    OMX_TI_IndexConfigAutoConvergence,          /**< reference: OMX_TI_CONFIG_CONVERGENCETYPE */
+    OMX_TI_IndexConfigRightExposureValue        /**< reference: OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE */
 } OMX_TI_INDEXTYPE;
 
 

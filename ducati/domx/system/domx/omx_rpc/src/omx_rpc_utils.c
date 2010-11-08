@@ -345,3 +345,93 @@ RPC_OMX_ERRORTYPE RPC_InvalidateBuffer(OMX_U8 * pBuffer, OMX_U32 size,
       EXIT:
 	return eRPCError;
 }
+
+
+
+/* ===========================================================================*/
+/**
+ * @name RPC_Util_AcquireJobId
+ * @brief Used to get a new job id from syslink - all messages sent with the
+ *        same job id will be processed serially. Messages with different job id
+ *        will be processed parallely.
+ * @param hRPCCtx       : RPC context handle.
+ *        pJobId        : Pointer to job id - this'll be filled in and returned.
+ * @return RPC_OMX_ErrorNone      : Success.
+ *         Any other              : Operation failed.
+ */
+/* ===========================================================================*/
+RPC_OMX_ERRORTYPE RPC_Util_AcquireJobId(RPC_OMX_CONTEXT * hRPCCtx,
+    OMX_U16 * pJobId)
+{
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	OMX_S32 nStatus = 0;
+	DOMX_ENTER("");
+
+	nStatus =
+	    RcmClient_acquireJobId(hRPCCtx->ClientHndl[RCM_DEFAULT_CLIENT],
+	    pJobId);
+	RPC_assert(nStatus >= 0, RPC_OMX_ErrorUndefined,
+	    "Acquire job id failed");
+
+      EXIT:
+	DOMX_EXIT("eRPCError = %d", eRPCError);
+	return eRPCError;
+}
+
+
+
+/* ===========================================================================*/
+/**
+ * @name RPC_Util_ReleaseJobId
+ * @brief Used to release job id to syslink. Once release, this job id cannot be
+ *        reused.
+ * @param hRPCCtx       : RPC context handle.
+ *        nJobId        : Job ID to be released.
+ * @return RPC_OMX_ErrorNone      : Success.
+ *         Any other              : Operation failed.
+ */
+/* ===========================================================================*/
+RPC_OMX_ERRORTYPE RPC_Util_ReleaseJobId(RPC_OMX_CONTEXT * hRPCCtx,
+    OMX_U16 nJobId)
+{
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	OMX_S32 nStatus = 0;
+	DOMX_ENTER("");
+
+	nStatus =
+	    RcmClient_releaseJobId(hRPCCtx->ClientHndl[RCM_DEFAULT_CLIENT],
+	    nJobId);
+	RPC_assert(nStatus >= 0, RPC_OMX_ErrorUndefined,
+	    "Release job id failed");
+
+      EXIT:
+	DOMX_EXIT("eRPCError = %d", eRPCError);
+	return eRPCError;
+}
+
+
+
+/* ===========================================================================*/
+/**
+ * @name RPC_Util_GetPoolId
+ * @brief Used to get pool id. Messages sent with same pool id will get
+ *        processed at the same priority on remote core.
+ * @param hRPCCtx       : RPC context handle.
+ *        pPoolId       : Pointer to pool id - this'll be filled in and
+ *                        returned.
+ * @return RPC_OMX_ErrorNone      : Success.
+ *         Any other              : Operation failed.
+ */
+/* ===========================================================================*/
+RPC_OMX_ERRORTYPE RPC_Util_GetPoolId(RPC_OMX_CONTEXT * hRPCCtx,
+    OMX_U16 * pPoolId)
+{
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	DOMX_ENTER("");
+
+	*pPoolId = 0x8001;
+
+//EXIT:
+	DOMX_EXIT("eRPCError = %d", eRPCError);
+	return eRPCError;
+}

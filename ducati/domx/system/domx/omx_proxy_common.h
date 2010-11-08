@@ -66,6 +66,7 @@ extern "C"
 /*-------program files ----------------------------------------*/
 #include "omx_rpc.h"
 #include "omx_rpc_internal.h"
+#include "omx_rpc_utils.h"
 
 /****************************************************************
  * PUBLIC DECLARATIONS Defined here, used elsewhere
