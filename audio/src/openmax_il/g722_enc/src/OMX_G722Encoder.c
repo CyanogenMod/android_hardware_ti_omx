@@ -313,6 +313,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->bPreempted = OMX_FALSE;
     pComponentPrivate->bMutexInitDone = OMX_FALSE;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     if (!pComponentPrivate->bMutexInitDone) {
         pthread_mutex_init(&pComponentPrivate->AlloBuf_mutex, NULL);
