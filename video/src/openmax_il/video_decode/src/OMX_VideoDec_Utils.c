@@ -1726,7 +1726,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
     if ( nParam1 == VIDDEC_INPUT_PORT || nParam1 == OMX_ALL){
         VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
         OMX_VidDec_Return (pComponentPrivate, VIDDEC_INPUT_PORT, OMX_FALSE);
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL && pComponentPrivate->bLCMLHalted != OMX_TRUE){
             aParam[0] = USN_STRMCMD_FLUSH;
@@ -1760,7 +1761,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommandFlush(VIDDEC_COMPONENT_PRIVATE *pComponentPriv
         /*considering*/
         VIDDEC_CircBuf_Flush(&pComponentPrivate->eStoreTimestamps);
         OMX_VidDec_Return (pComponentPrivate, VIDDEC_OUTPUT_PORT, OMX_FALSE);
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL && pComponentPrivate->bLCMLHalted != OMX_TRUE){
             aParam[0] = USN_STRMCMD_FLUSH;
@@ -1991,6 +1993,14 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 /************************************************************************/
                 /************************************************************************/
                 if(eError != OMX_ErrorNone){
+                    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                        pComponentPrivate->pModLCML != NULL &&
+                        pComponentPrivate->pLCML != NULL){
+                        LCML_DSP_INTERFACE *pLcmlHandle = NULL;
+                        pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+                        LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
+                        pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
+                    }
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                         pComponentPrivate->pModLCML != NULL){
                         if(pComponentPrivate->pModLCML != NULL){
@@ -2268,6 +2278,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->bIsPaused = 0;
                 pComponentPrivate->bFirstBuffer = 1;
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL &&
                     pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2322,6 +2333,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
 
                     p = (void*)&cmdValues;
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                        pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                         pComponentPrivate->pLCML != NULL &&
                         pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2405,6 +2417,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->bTransPause = 0;
                     p = (void*)&cmdValues;
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                        pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                         pComponentPrivate->pLCML != NULL &&
                         pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2469,6 +2482,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                         VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
                         p = (void*)&cmdValues;
                         if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                            pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                             pComponentPrivate->pLCML != NULL &&
                             pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2597,17 +2611,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->pLCML != NULL) {
                     OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
                     pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
+                    /*codec is being destructed in this part returning an error is not important*/
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
-                    if (eError != OMX_ErrorNone) {
-                        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                                               OMX_EventError,
-                                                               OMX_ErrorHardware,
-                                                               OMX_TI_ErrorSevere,
-                                                               NULL);
-                        OMX_PRDSP4(pComponentPrivate->dbg, "OMX_ErrorHardware 0x%x\n",eError);
-                        break;
-                    }
                     pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
                     OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
                 }
@@ -2820,6 +2825,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->bIsPaused = 1;
                 OMX_VidDec_Return (pComponentPrivate, OMX_ALL, OMX_FALSE);
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL &&
                     pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2860,6 +2866,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
             else if (pComponentPrivate->eState == OMX_StateIdle) {
                 pComponentPrivate->bIsPaused = 1;
                 if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                    pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                     pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                     pComponentPrivate->pLCML != NULL &&
                     pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -2926,6 +2933,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pLcmlHandle = (LCML_DSP_INTERFACE*)pComponentPrivate->pLCML;
                 if (pComponentPrivate->eState == OMX_StateExecuting) {
                     if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                        pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                         pComponentPrivate->pLCML != NULL &&
                         pComponentPrivate->bLCMLHalted != OMX_TRUE) {
@@ -2954,7 +2962,8 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                     pComponentPrivate->pLCML != NULL){
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
                     OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
-                    if (eError != OMX_ErrorNone) {
+                    pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
+                    /*if (eError != OMX_ErrorNone) {
                         OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Destroy...\n");
                         eError = OMX_ErrorHardware;
                         pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
@@ -2965,7 +2974,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                                                                NULL);
                         OMX_PRSTATE4(pComponentPrivate->dbg, "Incorrect State Transition 0x%x\n", eError);
                         break;
-                    }
+                    }*/
                 }
 
                 pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
@@ -3211,6 +3220,7 @@ OMX_ERRORTYPE VIDDEC_HandleFreeOutputBufferFromApp(VIDDEC_COMPONENT_PRIVATE *pCo
     if(pBuffHead->pOutputPortPrivate != NULL) {
         pBufferPrivate = (VIDDEC_BUFFER_PRIVATE* )pBuffHead->pOutputPortPrivate;
         if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL) {
 #ifdef KHRONOS_1_1
@@ -5271,6 +5281,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
 #endif
 
             if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL){
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
@@ -5439,6 +5450,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                               PERF_ModuleCommonLayer);
 #endif
             if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL){
                 pComponentPrivate->pTempBuffHead.nFlags = 0;
@@ -5658,6 +5670,7 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                               PERF_ModuleCommonLayer);
     #endif
             if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+                pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL){
                 pBufferPrivate->eBufferOwner = VIDDEC_BUFFER_WITH_DSP;
@@ -6411,7 +6424,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_WMVDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         }
     }
     else {
-        eError = OMX_ErrorHardware;
+        eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
 EXIT:
@@ -6615,7 +6628,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_H264Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate
         }
     }
     else {
-        eError = OMX_ErrorHardware;
+        eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
 EXIT:
@@ -6808,7 +6821,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg4Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
         }
     }
     else {
-        eError = OMX_ErrorHardware;
+        eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
 EXIT:
@@ -6987,7 +7000,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_Mpeg2Dec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
         }
     }
     else {
-        eError = OMX_ErrorHardware;
+        eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
 EXIT:
@@ -7180,7 +7193,7 @@ OMX_ERRORTYPE VIDDEC_InitDSP_SparkDec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivat
         }
     }
     else {
-        eError = OMX_ErrorHardware;
+        eError = OMX_ErrorInvalidState;
         goto EXIT;
     }
 EXIT:
@@ -8026,7 +8039,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     OMX_PRDSP2(pComponentPrivate->dbg, "INPUT width=%lu height=%lu\n", pComponentPrivate->pInPortDef->format.video.nFrameWidth, pComponentPrivate->pInPortDef->format.video.nFrameHeight);   
 
     /*Enable EOS propagation at USN*/
-    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+        pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
         pComponentPrivate->bLCMLHalted != OMX_TRUE){
         OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlUsnEos 0x%p\n",pLcmlHandle);
@@ -8116,7 +8130,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
         cmdValues[2] = sizeof(H264VDEC_UALGDynamicParams);
 
         p = (void*)&cmdValues;
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL &&
             pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -8198,7 +8213,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 
         pComponentPrivate->bTransPause = 0;
         p = (void*)&cmdValues;
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL &&
             pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -8260,7 +8276,8 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
 
             VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
             p = (void*)&cmdValues;
-            if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+            if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+                pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL &&
                 pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -8330,47 +8347,23 @@ OMX_ERRORTYPE VIDDEC_UnloadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
                 pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
                 pComponentPrivate->pLCML != NULL &&
                 pComponentPrivate->bLCMLHalted != OMX_TRUE) {
-    VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
-    OMX_PRDSP1 (pComponentPrivate->dbg, "LCML_ControlCodec called MMCodecControlStop 0x%x\n",eError);
-    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, MMCodecControlStop, NULL);
-    if (eError != OMX_ErrorNone) {
-        OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Stop...\n");
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorCritical,
-                                               NULL);
-        VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
-        goto EXIT;
-    }
+                VIDDEC_PTHREAD_MUTEX_LOCK(pComponentPrivate->sMutex);
+                OMX_PRDSP1 (pComponentPrivate->dbg, "LCML_ControlCodec called MMCodecControlStop 0x%x\n",eError);
+                LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, MMCodecControlStop, NULL);
 
-    VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
-    VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
+                VIDDEC_PTHREAD_MUTEX_WAIT(pComponentPrivate->sMutex);
+                VIDDEC_PTHREAD_MUTEX_UNLOCK(pComponentPrivate->sMutex);
             }
             pComponentPrivate->eLCMLState = VidDec_LCML_State_Stop;
         }
         if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->pLCML != NULL){
-    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
+            LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle, EMMCodecControlDestroy, NULL);
 
-    OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
-    if (eError != OMX_ErrorNone) {
-        OMX_PRDSP4(pComponentPrivate->dbg, "Occurred in Codec Destroy...\n");
-        eError = OMX_ErrorHardware;
-        pComponentPrivate->cbInfo.EventHandler(pComponentPrivate->pHandle,
-                                               pComponentPrivate->pHandle->pApplicationPrivate,
-                                               OMX_EventError,
-                                               eError,
-                                               OMX_TI_ErrorCritical,
-                                               NULL);
-        OMX_ERROR4(pComponentPrivate->dbg, "Incorrect State Transition 0x%x\n", eError);
-        goto EXIT;
+            OMX_PRDSP2(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
         }
-    }
-    pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
-    OMX_PRDSP1(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
+        pComponentPrivate->eLCMLState = VidDec_LCML_State_Destroy;
+        OMX_PRDSP1(pComponentPrivate->dbg, "LCML_ControlCodec called EMMCodecControlDestroy 0x%p\n",pLcmlHandle);
 
         if(pComponentPrivate->pModLCML != NULL){
             dlclose(pComponentPrivate->pModLCML);
@@ -8455,10 +8448,10 @@ OMX_ERRORTYPE VIDDEC_FatalErrorRecover(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
         }
     }
 #endif
+EXIT:
     /* regardless of success from above,
        still send the Invalid State error to client */
     eError = VIDDEC_Handle_InvalidState(pComponentPrivate);
-EXIT:
     OMX_PRDSP1(pComponentPrivate->dbg, "---EXITING(0x%x)\n",eError);
     return eError;
 }
@@ -8516,7 +8509,8 @@ OMX_ERRORTYPE VIDDEC_Set_SN_StreamType(VIDDEC_COMPONENT_PRIVATE* pComponentPriva
         cmdValues[2] = sizeof(WMV9DEC_UALGDynamicParams);
 
         p = (void*)&cmdValues;
-        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+        if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+            pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
             pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
             pComponentPrivate->pLCML != NULL &&
             pComponentPrivate->bLCMLHalted != OMX_TRUE){
@@ -8635,7 +8629,8 @@ OMX_ERRORTYPE VIDDEC_SetMpeg4_Parameters(VIDDEC_COMPONENT_PRIVATE* pComponentPri
     cmdValues[2] = sizeof(MP4VDEC_UALGDynamicParams);
 
     p = (void*)&cmdValues;
-    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
+    if(pComponentPrivate->eLCMLState != VidDec_LCML_State_Load &&
+        pComponentPrivate->eLCMLState != VidDec_LCML_State_Unload &&
         pComponentPrivate->eLCMLState != VidDec_LCML_State_Destroy &&
         pComponentPrivate->pLCML != NULL &&
         pComponentPrivate->bLCMLHalted != OMX_TRUE){
