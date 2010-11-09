@@ -637,6 +637,18 @@ OMX_ERRORTYPE G722DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G722DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        G722DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
     return eError;
 }
 
@@ -832,7 +844,6 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                 &cb,(OMX_STRING)pComponentPrivate->sDeviceString);
                     if (eError != OMX_ErrorNone){
                         G722DEC_DPRINT("%d :: Error : InitMMCodec failed...>>>>>> \n",__LINE__);
-                        G722DEC_FatalErrorRecover(pComponentPrivate);
                         goto EXIT;
                     }
 
@@ -1011,7 +1022,6 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                       NULL);
                             if (eError != OMX_ErrorNone) {
                                 G722DEC_DPRINT("%d :: %s Queue Input buffer, error\n", __LINE__, __FUNCTION__);
-                                G722DEC_FatalErrorRecover(pComponentPrivate);
                                 goto EXIT;
                             }
                         }
@@ -1040,7 +1050,6 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                                           NULL);
                                 if (eError != OMX_ErrorNone) {
                                     G722DEC_DPRINT("%d :: %s Queue Output buffer, error\n", __LINE__, __FUNCTION__);
-                                    G722DEC_FatalErrorRecover(pComponentPrivate);
                                     goto EXIT;
                                 }
                             }
@@ -1109,8 +1118,15 @@ OMX_U32 G722DEC_HandleCommand (G722DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 /* Now Deinitialize the component No error should be returned from
                  * this function. It should clean the system as much as possible */
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                if (pLcmlHandle != NULL) {
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy,(void *)pArgs);
+                    dlclose(pComponentPrivate->ptrLibLCML);
+                    pComponentPrivate->ptrLibLCML = NULL;
+                    G722DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    pComponentPrivate->pLcmlHandle = NULL;
+                    pLcmlHandle = NULL;
+                }
                 pComponentPrivate->bInitParamsInitialized = 0;
                 eError = EXIT_COMPONENT_THRD;
                 break;
@@ -1504,7 +1520,6 @@ OMX_ERRORTYPE G722DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                   pBufHeader->pBuffer);
                         if (eError != OMX_ErrorNone) {
                             G722DEC_DPRINT("%d :: %s Queue Input buffer, error\n", __LINE__, __FUNCTION__);
-                            G722DEC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
                             goto EXIT;
                         }
@@ -1588,7 +1603,6 @@ OMX_ERRORTYPE G722DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
                                                   pBufHeader->pBuffer);
                         if (eError != OMX_ErrorNone ) {
                             G722DEC_DPRINT("%d :: %s Queue Output buffer, error\n", __LINE__, __FUNCTION__);
-                            G722DEC_FatalErrorRecover(pComponentPrivate);
                             eError = OMX_ErrorHardware;
                             goto EXIT;
                         }
@@ -1609,6 +1623,9 @@ OMX_ERRORTYPE G722DEC_HandleDataBuf_FromApp(OMX_BUFFERHEADERTYPE* pBufHeader,
     }
  EXIT:
     G722DEC_DPRINT(": Exiting from  HandleDataBuf_FromApp: %x \n",eError);
+    if (eError != OMX_ErrorNone ) {
+        G722DEC_FatalErrorRecover(pComponentPrivate);
+    }
     return eError;
 }
 
@@ -1858,6 +1875,13 @@ OMX_ERRORTYPE G722DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    OMX_BUFFERFLAG_EOS,
                                                    NULL);
         }
+        else if(((OMX_U32)args[4] == USN_ERR_NONE)){
+            if((args[5] == (void*)NULL))
+            {
+                OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                G722DEC_FatalErrorRecover(pComponentPrivate);
+            }
+        }
         if((int)args[5] == IUALG_WARN_CONCEALED) {
             G722DEC_DPRINT( "Algorithm issued a warning. But can continue" );
             G722DEC_DPRINT("%d :: arg5 = %p\n",__LINE__,args[5]);
@@ -2050,9 +2074,8 @@ OMX_HANDLETYPE G722DEC_GetLCMLHandle(G722DEC_COMPONENT_PRIVATE *pComponentPrivat
         return pHandle;
     }
 
-    if (NULL != pHandle) {
-        ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
-    }
+    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate= pComponentPrivate;
+    pComponentPrivate->ptrLibLCML = handle; /* saving LCML  backup lib pointer  */
 
     return pHandle;
 }
@@ -2522,18 +2545,8 @@ void G722DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
  #endif
 
 void G722DEC_FatalErrorRecover(G722DEC_COMPONENT_PRIVATE *pComponentPrivate){
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        G722DEC_DPRINT ("%d ::EMMCodecControlDestroy: error = %d\n", __LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                     RMProxy_FreeResource,
                                     OMX_G722_Decoder_COMPONENT, 0, 3456, NULL);
@@ -2551,7 +2564,11 @@ void G722DEC_FatalErrorRecover(G722DEC_COMPONENT_PRIVATE *pComponentPrivate){
                                            OMX_ErrorInvalidState,
                                            OMX_TI_ErrorSevere,
                                            NULL);
-    G722DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    if(pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        G722DEC_CleanupInitParams(pComponentPrivate->pHandle);
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+    }
+
     G722DEC_DPRINT ("%d ::Completed FatalErrorRecover Entering Invalid State\n", __LINE__);
 }
 

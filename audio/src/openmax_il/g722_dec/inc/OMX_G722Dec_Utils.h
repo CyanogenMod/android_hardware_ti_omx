@@ -391,6 +391,9 @@ typedef struct G722DEC_COMPONENT_PRIVATE
     /** This is LCML handle  */
     OMX_HANDLETYPE pLcmlHandle;
 
+    /* backup pointer for LCML */
+    void* ptrLibLCML;
+
     /** Contains pointers to LCML Buffer Headers */
     G722D_LCML_BUFHEADERTYPE *pLcmlBufHeader[2];
     OMX_U32 bBufferIsAllocated;
@@ -477,6 +480,7 @@ typedef struct G722DEC_COMPONENT_PRIVATE
     pthread_cond_t InIdle_threshold;
     OMX_U8 InIdle_goingtoloaded;
 
+    OMX_BOOL DSPMMUFault;
     OMX_BOOL bLoadedCommandPending;
     OMX_PARAM_COMPONENTROLETYPE *componentRole;
     OMX_VERSIONTYPE ComponentVersion;
