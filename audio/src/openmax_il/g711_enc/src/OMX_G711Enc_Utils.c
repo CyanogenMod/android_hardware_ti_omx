@@ -452,6 +452,22 @@ OMX_ERRORTYPE G711ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     pComponentPrivate->bPortDefsAllocated = 0;
 
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G711ENC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        else if (pComponentPrivate->ptrLibLCML != NULL){
+            G711ENC_DPRINT("%d :: About to Close LCML %p \n",__LINE__,pComponentPrivate->ptrLibLCML);
+            dlclose( pComponentPrivate->ptrLibLCML);
+            pComponentPrivate->ptrLibLCML = NULL;
+            G711ENC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        }
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     G711ENC_DPRINT("%d :: Exiting G711ENC_FreeCompResources()\n",__LINE__);
     G711ENC_DPRINT("%d :: Returning = 0x%x\n",__LINE__,eError);
     OMX_MEMFREE_STRUCT(pComponentPrivate);
@@ -975,19 +991,22 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                     G711ENC_PRINT("%d :: G711ENC_CleanupInitParams returned error\n",__LINE__);
                     return eError;
                 }               
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                if (pComponentPrivate->pLcmlHandle != NULL) {
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy, (void *)p);
-                if (eError != OMX_ErrorNone) {
-                    G711ENC_PRINT("%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
-                    return eError;
-                }
-
-                /*Closing LCML Lib*/
-                if (pComponentPrivate->ptrLibLCML != NULL){
-                    G711ENC_DPRINT("%d :: About to Close LCML %p \n",__LINE__,pComponentPrivate->ptrLibLCML);
-                    dlclose( pComponentPrivate->ptrLibLCML  );  
-                    pComponentPrivate->ptrLibLCML = NULL;    
-                    G711ENC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    if (eError != OMX_ErrorNone) {
+                        G711ENC_PRINT("%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
+                        return eError;
+                    }
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLcmlHandle = NULL;
+                    /*Closing LCML Lib*/
+                    if (pComponentPrivate->ptrLibLCML != NULL){
+                        G711ENC_DPRINT("%d :: About to Close LCML %p \n",__LINE__,pComponentPrivate->ptrLibLCML);
+                        dlclose( pComponentPrivate->ptrLibLCML);
+                        pComponentPrivate->ptrLibLCML = NULL;
+                        G711ENC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    }
                 }
                 eError = G711ENC_EXIT_COMPONENT_THRD;
                 pComponentPrivate->bInitParamsInitialized = 0;
@@ -1043,9 +1062,16 @@ OMX_U32 G711ENC_HandleCommand (G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
 
                 if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                     pComponentPrivate->curState != OMX_StateInvalid && 
-                    pComponentPrivate->curState != OMX_StateLoaded) {
+                    pComponentPrivate->curState != OMX_StateLoaded &&
+                    pLcmlHandle != NULL) {
+
                     eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlDestroy, (void *)p);
+                    if (eError != OMX_ErrorNone){
+                        G711ENC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+                    }
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLcmlHandle = NULL;
                 }
 
                 pComponentPrivate->curState = OMX_StateInvalid;
@@ -2012,6 +2038,11 @@ OMX_ERRORTYPE G711ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                                    (OMX_U32)NULL,
                                                    OMX_BUFFERFLAG_EOS, 
                                                    NULL);
+            if((((OMX_U32) args [4]) == USN_ERR_NONE) && (args[5] == (void*)NULL))
+            {
+                OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                G711ENC_FatalErrorRecover(pComponentPrivate);
+            }
         }
         break;
 
@@ -2530,20 +2561,8 @@ void G711ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 void G711ENC_FatalErrorRecover(G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-
-        G711ENC_DPRINT("%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_G711_Encoder_COMPONENT, 0, 1234, NULL);
