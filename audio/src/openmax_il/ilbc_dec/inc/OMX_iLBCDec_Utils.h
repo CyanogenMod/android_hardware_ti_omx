@@ -766,6 +766,8 @@ typedef struct iLBCDEC_COMPONENT_PRIVATE
     OMX_U8 OpBufindex;
     
     OMX_BOOL bLoadedCommandPending;
+
+    OMX_BOOL DSPMMUFault;
     
     OMX_PARAM_COMPONENTROLETYPE componentRole; /* 0j0 not compatilble with G722 *componentRole; */
     /** Pointer to port priority management structure **/
