@@ -421,6 +421,9 @@ typedef struct G726DEC_COMPONENT_PRIVATE
     /** This is LCML handle  */
     OMX_HANDLETYPE pLcmlHandle;
 
+    /* backup pointer for LCML */
+    void* ptrLibLCML;
+
     /** Contains pointers to LCML Buffer Headers */
     G726D_LCML_BUFHEADERTYPE *pLcmlBufHeader[2];
 
@@ -587,6 +590,8 @@ typedef struct G726DEC_COMPONENT_PRIVATE
 
     /* flag if transition to loaded is pending */
     OMX_BOOL bLoadedCommandPending;
+
+    OMX_BOOL DSPMMUFault;
 
     /* contains the OMX defined role of the component */
     /* not used in non-standard components */
