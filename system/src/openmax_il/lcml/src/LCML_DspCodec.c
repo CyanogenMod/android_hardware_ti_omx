@@ -446,7 +446,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
             struct DSP_NOTIFICATION* notification;
             OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Registering the Node for Messaging\n",__LINE__);
 
-	        LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError)
+            LCML_MALLOC(notification,sizeof(struct DSP_NOTIFICATION),struct DSP_NOTIFICATION, eError)
             if(eError)
             {
                 OMX_ERROR4 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: malloc failed....\n",__LINE__);
@@ -992,7 +992,7 @@ static OMX_ERRORTYPE QueueBuffer (OMX_HANDLETYPE hComponent,
         streamId = bufType - EMMCodecStream0;
     }
 
-	phandle->commStruct->iStreamID = streamId;
+    phandle->commStruct->iStreamID = streamId;
 
     if (bufType == EMMCodecInputBuffer || !(streamId % 2))
     {
@@ -1717,7 +1717,7 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
         DSP_ERROR_EXIT (status, "DeInit: DASF Node Delete ", EXIT, hInterface->pCodecinterfacehandle);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Deleted the DASF node Successfully\n",__LINE__);
     }
-	/* delete SN */
+    /* delete SN */
     status = DSPNode_Delete(hInterface->dspCodec->hNode);
     DSP_ERROR_EXIT (status, "DeInit: Codec Node Delete ", EXIT, hInterface->pCodecinterfacehandle);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Deleted the node Successfully\n",__LINE__);
@@ -1739,12 +1739,12 @@ EXIT:
     if(hInterface->iDspOpenCount > 0)
     {
         OMX_PRDSP4 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg,
-            "%d :: DeInit: Calling DspManager_Close, iDspOpenCount %d!!\n",__LINE__ ,hInterface->iDspOpenCount);
+            "%d :: DeInit: Calling DspManager_Close, iDspOpenCount %d!!\n",__LINE__ ,(int)hInterface->iDspOpenCount);
         status = DspManager_Close(0, NULL);
         if (DSP_FAILED(status))
         {
             eError = OMX_ErrorHardware;
-            OMX_PRDSP4 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: DeInit: DSPManager Close failed!!\n",__LINE__, status);
+            OMX_PRDSP4 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: DeInit: DSPManager Close failed!!\n...status = %d",__LINE__, status);
         }else
             hInterface->iDspOpenCount--;
     }
@@ -1872,7 +1872,7 @@ void* MessagingThread(void* arg)
                             i = hDSPInterface->iBufinputcount;
                             while(j++ < QUEUE_SIZE)
                             {
-                                if (hDSPInterface->Arminputstorage[i] != NULL && hDSPInterface ->dspCodec->InDmmBuffer[i].pMapped== msg.dwArg1)
+                                if (hDSPInterface->Arminputstorage[i] != NULL && hDSPInterface ->dspCodec->InDmmBuffer[i].pMapped== (void *)msg.dwArg1)
                                 {
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "InputBuffer loop");
                                     tmpDspStructAddress = ((LCML_DSP_INTERFACE *)arg)->Arminputstorage[i] ;
@@ -1900,7 +1900,7 @@ void* MessagingThread(void* arg)
                             while(j++ < QUEUE_SIZE)
                             {
                                 if( hDSPInterface ->Armoutputstorage[i] != NULL
-                                        && hDSPInterface ->dspCodec->OutDmmBuffer[i].pMapped == msg.dwArg1)
+                                        && hDSPInterface ->dspCodec->OutDmmBuffer[i].pMapped == (void *)msg.dwArg1)
                                 {
                                     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "output buffer loop");
                                     tmpDspStructAddress = hDSPInterface->Armoutputstorage[i] ;
@@ -1921,13 +1921,13 @@ void* MessagingThread(void* arg)
                                     /* It is noticed that previous instance of Param buffer is coming back to cache,
                                         when DSP is updating Param buffer, even though it was invalidated before giving to DSP.
                                         As a Fix/Workaround invalidating Param buffer before reading the new values updated by DSP. */
-                                    if((tmpDspStructAddress->iArmParamArg!=NULL) && (tmpDspStructAddress->iParamSize >0))
+                                    if(((void *)tmpDspStructAddress->iArmParamArg!=NULL) && (tmpDspStructAddress->iParamSize >0))
                                     {
-                                        status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc, tmpDspStructAddress->iArmParamArg, tmpDspStructAddress->iParamSize);
+                                        status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc, (void*)tmpDspStructAddress->iArmParamArg, tmpDspStructAddress->iParamSize);
                                         if(DSP_FAILED(status))
                                         {
                                             OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
-                                                    "Invalidation Fail for iArmParamArg buffer %p \n", tmpDspStructAddress->iArmParamArg);
+                                                    "Invalidation Fail for iArmParamArg buffer %p \n", (void *)tmpDspStructAddress->iArmParamArg);
                                         }
                                     }
                                     break;
@@ -1973,8 +1973,22 @@ void* MessagingThread(void* arg)
                                 if (!hDSPInterface->ReUseMap)
                                 {
                                     DmmUnMap(hDSPInterface->dspCodec->hProc,
-                                            (void*)tmpDspStructAddress->iBufferPtr,
-                                            pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                    (void*)tmpDspStructAddress->iBufferPtr,
+                                    pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                }
+                                else
+                                {
+                                    if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                    {
+                                        status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                               (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                               tmpDspStructAddress->iBufferSize);
+                                        if(DSP_FAILED(status))
+                                        {
+                                            OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                        }
+                                    }
                                 }
                             }
 
@@ -2063,6 +2077,20 @@ void* MessagingThread(void* arg)
                                                     (void*)tmpDspStructAddress->iBufferPtr,
                                                     pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
                                         }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                                       tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if (tmpDspStructAddress->iParamPtr != (OMX_U32)NULL)
@@ -2127,6 +2155,20 @@ void* MessagingThread(void* arg)
                                             DmmUnMap(hDSPInterface->dspCodec->hProc,
                                                     (void*)tmpDspStructAddress->iBufferPtr,
                                                     pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                                       tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
                                         }
                                     }
 
@@ -2272,6 +2314,20 @@ void* MessagingThread(void* arg)
                                                     pDmmBuf->bufReserved, 
                                                     ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
                                         }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                                       tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if (tmpDspStructAddress->iParamPtr != (OMX_U32)NULL)
@@ -2367,6 +2423,20 @@ void* MessagingThread(void* arg)
                                                     (void*)tmpDspStructAddress->iBufferPtr,
                                                     pDmmBuf->bufReserved, 
                                                     ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                                       tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
                                         }
                                     }
 
@@ -2466,6 +2536,20 @@ void* MessagingThread(void* arg)
                                                     (void*)tmpDspStructAddress->iBufferPtr,
                                                     pDmmBuf->bufReserved, ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
                                         }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void*)tmpDspStructAddress->iArmbufferArg,
+                                                                                       tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if (tmpDspStructAddress->iParamPtr != (OMX_U32)NULL)
@@ -2541,6 +2625,20 @@ void* MessagingThread(void* arg)
                                                     (void*)tmpDspStructAddress->iBufferPtr,
                                                     pDmmBuf->bufReserved,
                                                     ((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg);
+                                        }
+                                        else
+                                        {
+                                            if ( (streamId % 2) && !hDSPInterface->buf_flush_flag)
+                                            {
+                                                status = DSPProcessor_InvalidateMemory(hDSPInterface->dspCodec->hProc,
+                                                                                       (void *)tmpDspStructAddress->iArmbufferArg,
+                                                                                       (int)tmpDspStructAddress->iBufferSize);
+                                                if(DSP_FAILED(status))
+                                                {
+                                                    OMX_ERROR4 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg,
+                                                            "Invalidation Fail for iArmbufferArg buffer %p \n", (void*)tmpDspStructAddress->iArmbufferArg);
+                                                }
+                                            }
                                         }
                                     }
 
@@ -2629,7 +2727,7 @@ void* MessagingThread(void* arg)
                 }/* end of internal if(DSP_SUCCEEDED(status)) */
                 else
                 {
-                    OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "%d :: DSPManager_getmessage() failed: 0x%lx",__LINE__, status);
+                    OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "%d :: DSPManager_getmessage() failed: %d",__LINE__, status);
                 }
 
             }/* end of internal while loop*/
@@ -2652,12 +2750,12 @@ void* MessagingThread(void* arg)
 #endif
         else
         {
-            OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "%d :: DSPManager_WaitForEvents() failed: 0x%lx",__LINE__, status);
+            OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)((LCML_DSP_INTERFACE *)arg)->pCodecinterfacehandle)->dbg, "%d :: DSPManager_WaitForEvents() failed: %d",__LINE__, status);
         }
 
     } /* end of external while(1) loop */
 
-	/* Reuse implementation */
+    /* Reuse implementation */
     if (((LCML_DSP_INTERFACE *)arg)->ReUseMap)
     {
         pthread_mutex_unlock(&((LCML_DSP_INTERFACE *)arg)->m_isStopped_mutex);
