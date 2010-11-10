@@ -434,6 +434,18 @@ OMX_ERRORTYPE G726ENC_FreeCompResources(OMX_HANDLETYPE pComponent)
         pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
         pComponentPrivate->bMutexInit = 0;
     }
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G726ENC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        G726ENC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
         OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
         OMX_MEMFREE_STRUCT(pComponentPrivate);
 
@@ -917,11 +929,18 @@ OMX_U32 G726ENC_HandleCommand (G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
             * this function. It should clean the system as much as possible */
             G726ENC_CleanupInitParams(pHandle);
             
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+            if (pLcmlHandle != NULL) {
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                         EMMCodecControlDestroy, (void *)p);
-            if (eError != OMX_ErrorNone) {
-                G726ENC_DPRINT("%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
-                goto EXIT;
+                if (eError != OMX_ErrorNone) {
+                    G726ENC_DPRINT("%d :: Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
+                    goto EXIT;
+                }
+                dlclose(pComponentPrivate->ptrLibLCML);
+                pComponentPrivate->ptrLibLCML = NULL;
+                G726ENC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                pLcmlHandle = NULL;
+                pComponentPrivate->pLcmlHandle = NULL;
             }
             eError = G726ENC_EXIT_COMPONENT_THRD;
             pComponentPrivate->bInitParamsInitialized = 0;
@@ -1788,6 +1807,11 @@ OMX_ERRORTYPE G726ENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                      /*TODO: add eventhandler to report eos to application*/
             }
         }
+        if(((OMX_U32)args[4] == USN_ERR_NONE) && (args[5] == (void*)NULL)){
+                OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                G726ENC_FatalErrorRecover(pComponentPrivate);
+        }
+
     }
 EXIT:
     G726ENC_DPRINT("%d :: Exiting the G726ENC_LCMLCallback Function\n",__LINE__);
@@ -2140,20 +2164,8 @@ void G726ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 void G726ENC_FatalErrorRecover(G726ENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-
-        G726ENC_DPRINT("%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_G726_Encoder_COMPONENT, 0, 1234, NULL);
