@@ -761,6 +761,8 @@ RMPROXY_CALLBACKTYPE rmproxyCallback;
     /** Flag to mark PM/RM preemption */
     OMX_BOOL bPreempted;    
 
+    OMX_BOOL DSPMMUFault;
+
 } ILBCENC_COMPONENT_PRIVATE;
 
 

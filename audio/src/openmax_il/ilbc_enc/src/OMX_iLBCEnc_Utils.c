@@ -429,6 +429,21 @@ OMX_ERRORTYPE ILBCENC_FreeCompResources(OMX_HANDLETYPE pComponent)
     OMX_MEMFREE_STRUCT(pComponentPrivate->sPriorityMgmt);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            ILBCENC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        if (pComponentPrivate->ptrLibLCML != NULL)
+            {
+            ILBCENC_DPRINT("%d OMX_iLBCEncoder.c Closing LCML library\n",__LINE__);
+            dlclose( pComponentPrivate->ptrLibLCML);
+            pComponentPrivate->ptrLibLCML = NULL;
+        }
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
 
  EXIT:
     ILBCENC_DPRINT("%d Exiting ILBCENC_FreeCompResources()\n",__LINE__);
@@ -1016,22 +1031,24 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                 /* Now Deinitialize the component No error should be returned from
                  * this function. It should clean the system as much as possible */
                 ILBCENC_CleanupInitParams(pComponentPrivate->pHandle);
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                if (pLcmlHandle != NULL) {
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy, (void *)p);
-                if (eError != OMX_ErrorNone) {
-                    ILBCENC_EPRINT("%d Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
-                    goto EXIT;
+                    if (eError != OMX_ErrorNone) {
+                        ILBCENC_EPRINT("%d Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
+                        goto EXIT;
+                    }
+
+                    /*Closing LCML Lib*/
+                    if (pComponentPrivate->ptrLibLCML != NULL){
+                            ILBCENC_DPRINT("%d OMX_iLBCEncoder.c Closing LCML library\n",__LINE__);
+                            dlclose( pComponentPrivate->ptrLibLCML);
+                            pComponentPrivate->ptrLibLCML = NULL;
+                    }
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLcmlHandle = NULL;
                 }
 
-                /*Closing LCML Lib*/
-                if (pComponentPrivate->ptrLibLCML != NULL)
-                    {
-                        ILBCENC_DPRINT("%d OMX_iLBCEncoder.c Closing LCML library\n",__LINE__);
-                        dlclose( pComponentPrivate->ptrLibLCML);
-                        pComponentPrivate->ptrLibLCML = NULL;
-                    }   
-
-                
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_SendingCommand(pComponentPrivate->pPERF, -1, 0, PERF_ModuleComponent);
 #endif
@@ -1100,8 +1117,15 @@ OMX_U32 ILBCENC_HandleCommand (ILBCENC_COMPONENT_PRIVATE *pComponentPrivate)
                 if (pComponentPrivate->curState != OMX_StateWaitForResources && 
                     pComponentPrivate->curState != OMX_StateLoaded) {
 
-                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                    if (pLcmlHandle != NULL) {
+                        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                                EMMCodecControlDestroy, (void *)p);
+                        if (eError != OMX_ErrorNone) {
+                            ILBCENC_EPRINT("%d Error: LCML_ControlCodec EMMCodecControlDestroy = %x\n",__LINE__, eError);
+                        }
+                        pLcmlHandle = NULL;
+                        pComponentPrivate->pLcmlHandle = NULL;
+                    }
                 }
                 pComponentPrivate->curState = OMX_StateInvalid;
                 pComponentPrivate->cbInfo.EventHandler( pHandle, 
@@ -2223,6 +2247,10 @@ OMX_ERRORTYPE ILBCENC_LCMLCallback (TUsnCodecEvent event,void * args[10])
                                                 OMX_BUFFERFLAG_EOS,
                                                 NULL);
         }
+        if(((OMX_U32)args[4] == USN_ERR_NONE) && (args[5] == (void*)NULL)){
+                OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                ILBCENC_FatalErrorRecover(pComponentPrivate);
+        }
         if((int)args[5] == IUALG_ERR_GENERAL) {
             char *pArgs = "";
             ILBCENC_EPRINT( "Algorithm error. Cannot continue" );
@@ -2858,18 +2886,8 @@ void ILBCENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 #endif
 
 void ILBCENC_FatalErrorRecover(ILBCENC_COMPONENT_PRIVATE *pComponentPrivate) {
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        ILBCENC_EPRINT ("%d ::EMMCodecControlDestroy: error = %d\n", __LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
                                     RMProxy_FreeResource,
                                     OMX_ILBC_Encoder_COMPONENT, 0, 3456, NULL);
@@ -2887,6 +2905,9 @@ void ILBCENC_FatalErrorRecover(ILBCENC_COMPONENT_PRIVATE *pComponentPrivate) {
                                            OMX_ErrorInvalidState,
                                            OMX_TI_ErrorSevere,
                                            NULL);
-    ILBCENC_CleanupInitParams(pComponentPrivate->pHandle);
+    if (pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        ILBCENC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     ILBCENC_DPRINT ("%d ::Completed FatalErrorRecover Entering Invalid State\n", __LINE__);
 }
