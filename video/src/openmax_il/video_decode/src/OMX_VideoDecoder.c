@@ -99,18 +99,18 @@ extern OMX_ERRORTYPE DecrementCount (OMX_U32 * pCounter, pthread_mutex_t *pMutex
 /*--------data declarations --------------------------------------------------*/
 OMX_STRING cVideoDecodeName = "OMX.TI.Video.Decoder";
 
-VIDDEC_CUSTOM_PARAM sVideoDecCustomParams[] =                                {{VIDDEC_CUSTOMPARAM_PROCESSMODE, VideoDecodeCustomParamProcessMode},
-                                                                             {VIDDEC_CUSTOMPARAM_H264BITSTREAMFORMAT, VideoDecodeCustomParamH264BitStreamFormat},
-                                                                             {VIDDEC_CUSTOMPARAM_WMVPROFILE, VideoDecodeCustomParamWMVProfile},
-                                                                             {VIDDEC_CUSTOMPARAM_WMVFILETYPE, VideoDecodeCustomParamWMVFileType},
-                                                                             {VIDDEC_CUSTOMPARAM_PARSERENABLED, VideoDecodeCustomParamParserEnabled},
-                                                                             {VIDDEC_CUSTOMCONFIG_DEBUG, VideoDecodeCustomConfigDebug},
+VIDDEC_CUSTOM_PARAM sVideoDecCustomParams[] = {{VIDDEC_CUSTOMPARAM_PROCESSMODE, VideoDecodeCustomParamProcessMode},
+                                               {VIDDEC_CUSTOMPARAM_H264BITSTREAMFORMAT, VideoDecodeCustomParamH264BitStreamFormat},
+                                               {VIDDEC_CUSTOMPARAM_WMVPROFILE, VideoDecodeCustomParamWMVProfile},
+                                               {VIDDEC_CUSTOMPARAM_WMVFILETYPE, VideoDecodeCustomParamWMVFileType},
+                                               {VIDDEC_CUSTOMPARAM_PARSERENABLED, VideoDecodeCustomParamParserEnabled},
+                                               {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian},
 #ifdef VIDDEC_SPARK_CODE
-                                                                             {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian},
-                                                                             {VIDDEC_CUSTOMPARAM_ISSPARKINPUT, VideoDecodeCustomParamIsSparkInput}};
-#else
-                                                                             {VIDDEC_CUSTOMPARAM_ISNALBIGENDIAN, VideoDecodeCustomParamIsNALBigEndian}};
+                                               {VIDDEC_CUSTOMPARAM_ISSPARKINPUT, VideoDecodeCustomParamIsSparkInput},
 #endif
+                                               {VIDDEC_CUSTOMCONFIG_DEBUG, VideoDecodeCustomConfigDebug},
+                                               {VIDDEC_CUSTOMCONFIG_CACHEABLEBUFFERS, VideoDecodeCustomConfigCacheableBuffers}};
+
 /* H.263 Supported Levels & profiles */
 VIDEO_PROFILE_LEVEL_TYPE SupportedH263ProfileLevels[] = {
   {OMX_VIDEO_H263ProfileBaseline, OMX_VIDEO_H263Level10},
@@ -1991,6 +1991,12 @@ static OMX_ERRORTYPE VIDDEC_SetConfig (OMX_HANDLETYPE hComp,
             case VideoDecodeCustomConfigDebug:/**< reference: struct OMX_TI_Debug */
                 OMX_DBG_SETCONFIG(pComponentPrivate->dbg, ComponentConfigStructure);
                 break;
+            case VideoDecodeCustomConfigCacheableBuffers: /**<reference: Confirms that output buffers are cachebale; By default they are not*/
+            {
+                pComponentPrivate->bCacheableOutputBuffers = OMX_TRUE;
+                break;
+            }
+
 #ifdef KHRONOS_1_1
             case OMX_IndexConfigVideoMBErrorReporting:/**< reference: OMX_CONFIG_MBERRORREPORTINGTYPE */
             {

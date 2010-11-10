@@ -1696,8 +1696,8 @@ int main(int argc, char** argv)
 #endif
         APP_PRINT("************************************************************************************\n");
         APP_PRINT("WMV9 test vector file extension is .rcv for frame mode and .vc1 in stream mode. Header input file can be any blank file.\n");
-        APP_PRINT(".bc file – Header file for H264 in binary format\n");
-        APP_PRINT(".vop file – Header file for MPEG4 in ascii format, with timestamps\n");
+        APP_PRINT(".bc file Header file for H264 in binary format\n");
+        APP_PRINT(".vop file Header file for MPEG4 in ascii format, with timestamps\n");
         APP_PRINT("For NAL format you need to use a 264nb and 264nd files.\n");
         APP_PRINT("H264 Level (0-MAX|1-L1.0|2-L1.b|3-L1.1|4-L1.2|5-L1.3|6-L2|7-L2.1|8-L2.2|9-L3.0 and greater)\n");
         APP_PRINT("WMV Profile (0-MAX|1-QCIF(Frame)|2-CIF(Frame)|3-VGA(Frame)|4-MainLowDefaultOverhead(Stream)\n");
@@ -2662,6 +2662,21 @@ int NormalRunningTest(int argc, char** argv, MYDATATYPE *pTempAppData)
             }
 
         } while(FD_ISSET(pAppData->Error_Pipe[0], &rfds) || FD_ISSET(pAppData->IpBuf_Pipe[0], &rfds) || FD_ISSET(pAppData->OpBuf_Pipe[0], &rfds));
+
+        /*Inform OMX that cachable output buffer is used */
+        eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoDecode.CacheableBuffers", (OMX_INDEXTYPE *)&nVidDecodeCustomParamIndex);
+            if(eError != OMX_ErrorNone) {
+                ERR_PRINT ("Error in OMX_GetExtensionIndex function %X\n", eError);
+                goto FREEHANDLES;
+            }
+        APP_PRINT("Custom index = %x\n",nVidDecodeCustomParamIndex);
+        unsigned int dummy=1;
+        eError = OMX_SetConfig(pAppData->pHandle, nVidDecodeCustomParamIndex, &dummy);
+            if (eError != OMX_ErrorNone) {
+                APP_PRINT("Not Supported setting %x\n",eError);
+                goto FREEHANDLES;
+            }
+        nVidDecodeCustomParamIndex = 0;
 
         if (pAppData->eCompressionFormat == OMX_VIDEO_CodingWMV) {
             eError = OMX_GetExtensionIndex(pHandle,"OMX.TI.VideoDecode.Param.WMVFileType", (OMX_INDEXTYPE *)&nVidDecodeCustomParamIndex);

@@ -426,7 +426,8 @@ typedef enum VIDDEC_CUSTOM_PARAM_INDEX
 #ifdef VIDDEC_SPARK_CODE
     VideoDecodeCustomParamIsSparkInput,
 #endif
-    VideoDecodeCustomConfigDebug
+    VideoDecodeCustomConfigDebug,
+    VideoDecodeCustomConfigCacheableBuffers
 
 #ifdef ANDROID /*To be use by opencore multimedia framework*/
     ,
@@ -990,6 +991,8 @@ typedef struct VIDDEC_COMPONENT_PRIVATE
     OMX_BOOL bFlushing;
     /*to store last error severity*/
     OMX_S32 nLastErrorSeverity;
+   /*to remember if OMX client uses cacheable buffers for output*/
+   OMX_BOOL bCacheableOutputBuffers;
 } VIDDEC_COMPONENT_PRIVATE;
 
 /*****************macro definitions*********************/

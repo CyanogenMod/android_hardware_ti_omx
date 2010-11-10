@@ -1947,6 +1947,12 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->pLCML = (LCML_DSP_INTERFACE*)hLCML;
                 pComponentPrivate->pLCML->pComponentPrivate = pComponentPrivate;
 
+                /*update LCML flag for flush */
+                if(pComponentPrivate->bCacheableOutputBuffers == OMX_TRUE){
+                    pComponentPrivate->pLCML->buf_invalidate_flag = OMX_TRUE;
+                    OMX_PRDSP2(pComponentPrivate->dbg, "buf_invalidate_flag set to OMX_TRUE\n");
+                }
+
 #ifdef __PERF_INSTRUMENTATION__
                 pComponentPrivate->lcml_nCntOpReceived = 0;
 #endif
@@ -7957,6 +7963,11 @@ OMX_ERRORTYPE VIDDEC_LoadCodec(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate)
     pComponentPrivate->pLCML = (LCML_DSP_INTERFACE*)hLCML;
     pComponentPrivate->pLCML->pComponentPrivate = pComponentPrivate;
 
+    /*update LCML flag for flush */
+    if(pComponentPrivate->bCacheableOutputBuffers == OMX_TRUE){
+        pComponentPrivate->pLCML->buf_invalidate_flag = OMX_TRUE;
+        OMX_PRDSP2(pComponentPrivate->dbg, "buf_invalidate_flag set to OMX_TRUE\n");
+    }
 
 #ifdef __PERF_INSTRUMENTATION__
     pComponentPrivate->lcml_nCntOpReceived = 0;

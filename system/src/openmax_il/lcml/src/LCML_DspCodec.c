@@ -190,6 +190,9 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     dspcodecinterface->pCodec = *hInterface;
     OMX_PRINT2 (dspcodecinterface->dbg, "GetHandle application handle %p dspCodec %p",pHandle, pHandle->dspCodec);
 
+    /* By default it is expected to invalidate cache for the buffers shared with DSP. However this flag can be overwritten by some OMX components if their output buffer is non cacheable and requires no invalidation */
+    pHandle->buf_invalidate_flag = OMX_TRUE;
+
 EXIT:
     return (err);
 }
@@ -287,7 +290,6 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
         DSP_ERROR_EXIT(status, "DSP Manager Open", ERROR, hInt);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
         phandle->iDspOpenCount++;
-        phandle->buf_invalidate_flag = OMX_TRUE;
         phandle->buf_flush_flag = OMX_TRUE;
 
         /* Attach and get handle to processor */
@@ -305,9 +307,7 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
               sense to detect the mem configuration at kernel level automatically.
             */
             if((0 == strcmp("720p_h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-               (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-               (0 == strcmp("mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-               (0 == strcmp("h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+               (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
             {
                 phandle->buf_invalidate_flag = OMX_FALSE;
             }
@@ -622,7 +622,6 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "DspManager_Open Successful\n");
     /* DSPManager_Open is successful, increment counter so that we can keep open/close to a 1:1 ratio. */
     phandle->iDspOpenCount++;
-    phandle->buf_invalidate_flag = OMX_TRUE;
     phandle->buf_flush_flag = OMX_TRUE;
 
     /* Attach and get handle to processor */
@@ -636,9 +635,7 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
         OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: Register Component Node\n",phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].eDllType);
 
         if((0 == strcmp("720p_h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-           (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-           (0 == strcmp("mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)) ||
-           (0 == strcmp("h264vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
+           (0 == strcmp("720p_mp4vdec_sn.dll64P", (char*)phandle->dspCodec->NodeInfo.AllUUIDs[dllinfo].DllName)))
         {
             phandle->buf_invalidate_flag = OMX_FALSE;
         }
