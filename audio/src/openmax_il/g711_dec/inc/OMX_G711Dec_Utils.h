@@ -650,6 +650,10 @@ typedef struct G711DEC_COMPONENT_PRIVATE
 
     /* Device string */
     OMX_STRING* sDeviceString;
+
+    /* backup pointer for LCML */
+    void* ptrLibLCML;
+
     /* Removing sleep() calls. Definition. */
     pthread_mutex_t AlloBuf_mutex;    
     pthread_cond_t AlloBuf_threshold;
@@ -728,7 +732,7 @@ OMX_ERRORTYPE G711DECHandleDataBuf_FromLCML(G711DEC_COMPONENT_PRIVATE* pComponen
 void  AddHeader(BYTE **pFileBuf);
 void  ResetPtr(BYTE **pFileBuf);
 
-OMX_HANDLETYPE G711DECGetLCMLHandle();
+OMX_HANDLETYPE G711DECGetLCMLHandle(G711DEC_COMPONENT_PRIVATE* pComponentPrivate);
 OMX_ERRORTYPE G711DECFreeLCMLHandle();
 OMX_ERRORTYPE G711DEC_CleanupInitParams(OMX_HANDLETYPE pComponent);
 
@@ -750,5 +754,6 @@ OMX_ERRORTYPE G711DEC_TransitionToIdle(G711DEC_COMPONENT_PRIVATE *pComponentPriv
 *
 *  =========================================================================*/
 void G711DEC_FatalErrorRecover(G711DEC_COMPONENT_PRIVATE *pComponentPrivate);
+void G711DEC_HandleUSNError (G711DEC_COMPONENT_PRIVATE *pComponentPrivate, OMX_U32 arg);
 
 #endif /* OMX_G711DECODER_H*/
