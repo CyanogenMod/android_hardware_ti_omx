@@ -785,6 +785,9 @@ typedef struct G729ENC_COMPONENT_PRIVATE
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     OMX_STRING* sDeviceString;
 
+    /* backup pointer for LCML */
+    void* ptrLibLCML;
+
     /** Keep buffer timestamps **/
     OMX_S64 arrTimestamp[G729ENC_MAX_NUM_OF_BUFS];
 
@@ -798,6 +801,8 @@ typedef struct G729ENC_COMPONENT_PRIVATE
     OMX_U8 OpBufindex; 
 
     OMX_BOOL bPreempted;
+
+    OMX_BOOL DSPMMUFault;
 
     /** Pointer to RM callback **/
 #ifdef RESOURCE_MANAGER_ENABLED

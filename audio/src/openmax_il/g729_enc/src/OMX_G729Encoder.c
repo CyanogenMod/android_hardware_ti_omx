@@ -376,11 +376,14 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bFlushOutputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bFlushInputPortCommandPending = OMX_FALSE;
     pComponentPrivate->bPreempted = OMX_FALSE;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING),OMX_STRING);
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
-        
-    
+
+    /* Initialize LMCL back up pointer*/
+    pComponentPrivate->ptrLibLCML = NULL;
+
     for (i=0; i < G729ENC_MAX_NUM_OF_BUFS; i++)
     {
         pComponentPrivate->pInputBufHdrPending[i] = NULL;
