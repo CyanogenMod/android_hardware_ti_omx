@@ -517,6 +517,19 @@ OMX_ERRORTYPE G726DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
     pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
     pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
 
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G726DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        G726DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     return eError;
 }
 
@@ -930,8 +943,15 @@ OMX_U32 G726DEC_HandleCommand (G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                 }
                 /* Now Deinitialize the component No error should be returned from
                  * this function. It should clean the system as much as possible */
-                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+                if (pComponentPrivate->pLcmlHandle != NULL) {
+                    eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                            EMMCodecControlDestroy,(void *)pArgs);
+                    dlclose(pComponentPrivate->ptrLibLCML);
+                    pComponentPrivate->ptrLibLCML = NULL;
+                    G726DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLcmlHandle = NULL;
+                }
                 pComponentPrivate->bInitParamsInitialized = 0;
                 eError = EXIT_COMPONENT_THRD;
                 break;
@@ -1724,6 +1744,12 @@ OMX_ERRORTYPE G726DEC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    OMX_BUFFERFLAG_EOS,
                                                    NULL);
         }
+        if((((OMX_U32) args [4]) == USN_ERR_NONE) && (args[5] == (void*)NULL))
+        {
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+            G726DEC_FatalErrorRecover(pComponentPrivate);
+        }
+
         if((int)args[5] == IUALG_WARN_CONCEALED) {
             G726DEC_DPRINT( "Algorithm issued a warning. But can continue" );
             G726DEC_DPRINT("%d :: arg5 = %p\n",__LINE__,args[5]);
@@ -1949,7 +1975,8 @@ OMX_HANDLETYPE G726DEC_GetLCMLHandle(G726DEC_COMPONENT_PRIVATE *pComponentPrivat
         goto EXIT;
     }
 
-    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate = pComponentPrivate;
+    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate= pComponentPrivate;
+    pComponentPrivate->ptrLibLCML = handle; /* saving LCML  backup lib pointer  */
  EXIT:
     return pHandle;
 }
@@ -2430,20 +2457,8 @@ void G726DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 void G726DEC_FatalErrorRecover(G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-
-        G726DEC_DPRINT("%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_G726_Decoder_COMPONENT, 0, 1234, NULL);
@@ -2461,7 +2476,10 @@ void G726DEC_FatalErrorRecover(G726DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    G726DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    if(pComponentPrivate->DSPMMUFault ==OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        G726DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     G726DEC_DPRINT("Completed FatalErrorRecover \\nEntering Invalid State\n");
 }
 
