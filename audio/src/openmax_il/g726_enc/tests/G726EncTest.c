@@ -1373,7 +1373,7 @@ int main(int argc, char* argv[])
 	GT_END("Call to SendCommand <OMX_StateLoaded>");
 #endif
     if(eError != OMX_ErrorNone) {
-        APP_DPRINT( "%d :: Error:  WaitForState reports an eError %X\n",__LINE__, error);
+        APP_DPRINT( "%d :: Error:  WaitForState reports an eError %X\n",__LINE__, eError);
 				        printf("goto EXIT %d\n",__LINE__);
         
         goto EXIT;
