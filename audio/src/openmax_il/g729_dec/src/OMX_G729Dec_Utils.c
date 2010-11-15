@@ -504,6 +504,19 @@ OMX_ERRORTYPE G729DEC_FreeCompResources(OMX_HANDLETYPE pComponent)
 
     pComponentPrivate->bPortDefsAllocated = 0;
 
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
+
+        if (eError != OMX_ErrorNone){
+            G729DEC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        dlclose(pComponentPrivate->ptrLibLCML);
+        pComponentPrivate->ptrLibLCML = NULL;
+        G729DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     OMX_MEMFREE_STRUCT(pComponentPrivate->sDeviceString);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pInputBufferList);
     OMX_MEMFREE_STRUCT(pComponentPrivate->pOutputBufferList);
@@ -1032,14 +1045,22 @@ OMX_U32 G729DECHandleCommand (G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
             /* Now Deinitialize the component No error should be returned from
              * this function. It should clean the system as much as possible */
             G729DEC_DPRINT("%d :: In side OMX_StateLoaded State: \n",__LINE__);
-            eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
+            if (pLcmlHandle != NULL) {
+                eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                        EMMCodecControlDestroy, (void *)p);
                                                                                  
-            if (eError != OMX_ErrorNone) {
-                G729DEC_EPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
-                return eError;
+                if (eError != OMX_ErrorNone) {
+                    G729DEC_EPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+                    return eError;
+                }
+                else{
+                    dlclose(pComponentPrivate->ptrLibLCML);
+                    pComponentPrivate->ptrLibLCML = NULL;
+                    G729DEC_DPRINT("%d :: Closed LCML \n",__LINE__);
+                    pLcmlHandle = NULL;
+                    pComponentPrivate->pLcmlHandle = NULL;
+                }
             }
-            
 #ifdef __PERF_INSTRUMENTATION__
             PERF_SendingCommand(pComponentPrivate->pPERF, -1, 0,
                                 PERF_ModuleComponent);
@@ -1297,7 +1318,7 @@ OMX_U32 G729DECHandleCommand (G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
         OMX_U32 aParam[3] = {0};
         if(commandData == 0x0 || (OMX_S32)commandData == -1)
         {
-            G729DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
+            G729DEC_DPRINT("Flushing output port:: unhandled ETB's = %ld, handled ETB's = %ld\n",
                        pComponentPrivate->nUnhandledEmptyThisBuffers, pComponentPrivate->nHandledEmptyThisBuffers);
             if (pComponentPrivate->nUnhandledEmptyThisBuffers == pComponentPrivate->nHandledEmptyThisBuffers) {
                 aParam[0] = USN_STRMCMD_FLUSH; 
@@ -1318,7 +1339,7 @@ OMX_U32 G729DECHandleCommand (G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
         }
         if(commandData == 0x1 || (OMX_S32)commandData == -1)
         {
-            G729DEC_DPRINT(pComponentPrivate->dbg, "Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
+            G729DEC_DPRINT("Flushing output port:: unhandled FTB's = %ld, handled FTB's = %ld\n",
                        pComponentPrivate->nUnhandledFillThisBuffers, pComponentPrivate->nHandledFillThisBuffers);
             if (pComponentPrivate->nUnhandledFillThisBuffers == pComponentPrivate->nHandledFillThisBuffers)  {
                 aParam[0] = USN_STRMCMD_FLUSH; 
@@ -1928,6 +1949,11 @@ OMX_ERRORTYPE G729DECLCML_Callback (TUsnCodecEvent event,void * args [10])
                                                    pComponentPrivate->curState, NULL);
             G729DEC_DPRINT("%d :: GOT ERROR IUALG_ERR_DATA_CORRUPT\n",__LINE__);
         }       
+        if((((OMX_U32) args [4]) == USN_ERR_NONE) && (args[5] == (void*)NULL))
+        {
+            OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+            G729DEC_FatalErrorRecover(pComponentPrivate);
+        }
     }
 
     if(event == EMMCodecDspMessageRecieved) {
@@ -2023,8 +2049,9 @@ OMX_HANDLETYPE G729DECGetLCMLHandle(G729DEC_COMPONENT_PRIVATE* pComponentPrivate
         return pHandle;
     }
 
+    ((LCML_DSP_INTERFACE*)pHandle)->pComponentPrivate= pComponentPrivate;
+    pComponentPrivate->ptrLibLCML = handle; /* saving LCML  backup lib pointer  */
     pComponentPrivate->bLcmlHandleOpened = 1;
-
 
     G729DEC_DPRINT("G729GetLCMLHandle returning %p\n",pHandle);
     return pHandle;
@@ -2393,20 +2420,8 @@ void G729DEC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 
 void G729DEC_FatalErrorRecover(G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-
-        G729DEC_DPRINT("%d ::EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_G729_Decoder_COMPONENT, 0, 1234, NULL);
@@ -2424,7 +2439,10 @@ void G729DEC_FatalErrorRecover(G729DEC_COMPONENT_PRIVATE *pComponentPrivate)
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    G729DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    if(pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        G729DEC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     G729DEC_DPRINT("Completed FatalErrorRecover \\nEntering Invalid State\n");
 }
 

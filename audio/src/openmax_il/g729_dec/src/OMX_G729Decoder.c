@@ -326,12 +326,16 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bStopSent=0;
     pComponentPrivate->bBypassDSP = OMX_FALSE;
     pComponentPrivate->bNoIdleOnStop = OMX_FALSE;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
     pComponentPrivate->pParams = NULL;
     OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString, 100*sizeof(OMX_STRING), OMX_STRING);
     if(pComponentPrivate->sDeviceString == NULL) {
         G729DEC_FreeCompResources(pHandle);
         return OMX_ErrorInsufficientResources;
     }
+
+    /* Initialize LMCL back up pointer*/
+    pComponentPrivate->ptrLibLCML = NULL;
 
     strcpy((char*)pComponentPrivate->sDeviceString,"/eteedn:i0:o0/codec\0");
     pComponentPrivate->IpBufindex = 0;

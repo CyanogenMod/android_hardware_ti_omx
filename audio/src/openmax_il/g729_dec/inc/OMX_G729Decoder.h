@@ -552,6 +552,9 @@ typedef struct G729DEC_COMPONENT_PRIVATE
 
     OMX_STRING* sDeviceString;
 
+    /* backup pointer for LCML */
+    void* ptrLibLCML;
+
     OMX_U32 nPacketsPerBuffer;
 
     pthread_mutex_t AlloBuf_mutex;
@@ -596,6 +599,7 @@ typedef struct G729DEC_COMPONENT_PRIVATE
     OMX_U8 nHandledEmptyThisBuffers;
     OMX_BOOL bFlushOutputPortCommandPending;
     OMX_BOOL bFlushInputPortCommandPending;
+    OMX_BOOL DSPMMUFault;
 
     /* array to hold buffer parameters */
     OMX_U32* bufParamsArray;
