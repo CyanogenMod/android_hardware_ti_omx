@@ -100,7 +100,7 @@ extern COREID TARGET_CORE_ID;
 
 #define RPC_sendPacket_async(HRCM, pPacket, fxnIdx) do { \
     pPacket->fxnIdx = fxnIdx; \
-    status = RcmClient_execNoReply(HRCM, pPacket); \
+    status = RcmClient_execCmd(HRCM, pPacket); \
     if(status < 0) { \
     RPC_freePacket(HRCM, pPacket); \
     pPacket = NULL; \
@@ -113,6 +113,15 @@ extern COREID TARGET_CORE_ID;
    if(pPacket!=NULL) RcmClient_free(HRCM, pPacket); \
    } while(0)
 
+#define RPC_checkAsyncErrors(rcmHndl, pPacket) do { \
+    status = RcmClient_checkForError(rcmHndl, &pPacket); \
+    if(status < 0) { \
+        RPC_freePacket(rcmHndl, pPacket); \
+        pPacket = NULL; \
+    } \
+    RPC_assert(status >= 0, RPC_OMX_RCM_ClientFail, \
+        "Async error check returned error"); \
+    } while(0)
 
 /* ===========================================================================*/
 /**
@@ -195,6 +204,9 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	pid = getpid();
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pid, OMX_S32);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
+
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 
@@ -272,6 +284,8 @@ RPC_OMX_ERRORTYPE RPC_FreeHandle(RPC_OMX_HANDLE hRPCCtx,
 	//Marshalled:[>hComp]
 	RPC_SETFIELDVALUE(pMsgBody, nPos, hComp, RPC_OMX_HANDLE);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -343,6 +357,8 @@ RPC_OMX_ERRORTYPE RPC_SetParameter(RPC_OMX_HANDLE hRPCCtx,
 	structSize = RPC_UTIL_GETSTRUCTSIZE(pCompParam);
 	RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCompParam, structSize);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -414,6 +430,8 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,
 	structSize = RPC_UTIL_GETSTRUCTSIZE(pCompParam);
 	RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCompParam, structSize);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -492,6 +510,8 @@ RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,
 	structSize = RPC_UTIL_GETSTRUCTSIZE(pCompConfig);
 	RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCompConfig, structSize);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -560,6 +580,8 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,
 	structSize = RPC_UTIL_GETSTRUCTSIZE(pCompConfig);
 	RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCompConfig, structSize);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -648,6 +670,8 @@ RPC_OMX_ERRORTYPE RPC_SendCommand(RPC_OMX_HANDLE hRPCCtx,
 		RPC_SETFIELDCOPYGEN(pMsgBody, offset, pCmdData, structSize);
 	}
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -715,6 +739,8 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pAppPrivate, OMX_PTR);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, nSizeBytes, OMX_U32);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -876,6 +902,8 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, mappedAddress2, OMX_U32);
 #endif
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -1010,6 +1038,8 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	RPC_SETFIELDVALUE(pMsgBody, nPos, BufHdrRemote, OMX_U32);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -1096,6 +1126,8 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 #ifdef RPC_SYNC_MODE
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
@@ -1108,6 +1140,7 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 #else
 	RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx);
+	RPC_checkAsyncErrors(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
 
 	*eCompReturn = OMX_ErrorNone;
 #endif
@@ -1184,6 +1217,8 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 #ifdef RPC_SYNC_MODE
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
@@ -1196,6 +1231,7 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 #else
 	RPC_sendPacket_async(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx);
+	RPC_checkAsyncErrors(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket);
 
 	*eCompReturn = OMX_ErrorNone;
 #endif
@@ -1249,6 +1285,8 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx, OMX_STATETYPE * pState,
 	//Marshalled:[>hComp|>offset(pState)|<--pState--]
 	RPC_SETFIELDVALUE(pMsgBody, nPos, hComp, RPC_OMX_HANDLE);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -1330,6 +1368,8 @@ RPC_OMX_ERRORTYPE RPC_GetComponentVersion(RPC_OMX_HANDLE hRPCCtx,
 	offset = GET_PARAM_DATA_OFFSET;	// strange - why this offset vs just 4 bytes?
 	RPC_SETFIELDOFFSET(pMsgBody, nPos, offset, OMX_U32);
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);
@@ -1413,6 +1453,8 @@ RPC_OMX_ERRORTYPE RPC_GetExtensionIndex(RPC_OMX_HANDLE hRPCCtx,
 		strcpy((OMX_STRING) (pMsgBody + offset), cParameterName);
 	}
 
+	pPacket->poolId = hCtx->nPoolId;
+	pPacket->jobId = hCtx->nJobId;
 	RPC_sendPacket_sync(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pPacket,
 	    fxnIdx, pRetPacket);
 	pRPCMsg = (RPC_OMX_MESSAGE *) (&pRetPacket->data);

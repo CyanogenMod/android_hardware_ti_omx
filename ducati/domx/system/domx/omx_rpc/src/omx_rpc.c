@@ -87,7 +87,7 @@
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
-#define DOMX_VERSION 7
+#define DOMX_VERSION 8
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -157,7 +157,9 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
 	RPC_OMX_ERRORTYPE eTmpError = RPC_OMX_ErrorNone;
 	RPC_OMX_CONTEXT *pRPCCtx = NULL;
 	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
-	OMX_BOOL bMutex = OMX_FALSE, bModInit = OMX_FALSE, bIpcSet = OMX_FALSE;
+	OMX_BOOL bMutex = OMX_FALSE, bModInit = OMX_FALSE, bIpcSet =
+	    OMX_FALSE, bJobIdObtained = OMX_FALSE, bClientCreated = OMX_FALSE;
+	OMX_U16 nPoolId = 0, nJobId = 0;
 
 	pRPCCtx =
 	    (RPC_OMX_CONTEXT *) TIMM_OSAL_Malloc(sizeof(RPC_OMX_CONTEXT),
@@ -197,14 +199,44 @@ RPC_OMX_ERRORTYPE RPC_InstanceInit(OMX_STRING cComponentName,
 		eRPCError = _RPC_ClientCreate(cComponentName);
 		RPC_assert(eRPCError == RPC_OMX_ErrorNone, eRPCError,
 		    "Client create failed");
+		bClientCreated = OMX_TRUE;
 	}
 
 	/* updating the RCM client handle within rpc context */
 	pRPCCtx->ClientHndl[RCM_DEFAULT_CLIENT] = rcmHndl;
 	pRPCCtx->ClientHndl[RCM_ADDITIONAL_CLIENT] = NULL;
+
+	eRPCError = RPC_Util_AcquireJobId(pRPCCtx, &nJobId);
+	RPC_assert(eRPCError == RPC_OMX_ErrorNone,
+	    OMX_ErrorUndefined, "Error getting Job ID");
+	pRPCCtx->nJobId = nJobId;
+	bJobIdObtained = OMX_TRUE;
+
+	eRPCError = RPC_Util_GetPoolId(pRPCCtx, &nPoolId);
+	RPC_assert(eRPCError == RPC_OMX_ErrorNone,
+	    OMX_ErrorUndefined, "Error getting Pool ID");
+	pRPCCtx->nPoolId = nPoolId;
+
       EXIT:
 	if (eRPCError != RPC_OMX_ErrorNone)
 	{
+		if (bJobIdObtained)
+		{
+			eTmpError =
+			    RPC_Util_ReleaseJobId(pRPCCtx, pRPCCtx->nJobId);
+			if (eTmpError != RPC_OMX_ErrorNone)
+			{
+				DOMX_ERROR("Release job ID failed");
+			}
+		}
+		if (bClientCreated)
+		{
+			eTmpError = _RPC_ClientDestroy();
+			if (eTmpError != RPC_OMX_ErrorNone)
+			{
+				DOMX_ERROR("RPC Client destroy failed");
+			}
+		}
 		if (bModInit)
 		{
 			eTmpError = RPC_ModDeInit();
@@ -258,12 +290,20 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 	    eTmpError = RPC_OMX_ErrorNone;
 	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
 	OMX_BOOL bMutex = OMX_FALSE;
+	RPC_OMX_CONTEXT *pRPCCtx = hRPCCtx;
 
 	eError = TIMM_OSAL_MutexObtain(pCreateMutex, TIMM_OSAL_SUSPEND);
 	RPC_assert(eError == TIMM_OSAL_ERR_NONE,
 	    RPC_OMX_ErrorInsufficientResources,
 	    "Mutex lock failed. InstanceDeInit failed completely");
 	bMutex = OMX_TRUE;
+
+	eTmpError = RPC_Util_ReleaseJobId(pRPCCtx, pRPCCtx->nJobId);
+	if (eTmpError != RPC_OMX_ErrorNone)
+	{
+		TIMM_OSAL_Error("RPC Release Job ID failed");
+		eRPCError = eTmpError;
+	}
 
 	nInstanceCount--;
 	/*For last instance, shut down everything */
@@ -397,6 +437,15 @@ RPC_OMX_ERRORTYPE RPC_ModInit(void)
 	RcmServer_Params rcmSrvParams;
 	OMX_BOOL bCallDestroyIfErr = OMX_FALSE;
 	OMX_S8 cRcmServerNameLocal[MAX_SERVER_NAME_LENGTH];
+	RcmServer_ThreadPoolDesc sPoolDescArr[] = {
+		{
+			    RPC_NAME_FOR_GENERAL_POOL,
+			    RPC_NUM_THREADS_FOR_GENERAL_POOL,
+			    RPC_THREAD_PRIORITY_FOR_GENERAL_POOL,
+			    RPC_OS_THREAD_PRIORITY_FOR_GENERAL_POOL,
+			    RPC_THREAD_STACKSIZE_FOR_GENERAL_POOL,
+		    RPC_THREAD_STACKSEG_FOR_GENERAL_POOL}
+	};
 
 	DOMX_ENTER("");
 
@@ -432,6 +481,8 @@ RPC_OMX_ERRORTYPE RPC_ModInit(void)
 	RPC_assert(status >= 0, RPC_OMX_RCM_ServerFail,
 	    "Server_setup failed");
 
+	rcmSrvParams.workerPools.length = RPC_NUM_RCM_WORKER_POOLS;
+	rcmSrvParams.workerPools.elem = sPoolDescArr;
 	DOMX_DEBUG("RCM Server Name = %s", cRcmServerNameLocal);
 	status = RcmServer_create((char *)cRcmServerNameLocal, &rcmSrvParams,
 	    &rcmSrvHndl);

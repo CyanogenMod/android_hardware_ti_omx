@@ -303,32 +303,32 @@ typedef struct OMX_VIDEO_PARAM_ENCODER_PRESETTYPE{
  *	@brief	 input content type
  */
 typedef enum OMX_TI_VIDEO_FRAMECONTENTTYPE {
-	OMX_TI_Video_Progressive=0,//!<Progressive frame
-	OMX_TI_Video_Interlace_BothFieldsTogether=1,//!<Interlaced frame
-	OMX_TI_Video_Interlace_OneField=2,
-	OMX_TI_Video_AVC_2004_StereoInfoType=3,
-	OMX_TI_Video_AVC_2010_StereoFramePackingType=4,
-    OMX_TI_Video_FrameContentType_MAX =  0X7FFFFFFF
+	OMX_TI_Video_Progressive = 0,			//!<Progressive frame
+	OMX_TI_Video_Interlace_BothFieldsTogether = 1,	//!<Interlaced frame
+	OMX_TI_Video_Interlace_OneField = 2,
+	OMX_TI_Video_AVC_2004_StereoInfoType = 3,
+	OMX_TI_Video_AVC_2010_StereoFramePackingType = 4,
+	OMX_TI_Video_FrameContentType_MAX = 0x7FFFFFFF
 }OMX_TI_VIDEO_FRAMECONTENTTYPE;
 
 /**
  *	@brief	 Specifies the type of interlace content
  */
 typedef enum OMX_TI_VIDEO_AVC_INTERLACE_CODINGTYPE {
-	OMX_TI_Video_Interlace_PICAFF	= 0 ,   //!< PicAFF type of interlace coding
+	OMX_TI_Video_Interlace_PICAFF = 0,	//!< PicAFF type of interlace coding
 	OMX_TI_Video_Interlace_MBAFF,		//!< MBAFF type of interlace coding
-	OMX_TI_Video_Interlace_Fieldonly,   //!< Field only coding
+	OMX_TI_Video_Interlace_Fieldonly,	//!< Field only coding
 	OMX_TI_Video_Interlace_Fieldonly_MRF=OMX_TI_Video_Interlace_Fieldonly,
 	OMX_TI_Video_Interlace_Fieldonly_ARF,
-	OMX_TI_Video_Interlace_Fieldonly_SPF, 	 //!< Field only coding where codec decides the partiy of the field to be used based upon content
-    OMX_Video_Interlace_MAX =  0X7FFFFFFF
+	OMX_TI_Video_Interlace_Fieldonly_SPF,	//!< Field only coding where codec decides the partiy of the field to be used based upon content
+	OMX_Video_Interlace_MAX = 0x7FFFFFFF
 }OMX_TI_VIDEO_AVC_INTERLACE_CODINGTYPE;
 
 /* ========================================================================== */
 /*!
  @brief OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE : to configure the data content
  @param  eContentType		to specify Content type
-						@sa OMX_VIDEO_FRAMECONTENTTYPE
+ 							@sa OMX_VIDEO_FRAMECONTENTTYPE
 */
 /* ==========================================================================*/
 typedef struct OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE{
@@ -343,7 +343,7 @@ typedef struct OMX_TI_VIDEO_PARAM_FRAMEDATACONTENTTYPE{
  @brief OMX_TI_VIDEO_PARAM_AVCINTERLACECODING : to configure the interlace encoding related settings
  @param  eInterlaceCodingType	to specify the settings of interlace content
  							@sa OMX_VIDEO_INTERLACE_CODINGTYPE
- @param  bTopFieldFirst				to speicfy the first field sent is top or bottom
+ @param  bTopFieldFirst				to specify the first field sent is top or bottom
  @param  bBottomFieldIntra		to specify codec that encode bottomfield also as intra or not
 */
 /* ==========================================================================*/
@@ -366,8 +366,8 @@ typedef struct OMX_TI_VIDEO_PARAM_AVCENC_STEREOINFO2004
 	OMX_U32          nSize;
 	OMX_VERSIONTYPE  nVersion;
 	OMX_U32          nPortIndex;
-	OMX_BOOL         btopFieldIsLeftViewFlag ;
-	OMX_BOOL         bViewSelfContainedFlag ;
+	OMX_BOOL         btopFieldIsLeftViewFlag;
+	OMX_BOOL         bViewSelfContainedFlag;
 } OMX_TI_VIDEO_AVCENC_STEREOINFO2004;
 
 typedef enum OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE{
@@ -377,7 +377,7 @@ typedef enum OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE{
 	OMX_TI_Video_FRAMEPACK_SIDE_BY_SIDE        = 3,
 	OMX_TI_Video_FRAMEPACK_TOP_BOTTOM          = 4,
 	OMX_TI_Video_FRAMEPACK_TYPE_DEFAULT        = OMX_TI_Video_FRAMEPACK_SIDE_BY_SIDE,
-	OMX_TI_Video_FRAMEPACK_TYPE_MAX = 0X7FFFFFFF
+	OMX_TI_Video_FRAMEPACK_TYPE_MAX = 0x7FFFFFFF
 } OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE;
 
 /* ========================================================================== */
@@ -391,11 +391,11 @@ typedef struct OMX_TI_VIDEO_PARAM_AVCENC_FRAMEPACKINGINFO2010
 	OMX_U32          nSize;
 	OMX_VERSIONTYPE nVersion;
 	OMX_U32          nPortIndex;
-	OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE eFramePackingType ;
-	OMX_U8         nFrame0PositionX ;
-	OMX_U8         nFrame0PositionY ;
-	OMX_U8         nFrame1PositionX ;
-	OMX_U8         nFrame1PositionY ;
+	OMX_TI_VIDEO_AVCSTEREO_FRAMEPACKTYPE eFramePackingType;
+	OMX_U8         nFrame0PositionX;
+	OMX_U8         nFrame0PositionY;
+	OMX_U8         nFrame1PositionX;
+	OMX_U8         nFrame1PositionY;
 }OMX_TI_VIDEO_PARAM_AVCENC_FRAMEPACKINGINFO2010;
 
 /**
