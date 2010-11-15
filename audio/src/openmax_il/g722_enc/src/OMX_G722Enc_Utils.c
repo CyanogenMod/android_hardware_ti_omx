@@ -605,8 +605,17 @@ OMX_ERRORTYPE G722Enc_FreeCompResources(OMX_HANDLETYPE pComponent)
         pthread_mutex_destroy(&pComponentPrivate->AlloBuf_mutex);
         pthread_cond_destroy(&pComponentPrivate->AlloBuf_threshold);
     }
+    if (pComponentPrivate->pLcmlHandle != NULL) {
+        eError = LCML_ControlCodec(((LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
+                               EMMCodecControlDestroy, NULL);
 
-    /*eError = G722ENC_FreeLCMLHandle();*/
+        if (eError != OMX_ErrorNone){
+            G722ENC_DPRINT("%d : Error: in Destroying the codec: no.  %x\n",__LINE__, eError);
+        }
+        G722ENC_FreeLCMLHandle();
+        pComponentPrivate->pLcmlHandle = NULL;
+    }
+
     G722ENC_DPRINT ("Exiting Successfully G722ENC_FreeCompResources()\n");
     return eError;
 }
@@ -1503,6 +1512,10 @@ OMX_ERRORTYPE G722ENC_LCML_Callback (TUsnCodecEvent event,void * args [10])
                                                       OMX_BUFFERFLAG_EOS,
                                                       NULL);
         }
+        if(((OMX_U32)args[4] == USN_ERR_NONE) && (args[5] == (void*)NULL)){
+                OMXDBG_PRINT(stderr, ERROR, 4, 0, "%d :: UTIL: MMU_Fault \n",__LINE__);
+                G722ENC_FatalErrorRecover(pComponentPrivate_CC);
+        }
     }
     else if (event == EMMCodecStrmCtrlAck) {
         G722ENC_DPRINT("%d :: GOT MESSAGE USN_DSPACK_STRMCTRL ----\n",__LINE__);
@@ -1957,11 +1970,16 @@ OMX_ERRORTYPE G722ENC_CommandToLoaded(G722ENC_COMPONENT_PRIVATE *pComponentPriva
     }
 
     pComponentPrivate->curState = OMX_StateLoaded;
-    G722ENC_DPRINT("About to destroy codec\n");
-    eError = LCML_ControlCodec(
+    if (pLcmlHandle != NULL) {
+        G722ENC_DPRINT("About to destroy codec\n");
+        eError = LCML_ControlCodec(
                                ((LCML_DSP_INTERFACE*)pLcmlHandle)->pCodecinterfacehandle,
                                EMMCodecControlDestroy,(void *)pArgs);
-    G722ENC_DPRINT("Finished destroying codec\n");
+        G722ENC_DPRINT("Finished destroying codec\n");
+        G722ENC_FreeLCMLHandle();
+        pComponentPrivate->pLcmlHandle = NULL;
+        pLcmlHandle = NULL;
+    }
 
     pComponentPrivate->bStreamCtrlCalled = 0;
 
@@ -2575,19 +2593,8 @@ void G722ENC_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 #endif
 
 void G722ENC_FatalErrorRecover(G722ENC_COMPONENT_PRIVATE *pComponentPrivate){
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
-    if (pComponentPrivate->curState != OMX_StateWaitForResources &&
-        pComponentPrivate->curState != OMX_StateInvalid &&
-        pComponentPrivate->curState != OMX_StateLoaded) {
-        eError = LCML_ControlCodec(((
-                 LCML_DSP_INTERFACE*)pComponentPrivate->pLcmlHandle)->pCodecinterfacehandle,
-                 EMMCodecControlDestroy, (void *)pArgs);
-        G722ENC_DPRINT("%d :: EMMCodecControlDestroy: error = %d\n",__LINE__, eError);
-    }
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_G722_Encoder_COMPONENT, 0, 3456, NULL);
@@ -2605,7 +2612,10 @@ void G722ENC_FatalErrorRecover(G722ENC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    G722ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    if(pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        G722ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     G722ENC_DPRINT("%d :: Completed FatalErrorRecover \
                    \nEntering Invalid State\n",__LINE__);
 }

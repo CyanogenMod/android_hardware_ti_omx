@@ -519,6 +519,7 @@ typedef struct G722ENC_COMPONENT_PRIVATE
     OMX_PARAM_COMPONENTROLETYPE componentRole;
     OMX_STRING* sDeviceString;
     OMX_BOOL bLoadedCommandPending;
+    OMX_BOOL DSPMMUFault;
 
     /** Holds the value of RT Mixer mode  */ 
     OMX_U32 rtmx; 
