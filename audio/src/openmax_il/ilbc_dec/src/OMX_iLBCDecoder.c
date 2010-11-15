@@ -293,6 +293,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop          = OMX_FALSE;
     pComponentPrivate->pParams                = NULL;
     pComponentPrivate->LastOutbuf             = NULL;
+    pComponentPrivate->DSPMMUFault            = OMX_FALSE;
     
     OMX_MALLOC_SIZE(pComponentPrivate->sDeviceString,
                            (100*sizeof(char)),OMX_STRING);
