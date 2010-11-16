@@ -334,89 +334,59 @@ OMX_ERRORTYPE OMX_VIDENC_ListDestroy(struct OMX_TI_Debug *dbg, struct VIDENC_NOD
 
 /*---------------------------------------------------------------------------------------*/
 /**
-  *  OMX_VIDENC_EmptyDataPipes
-  * @param
+  *  OMX_VIDENC_EmptyDataPipes       Wait until all buffers are processed
+  * @param  pComponentPrivate        pointer to the private video encoder structure
   *
-  * @retval OMX_NoError              Success, ready to roll
+  * @retval None
   *
  **/
 /*---------------------------------------------------------------------------------------*/
-OMX_ERRORTYPE OMX_VIDENC_EmptyDataPipes (void* pThreadData)
+void OMX_VIDENC_EmptyDataPipes (VIDENC_COMPONENT_PRIVATE *pComponentPrivate)
 {
-    fd_set rfds;
-    int nRet = -1;
-    int fdmax = -1;
-    int status = -1;
-    struct timeval tv;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-    OMX_BUFFERHEADERTYPE* pBufHead = NULL;
-    VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
-
-    OMX_CONF_CHECK_CMD(pThreadData, 1, 1);
-
-    pComponentPrivate = (VIDENC_COMPONENT_PRIVATE*)pThreadData;
-
-    /** Looking for highest number of file descriptor
-        for pipes inorder to put in select loop */
-
-    fdmax = pComponentPrivate->nFree_oPipe[0];
-
-    if (pComponentPrivate->nFilled_iPipe[0] > fdmax)
-    {
-        fdmax = pComponentPrivate->nFilled_iPipe[0];
+    pthread_mutex_lock(&bufferReturned_mutex);
+    while (pComponentPrivate->EmptythisbufferCount !=  pComponentPrivate->EmptybufferdoneCount ||
+           pComponentPrivate->FillthisbufferCount  != pComponentPrivate->FillbufferdoneCount) {
+        pthread_cond_wait(&bufferReturned_condition, &bufferReturned_mutex);
     }
+    pthread_mutex_unlock(&bufferReturned_mutex);
+    OMX_PRBUFFER4(pComponentPrivate->dbg,"Video encoder has returned all buffers");
 
-    while (1)
-    {
-        FD_ZERO (&rfds);
-        FD_SET (pComponentPrivate->nFree_oPipe[0], &rfds);
-        FD_SET (pComponentPrivate->nFilled_iPipe[0], &rfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 10;
+}
 
-        status = select(fdmax+1, &rfds, NULL, NULL, &tv);
+/*---------------------------------------------------------------------------------------*/
+/**
+  *  OMX_VIDENC_IncrementBufferCountByOne       Increment buffer count by one with mutex protection
+  * @param  pCount                              pointer to buffer count
+  *
+  * @retval None
+  *
+ **/
+/*---------------------------------------------------------------------------------------*/
+void OMX_VIDENC_IncrementBufferCountByOne(OMX_U32 *pCount)
+{
+    pthread_mutex_lock(&bufferReturned_mutex);
+    (*pCount)++;
+    pthread_mutex_unlock(&bufferReturned_mutex);
+}
 
-        if (0 == status)
-        {
-            OMX_TRACE2(pComponentPrivate->dbg, "selectEmpty() = 0\n");
-            break;
-        }
-        else if (-1 == status)
-        {
-            break;
-        }
-        else
-        {
-            if ((FD_ISSET(pComponentPrivate->nFilled_iPipe[0], &rfds)))
-            {
-                nRet = read(pComponentPrivate->nFilled_iPipe[0],
-                            &pBufHead,
-                            sizeof(pBufHead));
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Flusing pipe nFilled_iPipe[0]!\n");
-                if (nRet == -1)
-                {
-                    OMX_PRBUFFER3(pComponentPrivate->dbg, "Error while reading from nFilled_iPipe\n");
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
-                }
-            }
-            if (FD_ISSET(pComponentPrivate->nFree_oPipe[0], &rfds))
-            {
-                OMX_PRBUFFER2(pComponentPrivate->dbg, "Flusing pipe nFree_oPipe[0]!\n");
-                nRet = read(pComponentPrivate->nFree_oPipe[0],
-                            &pBufHead,
-                            sizeof(pBufHead));
-                if (nRet == -1)
-                {
-                    OMX_PRBUFFER3(pComponentPrivate->dbg, "Error while reading from nFree_oPipe\n");
-                    OMX_CONF_SET_ERROR_BAIL(eError, OMX_ErrorHardware);
-                }
-            }
-        }
-    }
-    pComponentPrivate->bEmptyPipes = OMX_TRUE;
-
-OMX_CONF_CMD_BAIL:
-    return eError;
+/*---------------------------------------------------------------------------------------*/
+/**
+  *  OMX_VIDENC_SignalIfAllBuffersAreReturned   check if all buffers are returned and broadcast that condition is fufilled
+  * @param  pComponentPrivate                   pointer to Component private data
+  *
+  * @retval None
+  *
+ **/
+/*---------------------------------------------------------------------------------------*/
+void OMX_VIDENC_SignalIfAllBuffersAreReturned(VIDENC_COMPONENT_PRIVATE *pComponentPrivate)
+{
+    pthread_mutex_lock(&bufferReturned_mutex);
+    if ((pComponentPrivate->EmptythisbufferCount == pComponentPrivate->EmptybufferdoneCount) &&
+        (pComponentPrivate->FillthisbufferCount  == pComponentPrivate->FillbufferdoneCount)) {
+        pthread_cond_broadcast(&bufferReturned_condition);
+        LOGI("Sending pthread signal that video encoder has returned all buffers to app");
+     }
+    pthread_mutex_unlock(&bufferReturned_mutex);
 }
 
 
@@ -660,6 +630,9 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
                     pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pCompPortIn->pBufferPrivate[i]->pBufferHdr);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->EmptybufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
                 }
             }
         }
@@ -758,9 +731,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandDisablePort (VIDENC_COMPONENT_PRIVATE* pCo
     }
 
     OMX_PRBUFFER2(pComponentPrivate->dbg, "Flushing Pipes!\n");
-    eError = OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
-    OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
-                          "Flushing pipes failed (%x).\n", eError);
+    OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
 
     /*while (1)
     {*/
@@ -1042,6 +1013,9 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
                     pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
                                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                                pCompPortIn->pBufferPrivate[i]->pBufferHdr);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->EmptybufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
                 }
             }
         }
@@ -1136,6 +1110,9 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandFlush(VIDENC_COMPONENT_PRIVATE* pComponent
                     pComponentPrivate->sCbData.FillBufferDone(pComponentPrivate->pHandle,
                                                               pComponentPrivate->pHandle->pApplicationPrivate,
                                                               pCompPortOut->pBufferPrivate[i]->pBufferHdr);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->FillbufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
                 }
             }
         }
@@ -1657,6 +1634,9 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                         pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
                                                                    pComponentPrivate->pHandle->pApplicationPrivate,
                                                                    pCompPortIn->pBufferPrivate[nCount]->pBufferHdr);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->EmptybufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
                     }
                     else
                     {
@@ -1731,6 +1711,9 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
                     pComponentPrivate->sCbData.FillBufferDone(pComponentPrivate->pHandle,
                                                               pComponentPrivate->pHandle->pApplicationPrivate,
                                                               pCompPortOut->pBufferPrivate[nCount]->pBufferHdr);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->FillbufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
                 }
             }
 
@@ -1774,9 +1757,7 @@ OMX_ERRORTYPE OMX_VIDENC_HandleCommandStateSetIdle(VIDENC_COMPONENT_PRIVATE* pCo
 
 #endif
         OMX_PRBUFFER2(pComponentPrivate->dbg, "Flushing Pipes!\n");
-        eError = OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
-        OMX_DBG_BAIL_IF_ERROR(eError, pComponentPrivate->dbg, OMX_PRBUFFER3,
-                              "Flushing pipes failed (%x).\n", eError);
+        OMX_VIDENC_EmptyDataPipes (pComponentPrivate);
 
         pComponentPrivate->eState = OMX_StateIdle;
 
@@ -3036,6 +3017,9 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FilledOutBuf(VIDENC_COMPONENT_PRIVATE* pCompone
         pComponentPrivate->sCbData.FillBufferDone(pComponentPrivate->pHandle,
                                                   pComponentPrivate->pHandle->pApplicationPrivate,
                                                   pBufHead);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->FillbufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
     }
 OMX_CONF_CMD_BAIL:
     return eError;
@@ -3096,6 +3080,9 @@ OMX_ERRORTYPE OMX_VIDENC_Process_FreeInBuf(VIDENC_COMPONENT_PRIVATE* pComponentP
     pComponentPrivate->sCbData.EmptyBufferDone(pComponentPrivate->pHandle,
                                                pComponentPrivate->pHandle->pApplicationPrivate,
                                                pBufHead);
+                    OMX_VIDENC_IncrementBufferCountByOne(&pComponentPrivate->EmptybufferdoneCount);
+                    OMX_VIDENC_SignalIfAllBuffersAreReturned(pComponentPrivate);
+
    }
 
 OMX_CONF_CMD_BAIL:
