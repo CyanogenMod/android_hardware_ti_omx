@@ -162,7 +162,7 @@ int preempted = 0;
 
 #undef  WAITFORRESOURCES
 
-static OMX_BOOL bInvalidState = 0;
+static OMX_BOOL bInvalidState = OMX_FALSE;
 void* ArrayOfPointers[7] = {NULL};
 
 #ifdef AACDEC_DEBUGMEM
@@ -238,11 +238,12 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle, OMX_STATETYPE Desired
     OMX_STATETYPE CurState = OMX_StateInvalid;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    eError = OMX_GetState(pHandle, &CurState);
-
-    if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE) {
+    if (bInvalidState == OMX_TRUE) {
         eError = OMX_ErrorInvalidState;
+        return eError;
     }
+
+    eError = OMX_GetState(pHandle, &CurState);
 
     if (CurState != DesiredState) {
         WaitForState_flag = 1;
@@ -297,13 +298,20 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData, OMX_EVEN
 
         case OMX_EventError:
 
-            if (nData1 != OMX_ErrorNone) {
+            if (nData1 != OMX_ErrorNone && (bInvalidState == OMX_FALSE)) {
                 APP_DPRINT ("%d: App: ErrorNotification received: Error Num %d:\
                             String :%s\n", __LINE__, (int)nData1, (OMX_STRING)pEventData);
             }
 
-            if (nData1Temp== OMX_ErrorInvalidState) {
+            if (nData1Temp== OMX_ErrorInvalidState && (bInvalidState == OMX_FALSE)) {
+                APP_DPRINT("EventHandler: Invalid State!!!!\n");
                 bInvalidState = OMX_TRUE;
+                if (WaitForState_flag == 1){
+                    WaitForState_flag = 0;
+                    pthread_mutex_lock(&WaitForState_mutex);
+                    pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
+                    pthread_mutex_unlock(&WaitForState_mutex);
+                }
             } else if (nData1Temp== OMX_ErrorResourcesPreempted) {
                 preempted = 1;
                 writeValue = 0;
@@ -1118,7 +1126,7 @@ int main(int argc, char* argv[]) {
 
         pAacParam_SBR_PS = newmalloc(sizeof(OMX_AUDIO_PARAM_AACPROFILETYPE));
 
-        ArrayOfPointers[2] = (AACENC_HeadInfo*)audioinfo.aacencHeaderInfo;
+        ArrayOfPointers[2] = (OMX_AUDIO_PARAM_AACPROFILETYPE*)pAacParam_SBR_PS;
 
 
         oAacParam = newmalloc (sizeof (OMX_AUDIO_PARAM_PCMMODETYPE));

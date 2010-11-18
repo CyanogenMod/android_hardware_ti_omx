@@ -3895,8 +3895,10 @@ void AACDEC_FatalErrorRecover(AACDEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    AACDEC_CleanupInitParams(pComponentPrivate->pHandle);
-    pComponentPrivate->DSPMMUFault = OMX_TRUE;
+    if (pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        AACDEC_CleanupInitParams(pComponentPrivate->pHandle);
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+    }
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
