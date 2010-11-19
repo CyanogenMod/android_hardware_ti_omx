@@ -4074,13 +4074,10 @@ void WMAD_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 *
 *  =========================================================================*/
 void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate){
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
     OMX_ERROR4(pComponentPrivate->dbg,
                    "%d ::Initiate error recovery\n",__LINE__);
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_WMA_Decoder_COMPONENT, 0, 3456, NULL);
@@ -4098,10 +4095,10 @@ void WMADEC_FatalErrorRecover(WMADEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    WMADEC_CleanupInitParams(pComponentPrivate->pHandle);
-
-    pComponentPrivate->DSPMMUFault = OMX_TRUE;
-
+    if (pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        WMADEC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
 }
