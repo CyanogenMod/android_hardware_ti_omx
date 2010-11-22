@@ -283,6 +283,10 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE pHandle,
     OMX_STATETYPE CurState = OMX_StateInvalid;
     OMX_ERRORTYPE eError   = OMX_ErrorNone;
 
+    if (bInvalidState == OMX_TRUE) {
+        eError = OMX_ErrorInvalidState;
+        return eError;
+    }
     APP_DPRINT("%d: APP: waiting for %d \n",__LINE__,DesiredState);
     eError = OMX_GetState(pHandle, &CurState);
     if(eError !=OMX_ErrorNone)
@@ -373,7 +377,7 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
             APP_DPRINT(	"%d :: App: OMX_EventCmdComplete %d\n", __LINE__,eEvent);
             break;
         case OMX_EventError:
-            if (nData1 != OMX_ErrorNone)
+            if (nData1 != OMX_ErrorNone && (bInvalidState == OMX_FALSE))
             {
                 APP_DPRINT ("%d:: App: ErrorNotofication Came: \
                         Component Name : %d : Error Num %x \n",
@@ -381,6 +385,12 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
             }
             if (nData1 == OMX_ErrorInvalidState) {
                 bInvalidState =OMX_TRUE;
+                if (bWaiting){
+                    bWaiting = OMX_FALSE;
+                    pthread_mutex_lock(&WaitForStateMutex.Mymutex);
+                    pthread_cond_signal(&WaitForStateMutex.cond);/*Sending Waking Up Signal*/
+                    pthread_mutex_unlock(&WaitForStateMutex.Mymutex);
+                }
             }
             else if(nData1 == OMX_ErrorResourcesPreempted) {
                 preempted=1;
@@ -2015,7 +2025,12 @@ int main(int argc, char* argv[])
 
                                 if (pipeContents == 0) {
                                     APP_IPRINT("Test app received OMX_ErrorResourcesPreempted\n");
-                                    WaitForState(*pHandle,OMX_StateIdle);
+                                    error = WaitForState(*pHandle,OMX_StateIdle);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                     error = OMX_FreeBuffer(pHandle,OMX_DirInput,pInputBufferHeader[i]);
                                     if( (error != OMX_ErrorNone)) {
@@ -2058,10 +2073,20 @@ int main(int argc, char* argv[])
 #endif
 
                                     OMX_SendCommand(*pHandle,OMX_CommandStateSet, OMX_StateLoaded, NULL);
-                                    WaitForState(*pHandle, OMX_StateLoaded);
+                                    error = WaitForState(*pHandle, OMX_StateLoaded);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                     OMX_SendCommand(*pHandle,OMX_CommandStateSet,OMX_StateWaitForResources,NULL);
-                                    WaitForState(*pHandle,OMX_StateWaitForResources);
+                                    error = WaitForState(*pHandle,OMX_StateWaitForResources);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                 }
                                 else if (pipeContents == 1) {
@@ -2081,10 +2106,20 @@ int main(int argc, char* argv[])
                                         goto EXIT;
                                     }
 
-                                    WaitForState(*pHandle,OMX_StateIdle);
+                                    error = WaitForState(*pHandle,OMX_StateIdle);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                     OMX_SendCommand(*pHandle,OMX_CommandStateSet,OMX_StateExecuting,NULL);
-                                    WaitForState(*pHandle,OMX_StateExecuting);
+                                    error = WaitForState(*pHandle,OMX_StateExecuting);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                     rewind(fIn);
 
@@ -2100,7 +2135,12 @@ int main(int argc, char* argv[])
                                     GT_START();
 #endif
                                     OMX_SendCommand(*pHandle,OMX_CommandStateSet,OMX_StateIdle,NULL);
-                                    WaitForState(*pHandle,OMX_StateIdle);
+                                    error = WaitForState(*pHandle,OMX_StateIdle);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 #ifdef OMX_GETTIME
                                     GT_END("Call to SendCommand <OMX_StateIdle>");
 #endif
@@ -2124,7 +2164,12 @@ int main(int argc, char* argv[])
                                     }
 
                                     OMX_SendCommand(*pHandle,OMX_CommandStateSet, OMX_StateLoaded, NULL);
-                                    WaitForState(*pHandle, OMX_StateLoaded);
+                                    error = WaitForState(*pHandle, OMX_StateLoaded);
+                                    if(error != OMX_ErrorNone)
+                                    {
+                                        APP_EPRINT("APP: WaitForState reports an error \n");
+                                        goto EXIT;
+                                    }
 
                                     goto SHUTDOWN;
 
@@ -2132,18 +2177,13 @@ int main(int argc, char* argv[])
 
                                 }
                             }
-
-                            if(done == 1)
+                            APP_DPRINT("%d :: APP: About to call GetState() \n",__LINE__);
+                            error = OMX_GetState(*pHandle, &state);
+                            if(error != OMX_ErrorNone)
                             {
-                                APP_DPRINT("%d :: APP: About to call GetState() \n",__LINE__);
-                                error = OMX_GetState(*pHandle, &state);
-                                if(error != OMX_ErrorNone)
-                                {
-                                    APP_EPRINT("APP: Warning:  hAacEncoder->GetState has returned status %X\n", error);
-                                    goto EXIT;
-                                }
+                                APP_EPRINT("APP: Warning:  hAacEncoder->GetState has returned status %X\n", error);
+                                goto EXIT;
                             }
-
                         }
                         else if (preempted) {
                             sched_yield();
