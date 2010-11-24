@@ -400,12 +400,11 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     OMX_NBCONF_INIT_STRUCT(pPortDef_ip, OMX_PARAM_PORTDEFINITIONTYPE);
     pComponentPrivate->pPortDef[NBAMRENC_INPUT_PORT] = pPortDef_ip;
 
-    /* Let's set defaults for IF2 conditions on Android and see what happens */
     pPortDef_ip->nPortIndex                         = NBAMRENC_INPUT_PORT;
     pPortDef_ip->eDir                               = OMX_DirInput;
-    pPortDef_ip->nBufferCountActual                 = 5; //NBAMRENC_NUM_INPUT_BUFFERS;
-    pPortDef_ip->nBufferCountMin                    = 5; //NBAMRENC_NUM_INPUT_BUFFERS;
-    pPortDef_ip->nBufferSize                        = NBAMRENC_INPUT_FRAME_SIZE;
+    pPortDef_ip->nBufferCountActual                 = NBAMRENC_NUM_INPUT_BUFFERS;
+    pPortDef_ip->nBufferCountMin                    = NBAMRENC_NUM_INPUT_BUFFERS;
+    pPortDef_ip->nBufferSize                        = NBAMRENC_INPUT_FRAME_SIZE*NBAMRENC_MAX_NUM_OF_FRAMES;
     pPortDef_ip->nBufferAlignment                   = DSP_CACHE_ALIGNMENT;
     pPortDef_ip->bEnabled                           = OMX_TRUE;
     pPortDef_ip->bPopulated                         = OMX_FALSE;
@@ -433,9 +432,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
 
     pPortDef_op->nPortIndex                         = NBAMRENC_OUTPUT_PORT;
     pPortDef_op->eDir                               = OMX_DirOutput;
-    pPortDef_op->nBufferCountMin                    = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferCountActual                 = 9; //NBAMRENC_NUM_OUTPUT_BUFFERS;
-    pPortDef_op->nBufferSize                        = 320; //NBAMRENC_OUTPUT_FRAME_SIZE;
+    pPortDef_op->nBufferCountMin                    = NBAMRENC_NUM_OUTPUT_BUFFERS;
+    pPortDef_op->nBufferCountActual                 = NBAMRENC_NUM_OUTPUT_BUFFERS;
+    pPortDef_op->nBufferSize                        = NBAMRENC_OUTPUT_FRAME_SIZE*NBAMRENC_MAX_NUM_OF_FRAMES;
     pPortDef_ip->nBufferAlignment                   = DSP_CACHE_ALIGNMENT;
     pPortDef_op->bEnabled                           = OMX_TRUE;
     pPortDef_op->bPopulated                         = OMX_FALSE;
