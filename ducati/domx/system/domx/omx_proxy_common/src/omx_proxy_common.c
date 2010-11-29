@@ -378,7 +378,7 @@ static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent,
  *
  */
 /* ===========================================================================*/
-static OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     OMX_BUFFERHEADERTYPE * pBufferHdr)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn;
