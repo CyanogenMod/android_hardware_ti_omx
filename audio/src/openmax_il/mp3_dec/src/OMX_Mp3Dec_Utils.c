@@ -3469,10 +3469,8 @@ void MP3_ResourceManagerCallback(RMPROXY_COMMANDDATATYPE cbData)
 #endif
 
 void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
-    char *pArgs = "";
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
-
 #ifdef RESOURCE_MANAGER_ENABLED
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
     eError = RMProxy_NewSendCommand(pComponentPrivate->pHandle,
              RMProxy_FreeResource,
              OMX_MP3_Decoder_COMPONENT, 0, 3456, NULL);
@@ -3490,9 +3488,10 @@ void MP3DEC_FatalErrorRecover(MP3DEC_COMPONENT_PRIVATE *pComponentPrivate){
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    MP3DEC_CleanupInitParams(pComponentPrivate->pHandle);
-
-    pComponentPrivate->DSPMMUFault = OMX_TRUE;
+    if (pComponentPrivate->DSPMMUFault == OMX_FALSE) {
+        MP3DEC_CleanupInitParams(pComponentPrivate->pHandle);
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+    }
 
     OMX_ERROR4(pComponentPrivate->dbg, "Completed FatalErrorRecover \
                \nEntering Invalid State\n");
