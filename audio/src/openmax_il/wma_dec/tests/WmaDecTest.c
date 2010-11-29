@@ -273,12 +273,13 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
      /*int nCnt = 0;*/
      OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
 
-    pthread_mutex_lock(&WaitForState_mutex);
-    eError1 = pComponent->GetState(pHandle, &CurState);
-    if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE)
+    if (bInvalidState == OMX_TRUE)
     {
         eError1 = OMX_ErrorInvalidState;
+        return eError1;
     }
+    pthread_mutex_lock(&WaitForState_mutex);
+    eError1 = pComponent->GetState(pHandle, &CurState);
     APP_DPRINT("eError=%x,CurState= %d,DesiredState=%d\n",eError1,CurState,DesiredState);
     if( (eError1 == OMX_ErrorNone) &&(CurState != DesiredState) )
     {
@@ -369,6 +370,12 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
            }
 	   if (nData1 == OMX_ErrorInvalidState) {
 	   		bInvalidState =OMX_TRUE;
+            if (WaitForState_flag == 1){
+                WaitForState_flag = 0;
+                pthread_mutex_lock(&WaitForState_mutex);
+                pthread_cond_signal(&WaitForState_threshold);
+                pthread_mutex_unlock(&WaitForState_mutex);
+            }
 	   }
            break;
        case OMX_EventMax:
