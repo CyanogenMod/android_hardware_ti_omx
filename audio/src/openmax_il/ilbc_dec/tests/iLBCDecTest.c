@@ -518,7 +518,7 @@ int main(int argc, char* argv[])
             error = OMX_GetState(pHandle, &state);/**/
             retval = 1;
             while (1) {
-                if ( (error == OMX_ErrorNone) && (state != OMX_StateIdle)){
+                if ( (error == OMX_ErrorNone) && (state != OMX_StateIdle) && (state != OMX_StateInvalid)){
                     error = testCases (pHandle, &rfds, command, fIn, fOut, &frmCount, NULL, &tv, gDasfMode, pInputBufferHeader, nInBufSize, &count, numInputBuffers, pOutputBufferHeader, numOutputBuffers);
                     if (error != OMX_ErrorNone) {
                         printf ("<<<<<<<<<<<<<< testCases fault exit >>>>>>>>>>>>>>\n");
@@ -686,10 +686,11 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
     OMX_STATETYPE CurState = OMX_StateInvalid;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-    eError = OMX_GetState(pHandle, &CurState);
-    if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE){
+    if (bInvalidState == OMX_TRUE){
         eError = OMX_ErrorInvalidState;
+        return eError;
     }
+    eError = OMX_GetState(pHandle, &CurState);
     if(CurState != DesiredState){
         WaitForState_flag = 1;
         TargetedState = DesiredState;
@@ -746,6 +747,12 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,
         APP_DPRINT ( "%d :: iLBCDecTest.c  Event: OMX_EventError. Component State Changed To %s. Target %s\n", __LINE__, strState, strTarget);
         if (nData1 == OMX_ErrorInvalidState) {
             bInvalidState =OMX_TRUE;
+            if (WaitForState_flag){
+            WaitForState_flag = 0;
+            pthread_mutex_lock(&WaitForState_mutex);
+            pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
+            pthread_mutex_unlock(&WaitForState_mutex);
+            }
         } else if(nData1 == OMX_ErrorResourcesPreempted) {
             preempted=1;
 
