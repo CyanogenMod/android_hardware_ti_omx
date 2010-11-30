@@ -571,14 +571,6 @@ typedef struct VIDEO_PROFILE_LEVEL
     OMX_S32  nLevel;
 } VIDEO_PROFILE_LEVEL_TYPE;
 
-/* ======================================================================= */
-/**
-pthread variable to indicate OMX returned all buffers to app
-*/
-/* ======================================================================= */
-pthread_mutex_t bufferReturned_mutex;
-pthread_cond_t bufferReturned_condition;
-
 /**
  * The VIDENC_COMPONENT_PRIVATE data structure is used to store component's
  *                              private data.
@@ -710,12 +702,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     pthread_mutex_t mutexStateChangeRequest;
     pthread_cond_t StateChangeCondition;
 
-    /* Counters to keep track of buffers returned */
-    OMX_U32 EmptybufferdoneCount;
-    OMX_U32 EmptythisbufferCount;
-    OMX_U32 FillbufferdoneCount;
-    OMX_U32 FillthisbufferCount;
-
+    OMX_BOOL bPipeCleaned;
 } VIDENC_COMPONENT_PRIVATE;
 
 typedef OMX_ERRORTYPE (*fpo)(OMX_HANDLETYPE);
@@ -767,7 +754,6 @@ OMX_ERRORTYPE OMX_VIDENC_LCML_Callback(TUsnCodecEvent event, void* argsCb [10]);
 
 OMX_ERRORTYPE OMX_VIDENC_Allocate_DSPResources (OMX_IN VIDENC_COMPONENT_PRIVATE* pComponentPrivate,
                                                    OMX_IN OMX_U32 nPortIndex);
-void OMX_VIDENC_EmptyDataPipes (VIDENC_COMPONENT_PRIVATE* pComponentPrivate);
 
 OMX_ERRORTYPE OMX_VIDENC_ListCreate(struct OMX_TI_Debug *dbg, struct VIDENC_NODE** pListHead);
 
