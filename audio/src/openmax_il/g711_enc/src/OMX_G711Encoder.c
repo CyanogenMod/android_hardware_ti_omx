@@ -422,6 +422,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
     pComponentPrivate->bPreempted = OMX_FALSE; 
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     /* Default create phase parameters */
     /*pComponentPrivate->frametype = 0;

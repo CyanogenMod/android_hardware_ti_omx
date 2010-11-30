@@ -724,6 +724,9 @@ typedef struct G711ENC_COMPONENT_PRIVATE
 
     OMX_BOOL bPreempted;
 
+    /** Dsp MMU Fault flag */
+    OMX_BOOL DSPMMUFault;
+
     /** Pointer to RM callback **/
 #ifdef RESOURCE_MANAGER_ENABLED
     RMPROXY_CALLBACKTYPE rmproxyCallback;

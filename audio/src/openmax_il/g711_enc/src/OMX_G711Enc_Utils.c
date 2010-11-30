@@ -2580,6 +2580,9 @@ void G711ENC_FatalErrorRecover(G711ENC_COMPONENT_PRIVATE *pComponentPrivate)
                                        OMX_ErrorInvalidState,
                                        OMX_TI_ErrorSevere,
                                        NULL);
-    G711ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    if (pComponentPrivate->DSPMMUFault == OMX_FALSE){
+        pComponentPrivate->DSPMMUFault = OMX_TRUE;
+        G711ENC_CleanupInitParams(pComponentPrivate->pHandle);
+    }
     G711ENC_DPRINT("Completed FatalErrorRecover \\nEntering Invalid State\n");
 }
