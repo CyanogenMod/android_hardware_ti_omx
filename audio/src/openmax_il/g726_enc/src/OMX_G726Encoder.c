@@ -333,6 +333,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp)
     pComponentPrivate->bNoIdleOnStop= OMX_FALSE;
     pComponentPrivate->nOutStandingFillDones = 0;
     pComponentPrivate->bDspStoppedWhileExecuting = OMX_FALSE;
+    pComponentPrivate->DSPMMUFault = OMX_FALSE;
 
     pComponentPrivate->G726FrameSize[0] = 24;
     pComponentPrivate->G726FrameSize[1] = 20;

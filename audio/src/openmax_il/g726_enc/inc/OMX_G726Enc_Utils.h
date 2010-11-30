@@ -595,6 +595,9 @@ typedef struct G726ENC_COMPONENT_PRIVATE
     /** device string */
     OMX_STRING* sDeviceString;
 
+    /** MMU Fault flag */
+    OMX_BOOL DSPMMUFault;
+
     /** runtime input buffers */
     OMX_U8 nRuntimeInputBuffers;
 
