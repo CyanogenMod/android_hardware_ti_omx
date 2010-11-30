@@ -370,16 +370,13 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
      /* OMX_S16 nCnt = 0; */
      OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
 
-     eError = pComponent->GetState(pHandle, &CurState);
-     if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE)
-	 {
-		 	eError = OMX_ErrorInvalidState;
-	 }
+     if (bInvalidState == OMX_TRUE)
+     {
+            eError = OMX_ErrorInvalidState;
+            return eError;
+     }
 
-eError = OMX_GetState(pHandle, &CurState);
-    if (CurState == OMX_StateInvalid) {
-        eError = OMX_ErrorInvalidState; 
-    }
+    eError = OMX_GetState(pHandle, &CurState);
     if(CurState != DesiredState){
         WaitForState_flag = 1;
         TargetedState = DesiredState;
@@ -433,11 +430,17 @@ OMX_ERRORTYPE EventHandler(
         }
            break;
        case OMX_EventError:
-		   if (nData1 == OMX_ErrorInvalidState) {
-		   		bInvalidState =OMX_TRUE;
-		   		APP_IPRINT("EventHandler: Invalid State!!!!\n");
-		   }
-		   else if(nData1 == OMX_ErrorResourcesPreempted) {
+           if (nData1 == OMX_ErrorInvalidState) {
+                bInvalidState =OMX_TRUE;
+                APP_IPRINT("EventHandler: Invalid State!!!!\n");
+                if (WaitForState_flag) {
+                    WaitForState_flag = 0;
+                    pthread_mutex_lock(&WaitForState_mutex);
+                    pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
+                    pthread_mutex_unlock(&WaitForState_mutex);
+                }
+           }
+           else if(nData1 == OMX_ErrorResourcesPreempted) {
             preempted=1;
             writeValue = 0;  
             write(Event_Pipe[1], &writeValue, sizeof(OMX_U8));
