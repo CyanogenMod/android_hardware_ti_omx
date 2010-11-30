@@ -80,7 +80,7 @@ FILE *fOut= NULL, *fIn = NULL;
 #undef APP_DEBUG
 #undef APP_MEMCHECK
 
-#define USE_BUFFER
+#undef USE_BUFFER
 
 #ifdef APP_DEBUG
 #define APP_DPRINT(...)    fprintf(stderr,__VA_ARGS__)
@@ -126,6 +126,7 @@ int OpBuf_Pipe[2] = {0};
 int Event_Pipe[2] = {0};
 int lastbuffer=0;
 int nbInCbPending=0;
+static OMX_BOOL bInvalidState = OMX_FALSE;
 
 OMX_ERRORTYPE send_input_buffer (OMX_HANDLETYPE pHandle, OMX_BUFFERHEADERTYPE* pBuffer, FILE *fIn);
 
@@ -150,7 +151,11 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
     OMX_STATETYPE CurState = OMX_StateInvalid;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     int nCnt = 0;
-    /*OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;*/
+
+    if (bInvalidState == OMX_TRUE) {
+        eError = OMX_ErrorInvalidState;
+        return eError;
+    }
 
     eError = OMX_GetState(pHandle, &CurState);
     while( (eError == OMX_ErrorNone) && (CurState != DesiredState)  ) {
@@ -211,6 +216,8 @@ OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent,OMX_PTR pAppData,OMX_EVENTT
             writeValue = 0;  
             preempted = 1;
             write(Event_Pipe[1], &writeValue, sizeof(OMX_U8));
+        }else if(nData1 == OMX_ErrorInvalidState) {
+                bInvalidState = OMX_TRUE;
         }
         break;
     case OMX_EventMax:
@@ -317,6 +324,7 @@ int main(int argc, char* argv[])
     TI_OMX_STREAM_INFO *streaminfo = NULL;
     OMX_INDEXTYPE index = 0;
     OMX_STATETYPE testAppState = OMX_StateInvalid;
+    bInvalidState = OMX_FALSE;
 
     struct timeval tv;
     int retval = 0, i = 0, j = 0;
@@ -335,7 +343,7 @@ int main(int argc, char* argv[])
 
     streaminfo = malloc(sizeof(TI_OMX_STREAM_INFO));
     pAppPrivate = malloc(sizeof(TI_OMX_DSP_DEFINITION));
-    
+
     APP_DPRINT("------------------------------------------------------\n");
     APP_DPRINT("This is Main Thread In G722 ENCODER Test Application:\n");
     APP_DPRINT("Test Core 1.5 - " __DATE__ ":" __TIME__ "\n");
@@ -794,11 +802,11 @@ int main(int argc, char* argv[])
         if(1){
             while((error == OMX_ErrorNone) && (whileloopdone != 1)) {
 #else
-        while((error == OMX_ErrorNone) && (testAppState != OMX_StateIdle)) {
+        while((error == OMX_ErrorNone) && (testAppState != OMX_StateIdle) && (testAppState != OMX_StateInvalid)) {
             if(1){
             
 #endif
-                if ((testAppState == OMX_StateIdle)&&(nbInCbPending==0)) {
+                if ((testAppState == OMX_StateIdle)&&(nbInCbPending==0)&&(testAppState == OMX_StateInvalid)) {
                     whileloopdone = 1;
                 }
 
@@ -1219,7 +1227,7 @@ int main(int argc, char* argv[])
             }            
         } /* While Loop Ending Here */ 
   
-        APP_DPRINT ("%d :: The current state of the component = %d \n",__LINE__,state);
+        APP_DPRINT ("%d :: The current state of the component = %d \n",__LINE__,testAppState);
         fclose(fOut);
         fclose(fIn);
         fOut = NULL;
@@ -1281,6 +1289,7 @@ int main(int argc, char* argv[])
 
     APP_DPRINT("%d :: Free the Component handle\n",__LINE__);
 SHUTDOWN:
+EXIT:
     /* Unload the G722 Encoder Component */
     error = TIOMX_FreeHandle(pHandle);
     if((error != OMX_ErrorNone)) {
@@ -1307,8 +1316,6 @@ SHUTDOWN:
     close(Event_Pipe[0]);
     close(Event_Pipe[1]);
     } /*Outer for loop ends here */
-
-EXIT:
 
 #ifdef DSP_RENDERING_ON
     if((write(g722encfdwrite, &cmd_data, sizeof(cmd_data)))<0)
