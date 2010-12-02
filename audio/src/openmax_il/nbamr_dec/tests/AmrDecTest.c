@@ -349,11 +349,12 @@ static OMX_ERRORTYPE WaitForState(OMX_HANDLETYPE* pHandle,
      OMX_STATETYPE CurState = OMX_StateInvalid;
      OMX_ERRORTYPE eError = OMX_ErrorNone;
      OMX_COMPONENTTYPE *pComponent = (OMX_COMPONENTTYPE *)pHandle;
-     eError = pComponent->GetState(pHandle, &CurState);
-     if (CurState == OMX_StateInvalid && bInvalidState == OMX_TRUE)
+     if (bInvalidState == OMX_TRUE)
      {
          eError = OMX_ErrorInvalidState;
+         return eError;
      }
+     eError = pComponent->GetState(pHandle, &CurState);
      if(CurState != DesiredState){
             WaitForState_flag = 1;
             TargetedState = DesiredState;
@@ -436,6 +437,12 @@ OMX_ERRORTYPE EventHandler(
        case OMX_EventError:
            if (nData1 == OMX_ErrorInvalidState) {
                    bInvalidState =OMX_TRUE;
+                   if (WaitForState_flag == 1){
+                       WaitForState_flag = 0;
+                       pthread_mutex_lock(&WaitForState_mutex);
+                       pthread_cond_signal(&WaitForState_threshold);/*Sending Waking Up Signal*/
+                       pthread_mutex_unlock(&WaitForState_mutex);
+                   }
           }            
            else if(nData1 == OMX_ErrorResourcesPreempted) {
               preempted=1;
