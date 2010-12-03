@@ -270,6 +270,14 @@ OMX_ERRORTYPE OMX_VIDENC_ListRemove(struct OMX_TI_Debug *dbg, struct VIDENC_NODE
     VIDENC_NODE* pNode = NULL;
     VIDENC_NODE* pTmp = NULL;
 
+    if (pListHead == NULL)
+    {
+        OMX_TRACE4(*dbg, "ListRemove called with Empty List\n");
+        free (pData);
+        eError = OMX_ErrorUndefined;
+        return eError;
+    }
+
     pNode = pListHead;
 
     while (pNode->pNext != NULL)
