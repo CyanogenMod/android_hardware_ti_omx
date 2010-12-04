@@ -85,10 +85,65 @@
 #define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.DECODER"
 #endif
 
+/* DEFINITIONS for parsing the config information & sequence header for WMV*/
+#define VIDDEC_GetUnalignedDword( pb, dw ) \
+	(dw) = ((OMX_U32) *(pb + 3) << 24) + \
+		((OMX_U32) *(pb + 2) << 16) + \
+		((OMX_U16) *(pb + 1) << 8) + *pb;
+
+#define VIDDEC_GetUnalignedDwordEx( pb, dw )   VIDDEC_GetUnalignedDword( pb, dw ); (pb) += sizeof(OMX_U32);
+#define VIDDEC_LoadDWORD( dw, p )  VIDDEC_GetUnalignedDwordEx( p, dw )
+#define VIDDEC_MAKEFOURCC(ch0, ch1, ch2, ch3) \
+	((OMX_U32)(OMX_U8)(ch0) | ((OMX_U32)(OMX_U8)(ch1) << 8) |   \
+	((OMX_U32)(OMX_U8)(ch2) << 16) | ((OMX_U32)(OMX_U8)(ch3) << 24 ))
+
+#define VIDDEC_FOURCC(ch0, ch1, ch2, ch3)  VIDDEC_MAKEFOURCC(ch0, ch1, ch2, ch3)
+
+#define FOURCC_WMV3		VIDDEC_FOURCC('W','M','V','3')
+#define FOURCC_WMV2		VIDDEC_FOURCC('W','M','V','2')
+#define FOURCC_WMV1		VIDDEC_FOURCC('W','M','V','1')
+#define FOURCC_WVC1		VIDDEC_FOURCC('W','V','C','1')
+
+#define CSD_POSITION	51 /*Codec Specific Data position on the "stream propierties object"(ASF spec)*/
+
+
+typedef struct VIDDEC_WMV_RCV_struct {
+	OMX_U32 nNumFrames : 24;
+	OMX_U32 nFrameType : 8;
+	OMX_U32 nID : 32;
+	OMX_U32 nStructData : 32;   //STRUCT_C
+	OMX_U32 nVertSize;          //STRUCT_A-1
+	OMX_U32 nHorizSize;         //STRUCT_A-2
+	OMX_U32 nID2 : 32;
+	OMX_U32 nSequenceHdr : 32;   //STRUCT_B
+} VIDDEC_WMV_RCV_struct;
+
+typedef union VIDDEC_WMV_RCV_header {
+	VIDDEC_WMV_RCV_struct *sStructRCV;
+	OMX_U8 *pBuffer;
+} VIDDEC_WMV_RCV_header;
+
+typedef struct VIDDEC_WMV_VC1_struct {
+	OMX_U32 nNumFrames 	: 24;
+	OMX_U32 nFrameType 	: 8;
+	OMX_U32 nID 		: 32;
+	OMX_U32 nStructData : 32;   //STRUCT_C
+	OMX_U32 nVertSize;          //STRUCT_A-1
+	OMX_U32 nHorizSize;         //STRUCT_A-2
+	OMX_U32 nID2 		: 32;
+	OMX_U32 nSequenceHdr : 32;   //STRUCT_B
+} VIDDEC_WMV_VC1_struct;
+
+typedef union VIDDEC_WMV_VC1_header {
+	VIDDEC_WMV_VC1_struct *sStructVC1;
+	OMX_U8 *pBuffer;
+} VIDDEC_WMV_VC1_header;
+
+
 #ifdef _OPENCORE
 static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
-    hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
-    OMX_INOUT OMX_PTR pComponentParameterStructure)
+	hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
+	OMX_INOUT OMX_PTR pComponentParameterStructure)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 
@@ -168,6 +223,111 @@ static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
 }
 #endif
 
+
+
+static OMX_ERRORTYPE PrearrageEmptyThisBuffer(OMX_HANDLETYPE hComponent,
+	OMX_BUFFERHEADERTYPE * pBufferHdr)
+{
+
+	LOGV("Inside PrearrageEmptyThisBuffer");
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
+	PROXY_COMPONENT_PRIVATE *pCompPrv = NULL;
+	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
+	OMX_U8* pBuffer = NULL;
+	OMX_U8* pData = NULL;
+	OMX_U32 nValue = 0;
+	OMX_U32 nWidth = 0;
+	OMX_U32 nHeight = 0;
+	OMX_U32 nActualCompression = 0;
+	OMX_U8* pCSD = NULL;
+	OMX_U32 nSize_CSD = 0;
+
+	PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
+
+	if (pBufferHdr->nFlags & OMX_BUFFERFLAG_CODECCONFIG){
+		PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter, NULL);
+
+		pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
+		pBuffer = pBufferHdr->pBuffer;
+
+		VIDDEC_WMV_RCV_header  hBufferRCV;
+		VIDDEC_WMV_VC1_header  hBufferVC1;
+
+		LOGV("nFlags: %x", pBufferHdr->nFlags);
+
+		pData = pBufferHdr->pBuffer + 15; /*Position to Width & Height*/
+		VIDDEC_LoadDWORD(nValue, pData);
+		nWidth = nValue;
+		VIDDEC_LoadDWORD(nValue, pData);
+		nHeight = nValue;
+
+		pData += 4; /*Position to compression type*/
+		VIDDEC_LoadDWORD(nValue, pData);
+		nActualCompression = nValue;
+
+		/*Seting pCSD to proper position*/
+		pCSD = pBufferHdr->pBuffer;
+		pCSD += CSD_POSITION;
+		nSize_CSD = pBufferHdr->nFilledLen - CSD_POSITION;
+
+		if(nActualCompression == FOURCC_WMV3){
+			hBufferRCV.sStructRCV =
+				(VIDDEC_WMV_RCV_struct *)
+				TIMM_OSAL_Malloc(sizeof(VIDDEC_WMV_RCV_struct), TIMM_OSAL_TRUE,
+				0, TIMMOSAL_MEM_SEGMENT_INT);
+
+			//From VC-1 spec: Table 265: Sequence Layer Data Structure
+			hBufferRCV.sStructRCV->nNumFrames = 0xFFFFFF; /*Infinite frame number*/
+			hBufferRCV.sStructRCV->nFrameType = 0xc5; /*0x85 is the value given by ASF to rcv converter*/
+			hBufferRCV.sStructRCV->nID = 0x04; /*WMV3*/
+			hBufferRCV.sStructRCV->nStructData = 0x018a3106; /*0x06318a01zero fill 0x018a3106*/
+			hBufferRCV.sStructRCV->nVertSize = nHeight;
+			hBufferRCV.sStructRCV->nHorizSize = nWidth;
+			hBufferRCV.sStructRCV->nID2 = 0x0c; /* Fix value */
+			hBufferRCV.sStructRCV->nSequenceHdr = 0x00002a9f; /* This value is not provided by parser, so giving a value from a video*/
+
+			LOGV("initial: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
+			LOGV("pCSD = %x", (OMX_U32)*pCSD);
+
+			hBufferRCV.sStructRCV->nStructData = (OMX_U32)pCSD[0] << 0  |
+				pCSD[1] << 8  |
+				pCSD[2] << 16 |
+				pCSD[3] << 24;
+
+			LOGV("FINAL: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
+
+			//Copy RCV structure to actual buffer
+			assert(pBufferHdr->nFilledLen < pBufferHdr->nAllocLen);
+			pBufferHdr->nFilledLen = sizeof(VIDDEC_WMV_RCV_struct);
+			TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, (OMX_U8*)hBufferRCV.pBuffer,
+				pBufferHdr->nFilledLen);
+
+			//Free aloocated memory
+			TIMM_OSAL_Free(hBufferRCV.sStructRCV);
+		}
+		else if (nActualCompression == FOURCC_WVC1){
+			LOGV("VC-1 Advance Profile prearrange");
+			OMX_U8* pTempBuf =
+				(OMX_U8 *)
+				TIMM_OSAL_Malloc(pBufferHdr->nFilledLen, TIMM_OSAL_TRUE,
+				0, TIMMOSAL_MEM_SEGMENT_INT);
+
+			TIMM_OSAL_Memcpy(pTempBuf, pBufferHdr->pBuffer+52,
+				pBufferHdr->nFilledLen-52);
+			TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, pTempBuf,
+				pBufferHdr->nFilledLen-52);
+			pBufferHdr->nFilledLen -= 52;
+		}
+	}
+
+	EXIT:
+	LOGV("Redirection from PrearrageEmptyThisBuffer to PROXY_EmptyThisBuffer, nFilledLen=%d, nAllocLen=%d", pBufferHdr->nFilledLen, pBufferHdr->nAllocLen);
+
+	return PROXY_EmptyThisBuffer(hComponent, pBufferHdr);
+}
+
+
+
 OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -214,12 +374,13 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 		TIMM_OSAL_Free(pComponentPrivate->cCompName);
 		TIMM_OSAL_Free(pComponentPrivate);
 	}
-#ifdef _OPENCORE
 	// Make sure private function to component is always assigned
 	// after component init.
+#ifdef _OPENCORE
 	pHandle->GetParameter = ComponentPrivateGetParameters;
 #endif
+	pHandle->EmptyThisBuffer = PrearrageEmptyThisBuffer;
 
-      EXIT:
+	EXIT:
 	return eError;
 }
