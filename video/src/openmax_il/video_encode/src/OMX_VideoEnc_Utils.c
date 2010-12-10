@@ -2484,9 +2484,9 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_H264_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentP
     /*< Adaptive Intra Refesh MB Period: Period at which intra macro blocks should be insterted in a frame*/
     pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.airMbPeriod = pComponentPrivate->nAIRRate;
     /*< Maximum number of macro block in a slice <minimum value is 8>*/
-    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.maxMBsPerSlice = 0;
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.maxMBsPerSlice = pComponentPrivate->maxMBsPerSlice;
     /*< Maximum number of bytes in a slice */
-    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.maxBytesPerSlice = 0;
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.maxBytesPerSlice = pComponentPrivate->maxBytesPerSlice;
     /*< Row number from which slice needs to be intra coded*/
     pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowStartNumber = 0;
     /*< Number of rows to be coded as intra slice*/

@@ -489,6 +489,8 @@ typedef enum VIDENC_CUSTOM_INDEX
     /*only for H264*/
     VideoEncodeCustomParamIndexEncodingPreset,
     VideoEncodeCustomParamIndexNALFormat,
+    VideoEncodeCustomParamIndexMaxMBsPerSlice,
+    VideoEncodeCustomParamIndexMaxBytesPerSlice,
     /* debug config */
     VideoEncodeCustomConfigIndexDebug
 } VIDENC_CUSTOM_INDEX;
@@ -660,6 +662,10 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_U32 sliceGroupChangeRate;
     OMX_U32 sliceGroupChangeCycle;
     OMX_U32 sliceGroupParams[MAXNUMSLCGPS];
+/*h264 specific*/
+    OMX_U32 maxMBsPerSlice;
+    OMX_U32 maxBytesPerSlice;
+
 #ifndef UNDER_CE
     pthread_mutex_t videoe_mutex;   /* pthread_cond_t  control_cond; */
     pthread_mutex_t videoe_mutex_app;

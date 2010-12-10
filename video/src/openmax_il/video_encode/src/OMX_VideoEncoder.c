@@ -410,6 +410,9 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
         pComponentPrivate->sliceGroupParams[i] = 0;
     }
 
+    pComponentPrivate->maxMBsPerSlice  = 0;
+    pComponentPrivate->maxBytesPerSlice  = 0;
+
     /*Assigning address of Component Structure point to place holder inside
        component private structure
     */
@@ -2305,6 +2308,14 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomConfigIndexSliceGroupParams:
             (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->sliceGroupParams;
             break;
+        case VideoEncodeCustomParamIndexMaxMBsPerSlice:
+            (*((OMX_U32*)ComponentConfigStructure)) =
+            pComponentPrivate->maxMBsPerSlice;
+            break;
+        case VideoEncodeCustomParamIndexMaxBytesPerSlice:
+            (*((OMX_U32*)ComponentConfigStructure)) =
+            pComponentPrivate->maxBytesPerSlice;
+            break;
 
 #ifdef __KHRONOS_CONF_1_1__
         case OMX_IndexConfigVideoFramerate:
@@ -2537,6 +2548,12 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
                 pComponentPrivate->sliceGroupParams[i] = (OMX_U32)(*((*((OMX_U32**)ComponentConfigStructure))+i));
             }
             break;
+        case VideoEncodeCustomParamIndexMaxMBsPerSlice:
+            pComponentPrivate->maxMBsPerSlice = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            break;
+        case VideoEncodeCustomParamIndexMaxBytesPerSlice:
+            pComponentPrivate->maxBytesPerSlice = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            break;
         case OMX_IndexConfigVideoFramerate:
         {
             OMX_CONFIG_FRAMERATETYPE *pFrameRateType = (OMX_CONFIG_FRAMERATETYPE*)ComponentConfigStructure;
@@ -2692,6 +2709,8 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
         {"OMX.TI.VideoEncode.Config.Intra4x4EnableIdc", VideoEncodeCustomConfigIndexIntra4x4EnableIdc},
         {"OMX.TI.VideoEncode.Config.EncodingPreset", VideoEncodeCustomParamIndexEncodingPreset},
         {"OMX.TI.VideoEncode.Config.NALFormat", VideoEncodeCustomParamIndexNALFormat},
+        {"OMX.TI.VideoEncode.Config.MaxMBsPerSlice", VideoEncodeCustomParamIndexMaxMBsPerSlice},
+        {"OMX.TI.VideoEncode.Config.MaxBytesPerSlice", VideoEncodeCustomParamIndexMaxBytesPerSlice},
         {"OMX.TI.VideoEncode.Debug", VideoEncodeCustomConfigIndexDebug}
     };
     OMX_ERRORTYPE eError = OMX_ErrorNone;
