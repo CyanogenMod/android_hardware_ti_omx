@@ -230,6 +230,9 @@ static OMX_ERRORTYPE PrearrageEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 				TIMM_OSAL_Malloc(sizeof(VIDDEC_WMV_RCV_struct), TIMM_OSAL_TRUE,
 				0, TIMMOSAL_MEM_SEGMENT_INT);
 
+			PROXY_assert(hBufferRCV.sStructRCV != NULL,
+				OMX_ErrorInsufficientResources, "Malloc failed");
+
 			//From VC-1 spec: Table 265: Sequence Layer Data Structure
 			hBufferRCV.sStructRCV->nNumFrames = 0xFFFFFF; /*Infinite frame number*/
 			hBufferRCV.sStructRCV->nFrameType = 0xc5; /*0x85 is the value given by ASF to rcv converter*/
@@ -266,11 +269,16 @@ static OMX_ERRORTYPE PrearrageEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 				TIMM_OSAL_Malloc(pBufferHdr->nFilledLen, TIMM_OSAL_TRUE,
 				0, TIMMOSAL_MEM_SEGMENT_INT);
 
+			PROXY_assert(pTempBuf != NULL,
+				OMX_ErrorInsufficientResources, "Malloc failed");
+
 			TIMM_OSAL_Memcpy(pTempBuf, pBufferHdr->pBuffer+52,
 				pBufferHdr->nFilledLen-52);
 			TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, pTempBuf,
 				pBufferHdr->nFilledLen-52);
 			pBufferHdr->nFilledLen -= 52;
+
+			TIMM_OSAL_Free(pTempBuf);
 		}
 	}
 
