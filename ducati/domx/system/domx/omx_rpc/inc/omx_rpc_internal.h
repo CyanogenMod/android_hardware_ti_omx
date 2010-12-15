@@ -89,7 +89,7 @@ name based Target core retireval*/
 #define MAX_NUM_OF_RPC_USERS 5
 
 /*This defines the maximum number of remote functions that can be registered*/
-#define MAX_FUNCTION_LIST 24
+#define MAX_FUNCTION_LIST 21
 
 /*This defines the maximum number of characters a remote function name can take.
 This is used to define the length of maximum string length the symbol can be*/

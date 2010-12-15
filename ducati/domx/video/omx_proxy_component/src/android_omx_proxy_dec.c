@@ -171,52 +171,6 @@ static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
 #endif
 		pPVCapaFlags->iOMXComponentUsesFullAVCFrames = OMX_TRUE;
 		return OMX_ErrorNone;
-	} else if (nParamIndex == OMX_IndexParamPortDefinition)
-	{
-		DOMX_DEBUG("Get Parameter normal\n");
-		OMX_PARAM_PORTDEFINITIONTYPE *pPortdef = NULL;
-		pPortdef =
-		    (OMX_PARAM_PORTDEFINITIONTYPE *)
-		    pComponentParameterStructure;
-		//Get the parameters
-		eError =
-		    PROXY_GetParameter(hComponent, nParamIndex, pPortdef);
-		if (eError != OMX_ErrorNone)
-			return eError;
-
-		if (pPortdef->eDir == OMX_DirOutput)
-		{
-			// The workaround is added to find out padding on output port
-			DOMX_DEBUG("Get pad information custom\n");
-			// Using custom index get the padded W and H
-			OMX_CONFIG_RECTTYPE pRectType;
-			pRectType.nSize = sizeof(OMX_CONFIG_RECTTYPE);
-			pRectType.nVersion = pPortdef->nVersion;
-			pRectType.nPortIndex = pPortdef->nPortIndex;
-			eError =
-			    PROXY_GetParameter(hComponent,
-			    OMX_TI_IndexParam2DBufferAllocDimension,
-			    &pRectType);
-			if (eError == OMX_ErrorNone)
-			{
-				//update the padded W and H.
-				DOMX_DEBUG("Update WxH\n");
-				((OMX_VIDEO_PORTDEFINITIONTYPE *) &
-				    (pPortdef->format))->nFrameWidth =
-				    pRectType.nWidth;
-				((OMX_VIDEO_PORTDEFINITIONTYPE *) &
-				    (pPortdef->format))->nFrameHeight =
-				    pRectType.nHeight;
-				DOMX_DEBUG("Update WxH %dx%d size %d\n",
-				    pRectType.nWidth, pRectType.nHeight,
-				    pPortdef->nBufferSize);
-				//pPortdef->nBufferSize =
-				//    (pRectType.nWidth * pRectType.nHeight *
-				//    3) / 2;
-				DOMX_DEBUG("GetParameter Done\n");
-			}
-		}
-		return eError;
 	}
 	return PROXY_GetParameter(hComponent, nParamIndex,
 	    pComponentParameterStructure);

@@ -65,6 +65,7 @@ extern "C"
 
 #define TILER_BUFF
 	extern OMX_U8 CHIRON_IPC_FLAG;
+#define MAX_NUM_COMPS_PER_PROCESS 12
 
 /******************************************************************
  *   DATA TYPES

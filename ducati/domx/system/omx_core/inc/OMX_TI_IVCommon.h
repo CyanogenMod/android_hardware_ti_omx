@@ -277,10 +277,10 @@ typedef struct OMX_CONFIG_EXTCAPTURING {
  *  nVersion   : OMX specification version information
  *  nPortIndex : Port that this structure applies to
  *  nDigitalZoomSpeed      :  Optical zoom speed level. Special values:
- *      0 – stop current movement
+ *      0 - stop current movement
  *      values from 1 to 254 are mapped proportionally to supported zoom speeds inside optical zoom driver.
  *      So 1 is slowest available optical zoom speed and 254 is fastest available optical zoom speed
- *      255 – default optical zoom speed value
+ *      255 - default optical zoom speed value
  */
 typedef struct OMX_CONFIG_DIGITALZOOMSPEEDTYPE {
    OMX_U32 nSize;
@@ -583,7 +583,7 @@ typedef struct OMX_CONFIG_EXTFOCUSREGIONTYPE {
  *  nVersion     : OMX specification version information
  *  nPortIndex   : Port that this structure applies to
  *  bDigitalFlash : Digital flash type Enable/Disable -
- * Specifies whether the ‘digital flash’ algorithm is enabled or disabled. This overrides the contrast and brightness settings.
+ * Specifies whether the digital flash algorithm is enabled or disabled. This overrides the contrast and brightness settings.
  */
 typedef struct OMX_CONFIG_DIGITALFLASHTYPE {
     OMX_U32 nSize;
@@ -604,7 +604,7 @@ typedef struct OMX_CONFIG_DIGITALFLASHTYPE {
  *        Specifies whether the flash should be used to indicate image or video capture. When flash is not used for exposure,
  *        flash will be activated after exposure to indicate image capture.
  *        If video light is not used, the flash can be blinking or constant at low intensity to indicate capture but not affect exposure.
- *        Specifies whether the ‘digital flash’ algorithm is enabled or disabled. This overrides the contrast and brightness settings.
+ *        Specifies whether the digital flash algorithm is enabled or disabled. This overrides the contrast and brightness settings.
  */
 typedef struct OMX_CONFIG_PRIVACYINDICATOR {
     OMX_U32 nSize;
@@ -638,8 +638,8 @@ typedef struct OMX_CONFIG_TORCHMODETYPE {
 
 /**
  * Privacy Indicator Enable/Disable
- * DISABLE – Fire the xenon flash in the usual manner
- * ENABLE – Reduce the light intensity of the main flash (ex 1EV)
+ * DISABLE - Fire the xenon flash in the usual manner
+ * ENABLE - Reduce the light intensity of the main flash (ex 1EV)
  *
  * STRUCT MEMBERS:
  *  nSize        : Size of the structure in bytes
@@ -662,22 +662,18 @@ typedef struct OMX_CONFIG_SLOWSYNCTYPE {
 typedef enum OMX_IMAGE_EXTFOCUSCONTROLTYPE {
     OMX_IMAGE_FocusControAutoMacro = 0x7F000001, /**< Reserved region for introducing Vendor Extensions */
     OMX_IMAGE_FocusControlAutoInfinity,
-    OMX_IMAGE_FocusFacePriorityMode,
-    OMX_IMAGE_FocusRegionPriorityMode,
     OMX_IMAGE_FocusControlHyperfocal,
     OMX_IMAGE_FocusControlPortrait, /**< from Xena */
     OMX_IMAGE_FocusControlExtended, /**< from Xena */
     OMX_IMAGE_FocusControlContinousNormal, /**< from Xena */
-    OMX_TI_IMAGE_FocusControlContinuousExtended, /**< from Xena */
-    OMX_TI_IMAGE_FocusFacePriorityContinuousMode,
-    OMX_TI_IMAGE_FocusRegionPriorityContinuousMode,
+    OMX_TI_IMAGE_FocusControlContinuousExtended /**< from Xena */
 } OMX_IMAGE_EXTFOCUSCONTROLTYPE;
 
 
 
 /**
  * Specifies whether the LED can be used to assist in autofocus, due to low lighting conditions.
- * ‘ENABLE’ means use as determined by the auto exposure algorithm.
+ * ENABLE means use as determined by the auto exposure algorithm.
  *
  * STRUCT MEMBERS:
  *  nSize        : Size of the structure in bytes
@@ -1016,7 +1012,7 @@ typedef struct OMX_HISTOGRAMTYPE {
     OMX_U8  data[1];
 } OMX_HISTOGRAMTYPE;
 
-#define OMX_OTHER_EXTRADATATYPE_SIZE ( (OMX_U32)(((OMX_OTHER_EXTRADATATYPE*)0x0)->data) ) /**< Size of OMX_OTHER_EXTRADATATYPE
+#define OMX_OTHER_EXTRADATATYPE_SIZE ( (OMX_U32)(((OMX_OTHER_EXTRADATATYPE*)0x0)->data) ) /**< Size of OMX_OTHER_EXTRADATATYPE**/
 /**
  * The extra data having ancillary data is described with the following structure.
  * This data contains single flags and values
@@ -1447,6 +1443,12 @@ typedef enum OMX_EXT_EXTRADATATYPE
    OMX_SensorCustomDataLength, /**< vendor specific custom data length */
    OMX_SensorCustomData, /**< vendor specific data */
    OMX_TI_FrameLayout,                  /**< 0x7F000012 vendor specific data */
+   OMX_TI_SEIinfo2004Frame1,    /**< 0x7F000013 Used for 2004 SEI message to be provided by video decoders */
+   OMX_TI_SEIinfo2004Frame2,    /**< 0x7F000014 Used for 2004 SEI message to be provided by video decoders */
+   OMX_TI_SEIinfo2010Frame1,    /**< 0x7F000015 Used for 2010 SEI message to be provided by video decoders */
+   OMX_TI_SEIinfo2010Frame2,    /**< 0x7F000016 Used for 2010 SEI message to be provided by video decoders */
+   OMX_TI_RangeMappingInfo,     /**< 0x7F000017 Used for Range mapping info provided by Video Decoders */
+   OMX_TI_RescalingInfo,        /**< 0x7F000018 Used for width/height rescaling info provided by Video Decoders */
 } OMX_EXT_EXTRADATATYPE;
 
 
@@ -1919,11 +1921,14 @@ typedef enum OMX_TI_STEREOFRAMELAYOUTTYPE {
  *
  * STRUCT MEMBERS:
  *  eFrameLayout    : frame layout
- *  nSubsapmleRatio : subsapmle ratio
+ *  nSubsampleRatio : subsample ratio
  */
 typedef struct OMX_TI_FRAMELAYOUTTYPE {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
 	OMX_TI_STEREOFRAMELAYOUTTYPE eFrameLayout;
-	OMX_U32  nSubsapmleRatio; /**  Subsampling ratio, Q15.7 */
+	OMX_U32 nSubsampleRatio; /**  Subsampling ratio, Q15.7 */
 } OMX_TI_FRAMELAYOUTTYPE;
 
 /**
@@ -1937,6 +1942,508 @@ typedef enum OMX_TI_COLOR_FORMATTYPE {
 	    OMX_COLOR_FormatVendorStartUnused + 2 /**< 10 bit raw for stereo */
 } OMX_TI_COLOR_FORMATTYPE;
 
+/**
+ * The OMX_TI_EXIFTAGSTATUS enumeration is used to define the
+ * tag status types.
+ */
+typedef enum OMX_TI_EXIFTAGSTATUS {
+	OMX_TI_TagReadOnly,     /**< implies this tag is generated within omx-camera >*/
+	OMX_TI_TagReadWrite,    /**< implies this tag can be overwritten by client >*/
+	OMX_TI_TagUpdated,      /**< client has to use this to indicate the specific tag is overwritten >*/
+	OMX_TI_ExifStatus_Max = 0x7fffffff
+} OMX_TI_EXIFTAGSTATUS;
+
+typedef struct OMX_TI_CONFIG_EXIF_TAGS {
+	OMX_U32                 nSize;
+	OMX_VERSIONTYPE         nVersion;
+	OMX_U32                 nPortIndex;
+	OMX_TI_EXIFTAGSTATUS    eStatusImageWidth;
+	OMX_U32                 ulImageWidth;
+	OMX_TI_EXIFTAGSTATUS    eStatusImageHeight;
+	OMX_U32                 ulImageHeight;
+	OMX_TI_EXIFTAGSTATUS    eStatusBitsPerSample;
+	OMX_U16                 usBitsPerSample[3];
+	OMX_TI_EXIFTAGSTATUS    eStatusCompression;
+	OMX_U16                 usCompression;
+	OMX_TI_EXIFTAGSTATUS    eStatusPhotometricInterpretation;
+	OMX_U16                 usPhotometricInterpretation;
+	OMX_TI_EXIFTAGSTATUS    eStatusOrientation;
+	OMX_U16                 usOrientation;
+	OMX_TI_EXIFTAGSTATUS    eStatusSamplesPerPixel;
+	OMX_U16                 usSamplesPerPixel;
+	OMX_TI_EXIFTAGSTATUS    eStatusPlanarConfiguration;
+	OMX_U16                 usPlanarConfiguration;
+	OMX_TI_EXIFTAGSTATUS    eStatusYCbCrSubSampling;
+	OMX_U16                 usYCbCrSubSampling[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusYCbCrPositioning;
+	OMX_U16                 usYCbCrPositioning;
+	OMX_TI_EXIFTAGSTATUS    eStatusXResolution;
+	OMX_U32                 ulXResolution[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusYResolution;
+	OMX_U32                 ulYResolution[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusResolutionUnit;
+	OMX_U16                 usResolutionUnit;
+
+	OMX_TI_EXIFTAGSTATUS    eStatusRowsPerStrip;
+	OMX_U32                 ulRowsPerStrip;
+	OMX_TI_EXIFTAGSTATUS    eStatusDataSize;
+	OMX_U32                 ulDataSize;
+
+	OMX_TI_EXIFTAGSTATUS    eStatusTransferFunction;
+	OMX_U16                 usTransferFunction[3*256];
+	OMX_TI_EXIFTAGSTATUS    eStatusWhitePoint;
+	OMX_U32                 ulWhitePoint[4]; //2x2
+	OMX_TI_EXIFTAGSTATUS    eStatusPrimaryChromaticities;
+	OMX_U32                 ulPrimaryChromaticities[12]; //2x6
+	OMX_TI_EXIFTAGSTATUS    eStatusYCbCrCoefficients;
+	OMX_U32                 ulYCbCrCoefficients[6]; //2x3
+	OMX_TI_EXIFTAGSTATUS    eStatusReferenceBlackWhite;
+	OMX_U32                 ulReferenceBlackWhite[12]; //2x6
+	OMX_TI_EXIFTAGSTATUS    eStatusDateTime;
+	OMX_S8*                 pDateTimeBuff;
+	OMX_U32                 ulDateTimeBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusImageDescription;
+	OMX_S8*                 pImageDescriptionBuff;
+	OMX_U32                 ulImageDescriptionBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusMake;
+	OMX_S8*                 pMakeBuff;
+	OMX_U32                 ulMakeBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusModel;
+	OMX_S8*                 pModelBuff;
+	OMX_U32                 ulModelBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusSoftware;
+	OMX_S8*                 pSoftwareBuff;
+	OMX_U32                 ulSoftwareBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusArtist;
+	OMX_S8*                 pArtistBuff;
+	OMX_U32                 ulArtistBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusCopyright;
+	OMX_S8*                 pCopyrightBuff;
+	OMX_U32                 ulCopyrightBuffSizeBytes;
+
+	OMX_TI_EXIFTAGSTATUS    eStatusExifVersion;
+	OMX_S8                  cExifVersion[4];
+	OMX_TI_EXIFTAGSTATUS    eStatusFlashpixVersion;
+	OMX_S8                  cFlashpixVersion[4];
+	OMX_TI_EXIFTAGSTATUS    eStatusColorSpace;
+	OMX_U16                 usColorSpace;
+	OMX_TI_EXIFTAGSTATUS    eStatusComponentsConfiguration;
+	OMX_S8                  cComponentsConfiguration[4];
+	OMX_TI_EXIFTAGSTATUS    eStatusCompressedBitsPerPixel;
+	OMX_U32                 ulCompressedBitsPerPixel[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusPixelXDimension;
+	OMX_U32                 ulPixelXDimension;
+	OMX_TI_EXIFTAGSTATUS    eStatusPixelYDimension;
+	OMX_U32                 ulPixelYDimension;
+	OMX_TI_EXIFTAGSTATUS    eStatusMakerNote;
+	OMX_S8*                 pMakerNoteBuff;
+	OMX_U32                 ulMakerNoteBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusUserComment;
+	OMX_S8*                 pUserCommentBuff;
+	OMX_U32                 ulUserCommentBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusRelatedSoundFile;
+	OMX_S8                  cRelatedSoundFile[13];
+	OMX_TI_EXIFTAGSTATUS    eStatusDateTimeOriginal;
+	OMX_S8*                 pDateTimeOriginalBuff;
+	OMX_U32                 ulDateTimeOriginalBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusDateTimeDigitized;
+	OMX_S8*                 pDateTimeDigitizedBuff;
+	OMX_U32                 ulDateTimeDigitizedBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusSubSecTime;
+	OMX_S8*                 pSubSecTimeBuff;
+	OMX_U32                 ulSubSecTimeBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusSubSecTimeOriginal;
+	OMX_S8*                 pSubSecTimeOriginalBuff;
+	OMX_U32                 ulSubSecTimeOriginalBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusSubSecTimeDigitized;
+	OMX_S8*                 pSubSecTimeDigitizedBuff;
+	OMX_U32                 ulSubSecTimeDigitizedBuffSizeBytes;
+
+	OMX_TI_EXIFTAGSTATUS    eStatusExposureTime;
+	OMX_U32                 ulExposureTime[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusFNumber;
+	OMX_U32                 ulFNumber[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusExposureProgram;
+	OMX_U16                 usExposureProgram;
+	OMX_TI_EXIFTAGSTATUS    eStatusSpectralSensitivity;
+	OMX_S8*                 pSpectralSensitivityBuff;
+	OMX_U32                 ulSpectralSensitivityBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusISOCount;
+	OMX_U16                 usISOCount;
+	OMX_TI_EXIFTAGSTATUS    eStatusISOSpeedRatings;
+	OMX_U16*                pISOSpeedRatings;
+	OMX_TI_EXIFTAGSTATUS    eStatusOECF;
+	OMX_S8*                 pOECFBuff;
+	OMX_U32                 ulOECFBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusShutterSpeedValue;
+	OMX_S32                 slShutterSpeedValue[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusApertureValue;
+	OMX_U32                 ulApertureValue[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusBrightnessValue;
+	OMX_S32                 slBrightnessValue[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusExposureBiasValue;
+	OMX_S32                 slExposureBiasValue[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusMaxApertureValue;
+	OMX_U32                 ulMaxApertureValue[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusSubjectDistance;
+	OMX_U32                 ulSubjectDistance[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusMeteringMode;
+	OMX_U16                 usMeteringMode;
+	OMX_TI_EXIFTAGSTATUS    eStatusLightSource;
+	OMX_U16                 usLightSource;
+	OMX_TI_EXIFTAGSTATUS    eStatusFlash;
+	OMX_U16                 usFlash;
+	OMX_TI_EXIFTAGSTATUS    eStatusFocalLength;
+	OMX_U32                 ulFocalLength[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusSubjectArea;
+	OMX_U16                 usSubjectArea[4];
+	OMX_TI_EXIFTAGSTATUS    eStatusFlashEnergy;
+	OMX_U32                 ulFlashEnergy[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusSpatialFrequencyResponse;
+	OMX_S8*                 pSpatialFrequencyResponseBuff;
+	OMX_U32                 ulSpatialFrequencyResponseBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusFocalPlaneXResolution;
+	OMX_U32                 ulFocalPlaneXResolution[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusFocalPlaneYResolution;
+	OMX_U32                 ulFocalPlaneYResolution[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusFocalPlaneResolutionUnit;
+	OMX_U16                 usFocalPlaneResolutionUnit;
+	OMX_TI_EXIFTAGSTATUS    eStatusSubjectLocation;
+	OMX_U16                 usSubjectLocation[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusExposureIndex;
+	OMX_U32                 ulExposureIndex[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusSensingMethod;
+	OMX_U16                 usSensingMethod;
+	OMX_TI_EXIFTAGSTATUS    eStatusFileSource;
+	OMX_S8                  cFileSource;
+	OMX_TI_EXIFTAGSTATUS    eStatusSceneType;
+	OMX_S8                  cSceneType;
+	OMX_TI_EXIFTAGSTATUS    eStatusCFAPattern;
+	OMX_S8*                 pCFAPatternBuff;
+	OMX_U32                 ulCFAPatternBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusCustomRendered;
+	OMX_U16                 usCustomRendered;
+	OMX_TI_EXIFTAGSTATUS    eStatusExposureMode;
+	OMX_U16                 usExposureMode;
+	OMX_TI_EXIFTAGSTATUS    eStatusWhiteBalance;
+	OMX_U16                 usWhiteBalance;
+	OMX_TI_EXIFTAGSTATUS    eStatusDigitalZoomRatio;
+	OMX_U32                 ulDigitalZoomRatio[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusFocalLengthIn35mmFilm;
+	OMX_U16                 usFocalLengthIn35mmFilm;
+	OMX_TI_EXIFTAGSTATUS    eStatusSceneCaptureType;
+	OMX_U16                 usSceneCaptureType;
+	OMX_TI_EXIFTAGSTATUS    eStatusGainControl;
+	OMX_U16                 usGainControl;
+	OMX_TI_EXIFTAGSTATUS    eStatusContrast;
+	OMX_U16                 usContrast;
+	OMX_TI_EXIFTAGSTATUS    eStatusSaturation;
+	OMX_U16                 usSaturation;
+	OMX_TI_EXIFTAGSTATUS    eStatusSharpness;
+	OMX_U16                 usSharpness;
+	OMX_TI_EXIFTAGSTATUS    eStatusDeviceSettingDescription;
+	OMX_S8*                 pDeviceSettingDescriptionBuff;
+	OMX_U32                 ulDeviceSettingDescriptionBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusSubjectDistanceRange;
+	OMX_U16                 usSubjectDistanceRange;
+
+	OMX_TI_EXIFTAGSTATUS    eStatusImageUniqueID;
+	OMX_S8                  cImageUniqueID[33];
+	OMX_U8*                 pPrivateNextIFDPointer;    //Should not be used by the application
+	OMX_U8*                 pPrivateThumbnailSize;     //Should not be used by the application
+	OMX_U8*                 pPrivateTiffHeaderPointer; //Should not be used by the application
+
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsVersionId;
+	OMX_U8                  ucGpsVersionId[4];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpslatitudeRef;
+	OMX_S8                  cGpslatitudeRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsLatitude;
+	OMX_U32                 ulGpsLatitude[6];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsLongitudeRef;
+	OMX_S8                  cGpsLongitudeRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsLongitude;
+	OMX_U32                 ulGpsLongitude[6];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsAltitudeRef;
+	OMX_U8                  ucGpsAltitudeRef;
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsAltitude;
+	OMX_U32                 ulGpsAltitude[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsTimeStamp;
+	OMX_U32                 ulGpsTimeStamp[6];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsSatellites;
+	OMX_S8*                 pGpsSatellitesBuff;
+	OMX_U32                 ulGpsSatellitesBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsStatus;
+	OMX_S8                  cGpsStatus[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsMeasureMode;
+	OMX_S8                  cGpsMeasureMode[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDop;
+	OMX_U32                 ulGpsDop[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsSpeedRef;
+	OMX_S8                  cGpsSpeedRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsSpeed;
+	OMX_U32                 ulGpsSpeed[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsTrackRef;
+	OMX_S8                  cGpsTrackRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsTrack;
+	OMX_U32                 ulGpsTrack[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsImgDirectionRef;
+	OMX_S8                  cGpsImgDirectionRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsImgDirection;
+	OMX_U32                 ulGpsImgDirection[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsMapDatum;
+	OMX_S8*                 pGpsMapDatumBuff;
+	OMX_U32                 ulGpsMapDatumBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestLatitudeRef;
+	OMX_S8                  cGpsDestLatitudeRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestLatitude;
+	OMX_U32                 ulGpsDestLatitude[6];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestLongitudeRef;
+	OMX_S8                  cGpsDestLongitudeRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestLongitude;
+	OMX_U32                 ulGpsDestLongitude[6];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestBearingRef;
+	OMX_S8                  cGpsDestBearingRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestBearing;
+	OMX_U32                 ulGpsDestBearing[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestDistanceRef;
+	OMX_S8                  cGpsDestDistanceRef[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDestDistance;
+	OMX_U32                 ulGpsDestDistance[2];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsProcessingMethod;
+	OMX_S8*                 pGpsProcessingMethodBuff;
+	OMX_U32                 ulGpsProcessingMethodBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsAreaInformation;
+	OMX_S8*                 pGpsAreaInformationBuff;
+	OMX_U32                 ulGpsAreaInformationBuffSizeBytes;
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDateStamp;
+	OMX_S8                  cGpsDateStamp[11];
+	OMX_TI_EXIFTAGSTATUS    eStatusGpsDifferential;
+	OMX_U16                 usGpsDifferential;
+} OMX_TI_CONFIG_EXIF_TAGS;
+
+/**
+ * Structure used to configure current OMX_TI_CONFIG_SHAREDBUFFER
+ *
+ * STRUCT MEMBERS:
+ * nSize            : Size of the structure in bytes
+ * nVersion         : OMX specification version information
+ * nPortIndex       : Port that this structure applies to
+ * nSharedBuffSize  : Size of the pSharedBuff in bytes
+ * pSharedBuff      : Pointer to a buffer
+ */
+typedef struct OMX_TI_CONFIG_SHAREDBUFFER {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_U32 nSharedBuffSize;
+	OMX_U8* pSharedBuff;
+} OMX_TI_CONFIG_SHAREDBUFFER;
+
+/**
+ * Structure used to configure current OMX_TI_CAPRESTYPE
+ *
+ * STRUCT MEMBERS:
+ * nSize            : Size of the structure in bytes
+ * nVersion         : OMX specification version information
+ * nPortIndex       : Port that this structure applies to
+ * nWidthMin        : Number of the smallest width supported
+ * nHeightMin       : Number of the smallest height supported
+ * nWidthMax        : Number of the biggest width supported
+ * nHeightMax       : Number of the biggest height supported
+ */
+typedef struct OMX_TI_CAPRESTYPE {
+	OMX_U32         nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32         nPortIndex;
+	OMX_U32         nWidthMin;  // smallest width supported
+	OMX_U32         nHeightMin; // smallest height supported
+	OMX_U32         nWidthMax;  // biggest width supported
+	OMX_U32         nHeightMax; // biggest height supported
+} OMX_TI_CAPRESTYPE;
+
+/**
+ * Structure used to configure current OMX_TI_CAPTYPE
+ *
+ * STRUCT MEMBERS:
+ * nSize                                : Size of the structure in bytes
+ * nVersion                             : OMX specification version information
+ * nPortIndex                           : Port that this structure applies to
+ * ulPreviewFormatCount                 : Number of the supported preview pixelformat count
+ * ePreviewFormats                      : Array containing the supported preview pixelformat count
+ * ulImageFormatCount                   : Number of the supported image pixelformat count
+ * eImageFormats                        : Array containing the supported image pixelformat count
+ * tPreviewResRange                     : Supported preview resolution range
+ * tImageResRange                       : Supported image resolution range
+ * tThumbResRange                       : Supported thumbnail resolution range
+ * ulWhiteBalanceCount                  : Supported whitebalance mode count
+ * eWhiteBalanceModes                   : Array containing the whitebalance modes
+ * ulColorEffectCount                   : Supported effects count
+ * eColorEffects                        : Array containing the supported effects
+ * xMaxWidthZoom                        : Fixed point value stored as Q16 representing the maximum value for the Zoom allowed on Width
+ * xMaxHeightZoom                       : Fixed point value stored as Q16 representing the maximum value for the Zoom allowed on Height
+ * ulFlickerCount                       : Number of the supported anti-flicker modes
+ * eFlicker                             : Array containing the supported anti-flicker modes
+ * ulExposureModeCount                  : Number of the supported exposure modes
+ * eExposureModes                       : Array containing the supported exposure modes
+ * bLensDistortionCorrectionSupported   : Flag for Lens Distortion Correction Algorithm support
+ * bISONoiseFilterSupported             : Flag for Noise Filter Algorithm support
+ * xEVCompensationMin                   : Fixed point value stored as Q16 representing the EVCompensation minumum allowed value
+ * xEVCompensationMax                   : Fixed point value stored as Q16 representing the EVCompensation maximum allowed value
+ * nSensitivityMax                      : nSensitivityMax = 100 implies maximum supported equal to "ISO 100"
+ * ulFocusModeCount                     : Number of the supported focus modes
+ * eFocusModes                          : Array containing the supported focus modes
+ * ulSceneCount                         : Number of the supported scenes
+ * eSceneModes                          : Array containing the supported scenes
+ * ulFlashCount                         : Number of the supported flash modes
+ * eFlashModes                          : Array containing the supported flash modes
+ * xFramerateMin                        : Fixed point value stored as Q16 representing the minimum framerate allowed
+ * xFramerateMax                        : Fixed point value stored as Q16 representing the maximum framerate allowed
+ * bContrastSupported                   : Flag showing if the contrast is supported
+ * bSaturationSupported                 : Flag showing if the saturation is supported
+ * bBrightnessSupported                 : Flag showing if the brightness is supported
+ * bProcessingLevelSupported            : Flag showing if the processing level is supported
+ * bQFactorSupported                    : Flag showing if the QFactor is supported
+ */
+typedef struct OMX_TI_CAPTYPE {
+	OMX_U32                 nSize;
+	OMX_VERSIONTYPE         nVersion;
+	OMX_U32                 nPortIndex;
+	OMX_U16                 ulPreviewFormatCount;   // supported preview pixelformat count
+	OMX_COLOR_FORMATTYPE    ePreviewFormats[100];
+	OMX_U16                 ulImageFormatCount;     // supported image pixelformat count
+	OMX_COLOR_FORMATTYPE    eImageFormats[100];
+	OMX_TI_CAPRESTYPE       tPreviewResRange;       // supported preview resolution range
+	OMX_TI_CAPRESTYPE       tImageResRange;         // supported image resolution range
+	OMX_TI_CAPRESTYPE       tThumbResRange;         // supported thumbnail resolution range
+	OMX_U16                 ulWhiteBalanceCount;    // supported whitebalance mode count
+	OMX_WHITEBALCONTROLTYPE eWhiteBalanceModes[100];
+	OMX_U16                 ulColorEffectCount;     // supported effects count
+	OMX_IMAGEFILTERTYPE     eColorEffects[100];
+	OMX_S32                 xMaxWidthZoom;          // Fixed point value stored as Q16
+	OMX_S32                 xMaxHeightZoom;         // Fixed point value stored as Q16
+	OMX_U16                 ulFlickerCount;         // supported anti-flicker mode count
+	OMX_COMMONFLICKERCANCELTYPE     eFlicker[100];
+	OMX_U16                 ulExposureModeCount;    // supported exposure mode count
+	OMX_EXPOSURECONTROLTYPE eExposureModes[100];
+	OMX_BOOL                bLensDistortionCorrectionSupported;
+	OMX_BOOL                bISONoiseFilterSupported;
+	OMX_S32                 xEVCompensationMin;     // Fixed point value stored as Q16
+	OMX_S32                 xEVCompensationMax;     // Fixed point value stored as Q16
+	OMX_U32                 nSensitivityMax;        // nSensitivityMax = 100 implies maximum supported equal to "ISO 100"
+	OMX_U16                 ulFocusModeCount;       // supported focus mode count
+	OMX_IMAGE_FOCUSCONTROLTYPE      eFocusModes[100];
+	OMX_U16                 ulSceneCount;           // supported scene count
+	OMX_SCENEMODETYPE       eSceneModes[100];
+	OMX_U16                 ulFlashCount;           // supported flash modes count
+	OMX_IMAGE_FLASHCONTROLTYPE      eFlashModes[100];
+	OMX_U32                 xFramerateMin;          // Fixed point value stored as Q16
+	OMX_U32                 xFramerateMax;          // Fixed point value stored as Q16
+	OMX_BOOL                bContrastSupported;
+	OMX_BOOL                bSaturationSupported;
+	OMX_BOOL                bBrightnessSupported;
+	OMX_BOOL                bProcessingLevelSupported;
+	OMX_BOOL                bQFactorSupported;
+} OMX_TI_CAPTYPE;
+
+/**
+ * Defines 3A Face priority mode.
+ *
+ * STRUCT MEMBERS:
+ *  nSize               : Size of the structure in bytes
+ *  nVersion            : OMX specification version information
+ *  nPortIndex          : Port that this structure applies to
+ *  bAwbFaceEnable      : Enable Face priority for Auto White Balance
+ *  bAeFaceEnable       : Enable Face priority for Auto Exposure
+ *  bAfFaceEnable       : Enable Face priority for Auto Focus
+ */
+typedef struct OMX_TI_CONFIG_3A_FACE_PRIORITY {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_BOOL bAwbFaceEnable;
+	OMX_BOOL bAeFaceEnable;
+	OMX_BOOL bAfFaceEnable;
+} OMX_TI_CONFIG_3A_FACE_PRIORITY;
+
+/**
+ * Defines 3A Region priority mode.
+ *
+ * STRUCT MEMBERS:
+ *  nSize               : Size of the structure in bytes
+ *  nVersion            : OMX specification version information
+ *  nPortIndex          : Port that this structure applies to
+ *  bAwbFaceEnable      : Enable Region priority for Auto White Balance
+ *  bAeFaceEnable       : Enable Region priority for Auto Exposure
+ *  bAfFaceEnable       : Enable Region priority for Auto Focus
+ */
+typedef struct OMX_TI_CONFIG_3A_REGION_PRIORITY {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_BOOL bAwbRegionEnable;
+	OMX_BOOL bAeRegionEnable;
+	OMX_BOOL bAfRegionEnable;
+} OMX_TI_CONFIG_3A_REGION_PRIORITY;
+
+/*
+* STRUCT MEMBERS:
+* nSize         : Size of the structure in bytes
+* nVersion      : OMX specification version information
+* nPortIndex    : Port that this structure applies to
+* bAutoConvergence : Enable/Disable Auto Convergence
+*/
+typedef struct OMX_TI_PARAM_AUTOCONVERGENCETYPE {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_BOOL bAutoConvergence;
+} OMX_TI_PARAM_AUTOCONVERGENCETYPE;
+
+/*
+* STRUCT MEMBERS:
+* nSize             : Size of the structure in bytes
+* nVersion          : OMX specification version information
+* nPortIndex        : Port that this structure applies to
+* pAAAskipBuff      : Pointer to a buffer
+* AAAskipBuffId     : Id of the send buffer
+* AAAskipBuffSize   : Size of the sent buffer
+*/
+typedef struct OMX_TI_CONFIG_AAASKIPBUFFERTYPE {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_PTR pAAAskipBuff;
+	OMX_U32 AAAskipBuffId;
+	OMX_U32 AAAskipBuffSize;
+} OMX_TI_CONFIG_AAASKIPBUFFERTYPE;
+
+
+/**
+ * The OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE enumeration is used to define the
+ * brightness and contrast mode types.
+ */
+typedef enum OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE {
+	OMX_TI_BceModeOff = 0,
+	OMX_TI_BceModeOn,
+	OMX_TI_BceModeAuto,
+	OMX_TI_BceModeMax = 0x7FFFFFFF
+} OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE;
+
+/**
+ * Local and global brightness contrast type.
+ *
+ * STRUCT MEMBERS:
+ *  nSize             : Size of the structure in bytes
+ *  nVersion          : OMX specification version information
+ *  nPortIndex        : Port that this structure applies to
+ *  eControl          : Control field for GLBCE
+ */
+typedef struct OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE eControl;
+} OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE;
 
 #ifdef __cplusplus
 }

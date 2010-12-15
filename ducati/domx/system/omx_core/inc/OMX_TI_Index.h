@@ -103,7 +103,7 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_IndexConfigFlickerCancel,               /**< reference: OMX_CONFIG_FLICKERCANCELTYPE */
     OMX_IndexConfigSensorCal,                   /**< reference: OMX_CONFIG_SENSORCALTYPE */
 	OMX_IndexConfigISOSetting, /**< reference: OMX_CONFIG_ISOSETTINGTYPE */
-    OMX_IndexParamSceneMode,                    /**< reference: OMX_CONFIG_SCENEMODETYPE */
+    OMX_TI_IndexConfigSceneMode,                /**< reference: OMX_CONFIG_SCENEMODETYPE */
 
     OMX_IndexConfigDigitalZoomSpeed,            /**< reference: OMX_CONFIG_DIGITALZOOMSPEEDTYPE */
     OMX_IndexConfigDigitalZoomTarget,           /**< reference: OMX_CONFIG_DIGITALZOOMTARGETTYPE */
@@ -201,7 +201,18 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexConfigShutterCallback,          /**< reference: OMX_CONFIG_BOOLEANTYPE */
     OMX_TI_IndexParamVarFrameRate,              /**< reference: OMX_PARAM_VARFARAMERATETYPE */
     OMX_TI_IndexConfigAutoConvergence,          /**< reference: OMX_TI_CONFIG_CONVERGENCETYPE */
-    OMX_TI_IndexConfigRightExposureValue        /**< reference: OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE */
+    OMX_TI_IndexConfigRightExposureValue,       /**< reference: OMX_TI_CONFIG_EXPOSUREVALUERIGHTTYPE */
+    OMX_TI_IndexConfigExifTags,                 /**< reference: OMX_TI_CONFIG_SHAREDBUFFER */
+    OMX_TI_IndexParamVideoPayloadHeaderFlag,    /**< reference: OMX_TI_PARAM_PAYLOADHEADERFLAG */
+    OMX_TI_IndexParamVideoIvfMode,              /**< reference: OMX_TI_PARAM_IVFFLAG */
+    OMX_TI_IndexConfigCamCapabilities,          /**< reference: OMX_TI_CONFIG_SHAREDBUFFER */
+    OMX_TI_IndexConfigFacePriority3a,           /**< reference: OMX_TI_CONFIG_3A_FACE_PRIORITY */
+    OMX_TI_IndexConfigRegionPriority3a,         /**< reference: OMX_TI_CONFIG_3A_REGION_PRIORITY */
+    OMX_TI_IndexParamAutoConvergence,           /**< reference: OMX_TI_PARAM_AUTOCONVERGENCETYPE */
+    OMX_TI_IndexConfigAAAskipBuffer,            /**< reference: OMX_TI_CONFIG_AAASKIPBUFFERTYPE */
+    OMX_TI_IndexParamStereoFrmLayout,           /**< reference: OMX_TI_FRAMELAYOUTTYPE */
+    OMX_TI_IndexConfigLocalBrightnessContrastEnhance, /**< reference: OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE */
+    OMX_TI_IndexConfigGlobalBrightnessContrastEnhance /**< reference: OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE */
 } OMX_TI_INDEXTYPE;
 
 

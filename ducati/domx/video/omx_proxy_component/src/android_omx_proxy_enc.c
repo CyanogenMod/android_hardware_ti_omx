@@ -93,7 +93,7 @@ static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
 		/*Set PV (opencore) capability flags */
 		pPVCapaFlags->iIsOMXComponentMultiThreaded = OMX_TRUE;
 		pPVCapaFlags->iOMXComponentSupportsExternalOutputBufferAlloc =
-		    OMX_TRUE;//OMX_FALSE;
+		    OMX_FALSE;
 		pPVCapaFlags->iOMXComponentSupportsExternalInputBufferAlloc =
 		    OMX_TRUE;
 		pPVCapaFlags->iOMXComponentSupportsMovableInputBuffers =

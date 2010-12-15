@@ -69,6 +69,7 @@
 extern RPC_Object rpcHndl[CORE_MAX];
 extern COREID TARGET_CORE_ID;
 
+extern OMX_BOOL ducatiFault;
 /******************************************************************
  *   MACROS - LOCAL
  ******************************************************************/
@@ -123,6 +124,12 @@ extern COREID TARGET_CORE_ID;
         "Async error check returned error"); \
     } while(0)
 
+#define RPC_exitOnDucatiFault() do { \
+   if(ducatiFault == OMX_TRUE) { \
+       RPC_assert(0, RPC_OMX_ErrorUnknown, "Duacti Fault Detected. Function exec blocked"); \
+   } \
+   } while(0)
+
 /* ===========================================================================*/
 /**
  * @name RPC_GetHandle()
@@ -166,6 +173,8 @@ RPC_OMX_ERRORTYPE RPC_GetHandle(RPC_OMX_HANDLE hRPCCtx,
 	DOMX_ENTER("");
 	DOMX_DEBUG("RPC_GetHandle: Recieved GetHandle request from %s",
 	    cComponentName);
+
+	RPC_exitOnDucatiFault();
 
 	RPC_UTIL_GetLocalServerName(cComponentName,
 	    &CallingCorercmServerName);
@@ -271,6 +280,8 @@ RPC_OMX_ERRORTYPE RPC_FreeHandle(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FREE_HANDLE].
 	    rpcFxnIdx;
@@ -335,6 +346,8 @@ RPC_OMX_ERRORTYPE RPC_SetParameter(RPC_OMX_HANDLE hRPCCtx,
 
 	OMX_U32 structSize = 0;
 	OMX_U32 offset = 0;
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_SET_PARAMETER].
@@ -408,6 +421,8 @@ RPC_OMX_ERRORTYPE RPC_GetParameter(RPC_OMX_HANDLE hRPCCtx,
 	OMX_U32 offset = 0;
 
 	DOMX_ENTER("");
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_PARAMETER].
@@ -488,6 +503,8 @@ RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_SET_CONFIG].
 	    rpcFxnIdx;
@@ -557,6 +574,8 @@ RPC_OMX_ERRORTYPE RPC_GetConfig(RPC_OMX_HANDLE hRPCCtx,
 	OMX_U32 offset = 0;
 
 	DOMX_ENTER("");
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_CONFIG].
@@ -635,6 +654,8 @@ RPC_OMX_ERRORTYPE RPC_SendCommand(RPC_OMX_HANDLE hRPCCtx,
 	OMX_U32 offset = 0;
 
 	DOMX_ENTER("");
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_SEND_CMD].
@@ -721,6 +742,8 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_ALLOCATE_BUFFER].
 	    rpcFxnIdx;
@@ -802,10 +825,12 @@ RPC_OMX_ERRORTYPE RPC_AllocateBuffer(RPC_OMX_HANDLE hRPCCtx,
 		if (offset != 0)
 		{
 			RPC_GETFIELDCOPYTYPE(pMsgBody, offset,
-			    (OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->
-				pPlatformPrivate), OMX_TI_PLATFORMPRIVATE);
+			    (OMX_TI_PLATFORMPRIVATE
+				*) ((*ppBufferHdr)->pPlatformPrivate),
+			    OMX_TI_PLATFORMPRIVATE);
 			DOMX_DEBUG("Done copying plat pvt., aux buf = 0x%x",
-			    ((OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->
+			    ((OMX_TI_PLATFORMPRIVATE
+				    *) ((*ppBufferHdr)->
 				    pPlatformPrivate))->pAuxBuf1);
 		}
 #endif
@@ -866,6 +891,8 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_USE_BUFFER].
 	    rpcFxnIdx;
@@ -880,8 +907,8 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,
 #ifdef TILER_BUFF
 	DOMX_DEBUG(" Getting aux buf");
 	mappedAddress2 =
-	    (OMX_U32) ((OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->
-		pPlatformPrivate))->pAuxBuf1;
+	    (OMX_U32) ((OMX_TI_PLATFORMPRIVATE
+		*) ((*ppBufferHdr)->pPlatformPrivate))->pAuxBuf1;
 #endif
 
 	DOMX_DEBUG(" DEBUG - MAPPING - pBuffer = %x", pBuffer);
@@ -973,10 +1000,12 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,
 		if (offset != 0)
 		{
 			RPC_GETFIELDCOPYTYPE(pMsgBody, offset,
-			    (OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->
-				pPlatformPrivate), OMX_TI_PLATFORMPRIVATE);
+			    (OMX_TI_PLATFORMPRIVATE
+				*) ((*ppBufferHdr)->pPlatformPrivate),
+			    OMX_TI_PLATFORMPRIVATE);
 			DOMX_DEBUG("Done copying plat pvt., aux buf = 0x%x",
-			    ((OMX_TI_PLATFORMPRIVATE *) ((*ppBufferHdr)->
+			    ((OMX_TI_PLATFORMPRIVATE
+				    *) ((*ppBufferHdr)->
 				    pPlatformPrivate))->pAuxBuf1);
 		}
 #endif
@@ -1006,7 +1035,7 @@ RPC_OMX_ERRORTYPE RPC_UseBuffer(RPC_OMX_HANDLE hRPCCtx,
  */
 /* ===========================================================================*/
 RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,
-    OMX_IN OMX_U32 nPortIndex, OMX_IN OMX_U32 BufHdrRemote,
+    OMX_IN OMX_U32 nPortIndex, OMX_IN OMX_U32 BufHdrRemote, OMX_U32 pBuffer,
     OMX_ERRORTYPE * eCompReturn)
 {
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
@@ -1023,6 +1052,8 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FREE_BUFFER].
 	    rpcFxnIdx;
@@ -1037,6 +1068,9 @@ RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, nPortIndex, OMX_U32);
 
 	RPC_SETFIELDVALUE(pMsgBody, nPos, BufHdrRemote, OMX_U32);
+	/* Buffer is being sent separately only to catch NULL buffer errors
+	   in PA mode */
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBuffer, OMX_U32);
 
 	pPacket->poolId = hCtx->nPoolId;
 	pPacket->jobId = hCtx->nJobId;
@@ -1088,6 +1122,8 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_EMPTYTHISBUFFER].
 	    rpcFxnIdx;
@@ -1109,8 +1145,8 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	if (pBufferHdr->pPlatformPrivate != NULL)
 	{
 		pAuxBuf1 =
-		    ((OMX_TI_PLATFORMPRIVATE *) (pBufferHdr->
-			pPlatformPrivate))->pAuxBuf1;
+		    ((OMX_TI_PLATFORMPRIVATE
+			*) (pBufferHdr->pPlatformPrivate))->pAuxBuf1;
 	}
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pAuxBuf1, OMX_U8 *);
 
@@ -1183,6 +1219,8 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 
 	DOMX_ENTER("");
 
+	RPC_exitOnDucatiFault();
+
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_FILLTHISBUFFER].
 	    rpcFxnIdx;
@@ -1204,8 +1242,8 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	if (pBufferHdr->pPlatformPrivate != NULL)
 	{
 		pAuxBuf1 =
-		    ((OMX_TI_PLATFORMPRIVATE *) (pBufferHdr->
-			pPlatformPrivate))->pAuxBuf1;
+		    ((OMX_TI_PLATFORMPRIVATE
+			*) (pBufferHdr->pPlatformPrivate))->pAuxBuf1;
 	}
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pAuxBuf1, OMX_U8 *);
 
@@ -1270,6 +1308,8 @@ RPC_OMX_ERRORTYPE RPC_GetState(RPC_OMX_HANDLE hRPCCtx, OMX_STATETYPE * pState,
 	OMX_U32 offset = 0;
 
 	DOMX_ENTER("");
+
+	RPC_exitOnDucatiFault();
 
 	*pState = OMX_StateInvalid;
 
@@ -1340,6 +1380,8 @@ RPC_OMX_ERRORTYPE RPC_GetComponentVersion(RPC_OMX_HANDLE hRPCCtx,
 	RPC_OMX_HANDLE hComp = hCtx->remoteHandle;
 
 	DOMX_ENTER("");
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_VERSION].
@@ -1427,6 +1469,8 @@ RPC_OMX_ERRORTYPE RPC_GetExtensionIndex(RPC_OMX_HANDLE hRPCCtx,
 
 	OMX_S16 status;
 	RPC_INDEX fxnIdx;
+
+	RPC_exitOnDucatiFault();
 
 	fxnIdx =
 	    rpcHndl[TARGET_CORE_ID].rpcFxns[RPC_OMX_FXN_IDX_GET_EXT_INDEX].

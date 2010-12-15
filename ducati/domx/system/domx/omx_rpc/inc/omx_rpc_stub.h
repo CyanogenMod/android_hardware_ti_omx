@@ -93,7 +93,7 @@ extern "C"
 
 	RPC_OMX_ERRORTYPE RPC_FreeBuffer(RPC_OMX_HANDLE hRPCCtx,
 	    OMX_IN OMX_U32 nPortIndex, OMX_IN OMX_U32 BufHdrRemote,
-	    OMX_ERRORTYPE * nCmdStatus);
+	    OMX_U32 pBuffer, OMX_ERRORTYPE * nCmdStatus);
 
 	RPC_OMX_ERRORTYPE RPC_SetConfig(RPC_OMX_HANDLE hRPCCtx,
 	    OMX_INDEXTYPE nConfigIndex, OMX_PTR pCompConfig,

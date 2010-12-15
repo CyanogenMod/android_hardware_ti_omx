@@ -58,6 +58,7 @@
 #include <string.h>
 
 #include "timm_osal_memory.h"
+#include "timm_osal_mutex.h"
 #include "OMX_TI_Common.h"
 #include "OMX_TI_Index.h"
 #include "OMX_TI_Core.h"
@@ -104,6 +105,11 @@ static OMX_ERRORTYPE _RPC_IsProxyComponent(OMX_HANDLETYPE hComponent,
 
 extern COREID TARGET_CORE_ID;
 extern char Core_Array[MAX_PROC][MAX_CORENAME_LENGTH];
+
+
+extern OMX_S32 currentNumOfComps;
+extern OMX_HANDLETYPE componentTable[];
+extern OMX_PTR pFaultMutex;
 
 /* ===========================================================================*/
 /**
@@ -240,6 +246,11 @@ static OMX_ERRORTYPE PROXY_EmptyBufferDone(OMX_HANDLETYPE hComponent,
 			pBufHdr->pBuffer =
 			    (OMX_U8 *) pCompPrv->
 			    tBufList[count].pBufferActual;
+			/* Setting mark info to NULL. This would always be
+			   NULL in EBD, whether component has propagated the
+			   mark or has generated mark event */
+			pBufHdr->hMarkTargetComponent = NULL;
+			pBufHdr->pMarkData = NULL;
 			break;
 		}
 	}
@@ -1047,6 +1058,16 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	OMX_U32 count = 0;
 	OMX_ERRORTYPE eError = OMX_ErrorNone, eTmpError = OMX_ErrorNone;
 	OMX_S32 nReturn = 0;
+	OMX_U32 pBuffer = 0;
+
+	if (TIMM_OSAL_ERR_NONE !=
+	    TIMM_OSAL_MutexObtain(pFaultMutex, TIMM_OSAL_SUSPEND))
+	{
+		DOMX_ERROR("Error obtaining the ducati fault mutex");
+		DOMX_ERROR
+		    ("Continuing clean up despite failing to acquire ducati fault mutex");
+		eError = OMX_ErrorUndefined;
+	}
 
 	PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
 	PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter,
@@ -1073,6 +1094,15 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	/*Not having asserts from this point since even if error occurs during
 	   unmapping/freeing, still trying to clean up as much as possible */
 
+	/* Will be sending the buffer pointer to Ducati as well. This is to
+	   catch errors in case NULL buffer is sent in PA mode */
+	if (pBufferHdr->pBuffer == NULL)
+	{
+		pBuffer = 0;
+	} else
+	{
+		pBuffer = pCompPrv->tBufList[count].pBufferMapped;
+	}
 	/*Unmap metadata buffer on Chiron if was mapped earlier */
 	eTmpError = RPC_UnMapMetaData_Host(pBufferHdr);
 	if (eTmpError != OMX_ErrorNone)
@@ -1083,7 +1113,8 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 
 	eRPCError =
 	    RPC_FreeBuffer(pCompPrv->hRemoteComp, nPortIndex,
-	    pCompPrv->tBufList[count].pBufHeaderRemote, &eCompReturn);
+	    pCompPrv->tBufList[count].pBufHeaderRemote, pBuffer,
+	    &eCompReturn);
 	if (eRPCError == RPC_OMX_ErrorNone)
 	{
 		DOMX_DEBUG("RPC Free Buffer Successful");
@@ -1151,6 +1182,7 @@ The UV is not, may be consider adding this to the table
 */
 
       EXIT:
+	TIMM_OSAL_MutexRelease(pFaultMutex);
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
 }
@@ -1265,7 +1297,7 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN OMX_HANDLETYPE hComponent,
  *
  */
 /* ===========================================================================*/
-static OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE hComponent,
     OMX_INDEXTYPE nConfigIndex, OMX_PTR pConfigStruct)
 {
 
@@ -1315,7 +1347,7 @@ static OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE hComponent,
  *
  */
 /* ===========================================================================*/
-static OMX_ERRORTYPE PROXY_SetConfig(OMX_IN OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE PROXY_SetConfig(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_IN OMX_INDEXTYPE nConfigIndex, OMX_IN OMX_PTR pConfigStruct)
 {
 
@@ -1755,6 +1787,35 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
+	OMX_U32 i;
+
+	if (TIMM_OSAL_ERR_NONE !=
+	    TIMM_OSAL_MutexObtain(pFaultMutex, TIMM_OSAL_SUSPEND))
+	{
+		DOMX_ERROR("Error obtaining the ducati fault mutex");
+		DOMX_ERROR
+		    ("Continuing clean up despite failing to acquire ducati fault mutex");
+		eError = OMX_ErrorUndefined;
+	}
+
+	for (i = 0; i < MAX_NUM_COMPS_PER_PROCESS; i++)
+	{
+		if (componentTable[i] == hComponent)
+		{
+			componentTable[i] = 0;
+			currentNumOfComps -= 1;
+			if (currentNumOfComps < 0)
+			{
+				DOMX_ERROR
+				    ("Number of components created by a process cannot be less than zero");
+			}
+			break;
+		}
+	}
+	if (i == MAX_NUM_COMPS_PER_PROCESS)
+	{
+		goto EXIT;	/* This component has already been cleaned up */
+	}
 
 	PROXY_assert((hComp->pComponentPrivate != NULL),
 	    OMX_ErrorBadParameter, NULL);
@@ -1793,6 +1854,7 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	}
 
       EXIT:
+	TIMM_OSAL_MutexRelease(pFaultMutex);
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
 }
@@ -1823,6 +1885,29 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
 
 	PROXY_assert((hComp->pComponentPrivate != NULL),
 	    OMX_ErrorBadParameter, NULL);
+
+	PROXY_assert((currentNumOfComps < MAX_NUM_COMPS_PER_PROCESS),
+	    OMX_ErrorBadParameter,
+	    "Maximum number of components that can be created per process reached");
+
+	if (TIMM_OSAL_ERR_NONE !=
+	    TIMM_OSAL_MutexObtain(pFaultMutex, TIMM_OSAL_SUSPEND))
+	{
+		PROXY_assert(0, OMX_ErrorUndefined,
+		    "Error obtaining the ducati component table mutex");
+	}
+
+	for (i = 0; i < MAX_NUM_COMPS_PER_PROCESS; i++)
+	{
+		if (componentTable[i] == 0)
+		{
+			componentTable[i] = hComponent;
+			currentNumOfComps++;
+			break;
+		}
+	}
+
+	TIMM_OSAL_MutexRelease(pFaultMutex);
 
 	pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
 

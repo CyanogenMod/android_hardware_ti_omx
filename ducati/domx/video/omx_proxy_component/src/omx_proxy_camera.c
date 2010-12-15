@@ -111,6 +111,8 @@ OMX_ERRORTYPE DCC_Init(OMX_HANDLETYPE);
 OMX_ERRORTYPE send_DCCBufPtr(OMX_HANDLETYPE hComponent);
 void DCC_DeInit();
 OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE);
+OMX_ERRORTYPE PROXY_SetConfig(OMX_HANDLETYPE, OMX_INDEXTYPE, OMX_PTR);
+OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE, OMX_INDEXTYPE, OMX_PTR);
 
 static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 {
@@ -139,6 +141,137 @@ static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 
 	eError = PROXY_ComponentDeInit(hComponent);
 
+      EXIT:
+	return eError;
+}
+
+/* ===========================================================================*/
+/**
+ * @name CameraGetConfig()
+ * @brief For some specific indices, buffer allocated on A9 side
+ *        needs to be mapped and sent to Ducati.
+ * @param
+ * @return OMX_ErrorNone = Successful
+ */
+/* ===========================================================================*/
+
+static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
+    hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
+    OMX_INOUT OMX_PTR pComponentParameterStructure)
+{
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
+	unsigned int pDucMappedBuf;
+	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
+	ProcMgr_MapType mapType;
+	SyslinkMemUtils_MpuAddrToMap MpuAddr_list_1D = { 0 };
+	OMX_S32 status = 0;
+	OMX_PTR pTempSharedBuff = NULL;
+
+	switch (nParamIndex)
+	{
+	case OMX_TI_IndexConfigExifTags:
+	case OMX_TI_IndexConfigCamCapabilities:
+		pConfigSharedBuffer =
+		    (OMX_TI_CONFIG_SHAREDBUFFER *)
+		    pComponentParameterStructure;
+
+		pTempSharedBuff = pConfigSharedBuffer->pSharedBuff;
+
+		mapType = ProcMgr_MapType_Tiler;
+		MpuAddr_list_1D.mpuAddr =
+		    ((OMX_U32) pConfigSharedBuffer->pSharedBuff);
+		MpuAddr_list_1D.size = pConfigSharedBuffer->nSharedBuffSize;
+		status = SysLinkMemUtils_map(&MpuAddr_list_1D, 1,
+		    &pDucMappedBuf, mapType, PROC_APPM3);
+
+		PROXY_assert(status >= 0, OMX_ErrorInsufficientResources,
+		    "Syslink map failed");
+		pConfigSharedBuffer->pSharedBuff = (OMX_PTR) pDucMappedBuf;
+
+		eError =
+		    PROXY_GetConfig(hComponent, nParamIndex,
+		    pConfigSharedBuffer);
+
+		if (pDucMappedBuf)
+			SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
+
+		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
+		return eError;
+		break;
+
+	default:
+		break;
+	}
+
+
+	return PROXY_GetConfig(hComponent, nParamIndex,
+	    pComponentParameterStructure);
+      EXIT:
+	return eError;
+}
+
+/* ===========================================================================*/
+/**
+ * @name CameraSetConfig()
+ * @brief For some specific indices, buffer allocated on A9 side needs to
+ *        be mapped and sent to Ducati.
+ * @param
+ * @return OMX_ErrorNone = Successful
+ */
+/* ===========================================================================*/
+
+
+static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
+    hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
+    OMX_INOUT OMX_PTR pComponentParameterStructure)
+{
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
+	unsigned int pDucMappedBuf;
+	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
+	ProcMgr_MapType mapType;
+	SyslinkMemUtils_MpuAddrToMap MpuAddr_list_1D = { 0 };
+	OMX_S32 status = 0;
+	OMX_PTR pTempSharedBuff = NULL;
+
+	switch (nParamIndex)
+	{
+	case OMX_TI_IndexConfigExifTags:
+	case OMX_TI_IndexConfigCamCapabilities:
+		pConfigSharedBuffer =
+		    (OMX_TI_CONFIG_SHAREDBUFFER *)
+		    pComponentParameterStructure;
+
+		pTempSharedBuff = pConfigSharedBuffer->pSharedBuff;
+
+		mapType = ProcMgr_MapType_Tiler;
+		MpuAddr_list_1D.mpuAddr =
+		    ((OMX_U32) pConfigSharedBuffer->pSharedBuff);
+		MpuAddr_list_1D.size = pConfigSharedBuffer->nSharedBuffSize;
+		status = SysLinkMemUtils_map(&MpuAddr_list_1D, 1,
+		    &pDucMappedBuf, mapType, PROC_APPM3);
+
+		PROXY_assert(status >= 0, OMX_ErrorInsufficientResources,
+		    "Syslink map failed");
+		pConfigSharedBuffer->pSharedBuff = (OMX_PTR) pDucMappedBuf;
+
+		eError =
+		    PROXY_SetConfig(hComponent, nParamIndex,
+		    pConfigSharedBuffer);
+
+		if (pDucMappedBuf)
+			SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
+
+		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
+		return eError;
+		break;
+
+	default:
+		break;
+	}
+
+
+	return PROXY_SetConfig(hComponent, nParamIndex,
+	    pComponentParameterStructure);
       EXIT:
 	return eError;
 }
@@ -183,7 +316,8 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 	}
 
 	pHandle->ComponentDeInit = ComponentPrivateDeInit;
-
+	pHandle->GetConfig = CameraGetConfig;
+	pHandle->SetConfig = CameraSetConfig;
 	char *val = getenv("SET_DCC");
 	dcc_flag = val ? strtol(val, NULL, 0) : DEFAULT_DCC;
 	DOMX_DEBUG(" DCC: 0 - disabled 1 - enabled : val: %d", dcc_flag);

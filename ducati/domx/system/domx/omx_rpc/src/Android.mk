@@ -15,7 +15,6 @@ LOCAL_SRC_FILES:= \
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../ \
 	$(LOCAL_PATH)/../../omx_rpc/inc \
-	$(LOCAL_PATH)/../../memmgr_rpc/inc \
 	$(LOCAL_PATH)/../../../domx \
 	hardware/ti/omx/ducati/domx/system/omx_core/inc \
 	hardware/ti/omx/ducati/domx/system/mm_osal/inc \
@@ -40,7 +39,6 @@ LOCAL_SHARED_LIBRARIES += \
 		liblog \
 		libmemmgr \
 		libd2cmap \
-		libmemmgr_rpc
 
 LOCAL_MODULE:= libomx_rpc
 
