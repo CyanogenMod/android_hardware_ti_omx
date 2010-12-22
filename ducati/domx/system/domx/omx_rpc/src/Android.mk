@@ -41,5 +41,6 @@ LOCAL_SHARED_LIBRARIES += \
 		libd2cmap \
 
 LOCAL_MODULE:= libomx_rpc
+LOCAL_MODULE_TAGS:= optional
 
 include $(BUILD_SHARED_LIBRARY)

@@ -3,11 +3,14 @@ ifeq ($(TARGET_BOARD_PLATFORM),omap4)
 LOCAL_PATH := $(call my-dir)
 TI_OMX_TOP := $(LOCAL_PATH)
 
+#build these only for froyo
+ifneq ($(filter 2.2%,$(PLATFORM_VERSION)),)
 #call to plugin
 include $(TI_OMX_TOP)/core_plugin/Android.mk
 
 #call to ti_omx_config_parser
 include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
+endif
 
 #call to ducati domx
 include $(TI_OMX_TOP)/ducati/Android.mk
