@@ -1,4 +1,4 @@
-ifdef HARDWARE_OMX
+ifeq ($(HARDWARE_OMX),true)
 ifeq ($(TARGET_BOARD_PLATFORM),omap4)
 LOCAL_PATH := $(call my-dir)
 TI_OMX_TOP := $(LOCAL_PATH)
@@ -40,22 +40,22 @@ TI_OMX_AUDIO := $(TI_OMX_TOP)/audio/src/openmax_il
 TI_OMX_IMAGE := $(TI_OMX_TOP)/image/src/openmax_il
 
 TI_OMX_INCLUDES := \
-	$(TI_OMX_SYSTEM)/omx_core/inc
+        $(TI_OMX_SYSTEM)/omx_core/inc
 
 TI_OMX_COMP_SHARED_LIBRARIES := \
-	libdl \
-	libcutils \
-	liblog	
+        libdl \
+        libcutils \
+        liblog
 
 ifeq ($(PERF_INSTRUMENTATION),1)
 TI_OMX_COMP_SHARED_LIBRARIES += \
-	libPERF
+        libPERF
 endif
 
 ifeq ($(RESOURCE_MANAGER_ENABLED),1)
 TI_OMX_CFLAGS += -DRESOURCE_MANAGER_ENABLED
 TI_OMX_COMP_SHARED_LIBRARIES += \
-	libOMX_ResourceManagerProxy 
+        libOMX_ResourceManagerProxy
 endif
 
 ifeq ($(PERF_INSTRUMENTATION),1)
@@ -72,14 +72,14 @@ endif
 
 
 TI_OMX_COMP_C_INCLUDES := \
-	$(TI_OMX_INCLUDES) \
-	$(TI_BRIDGE_TOP)/api/inc \
-	$(TI_OMX_SYSTEM)/lcml/inc \
-	$(TI_OMX_SYSTEM)/common/inc \
-	$(TI_OMX_SYSTEM)/perf/inc \
-	$(TI_OMX_SYSTEM)/resource_manager/inc \
- 	$(TI_OMX_SYSTEM)/resource_manager_proxy/inc \
-	$(TI_OMX_SYSTEM)/omx_policy_manager/inc \
+        $(TI_OMX_INCLUDES) \
+        $(TI_BRIDGE_TOP)/api/inc \
+        $(TI_OMX_SYSTEM)/lcml/inc \
+        $(TI_OMX_SYSTEM)/common/inc \
+        $(TI_OMX_SYSTEM)/perf/inc \
+        $(TI_OMX_SYSTEM)/resource_manager/inc \
+        $(TI_OMX_SYSTEM)/resource_manager_proxy/inc \
+        $(TI_OMX_SYSTEM)/omx_policy_manager/inc
 
 ifeq ($(PERF_INSTRUMENTATION),1)
 include $(TI_OMX_SYSTEM)/perf/Android.mk
@@ -157,4 +157,3 @@ include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
 
 endif
 endif
-
