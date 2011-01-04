@@ -2157,6 +2157,7 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                break;
             }
             else if (pComponentPrivate->eState == OMX_StateExecuting || pComponentPrivate->eState == OMX_StatePause) {
+                OMX_VidDec_Return (pComponentPrivate, OMX_ALL, OMX_FALSE);
                 /*Set the bIsStopping bit*/
                 if (pComponentPrivate->bDynamicConfigurationInProgress == OMX_TRUE) {
                     pComponentPrivate->bDynamicConfigurationInProgress = OMX_FALSE;
@@ -2167,7 +2168,6 @@ OMX_ERRORTYPE VIDDEC_HandleCommand (OMX_HANDLETYPE phandle, OMX_U32 nParam1)
                 pComponentPrivate->bIsStopping = 1;
                 OMX_PRSTATE1(pComponentPrivate->dbg, "bIsStopping 0x%lx\n",pComponentPrivate->bIsStopping);
                 OMX_PRSTATE1(pComponentPrivate->dbg, "eExecuteToIdle 0x%x\n",pComponentPrivate->eExecuteToIdle);
-                OMX_VidDec_Return (pComponentPrivate, OMX_ALL, OMX_FALSE);
 
 #ifdef __PERF_INSTRUMENTATION__
                 PERF_Boundary(pComponentPrivate->pPERFcomp,
@@ -5316,6 +5316,11 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromApp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                     eError = OMX_ErrorHardware;
                     goto EXIT;
                 }
+            }
+            else if(((pComponentPrivate->eLCMLState == VidDec_LCML_State_Unload)||(pComponentPrivate->eLCMLState == VidDec_LCML_State_Destroy)) && (pComponentPrivate->bDynamicConfigurationInProgress)){
+                OMX_PRBUFFER2(pComponentPrivate->dbg, "Sending buffer back to client pBuffer=%p\n", pBuffHead->pBuffer);
+                VIDDEC_EmptyBufferDone(pComponentPrivate, pBuffHead);
+                goto EXIT;
             }
             else {
                 eError = OMX_ErrorHardware;
