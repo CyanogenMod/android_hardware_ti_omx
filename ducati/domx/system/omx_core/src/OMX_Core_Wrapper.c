@@ -54,6 +54,7 @@ extern OMX_BOOL TIOMXConfigParser(OMX_PTR aInputParameters,
 
 
 #ifdef _Android
+#ifdef _FROYO
 OMX_BOOL TIOMXConfigParserRedirect(OMX_PTR aInputParameters,
     OMX_PTR aOutputParameters)
 {
@@ -65,7 +66,7 @@ OMX_BOOL TIOMXConfigParserRedirect(OMX_PTR aInputParameters,
 	LOGD("OMXConfigParserRedirect -\n");
 	return Status;
 }
-
+#endif
 OMX_ERRORTYPE TIComponentTable_EventHandler(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_IN OMX_PTR pAppData,
     OMX_IN OMX_EVENTTYPE eEvent,
