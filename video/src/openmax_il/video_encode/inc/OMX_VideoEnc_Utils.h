@@ -491,6 +491,9 @@ typedef enum VIDENC_CUSTOM_INDEX
     VideoEncodeCustomParamIndexNALFormat,
     VideoEncodeCustomParamIndexMaxMBsPerSlice,
     VideoEncodeCustomParamIndexMaxBytesPerSlice,
+    VideoEncodeCustomParamIndexSliceRefreshRowNumber,
+    VideoEncodeCustomParamIndexSliceRefreshRowStartNumber,
+    VideoEncodeCustomParamIndexIntraRefreshMethod,
     /* debug config */
     VideoEncodeCustomConfigIndexDebug
 } VIDENC_CUSTOM_INDEX;
@@ -619,6 +622,7 @@ typedef struct VIDENC_COMPONENT_PRIVATE
     OMX_HANDLETYPE hMarkTargetComponent;
     OMX_U32 nFlags;
     OMX_U32 nCounter;
+    OMX_U32 intraRefreshMethod;
     /* these are duplicates */
     unsigned int nIntraFrameInterval;  /* should be OMX_VIDEO_CONFIG_AVCINTRAPERIOD */
     unsigned int nQPI;              /* same as OMX_VIDEO_PARAM_QUANTIZATIONTYPE */
@@ -665,6 +669,8 @@ typedef struct VIDENC_COMPONENT_PRIVATE
 /*h264 specific*/
     OMX_U32 maxMBsPerSlice;
     OMX_U32 maxBytesPerSlice;
+    OMX_U32 sliceRefreshRowNumber;
+    OMX_U32 sliceRefreshRowStartNumber;
 
 #ifndef UNDER_CE
     pthread_mutex_t videoe_mutex;   /* pthread_cond_t  control_cond; */

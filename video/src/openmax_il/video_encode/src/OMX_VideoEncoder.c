@@ -378,6 +378,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
     pComponentPrivate->nIntraFrameInterval  = 15;
     pComponentPrivate->nQPI                 = 12;
     pComponentPrivate->nAIRRate             = 0;
+    pComponentPrivate->intraRefreshMethod   = IH264_INTRAREFRESH_NONE;
     pComponentPrivate->ucUnrestrictedMV     = 1;
     pComponentPrivate->nQpMax               = 31;
     pComponentPrivate->nQpMin               = 2;
@@ -412,6 +413,8 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComponent)
 
     pComponentPrivate->maxMBsPerSlice  = 0;
     pComponentPrivate->maxBytesPerSlice  = 0;
+    pComponentPrivate->sliceRefreshRowNumber = 0;
+    pComponentPrivate->sliceRefreshRowStartNumber = 0;
 
     /*Assigning address of Component Structure point to place holder inside
        component private structure
@@ -2283,6 +2286,9 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomConfigIndexAIRRate:
             (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->nAIRRate;
             break;
+        case VideoEncodeCustomParamIndexIntraRefreshMethod:
+            (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->intraRefreshMethod;
+            break;
         /*ASO/FMO*/
         case VideoEncodeCustomConfigIndexNumSliceASO:
             (*((OMX_U32*)ComponentConfigStructure)) = (OMX_U32)pComponentPrivate->numSliceASO;
@@ -2315,6 +2321,14 @@ static OMX_ERRORTYPE GetConfig (OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomParamIndexMaxBytesPerSlice:
             (*((OMX_U32*)ComponentConfigStructure)) =
             pComponentPrivate->maxBytesPerSlice;
+            break;
+        case VideoEncodeCustomParamIndexSliceRefreshRowNumber:
+            (*((OMX_U32*)ComponentConfigStructure)) =
+            pComponentPrivate->sliceRefreshRowNumber;
+            break;
+        case VideoEncodeCustomParamIndexSliceRefreshRowStartNumber:
+            (*((OMX_U32*)ComponentConfigStructure)) =
+            pComponentPrivate->sliceRefreshRowStartNumber;
             break;
 
 #ifdef __KHRONOS_CONF_1_1__
@@ -2517,6 +2531,9 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
         case VideoEncodeCustomConfigIndexAIRRate:
             pComponentPrivate->nAIRRate = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
             break;
+        case VideoEncodeCustomParamIndexIntraRefreshMethod:
+            pComponentPrivate->intraRefreshMethod = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            break;
         /*ASO/FMO*/
         case VideoEncodeCustomConfigIndexNumSliceASO:
             pComponentPrivate->numSliceASO = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
@@ -2553,6 +2570,12 @@ static OMX_ERRORTYPE SetConfig (OMX_HANDLETYPE hComponent,
             break;
         case VideoEncodeCustomParamIndexMaxBytesPerSlice:
             pComponentPrivate->maxBytesPerSlice = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            break;
+        case VideoEncodeCustomParamIndexSliceRefreshRowNumber:
+            pComponentPrivate->sliceRefreshRowNumber = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
+            break;
+        case VideoEncodeCustomParamIndexSliceRefreshRowStartNumber:
+            pComponentPrivate->sliceRefreshRowStartNumber = (OMX_U32)(*((OMX_U32*)ComponentConfigStructure));
             break;
         case OMX_IndexConfigVideoFramerate:
         {
@@ -2687,6 +2710,7 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
         {"OMX.TI.VideoEncode.Config.IntraFrameInterval", VideoEncodeCustomConfigIndexIntraFrameInterval},
         {"OMX.TI.VideoEncode.Config.QPI", VideoEncodeCustomConfigIndexQPI},
         {"OMX.TI.VideoEncode.Config.AIRRate", VideoEncodeCustomConfigIndexAIRRate},
+        {"OMX.TI.VideoEncode.Config.IntraRefreshMethod", VideoEncodeCustomParamIndexIntraRefreshMethod},
         {"OMX.TI.VideoEncode.Config.UnrestrictedMV", VideoEncodeCustomConfigIndexUnrestrictedMV},
 
         /*Segment mode Metadata*/
@@ -2711,6 +2735,8 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
         {"OMX.TI.VideoEncode.Config.NALFormat", VideoEncodeCustomParamIndexNALFormat},
         {"OMX.TI.VideoEncode.Config.MaxMBsPerSlice", VideoEncodeCustomParamIndexMaxMBsPerSlice},
         {"OMX.TI.VideoEncode.Config.MaxBytesPerSlice", VideoEncodeCustomParamIndexMaxBytesPerSlice},
+        {"OMX.TI.VideoEncode.Config.SliceRefreshRowNumber", VideoEncodeCustomParamIndexSliceRefreshRowNumber},
+        {"OMX.TI.VideoEncode.Config.SliceRefreshRowStartNumber", VideoEncodeCustomParamIndexSliceRefreshRowStartNumber},
         {"OMX.TI.VideoEncode.Debug", VideoEncodeCustomConfigIndexDebug}
     };
     OMX_ERRORTYPE eError = OMX_ErrorNone;

@@ -2488,9 +2488,9 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_H264_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentP
     /*< Maximum number of bytes in a slice */
     pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.maxBytesPerSlice = pComponentPrivate->maxBytesPerSlice;
     /*< Row number from which slice needs to be intra coded*/
-    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowStartNumber = 0;
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowStartNumber = pComponentPrivate->sliceRefreshRowNumber;
     /*< Number of rows to be coded as intra slice*/
-    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowNumber = 0;
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.sliceRefreshRowNumber = pComponentPrivate->sliceRefreshRowStartNumber;
     /*< alpha offset for loop filter [-12, 12] even number*/
     pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.filterOffsetA = 0;
     /*< beta offset for loop filter [-12, 12] even number*/
@@ -2521,7 +2521,7 @@ OMX_ERRORTYPE OMX_VIDENC_Queue_H264_Buffer(VIDENC_COMPONENT_PRIVATE* pComponentP
        pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.streamFormat = IH264_NALU_STREAM;
     }
     /*< Mechanism to do intra Refresh, see IH264VENC_IntraRefreshMethods for valid values*/
-    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.intraRefreshMethod = IH264_INTRAREFRESH_NONE;
+    pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.intraRefreshMethod = pComponentPrivate->intraRefreshMethod;
     /* Enable Perceptual Quantization a.k.a. Perceptual Rate Control*/
     pUalgInpParams->H264VENC_TI_DYNAMICPARAMS.perceptualQuant = 0;
     /* Enable Scene Change Detection*/
