@@ -1764,6 +1764,7 @@ typedef struct OMX_TI_PARAM_DCCURIINFO {
 typedef struct OMX_TI_PARAM_DCCURIBUFFER {
     OMX_U32 nSize;
     OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
     OMX_U32 nDCCURIBuffSize;
     OMX_U8 *pDCCURIBuff;
 } OMX_TI_PARAM_DCCURIBUFFER;
