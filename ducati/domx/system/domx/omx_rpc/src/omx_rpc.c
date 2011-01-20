@@ -1097,10 +1097,22 @@ static void *RPC_DucatiFaultHandler(void *data)
 {
 	OMX_U32 status = 0;
 	OMX_U32 count;
+
+	/* The fault handler does not wait for PROC_START event.
+	   The events array values are used to index into the
+	   events_name array. The values are PROC_MMU_FAULT=0,
+	   PROC_ERROR=1, PROC_STOP=2, and PROC_WATCHDOG=4.
+	   Thus the events_name array contains "PROC_START" as
+	   a place holder. Otherwise indexing into events_name
+	   using values of events will print incorrect event
+	   received. */
 	char *events_name[] =
-	    { "MMUFault", "PROC_ERROR", "PROC_STOP", "PROC_START" };
+	    { "MMUFault", "PROC_ERROR", "PROC_STOP", "PROC_START",
+		"PROC_WATCHDOG"
+	};
 	ProcMgr_EventType events[] =
-	    { PROC_MMU_FAULT, PROC_ERROR, PROC_STOP };
+	    { PROC_MMU_FAULT, PROC_ERROR, PROC_STOP, PROC_WATCHDOG };
+
 	UInt i;
 	RPC_OMX_ERRORTYPE tRPCError = RPC_OMX_ErrorNone;
 	OMX_COMPONENTTYPE *pHandle = NULL;
@@ -1110,7 +1122,7 @@ static void *RPC_DucatiFaultHandler(void *data)
 	DOMX_DEBUG("Waiting fatal erros from AppM3\n");
 
 	status = ProcMgr_waitForMultipleEvents(1,	/* AppM3 ID */
-	    events, 2, -1, &i);
+	    events, 4, -1, &i);
 
 	if (status != PROCMGR_SUCCESS)
 	{
