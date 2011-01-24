@@ -2400,25 +2400,6 @@ typedef struct OMX_TI_PARAM_AUTOCONVERGENCETYPE {
 	OMX_BOOL bAutoConvergence;
 } OMX_TI_PARAM_AUTOCONVERGENCETYPE;
 
-/*
-* STRUCT MEMBERS:
-* nSize             : Size of the structure in bytes
-* nVersion          : OMX specification version information
-* nPortIndex        : Port that this structure applies to
-* pAAAskipBuff      : Pointer to a buffer
-* AAAskipBuffId     : Id of the send buffer
-* AAAskipBuffSize   : Size of the sent buffer
-*/
-typedef struct OMX_TI_CONFIG_AAASKIPBUFFERTYPE {
-	OMX_U32 nSize;
-	OMX_VERSIONTYPE nVersion;
-	OMX_U32 nPortIndex;
-	OMX_PTR pAAAskipBuff;
-	OMX_U32 AAAskipBuffId;
-	OMX_U32 AAAskipBuffSize;
-} OMX_TI_CONFIG_AAASKIPBUFFERTYPE;
-
-
 /**
  * The OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE enumeration is used to define the
  * brightness and contrast mode types.

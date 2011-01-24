@@ -209,7 +209,7 @@ typedef enum OMX_TI_INDEXTYPE {
     OMX_TI_IndexConfigFacePriority3a,           /**< reference: OMX_TI_CONFIG_3A_FACE_PRIORITY */
     OMX_TI_IndexConfigRegionPriority3a,         /**< reference: OMX_TI_CONFIG_3A_REGION_PRIORITY */
     OMX_TI_IndexParamAutoConvergence,           /**< reference: OMX_TI_PARAM_AUTOCONVERGENCETYPE */
-    OMX_TI_IndexConfigAAAskipBuffer,            /**< reference: OMX_TI_CONFIG_AAASKIPBUFFERTYPE */
+    OMX_TI_IndexConfigAAAskipBuffer,            /**< reference: OMX_TI_CONFIG_SHAREDBUFFER */
     OMX_TI_IndexParamStereoFrmLayout,           /**< reference: OMX_TI_FRAMELAYOUTTYPE */
     OMX_TI_IndexConfigLocalBrightnessContrastEnhance, /**< reference: OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE */
     OMX_TI_IndexConfigGlobalBrightnessContrastEnhance, /**< reference: OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE */

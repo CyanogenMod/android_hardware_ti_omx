@@ -232,6 +232,7 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 	{
 	case OMX_TI_IndexConfigExifTags:
 	case OMX_TI_IndexConfigCamCapabilities:
+	case OMX_TI_IndexConfigAAAskipBuffer:
 		pConfigSharedBuffer =
 		    (OMX_TI_CONFIG_SHAREDBUFFER *)
 		    pComponentParameterStructure;
@@ -314,6 +315,7 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 	{
 	case OMX_TI_IndexConfigExifTags:
 	case OMX_TI_IndexConfigCamCapabilities:
+	case OMX_TI_IndexConfigAAAskipBuffer:
 		pConfigSharedBuffer =
 		    (OMX_TI_CONFIG_SHAREDBUFFER *)
 		    pComponentParameterStructure;
