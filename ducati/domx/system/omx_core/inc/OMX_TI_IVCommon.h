@@ -2446,6 +2446,24 @@ typedef struct OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE {
 	OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE eControl;
 } OMX_TI_CONFIG_LOCAL_AND_GLOBAL_BRIGHTNESSCONTRASTTYPE;
 
+/**
+ * Uncompressed image operating mode configuration structure.
+ *
+ * @param nSize         Size of the structure in bytes.
+ * @param nVersion      OMX specification version information.
+ * @param xMin          The minimum frame rate allowed.
+ *                      Units are Q16 frames per second.
+ * @param xMax          The maximum frame rate allowed.
+ *                      Units are Q16 frames per second.
+ */
+
+typedef struct OMX_TI_CONFIG_VARFRMRANGETYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 xMin;
+    OMX_U32 xMax;
+} OMX_TI_CONFIG_VARFRMRANGETYPE;
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

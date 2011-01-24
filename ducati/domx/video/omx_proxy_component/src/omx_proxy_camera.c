@@ -114,13 +114,9 @@ void DCC_DeInit();
 OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE);
 OMX_ERRORTYPE PROXY_SetConfig(OMX_HANDLETYPE, OMX_INDEXTYPE, OMX_PTR);
 OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE, OMX_INDEXTYPE, OMX_PTR);
-OMX_ERRORTYPE CameraMaptoTilerDuc(OMX_TI_CONFIG_SHAREDBUFFER *);
+OMX_ERRORTYPE CameraMaptoTilerDuc(OMX_TI_CONFIG_SHAREDBUFFER *,
+    unsigned int *, OMX_PTR *);
 COREID TARGET_CORE_ID = CORE_APPM3;
-
-
-/* Stores the Ducati Mapped addr for the user space allocated buffers for CameraCap/Exif Tags */
-unsigned int pDucMappedBuf = 0;
-OMX_PTR pBufToBeMapped = NULL;
 
 static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 {
@@ -154,7 +150,8 @@ static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 }
 
 OMX_ERRORTYPE CameraMaptoTilerDuc(OMX_TI_CONFIG_SHAREDBUFFER *
-    pConfigSharedBuffer)
+    pConfigSharedBuffer, unsigned int *pDucMappedBuf,
+    OMX_PTR * pBufToBeMapped)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	OMX_U32 nBufLineSize = 0;
@@ -184,36 +181,30 @@ OMX_ERRORTYPE CameraMaptoTilerDuc(OMX_TI_CONFIG_SHAREDBUFFER *
 		    (OMX_U32) pConfigSharedBuffer->pSharedBuff -
 		    (OMX_U32) block.ptr;
 
+		*pBufToBeMapped = MemMgr_Map(&block, 1);
 
-		pBufToBeMapped = MemMgr_Map(&block, 1);
-
-		PROXY_assert(pBufToBeMapped != 0,
+		PROXY_assert(*pBufToBeMapped != 0,
 		    OMX_ErrorInsufficientResources,
 		    "Map to TILER space failed");
 	}
 
-	if (MemMgr_IsMapped((OMX_PTR) pBufToBeMapped))
+	if (MemMgr_IsMapped((OMX_PTR) * pBufToBeMapped))
 	{
-		//If Tiler 1D buffer, get corresponding ducati address and send out buffer to ducati
-		//For 2D buffers, in phase1, retrive the ducati address (SSPtrs) for Y and UV buffers
-		//and send out buffer to ducati
 
 		mapType = ProcMgr_MapType_Tiler;
-		MpuAddr_list_1D.mpuAddr = (OMX_U32) pBufToBeMapped + nDiff;
+		MpuAddr_list_1D.mpuAddr = (OMX_U32) (*pBufToBeMapped) + nDiff;
 
 		MpuAddr_list_1D.size = pConfigSharedBuffer->nSharedBuffSize;
 		status = SysLinkMemUtils_map(&MpuAddr_list_1D, 1,
-		    &pDucMappedBuf, mapType, PROC_APPM3);
+		    pDucMappedBuf, mapType, PROC_APPM3);
 
 		PROXY_assert(status >= 0, OMX_ErrorInsufficientResources,
 		    "Syslink map failed");
-		pConfigSharedBuffer->pSharedBuff = (OMX_PTR) pDucMappedBuf;
+		pConfigSharedBuffer->pSharedBuff = (OMX_PTR) (*pDucMappedBuf);
 
 	}
-
       EXIT:
 	return eError;
-
 }
 
 /* ===========================================================================*/
@@ -233,6 +224,9 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
 	OMX_PTR pTempSharedBuff = NULL;
+	unsigned int pDucMappedBuf = 0;
+	OMX_PTR pBufToBeMapped = NULL;
+	OMX_U32 status = 0;
 
 	switch (nParamIndex)
 	{
@@ -244,17 +238,20 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 
 		pTempSharedBuff = pConfigSharedBuffer->pSharedBuff;
 
-		eError = CameraMaptoTilerDuc(pConfigSharedBuffer);
+		eError =
+		    CameraMaptoTilerDuc(pConfigSharedBuffer, &pDucMappedBuf,
+		    &pBufToBeMapped);
 		PROXY_assert((eError == OMX_ErrorNone), eError,
-		    "Error in Mapping to Tiler or Ducati ");
+		    "Error in mapping to TILER or Ducati");
 
 		eError =
 		    PROXY_GetConfig(hComponent, nParamIndex,
 		    pConfigSharedBuffer);
 		PROXY_assert((eError == OMX_ErrorNone), eError,
-		    "Error in Get Config ");
+		    "Error in GetConfig");
 
 		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
+
 		eError =
 		    RPC_InvalidateBuffer(pTempSharedBuff,
 		    pConfigSharedBuffer->nSharedBuffSize, TARGET_CORE_ID);
@@ -273,11 +270,21 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 	    pComponentParameterStructure);
       EXIT:
 	if (pDucMappedBuf)
-		SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
-
+	{
+		status = SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
+		if (status <= 0)
+			DOMX_DEBUG("Syslink unmap failed with status %d",
+			    status);
+		pDucMappedBuf = 0;
+	}
 	if (pBufToBeMapped)
-		MemMgr_UnMap(pBufToBeMapped);
-
+	{
+		status = MemMgr_UnMap(pBufToBeMapped);
+		if (status != 0)
+			DOMX_DEBUG("MemMgr unmap failed with status %d",
+			    status);
+		pBufToBeMapped = NULL;
+	}
 	return eError;
 }
 
@@ -298,9 +305,11 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
-	
 	OMX_PTR pTempSharedBuff = NULL;
-
+	/* Stores the Ducati Mapped addr for the user space allocated buffers for CameraCap/Exif Tags */
+	unsigned int pDucMappedBuf = 0;
+	OMX_PTR pBufToBeMapped = NULL;
+	OMX_U32 status = 0;
 	switch (nParamIndex)
 	{
 	case OMX_TI_IndexConfigExifTags:
@@ -311,9 +320,11 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 
 		pTempSharedBuff = pConfigSharedBuffer->pSharedBuff;
 
-		eError = CameraMaptoTilerDuc(pConfigSharedBuffer);
+		eError =
+		    CameraMaptoTilerDuc(pConfigSharedBuffer, &pDucMappedBuf,
+		    &pBufToBeMapped);
 		PROXY_assert((eError == OMX_ErrorNone), eError,
-		    "Error in Mapping to Tiler or Ducati ");
+		    "Error in mapping to TILER or Ducati");
 
 		eError =
 		    RPC_FlushBuffer(pTempSharedBuff,
@@ -325,7 +336,7 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 		    PROXY_SetConfig(hComponent, nParamIndex,
 		    pConfigSharedBuffer);
 		PROXY_assert((eError == OMX_ErrorNone), eError,
-		    "Error in Get Config ");
+		    "Error in GetConfig");
 
 		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
 
@@ -341,14 +352,24 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 	    pComponentParameterStructure);
 
       EXIT:
-		if (pDucMappedBuf)
-			SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
-
+	if (pDucMappedBuf)
+	{
+		status = SysLinkMemUtils_unmap(pDucMappedBuf, PROC_APPM3);
+		if (status <= 0)
+			DOMX_DEBUG("Syslink unmap failed with status %d",
+			    status);
+		pDucMappedBuf = 0;
+	}
 	if (pBufToBeMapped)
-		MemMgr_UnMap(pBufToBeMapped);
+	{
+		status = MemMgr_UnMap(pBufToBeMapped);
+		if (status != 0)
+			DOMX_DEBUG("MemMgr unmap failed with status %d",
+			    status);
+		pBufToBeMapped = NULL;
+	}
 
-		return eError;
-
+	return eError;
 }
 
 OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
@@ -416,7 +437,7 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 		numofInstance = numofInstance + 1;
 
 		/* Configure Ducati to use DCC buffer from A9 side
-		   *ONLY* if DCC_Init is successful. */
+		 *ONLY* if DCC_Init is successful. */
 		if (dcc_eError == OMX_ErrorNone)
 		{
 			dcc_eError = send_DCCBufPtr(hComponent);
@@ -624,7 +645,7 @@ OMX_S32 read_DCCdir(OMX_PTR buffer, OMX_STRING * dir_path, OMX_U16 numofURI)
 				{
 					DOMX_DEBUG
 					    ("\n\t DCC Profiles copying into buffer => %s mpu_addr: %p",
-					     temp, buffer);
+					    temp, buffer);
 					pFile = fopen(temp, "rb");
 					if (pFile == NULL)
 					{

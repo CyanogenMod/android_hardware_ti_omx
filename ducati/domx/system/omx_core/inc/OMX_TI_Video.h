@@ -494,6 +494,42 @@ typedef struct OMX_VIDEO_CONFIG_QPSETTINGSTYPE{
 	OMX_U32	 nQpMinB;
 }OMX_VIDEO_CONFIG_QPSETTINGSTYPE;
 
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_PARAM_AVCHRDBUFFERSETTING : to configure the HRD
+	(Hypothetical Reference Decoder) related params
+ @param  nInitialBufferLevel	Initial buffer level for HRD compliance
+ @param  nHRDBufferSize		Hypothetical Reference Decoder buffer size
+ @param  nTargetBitrate		Target bitrate to encode with
+*/
+/* ==========================================================================*/
+
+typedef struct OMX_TI_VIDEO_PARAM_AVCHRDBUFFERSETTING {
+	OMX_U32     nSize;
+	OMX_VERSIONTYPE     nVersion;
+	OMX_U32    nPortIndex;
+	OMX_U32    nInitialBufferLevel;
+	OMX_U32    nHRDBufferSize;
+	OMX_U32    nTargetBitrate;
+} OMX_TI_VIDEO_PARAM_AVCHRDBUFFERSETTING;
+
+/* ========================================================================== */
+/*!
+ @brief OMX_TI_VIDEO_CONFIG_AVCHRDBUFFERSETTING : to configure the HRD
+	(Hypothetical Reference Decoder) related params
+ @param  nHRDBufferSize		Hypothetical Reference Decoder Buffer Size
+ @param  nEncodeBitrate		Target bitrate to encode with
+
+*/
+/* ==========================================================================*/
+
+typedef struct OMX_TI_VIDEO_CONFIG_AVCHRDBUFFERSETTING {
+	OMX_U32    nSize;
+	OMX_VERSIONTYPE     nVersion;
+	OMX_U32     nPortIndex;
+	OMX_U32     nHRDBufferSize;
+	OMX_U32     nEncodeBitrate;
+} OMX_TI_VIDEO_CONFIG_AVCHRDBUFFERSETTING;
 
 /* ========================================================================= */
 /*!
