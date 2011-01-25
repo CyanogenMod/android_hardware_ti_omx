@@ -149,11 +149,14 @@ include $(TI_OMX_VIDEO)/prepost_processor/Android.mk
 include $(TI_OMX_IMAGE)/jpeg_enc/Android.mk
 include $(TI_OMX_IMAGE)/jpeg_dec/Android.mk
 
+#build these only for froyo
+ifneq ($(filter 2.2%,$(PLATFORM_VERSION)),)
 #call to plugin
 include $(TI_OMX_TOP)/core_plugin/Android.mk
 
 #call to ti_omx_config_parser
 include $(TI_OMX_TOP)/ti_omx_config_parser/Android.mk
+endif
 
 endif
 endif

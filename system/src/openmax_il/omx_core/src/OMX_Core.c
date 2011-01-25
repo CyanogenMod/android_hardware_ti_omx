@@ -52,8 +52,10 @@
 #include "OMX_Core.h"
 #include "OMX_ComponentRegistry.h"
 
+#ifdef _FROYO
 /** determine capabilities of a component before acually using it */
 #include "ti_omx_config_parser.h"
+#endif
 
 /** size for the array of allocated components.  Sets the maximum 
  * number of components that can be allocated at once */
@@ -586,10 +588,10 @@ OMX_API OMX_ERRORTYPE OMX_APIENTRY TIOMX_ComponentNameEnum(
 *Parameters:
 * @param[in] cComponentName     The name of the component to query
 * @param[in] pNumRoles     The number of roles supported by the component
-* @param[in] roles		The roles of the component
+* @param[in] roles                The roles of the component
 *
 * Returns:    OMX_NOERROR          Successful
-*                 OMX_ErrorBadParameter		Faliure due to a bad input parameter
+*                 OMX_ErrorBadParameter                Faliure due to a bad input parameter
 *
 * Note
 *
@@ -810,6 +812,7 @@ OMX_ERRORTYPE TIOMX_BuildComponentTable()
     return eError;
 }
 
+#ifdef _FROYO
 OMX_BOOL TIOMXConfigParserRedirect(
     OMX_PTR aInputParameters,
     OMX_PTR aOutputParameters)
@@ -821,3 +824,4 @@ OMX_BOOL TIOMXConfigParserRedirect(
     
     return Status;
 }
+#endif

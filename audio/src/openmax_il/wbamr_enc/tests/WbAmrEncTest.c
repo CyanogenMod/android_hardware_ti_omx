@@ -1034,18 +1034,18 @@ int main(int argc, char* argv[]) {
         if (audioinfo->acousticMode == OMX_TRUE) {
             APP_IPRINT("Using Acoustic Devide Node Path\n");
             dataPath = DATAPATH_ACDN;
-            fprintf("HERE %d \n", __LINE__);
+            fprintf(stderr, "HERE %d \n", __LINE__);
         } else if (audioinfo->dasfMode) {
 #ifdef RTM_PATH
             APP_IPRINT("Using Real Time Mixer Path\n");
             dataPath = DATAPATH_APPLICATION_RTMIXER;
-            fprintf("HERE %d \n", __LINE__);
+            fprintf(stderr, "HERE %d \n", __LINE__);
 #endif
 
 #ifdef ETEEDN_PATH
             APP_IPRINT("Using Eteedn Path\n");
             dataPath = DATAPATH_APPLICATION;
-            fprintf("HERE %d \n", __LINE__);
+            fprintf(stderr, "HERE %d \n", __LINE__);
 #endif
         }
 

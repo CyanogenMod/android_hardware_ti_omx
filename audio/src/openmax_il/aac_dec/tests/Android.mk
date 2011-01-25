@@ -5,18 +5,19 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
 LOCAL_SRC_FILES:= \
-	AacDecTest.c \
+        AacDecTest.c \
 
 LOCAL_C_INCLUDES := \
-	$(TI_OMX_SYSTEM)/common/inc \
-	$(TI_OMX_COMP_C_INCLUDES) \
-	$(TI_OMX_AUDIO)/aac_dec/inc
+        $(TI_OMX_SYSTEM)/common/inc \
+        $(TI_OMX_COMP_C_INCLUDES) \
+        $(TI_OMX_AUDIO)/aac_dec/inc
 
 LOCAL_SHARED_LIBRARIES := $(TI_OMX_COMP_SHARED_LIBRARIES) \
-	libOMX_Core
+        libOMX_Core
 
 LOCAL_CFLAGS := $(TI_OMX_CFLAGS) -DOMX_DEBUG
 
 LOCAL_MODULE:= AacDecTest
+LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_EXECUTABLE)
