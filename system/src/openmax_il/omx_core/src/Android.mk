@@ -15,13 +15,14 @@ LOCAL_SHARED_LIBRARIES := \
         libdl \
         liblog
 
+LOCAL_CFLAGS := $(TI_OMX_CFLAGS)
+
 #include parser for froyo platforms
 ifneq ($(filter 2.2%,$(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libVendor_ti_omx_config_parser
 LOCAL_CFLAGS += -D_FROYO
 endif
 
-LOCAL_CFLAGS := $(TI_OMX_CFLAGS)
 
 LOCAL_MODULE:= libOMX_Core
 LOCAL_MODULE_TAGS := optional
