@@ -1941,6 +1941,7 @@ typedef struct OMX_TI_FRAMELAYOUTTYPE {
 typedef enum OMX_TI_COLOR_FORMATTYPE {
 	OMX_TI_COLOR_FormatYUV420PackedSemiPlanarInterlaced =
 	    (OMX_COLOR_FORMATTYPE) OMX_COLOR_FormatVendorStartUnused + 1,
+	OMX_TI_COLOR_FormatYUV420PackedSemiPlanar_Sequential_TopBottom = OMX_TI_COLOR_FormatYUV420PackedSemiPlanarInterlaced,
 	OMX_TI_COLOR_FormatRawBayer10bitStereo =
 	    OMX_COLOR_FormatVendorStartUnused + 2 /**< 10 bit raw for stereo */
 } OMX_TI_COLOR_FORMATTYPE;
