@@ -68,6 +68,8 @@
 #include <IpcUsr.h>
 #include <ProcMgr.h>
 
+#include <SysLinkMemUtils.h>
+
 /*-------program files ----------------------------------------*/
 #include "omx_rpc.h"
 #include "omx_proxy_common.h"
@@ -121,8 +123,15 @@ ProcMgr_Handle procMgrHandle1 = NULL;
 OMX_S32 currentNumOfComps = 0;
 OMX_HANDLETYPE componentTable[MAX_NUM_COMPS_PER_PROCESS] = { 0 };
 
+/*Book keeping for tiler buffers*/
+#define MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS 128
+OMX_U32 tilerBuffers[MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS] = { 0 };
+
+OMX_PTR pTilerMutex = NULL;
+
 OMX_BOOL ducatiFault = OMX_FALSE;
 pthread_t ducatiFaultHandler;
+/*This mutex protects filling/removing data from componentTable*/
 OMX_PTR pFaultMutex = NULL;
 
 /* ************************* EXTERNS, FUNCTION DECLARATIONS ***************************** */
@@ -320,6 +329,7 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
 	OMX_BOOL bMutex = OMX_FALSE;
 	RPC_OMX_CONTEXT *pRPCCtx = hRPCCtx;
+	OMX_U32 i = 0;
 
 	eError = TIMM_OSAL_MutexObtain(pCreateMutex, TIMM_OSAL_SUSPEND);
 	RPC_assert(eError == TIMM_OSAL_ERR_NONE,
@@ -340,6 +350,19 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 	{
 		currentNumOfComps = 0;
 		ducatiFault = OMX_FALSE;
+
+		/*Free up any remaining tiler buffers */
+		for (i = 0; i < MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS; i++)
+		{
+			if (tilerBuffers[i])
+			{
+				DOMX_DEBUG("Tiler Buffer Freed = 0x%x",
+				    tilerBuffers[i]);
+				SysLinkMemUtils_free(sizeof(UInt32),
+				    (UInt32 *) & tilerBuffers[i]);
+				tilerBuffers[i] = 0;
+			}
+		}
 
 		eTmpError = _RPC_ClientDestroy();
 		if (eTmpError != RPC_OMX_ErrorNone)
@@ -1056,6 +1079,14 @@ void __attribute__ ((constructor)) RPC_Setup(void)
 	{
 		TIMM_OSAL_Error("Creation of ducati fault mutex failed.");
 	}
+
+	eError = TIMM_OSAL_MutexCreate(&pTilerMutex);
+
+	if (eError != TIMM_OSAL_ERR_NONE)
+	{
+		TIMM_OSAL_Error("Creation of tiler mutex failed.");
+	}
+
 }
 
 
@@ -1083,7 +1114,87 @@ void __attribute__ ((destructor)) RPC_Destroy(void)
 	{
 		TIMM_OSAL_Error("Deletion of ducati fault mutex failed.");
 	}
+
+
+	eError = TIMM_OSAL_MutexDelete(pTilerMutex);
+
+	if (eError != TIMM_OSAL_ERR_NONE)
+	{
+		TIMM_OSAL_Error("Deletion of tiler mutex failed.");
+	}
 }
+
+/*===============================================================*/
+/** @fn RPC_MemAlloc
+ */
+/*===============================================================*/
+Int32 RPC_MemAlloc(UInt32 * dataSize, UInt32 * data)
+{
+	OMX_U32 i;
+	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+
+	eError = TIMM_OSAL_MutexObtain(pTilerMutex, TIMM_OSAL_SUSPEND);
+	RPC_assert(eError == TIMM_OSAL_ERR_NONE,
+	    RPC_OMX_ErrorInsufficientResources,
+	    "Mutex lock failed. RPC_MemAlloc failed completely");
+
+	for (i = 0; i < MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS; i++)
+	{
+		if (tilerBuffers[i] == 0)
+		{
+			tilerBuffers[i] =
+			    SysLinkMemUtils_alloc(dataSize, data);
+			DOMX_DEBUG("Tiler Buffer Allocated = 0x%x",
+			    tilerBuffers[i]);
+			if (tilerBuffers[i] == 0)
+			{
+				DOMX_ERROR("Null pointer allocated.");
+			}
+			TIMM_OSAL_MutexRelease(pTilerMutex);
+			return tilerBuffers[i];
+		}
+	}
+	TIMM_OSAL_MutexRelease(pTilerMutex);
+      EXIT:
+	DOMX_ERROR("Not enough space for book keeping of tiler buffers.");
+	return 0;
+}
+
+/*===============================================================*/
+/** @fn RPC_MemFree
+ */
+/*===============================================================*/
+Int32 RPC_MemFree(UInt32 * dataSize, UInt32 * data)
+{
+	OMX_U32 i;
+	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
+	Int32 ret;
+
+	eError = TIMM_OSAL_MutexObtain(pTilerMutex, TIMM_OSAL_SUSPEND);
+	RPC_assert(eError == TIMM_OSAL_ERR_NONE,
+	    RPC_OMX_ErrorInsufficientResources,
+	    "Mutex lock failed. RPC_MemFree failed completely");
+
+	for (i = 0; i < MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS; i++)
+	{
+		if (tilerBuffers[i] == (OMX_U32) * data)
+		{
+			DOMX_DEBUG("Tiler Buffer Freed = 0x%x",
+			    tilerBuffers[i]);
+			tilerBuffers[i] = 0;
+			ret = SysLinkMemUtils_free(dataSize, data);
+			TIMM_OSAL_MutexRelease(pTilerMutex);
+			return ret;
+		}
+	}
+	TIMM_OSAL_MutexRelease(pTilerMutex);
+      EXIT:
+	DOMX_ERROR("Invalid tiler buffer free");
+	return 0;
+}
+
 
 /*===============================================================*/
 /** @fn RPC_DucatiFaultHandler : This function listens to Ducati
@@ -1151,28 +1262,6 @@ static void *RPC_DucatiFaultHandler(void *data)
 			    pCompPrv->proxyEventHandler(componentTable[i],
 			    pCompPrv->pILAppData, OMX_EventError,
 			    OMX_ErrorHardware, 0, NULL);
-
-			for (count = 0; count < pCompPrv->nTotalBuffers;
-			    count++)
-			{
-				/* The FreeBuffer API's 2nd argument should be
-				   a valid port index. The OMX_BUFFERHEADERTYPE
-				   structure containts two fields
-				   nOuputPortIndex and nInputPortIndex. The OMX
-				   IL standard does not specify what value of
-				   port index is an invalid value. Hence, at
-				   this point of error recovery, it is not
-				   possible to distigush which of the indices
-				   contains a valide value. However, this does
-				   not matter as the main intent of calling
-				   FreeBuffer here is to revert the memory mapping
-				   and to de-allocate omx buffer headers. Hence,
-				   a default value of '0' is passed as port
-				   index */
-				pHandle->FreeBuffer(componentTable[i],
-				    0, pCompPrv->tBufList[count].pBufHeader);
-			}
-			pHandle->ComponentDeInit(componentTable[i]);
 		}
 	}
       EXIT:

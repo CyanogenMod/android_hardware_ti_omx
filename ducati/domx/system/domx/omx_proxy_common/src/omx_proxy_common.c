@@ -111,6 +111,8 @@ extern OMX_S32 currentNumOfComps;
 extern OMX_HANDLETYPE componentTable[];
 extern OMX_PTR pFaultMutex;
 
+extern OMX_BOOL ducatiFault;
+
 /* ===========================================================================*/
 /**
  * @name PROXY_EventHandler()
@@ -1060,15 +1062,6 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	OMX_S32 nReturn = 0;
 	OMX_U32 pBuffer = 0;
 
-	if (TIMM_OSAL_ERR_NONE !=
-	    TIMM_OSAL_MutexObtain(pFaultMutex, TIMM_OSAL_SUSPEND))
-	{
-		DOMX_ERROR("Error obtaining the ducati fault mutex");
-		DOMX_ERROR
-		    ("Continuing clean up despite failing to acquire ducati fault mutex");
-		eError = OMX_ErrorUndefined;
-	}
-
 	PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
 	PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter,
 	    NULL);
@@ -1182,7 +1175,6 @@ The UV is not, may be consider adding this to the table
 */
 
       EXIT:
-	TIMM_OSAL_MutexRelease(pFaultMutex);
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
 }
@@ -1787,7 +1779,9 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
-	OMX_U32 i;
+	OMX_U32 i = 0, count = 0;
+
+	DOMX_ENTER("hComponent=%p", hComponent);
 
 	if (TIMM_OSAL_ERR_NONE !=
 	    TIMM_OSAL_MutexObtain(pFaultMutex, TIMM_OSAL_SUSPEND))
@@ -1812,6 +1806,7 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 			break;
 		}
 	}
+	TIMM_OSAL_MutexRelease(pFaultMutex);
 	if (i == MAX_NUM_COMPS_PER_PROCESS)
 	{
 		goto EXIT;	/* This component has already been cleaned up */
@@ -1822,7 +1817,31 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 
 	pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
 
-	DOMX_ENTER("hComponent=%p", hComponent);
+	if (ducatiFault)
+	{
+		/*Call FreeBuffer in case it was not called by the client. If
+		   FreeBuffer was already called, the header in the list will be
+		   NULL and FreeBuffer will return */
+		for (count = 0; count < pCompPrv->nTotalBuffers; count++)
+		{
+			/* The FreeBuffer API's 2nd argument should be
+			   a valid port index. The OMX_BUFFERHEADERTYPE
+			   structure containts two fields
+			   nOuputPortIndex and nInputPortIndex. The OMX
+			   IL standard does not specify what value of
+			   port index is an invalid value. Hence, at
+			   this point of error recovery, it is not
+			   possible to distigush which of the indices
+			   contains a valide value. However, this does
+			   not matter as the main intent of calling
+			   FreeBuffer here is to revert the memory mapping
+			   and to de-allocate omx buffer headers. Hence,
+			   a default value of '0' is passed as port
+			   index */
+			hComp->FreeBuffer(hComponent, 0,
+			    pCompPrv->tBufList[count].pBufHeader);
+		}
+	}
 
 	eRPCError = RPC_FreeHandle(pCompPrv->hRemoteComp, &eCompReturn);
 	if (eRPCError == RPC_OMX_ErrorNone)
@@ -1854,7 +1873,6 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	}
 
       EXIT:
-	TIMM_OSAL_MutexRelease(pFaultMutex);
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
 }

@@ -64,14 +64,15 @@
 #include <RcmClient.h>
 #include <RcmServer.h>
 
-#include <SysLinkMemUtils.h>
-
 /*-------program files ----------------------------------------*/
 #include "omx_rpc.h"
 #include "omx_rpc_stub.h"
 #include "omx_rpc_skel.h"
 #include "omx_rpc_internal.h"
 #include "omx_rpc_utils.h"
+
+extern Int32 RPC_MemFree(UInt32 * dataSize, UInt32 * data);
+extern Int32 RPC_MemAlloc(UInt32 * dataSize, UInt32 * data);
 
 /* contains configurations or structures to be passed to omx_rpc layer */
 char rpcFxns[][MAX_FUNCTION_NAME_LENGTH] = {
@@ -122,6 +123,6 @@ rpcSkelArr rpcSkelFxns[] = {
 	{RPC_SKEL_EventHandler},
 	{RPC_SKEL_AllocateBuffer},
 	{RPC_SKEL_ComponentTunnelRequest},
-	{SysLinkMemUtils_alloc},
-	{SysLinkMemUtils_free}
+	{RPC_MemAlloc},
+	{RPC_MemFree}
 };
