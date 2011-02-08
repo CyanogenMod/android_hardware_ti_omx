@@ -2240,6 +2240,17 @@ typedef struct OMX_TI_CONFIG_SHAREDBUFFER {
 	OMX_U8* pSharedBuff;
 } OMX_TI_CONFIG_SHAREDBUFFER;
 
+/*
+ * Structure used to configure current OMX_TI_VARFPSTYPE
+ *
+ * @param nVarFPSMin    Number of the smallest FPS supported.
+ * @param nVarFPSMax    Number of the biggest FPS supported.
+ */
+typedef struct OMX_TI_VARFPSTYPE {
+    OMX_U32                 nVarFPSMin;
+    OMX_U32                 nVarFPSMax;
+} OMX_TI_VARFPSTYPE;
+
 /**
  * Structure used to configure current OMX_TI_CAPRESTYPE
  *
@@ -2304,6 +2315,10 @@ typedef struct OMX_TI_CAPRESTYPE {
  * bBrightnessSupported                 : Flag showing if the brightness is supported
  * bProcessingLevelSupported            : Flag showing if the processing level is supported
  * bQFactorSupported                    : Flag showing if the QFactor is supported
+ * ulPrvVarFPSModesCount                : Number of preview FPS modes
+ * tPrvVarFPSModes                      : Preview FPS modes
+ * ulCapVarFPSModesCount                : Number of capture FPS modes
+ * tCapVarFPSModes                      : Capture FPS modes
  */
 typedef struct OMX_TI_CAPTYPE {
 	OMX_U32                 nSize;
@@ -2344,6 +2359,10 @@ typedef struct OMX_TI_CAPTYPE {
 	OMX_BOOL                bBrightnessSupported;
 	OMX_BOOL                bProcessingLevelSupported;
 	OMX_BOOL                bQFactorSupported;
+	OMX_U16                 ulPrvVarFPSModesCount;  // supported variable FPS preview modes count
+	OMX_TI_VARFPSTYPE       tPrvVarFPSModes[10];
+	OMX_U16                 ulCapVarFPSModesCount;  // supported variable FPS capture modes count
+	OMX_TI_VARFPSTYPE       tCapVarFPSModes[10];
 } OMX_TI_CAPTYPE;
 
 /**
