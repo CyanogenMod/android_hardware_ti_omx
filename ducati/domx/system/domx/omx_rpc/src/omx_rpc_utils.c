@@ -144,11 +144,16 @@ RPC_OMX_ERRORTYPE RPC_UTIL_GetLocalServerName(OMX_STRING ComponentName,
 /* Implementation returns only current core ID - But this is a place holder to abstract out the
 default server and other additional servers available on the current core. This additional servers
 should be available in the RPC global that is indexed using the calling component name*/
+	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	OMX_U8 servertable_idx = 0;
 
 	servertable_idx = MultiProc_getId(NULL);	//This can be replace with the mechanism to obtain new addition rcm servers
+	if (MultiProc_INVALIDID != servertable_idx)
 	*ServerName = rcmservertable[servertable_idx];
-	return RPC_OMX_ErrorNone;
+	else
+		eRPCError = RPC_OMX_ErrorUndefined;
+
+	return eRPCError;
 }
 
 
@@ -178,8 +183,11 @@ RPC_OMX_ERRORTYPE RPC_UTIL_GenerateLocalServerName(OMX_STRING cServerName)
 	sprintf(cServerName, "%ld", pid);
 
 	nProcId = MultiProc_getId(NULL);
+	if (MultiProc_INVALIDID != nProcId)
 	/*Fill the server table with the newly generated name */
 	strncpy(rcmservertable[nProcId], cServerName, MAX_SERVER_NAME_LENGTH);
+	else
+		eRPCError = RPC_OMX_ErrorUndefined;
 
 	return eRPCError;
 }

@@ -87,7 +87,7 @@
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
-#define DOMX_VERSION 9
+#define DOMX_VERSION 10
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -1141,7 +1141,6 @@ void __attribute__ ((constructor)) RPC_Setup(void)
 	{
 		TIMM_OSAL_Error("Creation of tiler mutex failed.");
 	}
-
 }
 
 
@@ -1169,7 +1168,6 @@ void __attribute__ ((destructor)) RPC_Destroy(void)
 	{
 		TIMM_OSAL_Error("Deletion of ducati fault mutex failed.");
 	}
-
 
 	eError = TIMM_OSAL_MutexDelete(pTilerMutex);
 

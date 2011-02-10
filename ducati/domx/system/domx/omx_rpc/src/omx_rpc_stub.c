@@ -1158,6 +1158,10 @@ RPC_OMX_ERRORTYPE RPC_EmptyThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	    OMX_HANDLETYPE);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->pMarkData, OMX_PTR);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nAllocLen, OMX_U32);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nOutputPortIndex,
+	    OMX_U32);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nInputPortIndex,
+	    OMX_U32);
 
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);
@@ -1251,6 +1255,10 @@ RPC_OMX_ERRORTYPE RPC_FillThisBuffer(RPC_OMX_HANDLE hRPCCtx,
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nOffset, OMX_U32);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nFlags, OMX_U32);
 	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nAllocLen, OMX_U32);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nOutputPortIndex,
+	    OMX_U32);
+	RPC_SETFIELDVALUE(pMsgBody, nPos, pBufferHdr->nInputPortIndex,
+	    OMX_U32);
 
 	DOMX_DEBUG(" pBufferHdr = %x BufHdrRemote %x", pBufferHdr,
 	    BufHdrRemote);

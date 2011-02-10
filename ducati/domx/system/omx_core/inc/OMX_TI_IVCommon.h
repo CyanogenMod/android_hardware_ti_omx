@@ -1449,6 +1449,9 @@ typedef enum OMX_EXT_EXTRADATATYPE
    OMX_TI_SEIinfo2010Frame2,    /**< 0x7F000016 Used for 2010 SEI message to be provided by video decoders */
    OMX_TI_RangeMappingInfo,     /**< 0x7F000017 Used for Range mapping info provided by Video Decoders */
    OMX_TI_RescalingInfo,        /**< 0x7F000018 Used for width/height rescaling info provided by Video Decoders */
+   OMX_TI_WhiteBalanceOverWrite,        /**< 0x7F000019 Used for manual AWB settings */
+   OMX_TI_ExtraData_Count,
+   OMX_TI_ExtraData_Max = OMX_TI_ExtraData_Count - 1,
 } OMX_EXT_EXTRADATATYPE;
 
 
@@ -2222,6 +2225,17 @@ typedef struct OMX_TI_CONFIG_EXIF_TAGS {
 } OMX_TI_CONFIG_EXIF_TAGS;
 
 /**
+ * Structure used to configure current OMX_TI_VARFPSTYPE
+ *
+ * @param nVarFPSMin    Number of the smallest FPS supported.
+ * @param nVarFPSMax    Number of the biggest FPS supported.
+ */
+typedef struct OMX_TI_VARFPSTYPE {
+    OMX_U32                 nVarFPSMin;
+    OMX_U32                 nVarFPSMax;
+} OMX_TI_VARFPSTYPE;
+
+/**
  * Structure used to configure current OMX_TI_CONFIG_SHAREDBUFFER
  *
  * STRUCT MEMBERS:
@@ -2238,17 +2252,6 @@ typedef struct OMX_TI_CONFIG_SHAREDBUFFER {
 	OMX_U32 nSharedBuffSize;
 	OMX_U8* pSharedBuff;
 } OMX_TI_CONFIG_SHAREDBUFFER;
-
-/*
- * Structure used to configure current OMX_TI_VARFPSTYPE
- *
- * @param nVarFPSMin    Number of the smallest FPS supported.
- * @param nVarFPSMax    Number of the biggest FPS supported.
- */
-typedef struct OMX_TI_VARFPSTYPE {
-    OMX_U32                 nVarFPSMin;
-    OMX_U32                 nVarFPSMax;
-} OMX_TI_VARFPSTYPE;
 
 /**
  * Structure used to configure current OMX_TI_CAPRESTYPE
@@ -2318,6 +2321,7 @@ typedef struct OMX_TI_CAPRESTYPE {
  * tPrvVarFPSModes                      : Preview FPS modes
  * ulCapVarFPSModesCount                : Number of capture FPS modes
  * tCapVarFPSModes                      : Capture FPS modes
+
  */
 typedef struct OMX_TI_CAPTYPE {
 	OMX_U32                 nSize;
@@ -2417,6 +2421,25 @@ typedef struct OMX_TI_PARAM_AUTOCONVERGENCETYPE {
 	OMX_U32 nPortIndex;
 	OMX_BOOL bAutoConvergence;
 } OMX_TI_PARAM_AUTOCONVERGENCETYPE;
+
+/*
+* STRUCT MEMBERS:
+* nSize             : Size of the structure in bytes
+* nVersion          : OMX specification version information
+* nPortIndex        : Port that this structure applies to
+* pAAAskipBuff      : Pointer to a buffer
+* AAAskipBuffId     : Id of the send buffer
+* AAAskipBuffSize   : Size of the sent buffer
+*/
+typedef struct OMX_TI_CONFIG_AAASKIPBUFFERTYPE {
+	OMX_U32 nSize;
+	OMX_VERSIONTYPE nVersion;
+	OMX_U32 nPortIndex;
+	OMX_PTR pAAAskipBuff;
+	OMX_U32 AAAskipBuffId;
+	OMX_U32 AAAskipBuffSize;
+} OMX_TI_CONFIG_AAASKIPBUFFERTYPE;
+
 
 /**
  * The OMX_TI_BRIGHTNESSCONTRASTCRTLTYPE enumeration is used to define the
