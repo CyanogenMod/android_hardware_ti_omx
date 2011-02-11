@@ -150,6 +150,28 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName);
 RPC_OMX_ERRORTYPE _RPC_ClientDestroy();
 
 static void *RPC_DucatiFaultHandler(void *);
+
+
+
+/* ===========================================================================*/
+/**
+ * @name RPC_SignalHandler_for_FaultHandlingThread()
+ * @brief This is a dummy signal handler. To clean up the blocked fault handler
+ *        thread, a signal is sent to unblock the thread. This is the signal
+ *        handler for that signal.
+ * @param nSignal  : The signal for which this is the handler.
+ * @return void
+ * @sa TBD
+ *
+ */
+/* ===========================================================================*/
+static void RPC_SignalHandler_for_FaultHandlingThread(OMX_S32 nSignal)
+{
+	DOMX_DEBUG("In Dummy signal handler - fault handler thread will now exit");
+}
+
+
+
 /* ===========================================================================*/
 /**
  * @name RPC_InstanceInit()
@@ -376,6 +398,39 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 		{
 			TIMM_OSAL_Error("RPC ModDeInit failed");
 			eRPCError = eTmpError;
+		}
+
+		/*Setting up a dummy signal handler for a user defined signal*/
+		if (signal(SIGUSR1, RPC_SignalHandler_for_FaultHandlingThread)
+		    == SIG_ERR)
+		{
+			DOMX_ERROR("Could not set up signal handler - thread \
+			    may not get cleaned up. This could lead to leaks.");
+			eRPCError = RPC_OMX_ErrorUndefined;
+		}
+		else
+		{
+			DOMX_DEBUG("Signal handler setup successfully");
+		}
+
+		/*Sending signal to fault handler thread to unblock it*/
+		if (SUCCESS !=  pthread_kill(ducatiFaultHandler, SIGUSR1))
+		{
+			DOMX_DEBUG("Thread does not exist - it would have \
+			    already exited");
+		}
+		else
+		{
+			DOMX_DEBUG("Signal succesfully send to fault handler \
+			    thread");
+		}
+
+		/*The fault handler thread should join successfully for
+		  proper cleanup*/
+		if (SUCCESS !=  pthread_join(ducatiFaultHandler, NULL))
+		{
+			DOMX_ERROR("Join thread failed");
+			eRPCError = RPC_OMX_ErrorUndefined;
 		}
 
 		eTmpError = _RPC_IpcDestroy();
