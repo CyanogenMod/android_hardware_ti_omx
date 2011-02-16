@@ -573,34 +573,28 @@ OMX_ERRORTYPE DCC_Init(OMX_HANDLETYPE hComponent)
 
 OMX_ERRORTYPE send_DCCBufPtr(OMX_HANDLETYPE hComponent)
 {
-	OMX_TI_PARAM_DCCURIBUFFER uribufparam;
+	OMX_TI_CONFIG_SHAREDBUFFER uribufparam;
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 
-	_PROXY_OMX_INIT_PARAM(&uribufparam, OMX_TI_PARAM_DCCURIBUFFER);
+	_PROXY_OMX_INIT_PARAM(&uribufparam, OMX_TI_CONFIG_SHAREDBUFFER);
+	uribufparam.nPortIndex = OMX_ALL;
 
 	DOMX_ENTER("ENTER");
-	eError =
-	    OMX_GetParameter(hComponent, OMX_TI_IndexParamDccUriBuffer,
-	    &uribufparam);
 
-	PROXY_assert(eError == OMX_ErrorNone, eError,
-	    "Error in GetParam for Dcc URI Buffer");
-
-	uribufparam.nDCCURIBuffSize = dccbuf_size;
-	uribufparam.pDCCURIBuff = (OMX_U8 *) pMappedBuf;
+	uribufparam.nSharedBuffSize = dccbuf_size;
+	uribufparam.pSharedBuff = (OMX_U8 *) pMappedBuf;
 
 	DOMX_DEBUG("SYSLINK MAPPED ADDR:  0x%x sizeof buffer %d",
-	    uribufparam.pDCCURIBuff, uribufparam.nDCCURIBuffSize);
+	    uribufparam.pSharedBuff, uribufparam.nSharedBuffSize);
 
 	eError =
 	    OMX_SetParameter(hComponent, OMX_TI_IndexParamDccUriBuffer,
 	    &uribufparam);
 	if (eError != OMX_ErrorNone)
 	{
-		DOMX_ERROR(" Error in SetParam for DCC Uri Buffer");
+		DOMX_ERROR(" Error in SetParam for DCC Uri Buffer 0x%x", eError);
 	}
 
-      EXIT:
 	DOMX_EXIT("EXIT");
 	return eError;
 }
