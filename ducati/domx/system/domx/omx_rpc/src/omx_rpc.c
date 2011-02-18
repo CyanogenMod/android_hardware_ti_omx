@@ -88,6 +88,11 @@
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
 #define DOMX_VERSION 10
+
+/*This is the time for which we'll wait for the Ducati base image to load and
+send a PROC_START signal. If the timeout expires, an error will be returned to
+the caller*/
+#define RPC_TIMEOUT_FOR_DUCATI_IMAGE_LOAD 5000
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -1034,6 +1039,16 @@ RPC_OMX_ERRORTYPE _RPC_IpcSetup()
 	RPC_assert(status >= 0, RPC_OMX_ErrorHardware,
 	    "Error in ProcMgr_attach");
 	DOMX_DEBUG("ProcMgr_attach status: [0x%x]\n", status);
+
+	/*Wait for PROC_START on AppM3 - this is to ensure that Ducati is up
+	  and running before the use case can start*/
+	status = ProcMgr_waitForEvent(1, PROC_START,
+	    RPC_TIMEOUT_FOR_DUCATI_IMAGE_LOAD);
+	RPC_assert(status != PROCMGR_E_TIMEOUT, RPC_OMX_ErrorTimeout,
+	    "Ducati base image loading timed out");
+	RPC_assert(status == PROCMGR_SUCCESS, RPC_OMX_ErrorUndefined,
+	    "Error while waiting for PROC_START");
+	DOMX_DEBUG("ProcMgr_waitForMultipleEvents successful");
 
       EXIT:
 	if (eRPCError != RPC_OMX_ErrorNone && bCallDestroyIfErr)
