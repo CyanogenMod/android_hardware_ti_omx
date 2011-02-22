@@ -2225,6 +2225,17 @@ typedef struct OMX_TI_CONFIG_EXIF_TAGS {
 } OMX_TI_CONFIG_EXIF_TAGS;
 
 /**
+ * Structure used to configure current OMX_TI_SENMOUNT_TYPE
+ *
+ * @param nSenId
+ * @param nRotation
+ */
+typedef struct OMX_TI_SENMOUNT_TYPE {
+    OMX_U32             nSenId;
+    OMX_U32             nRotation;
+}OMX_TI_SENMOUNT_TYPE;
+
+/**
  * Structure used to configure current OMX_TI_VARFPSTYPE
  *
  * @param nVarFPSMin    Number of the smallest FPS supported.
@@ -2321,7 +2332,7 @@ typedef struct OMX_TI_CAPRESTYPE {
  * tPrvVarFPSModes                      : Preview FPS modes
  * ulCapVarFPSModesCount                : Number of capture FPS modes
  * tCapVarFPSModes                      : Capture FPS modes
-
+ * tSenMounting                         : Sensor mount information
  */
 typedef struct OMX_TI_CAPTYPE {
 	OMX_U32                 nSize;
@@ -2366,6 +2377,7 @@ typedef struct OMX_TI_CAPTYPE {
 	OMX_TI_VARFPSTYPE       tPrvVarFPSModes[10];
 	OMX_U16                 ulCapVarFPSModesCount;  // supported variable FPS capture modes count
 	OMX_TI_VARFPSTYPE       tCapVarFPSModes[10];
+	OMX_TI_SENMOUNT_TYPE    tSenMounting;
 } OMX_TI_CAPTYPE;
 
 /**
