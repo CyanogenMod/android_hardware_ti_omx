@@ -1905,7 +1905,7 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
 	    OMX_ErrorBadParameter, NULL);
 
 	PROXY_assert((currentNumOfComps < MAX_NUM_COMPS_PER_PROCESS),
-	    OMX_ErrorBadParameter,
+	    OMX_ErrorInsufficientResources,
 	    "Maximum number of components that can be created per process reached");
 
 	pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
