@@ -660,13 +660,13 @@ typedef struct OMX_CONFIG_SLOWSYNCTYPE {
  * Focus control extended enums. use this along with OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE
  */
 typedef enum OMX_IMAGE_EXTFOCUSCONTROLTYPE {
-    OMX_IMAGE_FocusControAutoMacro = 0x7F000001, /**< Reserved region for introducing Vendor Extensions */
+    OMX_IMAGE_FocusControlAutoMacro = 0x7F000001, /**< Reserved region for introducing Vendor Extensions */
     OMX_IMAGE_FocusControlAutoInfinity,
     OMX_IMAGE_FocusControlHyperfocal,
     OMX_IMAGE_FocusControlPortrait, /**< from Xena */
     OMX_IMAGE_FocusControlExtended, /**< from Xena */
     OMX_IMAGE_FocusControlContinousNormal, /**< from Xena */
-    OMX_TI_IMAGE_FocusControlContinuousExtended /**< from Xena */
+    OMX_IMAGE_FocusControlContinousExtended /**< from Xena */
 } OMX_IMAGE_EXTFOCUSCONTROLTYPE;
 
 
