@@ -245,19 +245,25 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 		PROXY_assert((eError == OMX_ErrorNone), eError,
 		    "Error in mapping to TILER or Ducati");
 
+                eError =
+                  RPC_FlushBuffer(pTempSharedBuff,
+                  pConfigSharedBuffer->nSharedBuffSize, TARGET_CORE_ID);
+                PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorHardware,
+                    "Flush Buffer failed");
+
 		eError =
 		    PROXY_GetConfig(hComponent, nParamIndex,
 		    pConfigSharedBuffer);
 		PROXY_assert((eError == OMX_ErrorNone), eError,
 		    "Error in GetConfig");
 
-		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
+                eError =
+                  RPC_InvalidateBuffer(pTempSharedBuff,
+                  pConfigSharedBuffer->nSharedBuffSize, TARGET_CORE_ID);
+                PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorHardware,
+                    "Invalidate Buffer failed");
 
-		eError =
-		    RPC_InvalidateBuffer(pTempSharedBuff,
-		    pConfigSharedBuffer->nSharedBuffSize, TARGET_CORE_ID);
-		PROXY_assert(eError == OMX_ErrorNone, OMX_ErrorHardware,
-		    "Invalidate Buffer failed");
+		pConfigSharedBuffer->pSharedBuff = pTempSharedBuff;
 
 		goto EXIT;
 		break;
