@@ -9,7 +9,7 @@ LOCAL_C_INCLUDES += \
 	hardware/ti/omx/ducati/domx/system/mm_osal/inc/ \
 	hardware/ti/omx/ducati/domx/system/omx_core/inc/ \
 	hardware/ti/syslink/syslink/api/include \
-	hardware/ti/tiler/memmgr \
+	hardware/ti/tiler \
 	hardware/ti/syslink/syslink/d2c
 
 LOCAL_SHARED_LIBRARIES := \
@@ -22,7 +22,7 @@ LOCAL_SHARED_LIBRARIES := \
 		libc \
 		libOMX_Core \
 		liblog	\
-		libmemmgr \
+		libtimemmgr \
 		libd2cmap \
 		libomx_proxy_common \
 		libomx_rpc \

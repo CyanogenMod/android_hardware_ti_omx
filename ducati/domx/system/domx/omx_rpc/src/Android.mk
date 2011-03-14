@@ -18,7 +18,7 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../../domx \
 	hardware/ti/omx/ducati/domx/system/omx_core/inc \
 	hardware/ti/omx/ducati/domx/system/mm_osal/inc \
-	hardware/ti/tiler/memmgr \
+	hardware/ti/tiler \
 	hardware/ti/syslink/syslink/d2c \
 	hardware/ti/syslink/syslink/api/include \
 	hardware/ti/syslink/syslink/api/include/ti/ipc \
@@ -37,7 +37,7 @@ LOCAL_SHARED_LIBRARIES += \
 		libnotify \
 		libc \
 		liblog \
-		libmemmgr \
+		libtimemmgr \
 		libd2cmap \
 
 LOCAL_MODULE:= libomx_rpc
