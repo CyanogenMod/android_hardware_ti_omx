@@ -104,7 +104,7 @@ This is used to define the length of maximum string length the symbol can be*/
 /*Used to define the length of the Heap Id array which contains all
  the statically registered heaps used for RCM buffers*/
 #define MAX_NUMBER_OF_HEAPS 4
-#define PACKET_SIZE 0x90
+#define PACKET_SIZE 0xA0
 /*
 #define CHIRON_PACKET_SIZE 0x90
 #define DUCATI_PACKET_SIZE 0x100
