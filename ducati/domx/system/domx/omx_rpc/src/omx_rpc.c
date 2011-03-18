@@ -83,7 +83,10 @@
 /*For ipc setup*/
 #define SYSM3_PROC_NAME             "SysM3"
 #define APPM3_PROC_NAME             "AppM3"
-
+#define SET_WATCHDOG_TIMEOUT  // For customer request to kill mediaserver
+#ifdef  SET_WATCHDOG_TIMEOUT
+#define WATCHDOG_TIMEOUT 5
+#endif
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
@@ -175,8 +178,17 @@ static void RPC_SignalHandler_for_FaultHandlingThread(OMX_S32 nSignal)
 	DOMX_DEBUG("In Dummy signal handler - fault handler thread will now exit");
 }
 
-
-
+#ifdef SET_WATCHDOG_TIMEOUT
+static void WatchDogSigHandler(OMX_S32 nSignal)
+{
+	DOMX_DEBUG("In WatchDog signal handler");
+	if ( SIGALRM == nSignal )
+	{
+		DOMX_DEBUG("SIGALRM has been received");
+		exit(0);
+	}
+}
+#endif
 /* ===========================================================================*/
 /**
  * @name RPC_InstanceInit()
@@ -444,6 +456,9 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 			TIMM_OSAL_Error("ipc destroy failed");
 			eRPCError = eTmpError;
 		}
+#ifdef SET_WATCHDOG_TIMEOUT
+		alarm(0);//Cancel WatchDog Timer
+#endif
 	}
 
       EXIT:
@@ -1332,6 +1347,19 @@ static void *RPC_DucatiFaultHandler(void *data)
 			    OMX_ErrorHardware, 0, NULL);
 		}
 	}
+
+#ifdef SET_WATCHDOG_TIMEOUT
+	if (signal(SIGALRM, WatchDogSigHandler) == SIG_ERR)
+	{
+		DOMX_ERROR("Could not set up WatchDog signal handler thread \
+		This may cause a hang.");
+	}
+	else
+	{
+		DOMX_DEBUG("WatchDog Signal handler setup successfully");
+		alarm(WATCHDOG_TIMEOUT);
+	}
+#endif
       EXIT:
 	DOMX_EXIT("Closing the DOMX MMU fault recovery handler.\n");
 	return NULL;
