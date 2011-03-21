@@ -87,7 +87,7 @@
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
-#define DOMX_VERSION 10
+#define DOMX_VERSION 11
 
 /*This is the time for which we'll wait for the Ducati base image to load and
 send a PROC_START signal. If the timeout expires, an error will be returned to
