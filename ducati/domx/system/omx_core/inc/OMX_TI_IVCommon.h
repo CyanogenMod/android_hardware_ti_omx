@@ -2434,6 +2434,28 @@ typedef struct OMX_TI_PARAM_AUTOCONVERGENCETYPE {
 	OMX_BOOL bAutoConvergence;
 } OMX_TI_PARAM_AUTOCONVERGENCETYPE;
 
+/**
+ * Focus distance configuration
+ *
+ *  STRUCT MEMBERS:
+ *  nSize: Size of the structure in bytes
+ *  nVersion: OMX specification version information
+ *  nPortIndex: Port that this structure applies to
+ *  nFocusDistanceNear : Specifies the near focus distance in mm ( 0 equals infinity )
+ *  nFocusDistanceOptimal : Specifies the optimal focus distance in mm ( 0 equals infinity )
+ *  nFocusDistanceFar : Specifies the far focus distance in mm ( 0 equals infinity )
+ *  nLensPosition : Specifies the current lens position in driver units
+ */
+typedef struct OMX_TI_CONFIG_FOCUSDISTANCETYPE {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_U32 nPortIndex;
+    OMX_U32 nFocusDistanceNear;
+    OMX_U32 nFocusDistanceOptimal;
+    OMX_U32 nFocusDistanceFar;
+    OMX_S32 nLensPosition;
+} OMX_TI_CONFIG_FOCUSDISTANCETYPE;
+
 /*
 * STRUCT MEMBERS:
 * nSize             : Size of the structure in bytes
