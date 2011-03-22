@@ -92,10 +92,18 @@ protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
 versions are in sync and does not indicate anything else*/
 #define DOMX_VERSION 11
 
-/*This is the time for which we'll wait for the Ducati base image to load and
-send a PROC_START signal. If the timeout expires, an error will be returned to
-the caller*/
+/*This is the time in msec for which we'll wait for the Ducati base image to
+load and send a PROC_START signal. If the timeout expires, an error will be
+returned to the caller*/
 #define RPC_TIMEOUT_FOR_DUCATI_IMAGE_LOAD 5000
+
+/*This is the max no. of times it'll try to create RCM client before returning
+failure*/
+#define RPC_CLIENT_CREATE_MAX_TRIES 20
+
+/*Time in msec for which the task sleeps between consecutive tries to create
+RCM client*/
+#define RPC_CLIENT_CREATE_TIME_BETWEEN_TRIES 1
 /* ******************************* EXTERNS ********************************* */
 extern char rpcFxns[][MAX_FUNCTION_NAME_LENGTH];
 extern rpcSkelArr rpcSkelFxns[];
@@ -893,11 +901,12 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName)
 {
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone,
 	    eTmpError = RPC_OMX_ErrorNone;
+	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
 	RcmClient_Params rcmParams;
 	OMX_S8 cRcmServerNameTarget[MAX_SERVER_NAME_LENGTH];;
 	OMX_S32 status = 0;
 	OMX_BOOL bCallDestroyIfErr = OMX_FALSE;
-	OMX_U32 nVer = 0;
+	OMX_U32 nVer = 0, i = 0;
 	OMX_U32 nGetDOMXVersionIdx = 0, nGetFxnFromRemoteIdx = 0;
 
 	eRPCError = RPC_UTIL_GetTargetServerName(cComponentName,
@@ -927,12 +936,39 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName)
 
 	DOMX_DEBUG("Calling client create with server name = %s",
 	    cRcmServerNameTarget);
-	status =
-	    RcmClient_create((char *)cRcmServerNameTarget, &rcmParams,
-	    &rcmHndl);
+
+	/*We wait for Ducati base image to be loaded in _RPC_IpcSetup function.
+	  However, after loading Ducati needs to run for some time before the
+	  RCM server on Ducati is created. If the client create function here
+	  is called before the Ducati server is up, it'll fail. Hence if the
+	  client create function fails, keep trying again for some time with
+	  a short sleep between successive tries to allow the Ducati server
+	  to come up */
+	for (i = 0; i < RPC_CLIENT_CREATE_MAX_TRIES; i++)
+	{
+		status =
+		    RcmClient_create((char *)cRcmServerNameTarget, &rcmParams,
+		    &rcmHndl);
+		if (status < 0)
+		{
+			DOMX_DEBUG("Client create failed. \
+			    Will sleep for some time and try again.");
+			eError =
+			    TIMM_OSAL_SleepTask
+			    (RPC_CLIENT_CREATE_TIME_BETWEEN_TRIES);
+			if (eError != TIMM_OSAL_ERR_NONE)
+			{
+				DOMX_WARN("Sleep task failed. \
+				    Will continue without sleeping");
+			}
+		} else
+		{
+			DOMX_DEBUG("Client created. Connected to Server");
+			break;
+		}
+	}
 	RPC_assert(status >= 0, RPC_OMX_RCM_ClientFail,
 	    "RCM ClientCreate failed. Cannot Establish the connection");
-	DOMX_DEBUG("Client created. Connected to Server");
 
 	/*Checking DOMX version */
 	DOMX_DEBUG("Checking DOMX version");
