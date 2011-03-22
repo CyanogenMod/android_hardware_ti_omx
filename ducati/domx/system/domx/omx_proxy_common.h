@@ -76,7 +76,7 @@ extern "C"
 #define OMX_VER_MAJOR 0x1
 #define OMX_VER_MINOR 0x1
 
-#define MAX_NUM_PROXY_BUFFERS             32
+#define MAX_NUM_PROXY_BUFFERS             50
 #define MAX_COMPONENT_NAME_LENGTH         128
 #define PROXY_MAXNUMOFPORTS               8
 
