@@ -126,7 +126,7 @@ extern OMX_BOOL ducatiFault;
 
 #define RPC_exitOnDucatiFault() do { \
    if(ducatiFault == OMX_TRUE) { \
-       RPC_assert(0, RPC_OMX_ErrorUnknown, "Duacti Fault Detected. Function exec blocked"); \
+       RPC_assert(0, RPC_OMX_ErrorHardware, "Ducati Fault Detected. Function exec blocked"); \
    } \
    } while(0)
 

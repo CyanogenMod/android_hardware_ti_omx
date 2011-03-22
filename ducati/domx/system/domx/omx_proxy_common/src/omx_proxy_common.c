@@ -113,6 +113,42 @@ extern OMX_PTR pFaultMutex;
 
 extern OMX_BOOL ducatiFault;
 
+/******************************************************************
+ *   MACROS - LOCAL
+ ******************************************************************/
+
+#define PROXY_checkRpcError() do { \
+    if (eRPCError == RPC_OMX_ErrorNone) \
+    { \
+        DOMX_DEBUG("Corresponding RPC function executed successfully"); \
+        eError = eCompReturn; \
+    } else \
+    { \
+        DOMX_ERROR("RPC function returned error 0x%x", eRPCError); \
+        switch (eRPCError) \
+        { \
+            case RPC_OMX_ErrorHardware: \
+                eError = OMX_ErrorHardware; \
+            break; \
+            case RPC_OMX_ErrorInsufficientResources: \
+                eError = OMX_ErrorInsufficientResources; \
+            break; \
+            case RPC_OMX_ErrorBadParameter: \
+                eError = OMX_ErrorBadParameter; \
+            break; \
+            case RPC_OMX_ErrorUnsupportedIndex: \
+                eError = OMX_ErrorUnsupportedIndex; \
+            break; \
+            case RPC_OMX_ErrorTimeout: \
+                eError = OMX_ErrorTimeout; \
+            break; \
+            default: \
+                eError = OMX_ErrorUndefined; \
+        } \
+    } \
+    } while(0)
+
+
 /* ===========================================================================*/
 /**
  * @name PROXY_EventHandler()
@@ -527,16 +563,7 @@ OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 	pBufferHdr->pBuffer =
 	    (OMX_U8 *) pCompPrv->tBufList[count].pBufferActual;
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_EmptyThisBuffer Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_EmptyThisBuffer returned error 0x%x",
-		    eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	/*If ETB is about to return an error then this means that buffer has not
@@ -667,16 +694,7 @@ static OMX_ERRORTYPE PROXY_FillThisBuffer(OMX_HANDLETYPE hComponent,
 	pBufferHdr->pBuffer =
 	    (OMX_U8 *) pCompPrv->tBufList[count].pBufferActual;
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_FillThisBuffer Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_FillThisBuffer returned error 0x%x",
-		    eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -768,90 +786,74 @@ static OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	    nPortIndex, &pBufHeaderRemote, &pBufferMapped, pAppPrivate,
 	    nSizeBytes, &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
+	PROXY_checkRpcError();
+
+	if (eError == OMX_ErrorNone)
 	{
 		DOMX_DEBUG("Allocate Buffer Successful");
 		DOMX_DEBUG
 		    ("Value of pBufHeaderRemote: %p   LocalBufferHdr :%p",
 		    pBufHeaderRemote, pBufferHeader);
 
-		if (eCompReturn == OMX_ErrorNone)
+		eError =
+		    RPC_PrepareBuffer_Chiron(pCompPrv,
+		    pCompPrv->hRemoteComp, nPortIndex, nSizeBytes,
+		    pBufferHeader, NULL);
+
+		if (eError != OMX_ErrorNone)
 		{
-			//pBuffer = pBufferHeader->pBuffer;
-
-			eError =
-			    RPC_PrepareBuffer_Chiron(pCompPrv,
-			    pCompPrv->hRemoteComp, nPortIndex, nSizeBytes,
-			    pBufferHeader, NULL);
-
-			if (eError != OMX_ErrorNone)
-			{
-				TIMM_OSAL_Free(pBufferHeader);
-				TIMM_OSAL_Free(pPlatformPrivate);
-
-				PROXY_assert(0, OMX_ErrorUndefined,
-				    "Error while mapping buffer to chiron");
-			}
-			pBuffer = pBufferHeader->pBuffer;
-
-			/*Map Ducati metadata buffer if present to Host and update in the same field */
-			eError = RPC_MapMetaData_Host(pBufferHeader);
-			if (eError != OMX_ErrorNone)
-			{
-				TIMM_OSAL_Free(pBufferHeader);
-				TIMM_OSAL_Free(pPlatformPrivate);
-
-				PROXY_assert(0, OMX_ErrorUndefined,
-				    "Error while mapping metadata buffer to chiron");
-			}
-
-
-			/*pBufferMapped here will contain the Y pointer (basically the unity mapped pBuffer)
-			   pBufferHeaderRemote is the header that contains both Y, UV pointers */
-
-			pCompPrv->tBufList[currentBuffer].pBufHeader =
-			    pBufferHeader;
-			pCompPrv->tBufList[currentBuffer].pBufHeaderRemote =
-			    pBufHeaderRemote;
-			pCompPrv->tBufList[currentBuffer].pBufferMapped =
-			    pBufferMapped;
-			pCompPrv->tBufList[currentBuffer].pBufferActual =
-			    (OMX_U32) pBuffer;
-			pCompPrv->tBufList[currentBuffer].pBufferToBeMapped =
-			    (OMX_U32) pBuffer;
-			pCompPrv->
-			    tBufList[currentBuffer].bRemoteAllocatedBuffer =
-			    OMX_TRUE;
-
-			//caching actual content of pInportPrivate
-			pCompPrv->tBufList[currentBuffer].actualContent =
-			    (OMX_U32) pBufferHeader->pInputPortPrivate;
-			//filling pInportPrivate with the mapped address to be later used during ETB and FTB calls
-			//Need to think on if we need a global actual buffer to mapped buffer data.
-			pBufferHeader->pInputPortPrivate =
-			    (OMX_PTR) pBufferMapped;
-
-			//keeping track of number of Buffers
-			pCompPrv->nAllocatedBuffers++;
-			if (pCompPrv->nTotalBuffers <
-			    pCompPrv->nAllocatedBuffers)
-				pCompPrv->nTotalBuffers =
-				    pCompPrv->nAllocatedBuffers;
-
-			*ppBufferHdr = pBufferHeader;
-		} else
-		{
+			TIMM_OSAL_Free(pBufferHeader);
 			TIMM_OSAL_Free(pPlatformPrivate);
-			TIMM_OSAL_Free((void *)pBufferHeader);
-			eError = eCompReturn;
-		}
-	}
 
-	else
+			PROXY_assert(0, OMX_ErrorUndefined,
+			    "Error while mapping buffer to chiron");
+		}
+		pBuffer = pBufferHeader->pBuffer;
+
+		/*Map Ducati metadata buffer if present to Host and update in the same field */
+		eError = RPC_MapMetaData_Host(pBufferHeader);
+		if (eError != OMX_ErrorNone)
+		{
+			TIMM_OSAL_Free(pBufferHeader);
+			TIMM_OSAL_Free(pPlatformPrivate);
+
+			PROXY_assert(0, OMX_ErrorUndefined,
+			    "Error while mapping metadata buffer to chiron");
+		}
+
+
+		/*pBufferMapped here will contain the Y pointer (basically the unity mapped pBuffer)
+		   pBufferHeaderRemote is the header that contains both Y, UV pointers */
+
+		pCompPrv->tBufList[currentBuffer].pBufHeader = pBufferHeader;
+		pCompPrv->tBufList[currentBuffer].pBufHeaderRemote =
+		    pBufHeaderRemote;
+		pCompPrv->tBufList[currentBuffer].pBufferMapped =
+		    pBufferMapped;
+		pCompPrv->tBufList[currentBuffer].pBufferActual =
+		    (OMX_U32) pBuffer;
+		pCompPrv->tBufList[currentBuffer].pBufferToBeMapped =
+		    (OMX_U32) pBuffer;
+		pCompPrv->tBufList[currentBuffer].bRemoteAllocatedBuffer =
+		    OMX_TRUE;
+
+		//caching actual content of pInportPrivate
+		pCompPrv->tBufList[currentBuffer].actualContent =
+		    (OMX_U32) pBufferHeader->pInputPortPrivate;
+		//filling pInportPrivate with the mapped address to be later used during ETB and FTB calls
+		//Need to think on if we need a global actual buffer to mapped buffer data.
+		pBufferHeader->pInputPortPrivate = (OMX_PTR) pBufferMapped;
+
+		//keeping track of number of Buffers
+		pCompPrv->nAllocatedBuffers++;
+		if (pCompPrv->nTotalBuffers < pCompPrv->nAllocatedBuffers)
+			pCompPrv->nTotalBuffers = pCompPrv->nAllocatedBuffers;
+
+		*ppBufferHdr = pBufferHeader;
+	} else
 	{
-		eError = OMX_ErrorUndefined;
-		TIMM_OSAL_Free(pBufferHeader);
 		TIMM_OSAL_Free(pPlatformPrivate);
+		TIMM_OSAL_Free((void *)pBufferHeader);
 	}
 
       EXIT:
@@ -967,71 +969,61 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	    pAppPrivate, nSizeBytes, pBuffer, &pBufferMapped,
 	    &pBufHeaderRemote, &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
+	PROXY_checkRpcError();
+
+	if (eError == OMX_ErrorNone)
 	{
-		DOMX_DEBUG("Yahoo!!Use Buffer Successful");
+		DOMX_DEBUG("Use Buffer Successful");
 		DOMX_DEBUG
 		    ("Value of pBufHeaderRemote: %p   LocalBufferHdr :%p",
 		    pBufHeaderRemote, pBufferHeader);
 
-		if (eCompReturn == OMX_ErrorNone)
+		/*Map Ducati metadata buffer if present to Host and update in the same field */
+		eError = RPC_MapMetaData_Host(pBufferHeader);
+		if (eError != OMX_ErrorNone)
 		{
-			/*Map Ducati metadata buffer if present to Host and update in the same field */
-			eError = RPC_MapMetaData_Host(pBufferHeader);
-			if (eError != OMX_ErrorNone)
-			{
-				TIMM_OSAL_Free(pBufferHeader);
-				TIMM_OSAL_Free(pPlatformPrivate);
-
-				PROXY_assert(0, OMX_ErrorUndefined,
-				    "Error while mapping metadata buffer to chiron");
-			}
-			//Storing details of pBufferHeader/Mapped/Actual buffer address locally.
-			pCompPrv->tBufList[currentBuffer].pBufHeader =
-			    pBufferHeader;
-			pCompPrv->tBufList[currentBuffer].pBufHeaderRemote =
-			    pBufHeaderRemote;
-			pCompPrv->tBufList[currentBuffer].pBufferMapped =
-			    pBufferMapped;
-			pCompPrv->tBufList[currentBuffer].pBufferActual =
-			    (OMX_U32) pBuffer;
-			//caching actual content of pInportPrivate
-			pCompPrv->tBufList[currentBuffer].actualContent =
-			    (OMX_U32) pBufferHeader->pInputPortPrivate;
-			pCompPrv->tBufList[currentBuffer].pBufferToBeMapped =
-			    pBufToBeMapped;
-			pCompPrv->
-			    tBufList[currentBuffer].bRemoteAllocatedBuffer =
-			    OMX_FALSE;
-
-			//keeping track of number of Buffers
-			pCompPrv->nAllocatedBuffers++;
-			if (pCompPrv->nTotalBuffers <
-			    pCompPrv->nAllocatedBuffers)
-				pCompPrv->nTotalBuffers =
-				    pCompPrv->nAllocatedBuffers;
-
-			DOMX_DEBUG("Updating no. of buffer to %d",
-			    pCompPrv->nTotalBuffers);
-
-			//Restore back original pBuffer
-			pBufferHeader->pBuffer = pBuffer;
-			//pBufferMapped in pInputPortPrivate acts as key during ETB/FTB calls
-			pBufferHeader->pInputPortPrivate =
-			    (OMX_PTR) pBufferMapped;
-
-			*ppBufferHdr = pBufferHeader;
-		} else
-		{
-			DOMX_ERROR
-			    ("Error in UseBuffer return value, freeing buffer header");
+			TIMM_OSAL_Free(pBufferHeader);
 			TIMM_OSAL_Free(pPlatformPrivate);
-			TIMM_OSAL_Free((void *)pBufferHeader);
-			eError = eCompReturn;
+
+			PROXY_assert(0, OMX_ErrorUndefined,
+			    "Error while mapping metadata buffer to chiron");
 		}
+		//Storing details of pBufferHeader/Mapped/Actual buffer address locally.
+		pCompPrv->tBufList[currentBuffer].pBufHeader = pBufferHeader;
+		pCompPrv->tBufList[currentBuffer].pBufHeaderRemote =
+		    pBufHeaderRemote;
+		pCompPrv->tBufList[currentBuffer].pBufferMapped =
+		    pBufferMapped;
+		pCompPrv->tBufList[currentBuffer].pBufferActual =
+		    (OMX_U32) pBuffer;
+		//caching actual content of pInportPrivate
+		pCompPrv->tBufList[currentBuffer].actualContent =
+		    (OMX_U32) pBufferHeader->pInputPortPrivate;
+		pCompPrv->tBufList[currentBuffer].pBufferToBeMapped =
+		    pBufToBeMapped;
+		pCompPrv->tBufList[currentBuffer].bRemoteAllocatedBuffer =
+		    OMX_FALSE;
+
+		//keeping track of number of Buffers
+		pCompPrv->nAllocatedBuffers++;
+		if (pCompPrv->nTotalBuffers < pCompPrv->nAllocatedBuffers)
+			pCompPrv->nTotalBuffers = pCompPrv->nAllocatedBuffers;
+
+		DOMX_DEBUG("Updating no. of buffer to %d",
+		    pCompPrv->nTotalBuffers);
+
+		//Restore back original pBuffer
+		pBufferHeader->pBuffer = pBuffer;
+		//pBufferMapped in pInputPortPrivate acts as key during ETB/FTB calls
+		pBufferHeader->pInputPortPrivate = (OMX_PTR) pBufferMapped;
+
+		*ppBufferHdr = pBufferHeader;
 	} else
 	{
-		eError = OMX_ErrorUndefined;
+		DOMX_ERROR
+		    ("Error in UseBuffer return value, freeing buffer header");
+		TIMM_OSAL_Free(pPlatformPrivate);
+		TIMM_OSAL_Free((void *)pBufferHeader);
 	}
 
       EXIT:
@@ -1061,6 +1053,7 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	OMX_ERRORTYPE eError = OMX_ErrorNone, eTmpError = OMX_ErrorNone;
 	OMX_S32 nReturn = 0;
 	OMX_U32 pBuffer = 0;
+	OMX_BOOL bResetErrVal = OMX_FALSE;
 
 	PROXY_assert(pBufferHdr != NULL, OMX_ErrorBadParameter, NULL);
 	PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter,
@@ -1108,17 +1101,19 @@ static OMX_ERRORTYPE PROXY_FreeBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	    RPC_FreeBuffer(pCompPrv->hRemoteComp, nPortIndex,
 	    pCompPrv->tBufList[count].pBufHeaderRemote, pBuffer,
 	    &eCompReturn);
-	if (eRPCError == RPC_OMX_ErrorNone)
+
+	if ((eError != OMX_ErrorNone) && (eCompReturn == OMX_ErrorNone))
 	{
-		DOMX_DEBUG("RPC Free Buffer Successful");
-		/*If eError has already been set to some error value then it should not
-		   be overwritten by an error none value */
-		if (eCompReturn != OMX_ErrorNone)
-			eError = eCompReturn;
-	} else
+		eTmpError = eError;
+		bResetErrVal = OMX_TRUE;
+	}
+	PROXY_checkRpcError();
+	/*If eError has already been set to some error value then it should not
+	   be overwritten by an error none value */
+	if (bResetErrVal)
 	{
-		DOMX_ERROR("RPC_FreeBuffer returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
+		eError = eTmpError;
+		bResetErrVal = OMX_FALSE;
 	}
 
 	if (pCompPrv->tBufList[count].pBufferActual !=
@@ -1213,15 +1208,7 @@ static OMX_ERRORTYPE PROXY_SetParameter(OMX_IN OMX_HANDLETYPE hComponent,
 	    RPC_SetParameter(pCompPrv->hRemoteComp, nParamIndex, pParamStruct,
 	    &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_SetParameter Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_SetParameter returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1262,15 +1249,7 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN OMX_HANDLETYPE hComponent,
 	    RPC_GetParameter(pCompPrv->hRemoteComp, nParamIndex, pParamStruct,
 	    &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_GetParameter Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_GetParameter returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1313,15 +1292,7 @@ OMX_ERRORTYPE PROXY_GetConfig(OMX_HANDLETYPE hComponent,
 	    RPC_GetConfig(pCompPrv->hRemoteComp, nConfigIndex, pConfigStruct,
 	    &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_GetConfig Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_GetConfig returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1363,15 +1334,7 @@ OMX_ERRORTYPE PROXY_SetConfig(OMX_IN OMX_HANDLETYPE hComponent,
 	    RPC_SetConfig(pCompPrv->hRemoteComp, nConfigIndex, pConfigStruct,
 	    &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_SetConfig Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_SetConfig returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1411,15 +1374,7 @@ static OMX_ERRORTYPE PROXY_GetState(OMX_IN OMX_HANDLETYPE hComponent,
 
 	DOMX_DEBUG("Returned from RPC_GetState, state: ", *pState);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_GetState Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_GetState returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1531,15 +1486,7 @@ static OMX_ERRORTYPE PROXY_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
 		((OMX_MARKTYPE *) pCmdData)->pMarkData = pMarkData;
 	}
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_SendCommand Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_SendCommand returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	/*If SendCommand is about to return an error then this means that the
@@ -1592,16 +1539,7 @@ static OMX_ERRORTYPE PROXY_GetComponentVersion(OMX_IN OMX_HANDLETYPE
 	    pComponentName,
 	    pComponentVersion, pSpecVersion, pComponentUUID, &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_GetComponentVersion Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_GetComponentVersion returned error 0x%x",
-		    eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1643,16 +1581,7 @@ static OMX_ERRORTYPE PROXY_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
 	eRPCError = RPC_GetExtensionIndex(pCompPrv->hRemoteComp,
 	    cParameterName, pIndexType, &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_GetExtensionIndex Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_GetExtensionIndex returned error 0x%x",
-		    eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
@@ -1844,15 +1773,7 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	}
 
 	eRPCError = RPC_FreeHandle(pCompPrv->hRemoteComp, &eCompReturn);
-	if (eRPCError == RPC_OMX_ErrorNone)
-	{
-		DOMX_DEBUG("RPC_FreeHandle Successful");
-		eError = eCompReturn;
-	} else
-	{
-		DOMX_ERROR("RPC_FreeHandle returned error 0x%x", eRPCError);
-		eError = OMX_ErrorUndefined;
-	}
+	PROXY_checkRpcError();
 
 	eRPCError = RPC_InstanceDeInit(pCompPrv->hRemoteComp);
 	if (eRPCError != RPC_OMX_ErrorNone)
@@ -1931,24 +1852,13 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
 	    RPC_GetHandle(hRemoteComp, pCompPrv->cCompName,
 	    (OMX_PTR) hComponent, NULL, &eCompReturn);
 
-	if (eRPCError == RPC_OMX_ErrorNone)
+	PROXY_checkRpcError();
+	if (eError == OMX_ErrorNone)
 	{
-		if (eCompReturn == OMX_ErrorNone)
-		{
-			DOMX_DEBUG("RPC_GetHandle Successful");
-			pCompPrv->hRemoteComp = hRemoteComp;
-		} else
-		{
-			DOMX_ERROR(" ERROR executing OMX_GetHandle remotely");
-			eError = eCompReturn;
-			RPC_InstanceDeInit(hRemoteComp);
-			goto EXIT;
-		}
+		pCompPrv->hRemoteComp = hRemoteComp;
 	} else
 	{
-		DOMX_ERROR("RPC_GetHandle returned error 0x%x", eRPCError);
 		RPC_InstanceDeInit(hRemoteComp);
-		eError = OMX_ErrorHardware;
 		goto EXIT;
 	}
 
