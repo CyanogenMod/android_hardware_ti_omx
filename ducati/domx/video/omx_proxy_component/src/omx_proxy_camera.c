@@ -132,10 +132,6 @@ static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 			TIMM_OSAL_Error("Mutex Obtain failed");
 		}
 
-		if (numofInstance == 1)
-		{
-			DCC_DeInit();
-		}
 		numofInstance = numofInstance - 1;
 
 		eOsalError = TIMM_OSAL_MutexRelease(cam_mutex);
@@ -440,21 +436,20 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 			{
 				DOMX_DEBUG(" Error in DCC Init");
 			}
-		}
 
-		numofInstance = numofInstance + 1;
-
-		/* Configure Ducati to use DCC buffer from A9 side
-		 *ONLY* if DCC_Init is successful. */
-		if (dcc_eError == OMX_ErrorNone)
-		{
-			dcc_eError = send_DCCBufPtr(hComponent);
-			if (dcc_eError != OMX_ErrorNone)
+			/* Configure Ducati to use DCC buffer from A9 side
+			*ONLY* if DCC_Init is successful. */
+			if (dcc_eError == OMX_ErrorNone)
 			{
-				DOMX_DEBUG(" Error in Sending DCC Buf ptr");
+				dcc_eError = send_DCCBufPtr(hComponent);
+				if (dcc_eError != OMX_ErrorNone)
+				{
+					DOMX_DEBUG(" Error in Sending DCC Buf ptr");
+				}
+				DCC_DeInit();
 			}
-		}
-
+                }
+                numofInstance = numofInstance + 1;
 		eOsalError = TIMM_OSAL_MutexRelease(cam_mutex);
 		PROXY_assert(eOsalError == TIMM_OSAL_ERR_NONE,
 		    OMX_ErrorInsufficientResources, "Mutex release failed");
@@ -712,6 +707,7 @@ void DCC_DeInit()
 		MemMgr_Free(TilerAddr);
 	if (MemReqDescTiler)
 		TIMM_OSAL_Free(MemReqDescTiler);
+
 	DOMX_EXIT("EXIT");
 }
 
