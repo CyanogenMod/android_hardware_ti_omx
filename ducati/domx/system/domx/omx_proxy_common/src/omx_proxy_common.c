@@ -1377,6 +1377,10 @@ static OMX_ERRORTYPE PROXY_GetState(OMX_IN OMX_HANDLETYPE hComponent,
 	PROXY_checkRpcError();
 
       EXIT:
+	/* In case of hardware error, component is in unrecoverable state */
+	if (eError == OMX_ErrorHardware)
+		*pState = OMX_StateInvalid;
+
 	DOMX_EXIT("eError: %d", eError);
 	return eError;
 }
