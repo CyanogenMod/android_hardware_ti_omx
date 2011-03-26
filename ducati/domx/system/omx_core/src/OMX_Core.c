@@ -90,6 +90,9 @@ char *tComponentName[MAXCOMP][MAX_ROLES] = {
     {"OMX.TI.DUCATI1.VIDEO.VP6D",   "video_decoder.vp6", NULL},
     {"OMX.TI.DUCATI1.VIDEO.VP7D",   "video_decoder.vp7", NULL},
     {"OMX.TI.DUCATI1.IMAGE.JPEGD",  "jpeg_decoder.jpeg", NULL},
+    {"OMX.ITTIAM.WMA.decode",  "audio_decoder.wma", NULL},
+    {"OMX.ITTIAM.WMALSL.decode", "audio_decoder.wmalsl", NULL},
+    {"OMX.ITTIAM.WMAPRO.decode", "audio_decoder.wmapro", NULL},
     /* terminate the table */
     {NULL, NULL},
 };
