@@ -1378,7 +1378,7 @@ RPC_OMX_ERRORTYPE RPC_GetComponentVersion(RPC_OMX_HANDLE hRPCCtx,
 	RPC_OMX_BYTE *pMsgBody = NULL;
 	OMX_U32 offset = 0;
 	VERSION_INFO *pVer;
-	OMX_U32 nPacketSize = PACKET_SIZE;
+	OMX_U32 nPacketSize = RPC_GETCOMPVER_PACKET_SIZE;;
 	RcmClient_Message *pPacket = NULL;
 	RcmClient_Message *pRetPacket = NULL;
 	OMX_S16 status;
@@ -1437,6 +1437,8 @@ RPC_OMX_ERRORTYPE RPC_GetComponentVersion(RPC_OMX_HANDLE hRPCCtx,
 		    sizeof(pVer->sVersion.s));
 		TIMM_OSAL_Memcpy(pSpecVersion, &(pVer->sSpecVersion.s),
 		    sizeof(pVer->sSpecVersion.s));
+		TIMM_OSAL_Memcpy(pComponentUUID, &(pVer->sUUID),
+		    sizeof(OMX_UUIDTYPE));
 	}
 
 	RPC_freePacket(hCtx->ClientHndl[RCM_DEFAULT_CLIENT], pRetPacket);
