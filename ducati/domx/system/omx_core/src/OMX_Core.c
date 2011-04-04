@@ -93,6 +93,7 @@ char *tComponentName[MAXCOMP][MAX_ROLES] = {
     {"OMX.ITTIAM.WMA.decode",  "audio_decoder.wma", NULL},
     {"OMX.ITTIAM.WMALSL.decode", "audio_decoder.wmalsl", NULL},
     {"OMX.ITTIAM.WMAPRO.decode", "audio_decoder.wmapro", NULL},
+    {"OMX.ITTIAM.AAC.encode", "audio_encoder.aac", NULL},
     /* terminate the table */
     {NULL, NULL},
 };
