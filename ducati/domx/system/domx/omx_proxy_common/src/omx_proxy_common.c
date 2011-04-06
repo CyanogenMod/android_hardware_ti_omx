@@ -146,6 +146,10 @@ extern OMX_BOOL ducatiFault;
                 eError = OMX_ErrorUndefined; \
         } \
     } \
+    if (eError != OMX_ErrorNone) \
+    { \
+        DOMX_ERROR("Returning error, eError = 0x%x", eError); \
+    } \
     } while(0)
 
 
