@@ -54,7 +54,7 @@
 
 #include <semaphore.h>
 #include <sys/time.h>
-
+#include <errno.h>
 
 #include "timm_osal_types.h"
 #include "timm_osal_trace.h"
@@ -189,6 +189,8 @@ TIMM_OSAL_ERRORTYPE TIMM_OSAL_SemaphoreObtain(TIMM_OSAL_PTR pSemaphore,
 
 		if (SUCCESS != sem_timedwait(psem, &abs_timeout))
 		{
+			if (errno == ETIMEDOUT)
+				bReturnStatus = TIMM_OSAL_WAR_TIMEOUT;
 			/*TIMM_OSAL_Error("Semaphore Timed Wait failed !"); */
 			goto EXIT;
 		}
