@@ -85,7 +85,7 @@
 #define APPM3_PROC_NAME             "AppM3"
 #define SET_WATCHDOG_TIMEOUT  // For customer request to kill mediaserver
 #ifdef  SET_WATCHDOG_TIMEOUT
-#define WATCHDOG_TIMEOUT 5
+#define WATCHDOG_TIMEOUT 5000
 #endif
 /*The version nos. start with 1 and keep on incrementing every time there is a
 protocol change in DOMX. This is just a marker to ensure that A9-Ducati DOMX
@@ -113,6 +113,10 @@ extern OMX_U32 heapIdArray[MAX_NUMBER_OF_HEAPS];
 
 extern TIMM_OSAL_PTR testSem;
 extern TIMM_OSAL_PTR testSemSys;
+#ifdef  SET_WATCHDOG_TIMEOUT
+static TIMM_OSAL_PTR pWatchDogSem;
+static OMX_BOOL bWatchDogSem = FALSE;
+#endif
 
 /* ******************************* GLOBALS ********************************* */
 RPC_Object rpcHndl[CORE_MAX];
@@ -185,18 +189,6 @@ static void RPC_SignalHandler_for_FaultHandlingThread(OMX_S32 nSignal)
 {
 	DOMX_DEBUG("In Dummy signal handler - fault handler thread will now exit");
 }
-
-#ifdef SET_WATCHDOG_TIMEOUT
-static void WatchDogSigHandler(OMX_S32 nSignal)
-{
-	DOMX_DEBUG("In WatchDog signal handler");
-	if ( SIGALRM == nSignal )
-	{
-		DOMX_DEBUG("SIGALRM has been received");
-		exit(0);
-	}
-}
-#endif
 /* ===========================================================================*/
 /**
  * @name RPC_InstanceInit()
@@ -396,7 +388,6 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 	if (nInstanceCount == 0)
 	{
 		currentNumOfComps = 0;
-		ducatiFault = OMX_FALSE;
 
 		/*Free up any remaining tiler buffers */
 		for (i = 0; i < MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS; i++)
@@ -425,37 +416,39 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 			eRPCError = eTmpError;
 		}
 
-		/*Setting up a dummy signal handler for a user defined signal*/
-		if (signal(SIGUSR1, RPC_SignalHandler_for_FaultHandlingThread)
-		    == SIG_ERR)
+		if (ducatiFault == OMX_FALSE)
 		{
-			DOMX_ERROR("Could not set up signal handler - thread \
-			    may not get cleaned up. This could lead to leaks.");
-			eRPCError = RPC_OMX_ErrorUndefined;
-		}
-		else
-		{
-			DOMX_DEBUG("Signal handler setup successfully");
-		}
+			/*Setting up a dummy signal handler for a user defined signal*/
+			if (signal(SIGUSR1, RPC_SignalHandler_for_FaultHandlingThread)
+				== SIG_ERR)
+			{
+				DOMX_ERROR("Could not set up signal handler - thread \
+					may not get cleaned up. This could lead to leaks.");
+				eRPCError = RPC_OMX_ErrorUndefined;
+			}
+			else
+			{
+				DOMX_DEBUG("Signal handler setup successfully");
+			}
 
-		/*Sending signal to fault handler thread to unblock it*/
-		if (SUCCESS !=  pthread_kill(ducatiFaultHandler, SIGUSR1))
-		{
-			DOMX_DEBUG("Thread does not exist - it would have \
-			    already exited");
-		}
-		else
-		{
-			DOMX_DEBUG("Signal succesfully send to fault handler \
-			    thread");
-		}
-
-		/*The fault handler thread should join successfully for
-		  proper cleanup*/
-		if (SUCCESS !=  pthread_join(ducatiFaultHandler, NULL))
-		{
-			DOMX_ERROR("Join thread failed");
-			eRPCError = RPC_OMX_ErrorUndefined;
+			/*Sending signal to fault handler thread to unblock it*/
+			if (SUCCESS !=  pthread_kill(ducatiFaultHandler, SIGUSR1))
+			{
+				DOMX_DEBUG("Thread does not exist - it would have \
+					already exited");
+			}
+			else
+			{
+				DOMX_DEBUG("Signal succesfully send to fault handler \
+					thread");
+			}
+			/*The fault handler thread should join successfully for
+			proper cleanup*/
+			if (SUCCESS !=  pthread_join(ducatiFaultHandler, NULL))
+			{
+				DOMX_ERROR("Join thread failed");
+				eRPCError = RPC_OMX_ErrorUndefined;
+			}
 		}
 
 		eTmpError = _RPC_IpcDestroy();
@@ -464,8 +457,19 @@ RPC_OMX_ERRORTYPE RPC_InstanceDeInit(RPC_OMX_HANDLE hRPCCtx)
 			TIMM_OSAL_Error("ipc destroy failed");
 			eRPCError = eTmpError;
 		}
+
+		ducatiFault = OMX_FALSE;
 #ifdef SET_WATCHDOG_TIMEOUT
-		alarm(0);//Cancel WatchDog Timer
+		if (bWatchDogSem)
+		{
+			TIMM_OSAL_SemaphoreRelease(pWatchDogSem);;//Release WatchDog Semaphore
+			bWatchDogSem = OMX_FALSE;
+			if (SUCCESS !=  pthread_join(ducatiFaultHandler, NULL))
+			{
+				DOMX_ERROR("Join thread failed");
+				eRPCError = RPC_OMX_ErrorUndefined;
+			}
+		}
 #endif
 	}
 
@@ -1327,6 +1331,7 @@ static void *RPC_DucatiFaultHandler(void *data)
 {
 	OMX_U32 status = 0;
 	OMX_U32 count;
+	TIMM_OSAL_ERRORTYPE eError = TIMM_OSAL_ERR_NONE;
 
 	/* The fault handler does not wait for PROC_START event.
 	   The events array values are used to index into the
@@ -1385,15 +1390,28 @@ static void *RPC_DucatiFaultHandler(void *data)
 	}
 
 #ifdef SET_WATCHDOG_TIMEOUT
-	if (signal(SIGALRM, WatchDogSigHandler) == SIG_ERR)
+	if (TIMM_OSAL_SemaphoreCreate(&pWatchDogSem, 0) != TIMM_OSAL_ERR_NONE)
 	{
-		DOMX_ERROR("Could not set up WatchDog signal handler thread \
-		This may cause a hang.");
+		DOMX_ERROR("WatchDog Semaphore Create failed!");
 	}
 	else
 	{
-		DOMX_DEBUG("WatchDog Signal handler setup successfully");
-		alarm(WATCHDOG_TIMEOUT);
+		DOMX_DEBUG("WatchDog Semaphore Create successfully");
+		bWatchDogSem = OMX_TRUE;
+		eError = TIMM_OSAL_SemaphoreObtain(pWatchDogSem, WATCHDOG_TIMEOUT);
+		if ( eError == TIMM_OSAL_ERR_NONE)
+		{
+			DOMX_DEBUG("WatchDog Semaphore Signaled");
+		}
+		else
+		{
+			if(eError == TIMM_OSAL_WAR_TIMEOUT)
+			{
+				DOMX_DEBUG("WatchDog Semaphore Timed Out Exitting Process");
+				exit(0);
+			}
+		}
+		TIMM_OSAL_SemaphoreDelete(pWatchDogSem);
 	}
 #endif
       EXIT:
