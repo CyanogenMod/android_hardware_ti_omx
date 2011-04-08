@@ -673,9 +673,9 @@ OMX_S32 read_DCCdir(OMX_PTR buffer, OMX_STRING * dir_path, OMX_U16 numofURI)
 						/* getting the size of the total dcc files available in FS */
 						dcc_buf_size =
 						    dcc_buf_size + lSize;
+						// terminate
+						fclose(pFile);
 					}
-					// terminate
-					fclose(pFile);
 				}
 			}
 			closedir(d);
