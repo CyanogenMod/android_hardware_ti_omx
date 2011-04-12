@@ -1361,9 +1361,9 @@ static void *RPC_DucatiFaultHandler(void *data)
 
 	if (status != PROCMGR_SUCCESS)
 	{
-		DOMX_ERROR("Error ProcMgr_waitForMultipleEvents %d\n",
+		DOMX_WARN("Error ProcMgr_waitForMultipleEvents %d\n",
 		    status);
-		DOMX_ERROR("Cannot perform error recovery.\n");
+		DOMX_WARN("Cannot perform error recovery.\n");
 		goto EXIT;
 	}
 
