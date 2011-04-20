@@ -218,5 +218,7 @@ extern "C"
 	OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 		OMX_BUFFERHEADERTYPE * pBufferHdr);
 
-
+#ifdef __cplusplus
+}
+#endif              /* __cplusplus */
 #endif
