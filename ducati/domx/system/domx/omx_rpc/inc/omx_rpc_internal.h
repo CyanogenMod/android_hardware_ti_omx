@@ -278,4 +278,7 @@ This is used to define the length of maximum string length the symbol can be*/
 		OMX_UUIDTYPE sUUID;
 	} VERSION_INFO;
 
+#ifdef __cplusplus
+}
+#endif              /* __cplusplus */
 #endif

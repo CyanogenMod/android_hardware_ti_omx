@@ -140,4 +140,7 @@ extern "C"
 	OMX_ERRORTYPE RPC_FillBufferDone(RPC_OMX_HANDLE hRPCCtx,
 	    OMX_PTR pAppData, OMX_BUFFERHEADERTYPE * pBuffer);
 
+#ifdef __cplusplus
+}
+#endif              /* __cplusplus */
 #endif

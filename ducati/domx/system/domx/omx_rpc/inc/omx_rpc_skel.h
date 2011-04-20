@@ -91,4 +91,7 @@ extern "C"
 	RPC_OMX_ERRORTYPE RPC_SKEL_ComponentTunnelRequest(UInt32 size,
 	    UInt32 * data);
 
+#ifdef __cplusplus
+}
+#endif              /* __cplusplus */
 #endif

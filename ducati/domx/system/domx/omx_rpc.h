@@ -180,4 +180,7 @@ extern "C"
 RPC_UTIL_RetrieveOMXHandle()
 */
 
+#ifdef __cplusplus
+}
+#endif              /* __cplusplus */
 #endif
