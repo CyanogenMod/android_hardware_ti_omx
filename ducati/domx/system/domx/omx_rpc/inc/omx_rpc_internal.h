@@ -105,6 +105,7 @@ This is used to define the length of maximum string length the symbol can be*/
  the statically registered heaps used for RCM buffers*/
 #define MAX_NUMBER_OF_HEAPS 4
 #define PACKET_SIZE 0xA0
+#define RPC_GETCOMPVER_PACKET_SIZE 0x12C
 /*
 #define CHIRON_PACKET_SIZE 0x90
 #define DUCATI_PACKET_SIZE 0x100
