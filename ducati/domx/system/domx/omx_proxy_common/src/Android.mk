@@ -6,6 +6,7 @@ LOCAL_PRELINK_MODULE := false
 
 LOCAL_SRC_FILES:= \
 	omx_proxy_common.c \
+	log_func_calls.c 
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../ \
@@ -16,6 +17,7 @@ LOCAL_C_INCLUDES += \
 	hardware/ti/tiler \
 	hardware/ti/syslink/syslink/d2c \
 	hardware/ti/syslink/syslink/api/include \
+	hardware/ti/omx/ducati/domx/system/domx/omx_proxy_common/src/
 
 LOCAL_CFLAGS := -pipe -fomit-frame-pointer -Wall  -Wno-trigraphs -Werror-implicit-function-declaration  -fno-strict-aliasing -mapcs -mno-sched-prolog -mabi=aapcs-linux -mno-thumb-interwork -msoft-float -Uarm -DMODULE -D__LINUX_ARM_ARCH__=7  -fno-common -DLINUX -fpic
 LOCAL_CFLAGS += -D_Android

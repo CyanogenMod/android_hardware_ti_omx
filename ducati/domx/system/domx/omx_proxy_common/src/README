@@ -1,0 +1,11 @@
+In log_func_calls.h comment this line to disable logging
+#define DUMP_LOG_ENABLED
+
+In omx_proxy_common.c
+
+OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
+{
+    proxyCommonLog.enabledFuncMask = (unsigned)(-1); /// Set Bitmask
+
+This sets the bitmask which tells the logger which function calls to log.
+At the beginning of the file there is a look up table that matches the functions with their coresponding bit mask
