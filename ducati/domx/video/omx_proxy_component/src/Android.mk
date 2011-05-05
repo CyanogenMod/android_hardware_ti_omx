@@ -32,6 +32,7 @@ include $(LOCAL_PATH)/Config.mk
 LOCAL_CFLAGS += -D__H264_ENC__ -D_OPENCORE
 LOCAL_SRC_FILES:= \
 	android_omx_proxy_enc.c
+LOCAL_SHARED_LIBRARIES += libcutils
 LOCAL_MODULE:= libOMX.TI.DUCATI1.VIDEO.H264E
 include $(BUILD_SHARED_LIBRARY)
 
@@ -39,6 +40,7 @@ include $(LOCAL_PATH)/Config.mk
 LOCAL_CFLAGS += -D__MPEG4_ENC__ -D_OPENCORE
 LOCAL_SRC_FILES:= \
 	android_omx_proxy_enc.c
+LOCAL_SHARED_LIBRARIES += libcutils
 LOCAL_MODULE:= libOMX.TI.DUCATI1.VIDEO.MPEG4E
 include $(BUILD_SHARED_LIBRARY)
 
