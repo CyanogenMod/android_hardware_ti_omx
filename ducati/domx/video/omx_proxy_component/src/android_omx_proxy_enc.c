@@ -194,7 +194,7 @@ static OMX_ERRORTYPE OMX_ConfigureDynamicPFramesInH264E( OMX_HANDLETYPE hCompone
 	remainder = nTargetPFrames % (nBFrames + 1);
 	nTargetPFrames = nTargetPFrames - remainder;
 	if(nTargetPFrames == nCurrentPFrames){
-		DOMX_DEBUG(" No Change in P Frames, No Update required");
+		DOMX_INFO(" No Change in P Frames, No Update required");
 		return OMX_ErrorNone;
 	}
 
@@ -244,7 +244,7 @@ static OMX_ERRORTYPE OMX_ConfigureDynamicFrameRate( OMX_HANDLETYPE hComponent,
 		eError = pHandle->GetConfig(hComponent,OMX_IndexConfigVideoFramerate,&tFrameRate);
 		nFrameRateThreshold = tFrameRate.xEncodeFramerate >>16;
 		nPortFrameRate = nFrameRateThreshold;
-		DOMX_DEBUG(" Port Frame Rate is %d ", nPortFrameRate);
+		DOMX_INFO(" Port Frame Rate is %d ", nPortFrameRate);
 	}
 	nCurrentFrameRate = nFrameRateThreshold;
 
@@ -265,7 +265,7 @@ static OMX_ERRORTYPE OMX_ConfigureDynamicFrameRate( OMX_HANDLETYPE hComponent,
 	  * Rate set is never greater than the port FPS initially set.
 	  */
 	if(nTargetFrameRate > nPortFrameRate){
-		DOMX_DEBUG("Frame Rate Calculated is more than initial port set Frame Rate");
+		DOMX_INFO("Frame Rate Calculated is more than initial port set Frame Rate");
 		nTargetFrameRate = nPortFrameRate;
 	}
 
@@ -310,7 +310,7 @@ static OMX_ERRORTYPE ComponentPrivateEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
 	OMX_STRING hCompName ;
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
-	hCompName = malloc(128);
+	hCompName = malloc(OMX_MAX_STRINGNAME_SIZE);
 
 	/* Get the name of OMX Component */
 	eError = OMX_GetOMXComponentName(hComp, hCompName);
@@ -326,7 +326,7 @@ static OMX_ERRORTYPE ComponentPrivateEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 		if( eError != OMX_ErrorNone)
 			DOMX_ERROR(" Error while configuring FrameRate Dynamically.Error  info = %d",eError);
 	}
-	DOMX_DEBUG("Redirection from ComponentPricateEmptyThisBuffer to PROXY_EmptyThisBuffer");
+	DOMX_INFO("Redirection from ComponentPricateEmptyThisBuffer to PROXY_EmptyThisBuffer");
 	return PROXY_EmptyThisBuffer( hComponent,pBufferHdr);
 }
 
