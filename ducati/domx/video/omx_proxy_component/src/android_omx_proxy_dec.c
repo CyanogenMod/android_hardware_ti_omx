@@ -70,6 +70,9 @@
 
 #undef LOG_TAG
 #define LOG_TAG "OMX_PROXYDEC"
+#ifdef DOMX_DEBUG
+#undef DOMX_DEBUG
+#endif
 #define DOMX_DEBUG LOGE
 #endif
 
@@ -141,12 +144,10 @@ typedef union VIDDEC_WMV_VC1_header {
 
 
 #ifdef _OPENCORE
-static RPC_OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
+static OMX_ERRORTYPE ComponentPrivateGetParameters(OMX_IN OMX_HANDLETYPE
 	hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
 	OMX_INOUT OMX_PTR pComponentParameterStructure)
 {
-	OMX_ERRORTYPE eError = OMX_ErrorNone;
-
 	if (nParamIndex == PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX)
 	{
 		DOMX_DEBUG("PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX\n");
@@ -205,7 +206,6 @@ static OMX_ERRORTYPE PrearrageEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 		pBuffer = pBufferHdr->pBuffer;
 
 		VIDDEC_WMV_RCV_header  hBufferRCV;
-		VIDDEC_WMV_VC1_header  hBufferVC1;
 
 		LOGV("nFlags: %x", pBufferHdr->nFlags);
 
@@ -314,7 +314,7 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 		goto EXIT;
 	}
 	pComponentPrivate->cCompName =
-	    (OMX_U8 *) TIMM_OSAL_Malloc(MAX_COMPONENT_NAME_LENGTH *
+	    (char *)TIMM_OSAL_Malloc(MAX_COMPONENT_NAME_LENGTH *
 	    sizeof(OMX_U8), TIMM_OSAL_TRUE, 0, TIMMOSAL_MEM_SEGMENT_INT);
 	if (pComponentPrivate->cCompName == NULL)
 	{
@@ -326,7 +326,7 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 	}
 	// Copying component Name - this will be picked up in the proxy common
 	assert(strlen(COMPONENT_NAME) + 1 < MAX_COMPONENT_NAME_LENGTH);
-	TIMM_OSAL_Memcpy(pComponentPrivate->cCompName, COMPONENT_NAME,
+	TIMM_OSAL_Memcpy(pComponentPrivate->cCompName, (void *)COMPONENT_NAME,
 	    strlen(COMPONENT_NAME) + 1);
 	eError = OMX_ProxyCommonInit(hComponent);	// Calling Proxy Common Init()
 
