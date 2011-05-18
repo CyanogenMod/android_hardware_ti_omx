@@ -203,82 +203,97 @@ static OMX_ERRORTYPE PrearrageEmptyThisBuffer(OMX_HANDLETYPE hComponent,
 		PROXY_assert(hComp->pComponentPrivate != NULL, OMX_ErrorBadParameter, NULL);
 
 		pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
-		pBuffer = pBufferHdr->pBuffer;
+		/* Get component role */
+		OMX_PARAM_COMPONENTROLETYPE compRole;
+		compRole.nSize = sizeof(OMX_PARAM_COMPONENTROLETYPE);
+		compRole.nVersion.s.nVersionMajor = 1;
+		compRole.nVersion.s.nVersionMinor = 1; //Ducati OMX version
+		compRole.nVersion.s.nRevision = 0;
+		compRole.nVersion.s.nStep = 0;
 
-		VIDDEC_WMV_RCV_header  hBufferRCV;
-
-		LOGV("nFlags: %x", pBufferHdr->nFlags);
-
-		pData = pBufferHdr->pBuffer + 15; /*Position to Width & Height*/
-		VIDDEC_LoadDWORD(nValue, pData);
-		nWidth = nValue;
-		VIDDEC_LoadDWORD(nValue, pData);
-		nHeight = nValue;
-
-		pData += 4; /*Position to compression type*/
-		VIDDEC_LoadDWORD(nValue, pData);
-		nActualCompression = nValue;
-
-		/*Seting pCSD to proper position*/
-		pCSD = pBufferHdr->pBuffer;
-		pCSD += CSD_POSITION;
-		nSize_CSD = pBufferHdr->nFilledLen - CSD_POSITION;
-
-		if(nActualCompression == FOURCC_WMV3){
-			hBufferRCV.sStructRCV =
-				(VIDDEC_WMV_RCV_struct *)
-				TIMM_OSAL_Malloc(sizeof(VIDDEC_WMV_RCV_struct), TIMM_OSAL_TRUE,
-				0, TIMMOSAL_MEM_SEGMENT_INT);
-
-			PROXY_assert(hBufferRCV.sStructRCV != NULL,
-				OMX_ErrorInsufficientResources, "Malloc failed");
-
-			//From VC-1 spec: Table 265: Sequence Layer Data Structure
-			hBufferRCV.sStructRCV->nNumFrames = 0xFFFFFF; /*Infinite frame number*/
-			hBufferRCV.sStructRCV->nFrameType = 0xc5; /*0x85 is the value given by ASF to rcv converter*/
-			hBufferRCV.sStructRCV->nID = 0x04; /*WMV3*/
-			hBufferRCV.sStructRCV->nStructData = 0x018a3106; /*0x06318a01zero fill 0x018a3106*/
-			hBufferRCV.sStructRCV->nVertSize = nHeight;
-			hBufferRCV.sStructRCV->nHorizSize = nWidth;
-			hBufferRCV.sStructRCV->nID2 = 0x0c; /* Fix value */
-			hBufferRCV.sStructRCV->nSequenceHdr = 0x00002a9f; /* This value is not provided by parser, so giving a value from a video*/
-
-			LOGV("initial: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
-			LOGV("pCSD = %x", (OMX_U32)*pCSD);
-
-			hBufferRCV.sStructRCV->nStructData = (OMX_U32)pCSD[0] << 0  |
-				pCSD[1] << 8  |
-				pCSD[2] << 16 |
-				pCSD[3] << 24;
-
-			LOGV("FINAL: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
-
-			//Copy RCV structure to actual buffer
-			assert(pBufferHdr->nFilledLen < pBufferHdr->nAllocLen);
-			pBufferHdr->nFilledLen = sizeof(VIDDEC_WMV_RCV_struct);
-			TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, (OMX_U8*)hBufferRCV.pBuffer,
-				pBufferHdr->nFilledLen);
-
-			//Free aloocated memory
-			TIMM_OSAL_Free(hBufferRCV.sStructRCV);
+		eError = PROXY_GetParameter(hComp, OMX_IndexParamStandardComponentRole, &compRole);
+		if(eError != OMX_ErrorNone){
+			LOGE("%s::%d:Error getting OMX_IndexParamStandardComponentRole", __FUNCTION__, __LINE__);
 		}
-		else if (nActualCompression == FOURCC_WVC1){
-			LOGV("VC-1 Advance Profile prearrange");
-			OMX_U8* pTempBuf =
-				(OMX_U8 *)
-				TIMM_OSAL_Malloc(pBufferHdr->nFilledLen, TIMM_OSAL_TRUE,
-				0, TIMMOSAL_MEM_SEGMENT_INT);
 
-			PROXY_assert(pTempBuf != NULL,
-				OMX_ErrorInsufficientResources, "Malloc failed");
+		if(!strcmp(compRole.cRole, "video_decoder.wmv")){
+			pBuffer = pBufferHdr->pBuffer;
 
-			TIMM_OSAL_Memcpy(pTempBuf, pBufferHdr->pBuffer+52,
-				pBufferHdr->nFilledLen-52);
-			TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, pTempBuf,
-				pBufferHdr->nFilledLen-52);
-			pBufferHdr->nFilledLen -= 52;
+			VIDDEC_WMV_RCV_header  hBufferRCV;
 
-			TIMM_OSAL_Free(pTempBuf);
+			LOGV("nFlags: %x", pBufferHdr->nFlags);
+
+			pData = pBufferHdr->pBuffer + 15; /*Position to Width & Height*/
+			VIDDEC_LoadDWORD(nValue, pData);
+			nWidth = nValue;
+			VIDDEC_LoadDWORD(nValue, pData);
+			nHeight = nValue;
+
+			pData += 4; /*Position to compression type*/
+			VIDDEC_LoadDWORD(nValue, pData);
+			nActualCompression = nValue;
+
+			/*Seting pCSD to proper position*/
+			pCSD = pBufferHdr->pBuffer;
+			pCSD += CSD_POSITION;
+			nSize_CSD = pBufferHdr->nFilledLen - CSD_POSITION;
+
+			if(nActualCompression == FOURCC_WMV3){
+				hBufferRCV.sStructRCV =
+					(VIDDEC_WMV_RCV_struct *)
+					TIMM_OSAL_Malloc(sizeof(VIDDEC_WMV_RCV_struct), TIMM_OSAL_TRUE,
+					0, TIMMOSAL_MEM_SEGMENT_INT);
+
+				PROXY_assert(hBufferRCV.sStructRCV != NULL,
+					OMX_ErrorInsufficientResources, "Malloc failed");
+
+				//From VC-1 spec: Table 265: Sequence Layer Data Structure
+				hBufferRCV.sStructRCV->nNumFrames = 0xFFFFFF; /*Infinite frame number*/
+				hBufferRCV.sStructRCV->nFrameType = 0xc5; /*0x85 is the value given by ASF to rcv converter*/
+				hBufferRCV.sStructRCV->nID = 0x04; /*WMV3*/
+				hBufferRCV.sStructRCV->nStructData = 0x018a3106; /*0x06318a01zero fill 0x018a3106*/
+				hBufferRCV.sStructRCV->nVertSize = nHeight;
+				hBufferRCV.sStructRCV->nHorizSize = nWidth;
+				hBufferRCV.sStructRCV->nID2 = 0x0c; /* Fix value */
+				hBufferRCV.sStructRCV->nSequenceHdr = 0x00002a9f; /* This value is not provided by parser, so giving a value from a video*/
+
+				LOGV("initial: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
+				LOGV("pCSD = %x", (OMX_U32)*pCSD);
+
+				hBufferRCV.sStructRCV->nStructData = (OMX_U32)pCSD[0] << 0  |
+					pCSD[1] << 8  |
+					pCSD[2] << 16 |
+					pCSD[3] << 24;
+
+				LOGV("FINAL: nStructData: %x", hBufferRCV.sStructRCV->nStructData);
+
+				//Copy RCV structure to actual buffer
+				assert(pBufferHdr->nFilledLen < pBufferHdr->nAllocLen);
+				pBufferHdr->nFilledLen = sizeof(VIDDEC_WMV_RCV_struct);
+				TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, (OMX_U8*)hBufferRCV.pBuffer,
+					pBufferHdr->nFilledLen);
+
+				//Free aloocated memory
+				TIMM_OSAL_Free(hBufferRCV.sStructRCV);
+			}
+			else if (nActualCompression == FOURCC_WVC1){
+				LOGV("VC-1 Advance Profile prearrange");
+				OMX_U8* pTempBuf =
+					(OMX_U8 *)
+					TIMM_OSAL_Malloc(pBufferHdr->nFilledLen, TIMM_OSAL_TRUE,
+					0, TIMMOSAL_MEM_SEGMENT_INT);
+
+				PROXY_assert(pTempBuf != NULL,
+					OMX_ErrorInsufficientResources, "Malloc failed");
+
+				TIMM_OSAL_Memcpy(pTempBuf, pBufferHdr->pBuffer+52,
+					pBufferHdr->nFilledLen-52);
+				TIMM_OSAL_Memcpy(pBufferHdr->pBuffer, pTempBuf,
+					pBufferHdr->nFilledLen-52);
+				pBufferHdr->nFilledLen -= 52;
+
+				TIMM_OSAL_Free(pTempBuf);
+			}
 		}
 	}
 
