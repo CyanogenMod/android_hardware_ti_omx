@@ -518,15 +518,19 @@ OMX_ERRORTYPE PROXY_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
 	{
 		if(pBufferHdr->nAllocLen > 0 && (pBufferHdr->nFlags & OMX_BUFFERFLAG_EXTRADATA))
 		{
-			eRPCError =
+                    if (!(pBufferHdr->nFlags & OMX_TI_BUFFERFLAG_AVOIDFLUSH)) {
+                        eRPCError =
 				RPC_FlushBuffer(pBuffer, pBufferHdr->nAllocLen,
 				TARGET_CORE_ID);
+                    }
 		}
 		else if(pBufferHdr->nFilledLen > 0)
 		{
-			eRPCError =
+                    if (!(pBufferHdr->nFlags & OMX_TI_BUFFERFLAG_AVOIDFLUSH)) {
+                        eRPCError =
 				RPC_FlushBuffer(pBuffer, pBufferHdr->nFilledLen,
 				TARGET_CORE_ID);
+                    }
 		}
 		PROXY_assert(eRPCError == RPC_OMX_ErrorNone,
 			OMX_ErrorHardware, "Flush Buffer failed");
