@@ -56,6 +56,8 @@ extern "C" {
 
 #define MAX_URI_LENGTH      (OMX_MAX_STRINGNAME_SIZE)
 
+#define DCC_PATH  "/system/etc/omapcam/"
+
 /*======================================================================= */
 /* Enumerated values for operation mode for compressed image
  *
