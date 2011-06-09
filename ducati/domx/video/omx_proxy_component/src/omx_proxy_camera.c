@@ -518,6 +518,15 @@ OMX_ERRORTYPE DCC_Init(OMX_HANDLETYPE hComponent)
 
 	dccbuf_size = read_DCCdir(NULL, dcc_dir, nIndex);
 
+    // If there are no dcc files return error, so nothing is sent to ducati
+    if (!dccbuf_size)
+    {
+        DOMX_DEBUG("No dcc files are found!!!");
+        eError = OMX_ErrorNoMore;
+        goto EXIT;
+    }
+
+
 	PROXY_assert(dccbuf_size > 0, OMX_ErrorInsufficientResources,
 	    "No DCC files found, switching back to default DCC");
 
