@@ -76,6 +76,9 @@ extern "C" {
  * this.*/
 #define OMX_TI_BUFFERFLAG_DETACHEDEXTRADATA 0x00000400
 
+/* Adding new flag to cause the buffer flush to be skipped, as in the DRM case */
+#define OMX_TI_BUFFERFLAG_AVOIDFLUSH 0x00000800
+
 typedef struct OMX_CONFIG_CHANNELNAME {
 
 	OMX_U32 nSize; /**< Size of the structure in bytes */
