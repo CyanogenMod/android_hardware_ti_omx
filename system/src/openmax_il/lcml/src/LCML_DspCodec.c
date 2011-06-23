@@ -59,6 +59,11 @@
 #include <sys/time.h>
 #include <sys/prctl.h>
 
+#define CAM_FIX
+#ifdef CAM_FIX
+static pthread_mutex_t* AVOID_DSPMMU_mutex = NULL;
+#endif
+
 #define CEXEC_DONE 1
 /*DSP_HNODE hDasfNode;*/
 #define ABS_DLL_NAME_LENGTH 128
@@ -187,6 +192,16 @@ OMX_ERRORTYPE GetHandle(OMX_HANDLETYPE *hInterface )
     memset(pHandle->dspCodec, 0, sizeof(LCML_DSP));
 
     pthread_mutex_init (&pHandle->mutex, NULL);
+
+#ifdef CAM_FIX
+    LOGD("LCML PATCH init");
+    if(AVOID_DSPMMU_mutex == NULL)
+    {
+        LCML_MALLOC(AVOID_DSPMMU_mutex, sizeof(pthread_mutex_t), pthread_mutex_t, err);
+        pthread_mutex_init (AVOID_DSPMMU_mutex, NULL);
+    }
+#endif
+
     dspcodecinterface->pCodec = *hInterface;
     OMX_PRINT2 (dspcodecinterface->dbg, "GetHandle application handle %p dspCodec %p",pHandle, pHandle->dspCodec);
 
@@ -432,12 +447,24 @@ static OMX_ERRORTYPE InitMMCodecEx(OMX_HANDLETYPE hInt,
                 goto ERROR;
             }
         }
-
+#ifdef  CAM_FIX
+        LOGD("LCML PATCH create");
+        pthread_mutex_lock(AVOID_DSPMMU_mutex);
+#endif
         status = DSPNode_Create(phandle->dspCodec->hNode);
+#ifdef  CAM_FIX
+        pthread_mutex_unlock(AVOID_DSPMMU_mutex);
+#endif
         DSP_ERROR_EXIT(status, "Create the Node", ERROR, hInt);
         OMX_PRDSP1 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: After DSPNode_Create !!! \n", __LINE__);
-
+#ifdef  CAM_FIX
+        LOGD("LCML PATCH run");
+        pthread_mutex_lock(AVOID_DSPMMU_mutex);
+#endif
         status = DSPNode_Run(phandle->dspCodec->hNode);
+#ifdef  CAM_FIX
+        pthread_mutex_unlock(AVOID_DSPMMU_mutex);
+#endif
         DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR, hInt);
         OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Run Successfully\n", __LINE__);
 
@@ -753,12 +780,25 @@ static OMX_ERRORTYPE InitMMCodec(OMX_HANDLETYPE hInt,
             goto ERROR;
         }
     }
-
+#ifdef CAM_FIX
+    LOGD("LCML PATCH create");
+    pthread_mutex_lock(AVOID_DSPMMU_mutex);
+#endif
     status = DSPNode_Create(phandle->dspCodec->hNode);
+#ifdef CAM_FIX
+    pthread_mutex_unlock(AVOID_DSPMMU_mutex);
+#endif
     DSP_ERROR_EXIT(status, "Create the Node", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: After DSPNode_Create !!! \n", __LINE__);
 
+#ifdef  CAM_FIX
+    LOGD("LCML PATCH run");
+    pthread_mutex_lock(AVOID_DSPMMU_mutex);
+#endif
     status = DSPNode_Run (phandle->dspCodec->hNode);
+#ifdef  CAM_FIX
+    pthread_mutex_unlock(AVOID_DSPMMU_mutex);
+#endif
     DSP_ERROR_EXIT (status, "Goto RUN mode", ERROR, hInt);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInt)->dbg, "%d :: DSPNode_Run Successfully\n", __LINE__);
 
@@ -1696,9 +1736,15 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
 
     /* Get current state of node, if it is running, then only terminate it */
 
+#ifdef CAM_FIX
+    LOGD("DeleteDspResource Enter");
+    pthread_mutex_lock(AVOID_DSPMMU_mutex);
+#endif
+
     status = DSPNode_GetAttr(hInterface->dspCodec->hNode, &nodeAttr, sizeof(nodeAttr));
     DSP_ERROR_EXIT (status, "DeInit: Error in Node GetAtt ", EXIT, hInterface->pCodecinterfacehandle);
-        status = DSPNode_Terminate(hInterface->dspCodec->hNode, &nExit);
+
+    status = DSPNode_Terminate(hInterface->dspCodec->hNode, &nExit);
     OMX_PRINT1 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: LCML:: Node Has Been Terminated --1\n",__LINE__);
     codec = (LCML_DSP_INTERFACE *)(((LCML_CODEC_INTERFACE*)hInterface->pCodecinterfacehandle)->pCodec);
     if(codec->g_aNotificationObjects[0]!= NULL)
@@ -1719,6 +1765,7 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
     }
     /* delete SN */
     status = DSPNode_Delete(hInterface->dspCodec->hNode);
+
     DSP_ERROR_EXIT (status, "DeInit: Codec Node Delete ", EXIT, hInterface->pCodecinterfacehandle);
     OMX_PRDSP2 (((LCML_CODEC_INTERFACE *)hInterface->pCodecinterfacehandle)->dbg, "%d :: Deleted the node Successfully\n",__LINE__);
 
@@ -1732,6 +1779,11 @@ OMX_ERRORTYPE DeleteDspResource(LCML_DSP_INTERFACE *hInterface)
     }
 
 EXIT:
+#ifdef CAM_FIX
+    pthread_mutex_unlock(AVOID_DSPMMU_mutex);
+    LOGD("DeleteDspResource Exit");
+#endif
+
     /* always call DSPManager_Close() even if DSPBridge API is not accessible.
         In the case of an error, all handles to DSPBridge have to be closed so that
         it can recover properly.*/
