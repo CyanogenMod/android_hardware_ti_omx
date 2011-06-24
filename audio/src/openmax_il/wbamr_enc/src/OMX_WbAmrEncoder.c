@@ -404,7 +404,7 @@ OMX_ERRORTYPE OMX_ComponentInit (OMX_HANDLETYPE hComp) {
     pPortDef_ip->eDir                               = OMX_DirInput;
     pPortDef_ip->nBufferCountActual                 = WBAMRENC_NUM_INPUT_BUFFERS;
     pPortDef_ip->nBufferCountMin                    = WBAMRENC_NUM_INPUT_BUFFERS;
-    pPortDef_ip->nBufferSize                        = WBAMRENC_INPUT_FRAME_SIZE;
+    pPortDef_ip->nBufferSize                        = WBAMRENC_INPUT_FRAME_SIZE*WBAMRENC_MAX_NUM_OF_FRAMES;
     pPortDef_ip->nBufferAlignment                   = DSP_CACHE_ALIGNMENT;
     pPortDef_ip->bEnabled                           = OMX_TRUE;
     pPortDef_ip->bPopulated                         = OMX_FALSE;
