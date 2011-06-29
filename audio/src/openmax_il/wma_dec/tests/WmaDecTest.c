@@ -1240,34 +1240,40 @@ printf("\n**********************************************************************
                     }
                     break;
             case 4:
-                if(FD_ISSET(IpBuf_Pipe[0], &rfds)) {
+                    if (FD_ISSET(IpBuf_Pipe[0], &rfds)) {
 
-                    OMX_BUFFERHEADERTYPE* pBuffer;
-                    read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
-                    if(frmCount >= 5) {
-                        fprintf(stderr, "Shutting down ---------- \n");
+                        if (!done) {
+                            OMX_BUFFERHEADERTYPE* pBuffer;
+                            read(IpBuf_Pipe[0], &pBuffer, sizeof(pBuffer));
+                            if (frmCount >= 5) {
+                                fprintf(stderr, "Shutting down ---------- \n");
 #ifdef OMX_GETTIME
-                        GT_START();
-                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
-                        GT_END("Call to SendCommand <OMX_StateIdle>");
+                                GT_START();
+                                error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);
+                                GT_END("Call to SendCommand <OMX_StateIdle>");
 #else
-                        error = OMX_SendCommand(pHandle,OMX_CommandStateSet, OMX_StateIdle, NULL);;
+                                error = OMX_SendCommand(pHandle,
+                                        OMX_CommandStateSet, OMX_StateIdle,
+                                        NULL);
 #endif
-                        if(error != OMX_ErrorNone) {
-                            fprintf (stderr,"Error from SendCommand-Idle(Stop) State function\n");
-                            goto EXIT;
+                                if (error != OMX_ErrorNone) {
+                                    fprintf(stderr,
+                                            "Error from SendCommand-Idle(Stop) State function\n");
+                                    goto EXIT;
+                                }
+                                done = 1;
+                            } else {
+                                error
+                                        = send_input_buffer(pHandle, pBuffer,
+                                                fIn);
+                                if (error != OMX_ErrorNone) {
+                                    printf("Error While reading input pipe\n");
+                                    goto EXIT;
+                                }
+                            }
                         }
-                        done = 1;
                     }
-                    else {
-                        error = send_input_buffer (pHandle, pBuffer, fIn);
-                        if (error != OMX_ErrorNone) {
-                            printf ("Error While reading input pipe\n");
-                            goto EXIT;
-                        }
-                    }
-                }
-                 break;
+                    break;
             case 3:
                     if (frmCount == 8) {
                         printf (" Sending Resume command to Codec \n");
@@ -1365,7 +1371,6 @@ printf("\n**********************************************************************
 			
             if(done == 1) {
                 error = pComponent->GetState(pHandle, &state);
-    			printf("done\n");
                 if(error != OMX_ErrorNone) {
                     APP_DPRINT("%d:: Warning:  hWmaEncoder->GetState has returned status %X\n",
                                                                                       __LINE__, error);
