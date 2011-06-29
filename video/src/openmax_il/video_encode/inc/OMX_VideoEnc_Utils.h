@@ -95,8 +95,6 @@
     #define GPP_PRIVATE_NODE_HEAP
 #endif
 
-#define VIDENC_NUM_CUSTOM_INDEXES 23
-
 #if 1
     #define __KHRONOS_CONF__
 #endif
