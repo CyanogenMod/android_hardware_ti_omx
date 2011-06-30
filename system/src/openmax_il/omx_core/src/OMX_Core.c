@@ -130,6 +130,7 @@ char *tComponentName[MAXCOMP][3] = {
     {"OMX.ITTIAM.AAC.decode", "audio_decoder.aac", MAX_CONCURRENT_INSTANCES},
     {"OMX.ITTIAM.AAC.encode", "audio_encoder.aac", MAX_CONCURRENT_INSTANCES},
     {"OMX.TI.WMA.decode", "audio_decoder.wma", MAX_CONCURRENT_INSTANCES},
+    {"OMX.ITTIAM.WMA.decode", "audio_decoder.wma", MAX_CONCURRENT_INSTANCES},
 /*  {"OMX.TI.PCM.encode", NULL},
     {"OMX.TI.PCM.decode", NULL},     
     {"OMX.TI.RAG.decode", "audio_decoder.ra"},
