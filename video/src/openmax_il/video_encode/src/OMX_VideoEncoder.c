@@ -2702,7 +2702,7 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
 {
     VIDENC_COMPONENT_PRIVATE* pComponentPrivate = NULL;
 
-    VIDENC_CUSTOM_DEFINITION sVideoEncodeCustomIndex[VIDENC_NUM_CUSTOM_INDEXES] =
+    VIDENC_CUSTOM_DEFINITION sVideoEncodeCustomIndex[] =
     {
         {"OMX.TI.VideoEncode.Param.VBVSize", VideoEncodeCustomParamIndexVBVSize},
         {"OMX.TI.VideoEncode.Param.DeblockFilter", VideoEncodeCustomParamIndexDeblockFilter},
@@ -2752,7 +2752,7 @@ static OMX_ERRORTYPE ExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
                                "Component is in invalid state.\n");
     }
 
-    for (nIndex = 0; nIndex < VIDENC_NUM_CUSTOM_INDEXES; nIndex++)
+    for (nIndex = 0; nIndex < sizeof(sVideoEncodeCustomIndex)/sizeof(VIDENC_CUSTOM_DEFINITION); nIndex++)
     {
         if (!strcmp((const char*)cParameterName, (const char*)(&(sVideoEncodeCustomIndex[nIndex].cCustomName))))
         {
