@@ -6004,10 +6004,19 @@ OMX_ERRORTYPE VIDDEC_HandleDataBuf_FromDsp(VIDDEC_COMPONENT_PRIVATE *pComponentP
                         pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_CORRUPTEDHEADER)){
-                pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
-                pBuffHead->nFilledLen = 0;
-                OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Header in buffer %p %lu(int# %lx/%lu)\n",
-                        pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
+                /* Mpeg4 SP stream can have ASP tools, DSP SN reports this as an error to app to notify correct profile information, */
+                /* but its not fatal and app can continue decoding. So ignore the specific error */
+                if ((pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingMPEG4 ||
+                        pComponentPrivate->pInPortDef->format.video.eCompressionFormat == OMX_VIDEO_CodingH263) &&
+                        (nErrorCode & 0xFF) == M4H3DEC_TI_ERROR_invalidToolsSimpleObject) {
+                    OMX_PRDSP2(pComponentPrivate->dbg, "mpeg4 SP streams has ASP tools, ignore corrupted header error from DSP");
+                }
+                else {
+                    pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;
+                    pBuffHead->nFilledLen = 0;
+                    OMX_PRDSP4(pComponentPrivate->dbg, "Corrupted Header in buffer %p %lu(int# %lx/%lu)\n",
+                            pBuffHead, ulFrameIndex, nInternalErrorCode, pBuffHead->nFilledLen);
+               }
             }
             if(VIDDEC_ISFLAGSET(nErrorCode,VIDDEC_XDM_UNSUPPORTEDINPUT)){
                 pBuffHead->nFlags |= OMX_BUFFERFLAG_DATACORRUPT;

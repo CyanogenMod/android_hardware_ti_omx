@@ -490,6 +490,19 @@ typedef enum {
   /* 38 */  M4H3DEC_TI_ERROR_cannotdecodempeg4,
   /* 39 */  M4H3DEC_TI_ERROR_incorrectWidthHeight,
   /* 40 */  M4H3DEC_TI_ERROR_insufficientMemory,
+  /* New error codes added from DSP SN header file. */
+  /* 41 */  M4H3DEC_TI_ERROR_consumedAllInputBits,
+  /* 42 */  M4H3DEC_TI_ERROR_noRefBufferToFlush,
+  /* 43 */  M4H3DEC_TI_ERROR_missingFirstIFrame,
+  /* 44 */  M4H3DEC_TI_ERROR_invalidDmvLength,
+  /* 45 */  M4H3DEC_TI_ERROR_unsupportedNumberOfWarpingPointGMC,
+  /* 46 */  M4H3DEC_TI_ERROR_invalidWarpPoint,
+  /* 47 */  M4H3DEC_TI_ERROR_unsupportedFeatureInterlaceSprite,
+  /* 48 */  M4H3DEC_TI_ERROR_unsupportedFeatureDPSprite,
+  /* 49 */  M4H3DEC_TI_ERROR_invalidToolsSimpleObject,
+  /* 50 */  M4H3DEC_TI_ERROR_unsupportedFeature,
+  /* 51 */  M4H3DEC_TI_ERROR_bufSizeError,
+  /* 52 */  M4H3DEC_TI_ERROR_nullPtr
 } VIDDEC_M4H3DEC_TI_ERROR;
 
 /* ======================================================================= */
