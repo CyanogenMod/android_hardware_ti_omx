@@ -4552,7 +4552,7 @@ OMX_ERRORTYPE VIDDEC_ParseHeader(VIDDEC_COMPONENT_PRIVATE* pComponentPrivate, OM
                             pComponentPrivate->pOutPortDef->format.video.nFrameHeight *
                             ((pComponentPrivate->pOutPortFormat->eColorFormat == VIDDEC_COLORFORMAT420) ? VIDDEC_FACTORFORMAT420 : VIDDEC_FACTORFORMAT422);
 
-        if(nOutPortActualAllocLen < nOutMinBufferSize || pComponentPrivate->pOutPortDef->nBufferSize < nOutMinBufferSize){
+        if(nOutPortActualAllocLen != nOutMinBufferSize || pComponentPrivate->pOutPortDef->nBufferSize != nOutMinBufferSize){
             OMX_PRINT1(pComponentPrivate->dbg, " Previous: pOutPortDef->nBufferSize: %ld", pComponentPrivate->pOutPortDef->nBufferSize);
             pComponentPrivate->pOutPortDef->nBufferSize = nOutMinBufferSize;
             bOutPortSettingsChanged = OMX_TRUE;
