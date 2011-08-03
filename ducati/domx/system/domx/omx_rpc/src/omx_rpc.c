@@ -985,8 +985,8 @@ RPC_OMX_ERRORTYPE _RPC_ClientCreate(OMX_STRING cComponentName)
 	    _RPC_GetRemoteDOMXVersion(rcmHndl, nGetDOMXVersionIdx, &nVer);
 	RPC_assert(eRPCError == RPC_OMX_ErrorNone, eRPCError,
 	    "Failed to get remote DOMX version");
-	RPC_assert(nVer == DOMX_VERSION, RPC_OMX_ErrorUndefined,
-	    "Version mismatch detected - A9 and Ducati DOMX versions not in sync");
+//	RPC_assert(nVer == DOMX_VERSION, RPC_OMX_ErrorUndefined,
+//	    "Version mismatch detected - A9 and Ducati DOMX versions not in sync");
 
 	/* Getting remote function indices */
 	DOMX_DEBUG("Getting Symbols");
