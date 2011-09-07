@@ -209,6 +209,34 @@ extern "C"
 		OMX_HANDLETYPE hComponentActual;
 		OMX_PTR pMarkDataActual;
 	} PROXY_MARK_DATA;
+
+
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+/*===============================================================*/
+/** DebugFrame_Dump     : Structure holding the info about frames to dump
+ *  @param fromFrame: From which frame to start dumping
+ *  @param toFrame:  till which frame to dump
+ *  @param frame_width: Width of the frame
+ *  @param frame_height: Height of the frame
+ *  @param padded_width: Width of the buffer
+ *  @param padded_height: Height of the buffer
+ *  @param stride: Stride of the Buffer
+ *  @param runningFrame: running counter to track the frames
+ */
+/*===============================================================*/
+	typedef struct DebugFrame_Dump
+	{
+		OMX_S32 fromFrame;
+		OMX_S32 toFrame;
+		OMX_U32 frame_width;
+		OMX_U32 frame_height;
+		OMX_U32 padded_width;
+		OMX_U32 padded_height;
+		OMX_U32 stride;
+		OMX_S32 runningFrame;
+	}DebugFrame_Dump;
+#endif
+
 /*******************************************************************************
 * Functions
 *******************************************************************************/
