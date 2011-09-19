@@ -143,7 +143,7 @@ OMX_S32 currentNumOfComps = 0;
 OMX_HANDLETYPE componentTable[MAX_NUM_COMPS_PER_PROCESS] = { 0 };
 
 /*Book keeping for tiler buffers*/
-#define MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS 128
+#define MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS 20
 OMX_U32 tilerBuffers[MAX_NUMBER_OF_TILER_BUFFERS_PER_PROCESS] = { 0 };
 
 OMX_PTR pTilerMutex = NULL;
