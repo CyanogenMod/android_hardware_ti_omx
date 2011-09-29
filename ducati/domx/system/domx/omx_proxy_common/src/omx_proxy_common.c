@@ -77,6 +77,15 @@
 #include <memmgr.h>
 #endif
 
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+#define LOG_TAG "OMXPROXYCOMMON"
+#include <fcntl.h>
+#include <cutils/properties.h>
+#include <utils/Log.h>
+#include <stdlib.h>
+#include <errno.h>
+#endif
+
 #ifdef TILER_BUFF
 #define PortFormatIsNotYUV 0
 static OMX_ERRORTYPE RPC_PrepareBuffer_Remote(PROXY_COMPONENT_PRIVATE *
@@ -113,6 +122,57 @@ extern OMX_HANDLETYPE componentTable[];
 extern OMX_PTR pFaultMutex;
 
 extern OMX_BOOL ducatiFault;
+
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+DebugFrame_Dump debugframeInfo;
+
+/*
+* Method to convert to YUV420p for PC analysis
+*/
+static void convertNV12ToYuv420(const void *src, void *dst, int offset)
+{
+	uint8_t* p1y = (uint8_t*) src + offset;
+	uint8_t* p2y = (uint8_t*) dst;
+	int i, j, j1;
+	int width = debugframeInfo.frame_width;
+	int height = debugframeInfo.frame_height;
+	int stride = debugframeInfo.stride;
+	int paddedheight = debugframeInfo.padded_height;
+
+	LOGD("Coverting NV-12 to YUV420p Width[%d], Height[%d] and Stride[%d] offset[%d]", width, height, stride, offset);
+
+	//copy y-buffer, almost bytewise copy, except for stride jumps.
+	for(i=0;i<height;i++)
+	{
+		//copy whole row of Y pixels. source and desination will point to new row each time.
+		memcpy(p2y+i*width, p1y+i*stride, width);
+	}
+
+	/** copy uv buffers
+	* rearrange from  packed planar [uvuvuv] to planar [uuu][vvvv] packages pixel wise
+	* calculate the offset for UV buffer
+	*/
+
+	uint32_t offx = offset  % stride;
+	uint32_t offy = offset / stride;
+	const uint8_t* p1uv = (const uint8_t *)(src) + (stride * paddedheight);
+	p1uv += ( ( stride * (offy/2) ) + offx );
+
+	uint8_t* p2u = ((uint8_t*) dst + (width * height));
+	uint8_t* p2v = ((uint8_t*) p2u + ((width/2) * (height/2)));
+	for(i=0;(i < height/2);i++)
+	{
+		for(j=0,j1=0;(j< width/2);j++,j1+=2)
+		{
+			p2u[j] = p1uv[j1];
+			p2v[j] = p1uv[j1+1];
+		}
+		p1uv+=stride;
+		p2u+=width/2;
+		p2v+=width/2;
+	}
+}
+#endif
 
 /******************************************************************
  *   MACROS - LOCAL
@@ -457,8 +517,55 @@ static OMX_ERRORTYPE PROXY_FillBufferDone(OMX_HANDLETYPE hComponent,
 
       EXIT:
 	if (eError == OMX_ErrorNone)
-	{
-		pCompPrv->tCBFunc.FillBufferDone(hComponent,
+        {
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+		LOGV("frm[%u] to[%u] run[%u]", debugframeInfo.fromFrame, debugframeInfo.toFrame, debugframeInfo.runningFrame);
+		/* Fill buffer Done successed, hence start dumping if requested	*/
+		OMX_U8* localbuffer;
+		if ((debugframeInfo.fromFrame == 0) && (debugframeInfo.runningFrame <= debugframeInfo.toFrame))
+		{
+			//first convert the frame to 420p and then write to SD Card
+			OMX_U32 framesize = (debugframeInfo.frame_width * debugframeInfo.frame_height * 3) / 2;
+			localbuffer = malloc(framesize);
+			if (localbuffer == NULL)
+			{
+				LOGE("NO HEAP");
+				goto skipframedump;
+			}
+			convertNV12ToYuv420((OMX_U8*)pBufHdr->pBuffer, localbuffer, pBufHdr->nOffset);
+			int filedes;
+			char framenumber[100];
+			sprintf(framenumber, "/data/frame_%ld.txt", debugframeInfo.runningFrame);
+			LOGD("file path %s",framenumber);
+			filedes = open(framenumber, O_CREAT | O_WRONLY | O_SYNC | O_TRUNC, 0777);
+			if(filedes < 0)
+			{
+				LOGE("\n!!!!!!!!!Error in file open!!!!!!!! [%d][%s]\n", filedes, strerror(errno));
+				goto skipframedump;
+			}
+
+			int ret = write (filedes, (void*)localbuffer, framesize);
+			if (ret < (int)framesize)
+			{
+				LOGE("File Write Failed");
+			}
+			free(localbuffer);
+			localbuffer = NULL;
+			close(filedes);
+			debugframeInfo.runningFrame++;
+		}
+		else if (debugframeInfo.fromFrame > 0)
+		{
+			debugframeInfo.fromFrame--;
+		}
+skipframedump:
+		if (localbuffer)
+		{
+			free(localbuffer);
+			localbuffer = NULL;
+		}
+#endif
+            pCompPrv->tCBFunc.FillBufferDone(hComponent,
 		    pCompPrv->pILAppData, pBufHdr);
 	} else if (pCompPrv)
 	{
@@ -1333,6 +1440,27 @@ OMX_ERRORTYPE PROXY_GetParameter(OMX_IN OMX_HANDLETYPE hComponent,
       EXIT:
     LOG_EXIT( hComponent, proxyCommonLog, 9)
 	DOMX_EXIT("eError: %d", eError);
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+	if ((eError == OMX_ErrorNone) && (OMX_IndexParamPortDefinition == nParamIndex))
+	{
+		OMX_PARAM_PORTDEFINITIONTYPE* def = (OMX_PARAM_PORTDEFINITIONTYPE*)pParamStruct;
+		debugframeInfo.frame_width = def->format.video.nFrameWidth;
+		debugframeInfo.frame_height = def->format.video.nFrameHeight;
+		debugframeInfo.stride = def->format.video.nStride;
+		if (!(debugframeInfo.padded_width && debugframeInfo.padded_height))
+		{
+			debugframeInfo.padded_width = debugframeInfo.frame_width;
+			debugframeInfo.padded_height = debugframeInfo.frame_height;
+		}
+	}
+
+	if ((eError == OMX_ErrorNone) && (OMX_TI_IndexParam2DBufferAllocDimension == nParamIndex))
+	{
+		OMX_CONFIG_RECTTYPE* paramStruct = (OMX_CONFIG_RECTTYPE*)pParamStruct;
+		debugframeInfo.padded_width = paramStruct->nWidth;
+		debugframeInfo.padded_height = paramStruct->nHeight;
+	}
+#endif
 	return eError;
 }
 
@@ -2002,6 +2130,17 @@ OMX_ERRORTYPE OMX_ProxyCommonInit(OMX_HANDLETYPE hComponent)
 
       EXIT:
 	DOMX_EXIT("eError: %d", eError);
+#ifdef ENABLE_RAW_BUFFERS_DUMP_UTILITY
+	if (eError == OMX_ErrorNone)
+	{
+		char value[PROPERTY_VALUE_MAX];
+		property_get("debug.video.dumpframe", value, "0:-1");
+		/* -ve value for fromFrame would disable this automatically */
+		debugframeInfo.fromFrame = atoi(strtok(value, ":"));
+		debugframeInfo.toFrame = atoi(strtok(NULL, ":"));
+		debugframeInfo.runningFrame = debugframeInfo.fromFrame;
+	}
+#endif
 	return eError;
 }
 
